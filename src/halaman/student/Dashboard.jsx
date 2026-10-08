@@ -19,21 +19,7 @@ import { jalurMulus, jendelaNilai } from '../../lib/kurva'
 import { nilaiKumulatif } from '../../lib/scoring'
 import { useTunjuk } from '../../lib/tunjuk'
 
-/* --------------------------------------------------------------------------
-   Dashboard mahasiswa.
-
-   Urutannya mengikuti pertanyaan yang biasanya muncul berurutan di kepala
-   mahasiswa: berapa nilai saya → sudah sejauh mana → aspek mana saja dan
-   statusnya → apa yang masih ditunggu.
-
-   Aturan yang dijaga di halaman ini:
-   - SATU angka besar saja (nilai akhir). Angka lain lebih kecil supaya mata
-     tahu harus mulai dari mana.
-   - Nilai akhir selalu disertai status dan dasar hitungnya (R3).
-   - Aspek terkunci tampil dengan gembok dan semester pembukaannya, tidak
-     pernah sebagai 0 (R2).
-   - Warna hijau/kuning hanya untuk status, dan selalu berikut ikon + label.
-   -------------------------------------------------------------------------- */
+/* Aturan tampilan dashboard: lihat README.md › Panel mahasiswa: satu fakta, satu tempat. */
 
 const sapaan = () => {
   const jam = new Date().getHours()
@@ -45,25 +31,7 @@ const sapaan = () => {
 
 /* --------------------------------- ubin ----------------------------------- */
 
-/* --------------------------------------------------------------------------
-   Sebaran nilai aspek — grafik mini di dalam kartu nilai akhir.
-
-   KENAPA TITIK PADA JALUR, BUKAN BATANG. Nilai sepuluh aspek seorang mahasiswa
-   biasanya berdekatan: contohnya 84 sampai 87. Sebagai batang setinggi 40 px
-   dengan dasar nol, selisih 3 angka itu menjadi selisih SATU PIKSEL — grafik
-   yang tidak menunjukkan apa pun, dan lebih buruk daripada tidak ada grafik
-   karena ia mengaku menunjukkan sesuatu.
-
-   Posisi pada jalur mendatar punya resolusi jauh lebih besar: pada jalur
-   selebar 400 px, satu angka bernilai 4 px, sehingga 84 dan 87 terpisah 12 px
-   dan terbaca. Dan yang terpenting, skalanya TETAP 0 sampai 100 — tidak ada
-   dasar yang dipotong demi membesar-besarkan selisih.
-
-   Yang ditampilkan di sini sengaja belum ada di tempat lain pada halaman ini.
-   Rata-rata per area sudah punya kartunya sendiri di bawah, begitu pula nilai
-   per semester di kolom kanan; mengulangnya di sini hanya akan memenuhi ruang
-   tanpa menambah keterangan.
-   -------------------------------------------------------------------------- */
+/* Sebaran aspek: titik pada jalur 0 sampai 100, bukan batang; lihat README.md › Grafik. */
 function SebaranAspek({ t }) {
   const teks = useTeks()
   const dinilai = t.aspek.filter((a) => a.nilai != null)
@@ -92,8 +60,6 @@ function SebaranAspek({ t }) {
         })}
         className="relative mt-3 h-10 rounded-xl bg-[var(--grid)]"
       >
-        {/* Ambang kelulusan. Tanpa penanda ini, sebaran nilai tidak punya
-            acuan apa pun: 84 itu bagus atau pas-pasan tidak bisa dijawab. */}
         <span
           aria-hidden="true"
           className="absolute inset-y-1 w-px bg-ink-2"
@@ -104,19 +70,6 @@ function SebaranAspek({ t }) {
           <span
             key={a.aspekId}
             title={a.aspek.kode + ' ' + a.aspek.nama + ' — ' + a.nilai}
-            /* SATU WARNA, BUKAN PER AREA. Titik selebar 10 px tidak bisa
-               dipakai membaca identitas: tidak ada seorang pun yang bisa
-               menunjuk titik mana milik aspek mana, jadi mewarnainya per area
-               hanya menambah tiga warna tanpa menambah satu keterangan pun.
-               Yang membawa arti di sini adalah POSISI titiknya.
-
-               Warna area juga gagal diukur: di atas jalur terang, oranye area
-               kedua hanya 2,76:1 dan hijau area ketiga 2,43:1 — keduanya di
-               bawah ambang 3:1 untuk unsur grafis. Warna tunggal ini 8,56:1.
-
-               Cincin sewarna latar memisahkan titik-titik yang bertumpuk; dua
-               aspek bernilai sama akan mendarat di titik yang persis sama
-               tanpa itu. */
             className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-ink ring-2 ring-[var(--surface)]"
             style={{ left: a.nilai + '%' }}
           />
@@ -137,42 +90,15 @@ function SebaranAspek({ t }) {
   )
 }
 
-/* --------------------------------------------------------------------------
-   Tren nilai per semester.
+/* ------------------------ tren nilai per semester ------------------------- */
 
-   Ini pertanyaan yang lebih berguna daripada sebaran aspek: bukan "nilai saya
-   tersebar di mana", tapi "saya membaik atau tidak". Sumbu waktu adalah satu-
-   satunya sumbu yang punya urutan alami di data ini, jadi garis adalah bentuk
-   yang tepat untuknya.
-
-   SUMBU Y DIPOTONG, DAN ITU SENGAJA -- TAPI DILABELI. Nilai satu mahasiswa
-   antar semester biasanya bergerak 1 sampai 3 angka. Pada sumbu 0-100 gerakan
-   itu jadi garis lurus sempurna, dan grafik yang selalu lurus tidak berguna.
-   Maka jendelanya dipersempit. Bahayanya jelas: mempersempit tanpa batas
-   membuat selisih 1 angka tampak seperti tebing. Penjaganya ada dua, dan
-   keduanya wajib:
-
-     1. LEBAR JENDELA MINIMUM 20 ANGKA. Kenaikan 2 angka menempati sepersepuluh
-        tinggi grafik, bukan seluruhnya. Mahasiswa yang nilainya tetap akan
-        melihat garis yang benar-benar datar, karena memang begitulah adanya.
-     2. UJUNG SUMBU SELALU DITULIS. Angka di kiri atas dan kiri bawah membuat
-        pembaca tahu grafik ini tidak dimulai dari nol. Sumbu terpotong tanpa
-        label itulah yang menipu, bukan sumbu terpotongnya sendiri.
-
-   Semester yang belum dibuka tidak digambar sebagai nol dan garisnya tidak
-   diteruskan ke sana (R2) -- hanya nama semesternya yang tampil, bertanda gembok.
-   -------------------------------------------------------------------------- */
-
-/* Tinggi bidang gambar dalam piksel. Dipakai dua kali: oleh bidangnya sendiri
-   dan oleh lajur label sumbu Y di sebelahnya, yang harus setinggi itu persis
-   supaya tiap label duduk tepat pada garis bantunya. */
 const TINGGI_BAGAN = 116
 
 function TrenSemester({ t }) {
   const teks = useTeks()
   const daftar = Object.values(t.semester)
   const dinilai = daftar.filter((s) => s.nilai != null)
-  // Nilai akhir bila dihitung sampai semester itu. Di semester terakhir sama dengan angka besar di kiri.
+  // Kumulatif = nilai akhir bila dihitung sampai semester itu.
   const kumulatif = Object.fromEntries(dinilai.map((s) => [s.semester, nilaiKumulatif(t, s.semester)]))
 
   const { bawah, atas, garis: garisBantu } = jendelaNilai([
@@ -180,20 +106,10 @@ function TrenSemester({ t }) {
     ...dinilai.map((s) => kumulatif[s.semester]),
   ])
 
-  /* Koordinat dalam persen; SVG-nya memakai viewBox 0 0 100 100 dengan
-     preserveAspectRatio="none" supaya ikut melebar mengikuti kartu.
-
-     Sumbu Y TIDAK diberi sisa tepi: garis bantu teratas dan terbawah memang
-     harus menempel di tepi bidang, seperti sumbu pada umumnya. Titik datanya
-     tetap aman karena jendelanya sudah dibulatkan keluar lebih dulu, jadi
-     tidak ada nilai yang persis jatuh di tepi. */
   const n = daftar.length
   const px = (sem) => (n === 1 ? 50 : 4 + ((sem - 1) / (n - 1)) * 92)
   const py = (nilai) => ((atas - nilai) / (atas - bawah)) * 100
 
-  /* Kurva hanya ditarik melintasi semester yang BERURUTAN. Kalau ada semester
-     tanpa nilai di tengah, kurvanya diputus jadi dua, bukan dilompati --
-     melompatinya berarti mengarang perubahan yang datanya tidak menyatakan. */
   const runtun = (ambil) => {
     const hasil = []
     for (const s of dinilai) {
@@ -206,7 +122,6 @@ function TrenSemester({ t }) {
   }
   const SERI = [
     { kunci: 'semester', label: 'Nilai semester', warna: 'var(--brand-ink)', tebal: 2.5, ambil: (s) => s.nilai },
-    // Abu-abu: konteks, bukan pokok. Warna area (oranye, hijau) sudah punya arti lain di halaman ini.
     { kunci: 'kumulatif', label: 'Nilai kumulatif', warna: 'var(--text-muted)', tebal: 2, ambil: (s) => kumulatif[s.semester] },
   ]
 
@@ -223,7 +138,6 @@ function TrenSemester({ t }) {
   const ambang = CONFIG.AMBANG_SERTIFIKAT
   const ambangTampil = ambang > bawah && ambang < atas
 
-  // Area ketuk tiap semester melebar sampai separuh jarak ke tetangganya, bukan hanya titik 10px.
   const kolom = dinilai.map((s) => {
     const i = daftar.indexOf(s)
     const kiri = i === 0 ? 0 : (px(daftar[i - 1].semester) + px(s.semester)) / 2
@@ -239,7 +153,6 @@ function TrenSemester({ t }) {
   const tipRef = useRef(null)
   const [posisi, setPosisi] = useState(null)
 
-  // Di atas bidang grafik, berpusat pada semester terpilih, digeser masuk bila menabrak tepi.
   useLayoutEffect(() => {
     if (!pilih) {
       setPosisi(null)
@@ -269,9 +182,6 @@ function TrenSemester({ t }) {
       </p>
 
       <div className="mt-3 flex gap-2">
-        {/* Label sumbu Y, satu di tiap garis bantu. Selain memberi acuan baca,
-            angka-angka inilah yang menyatakan bahwa sumbunya TIDAK mulai dari
-            nol. Sumbu terpotong yang tidak dilabeli itulah yang menyesatkan. */}
         <div aria-hidden="true" className="relative w-[26px] shrink-0" style={{ height: TINGGI_BAGAN }}>
           {garisBantu.map((v) => (
             <span
@@ -329,7 +239,6 @@ function TrenSemester({ t }) {
               />
             ) : null}
 
-            {/* Kumulatif digambar lebih dulu supaya garis semester, yang jadi pokok, berada di atasnya. */}
             {[...SERI].reverse().map((r) =>
               runtun(r.ambil).map((deret) =>
                 deret.length < 2 ? null : (
@@ -341,8 +250,7 @@ function TrenSemester({ t }) {
                     strokeWidth={r.tebal}
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    /* Tanpa ini, preserveAspectRatio="none" ikut meregangkan
-                       tebal garisnya: tipis saat melintang, tebal saat menanjak. */
+                    /* Tanpa ini preserveAspectRatio="none" ikut meregangkan tebal garis. */
                     vectorEffect="non-scaling-stroke"
                   />
                 ),
@@ -350,8 +258,7 @@ function TrenSemester({ t }) {
             )}
           </svg>
 
-          {/* Titiknya HTML, bukan SVG: lingkaran di dalam viewBox yang diregangkan akan jadi lonjong.
-              Titik yang terpilih berubah jadi cincin berongga, seperti penanda pada contoh. */}
+          {/* Titik ditulis sebagai HTML: lingkaran di viewBox yang diregangkan jadi lonjong. */}
           {[...SERI].reverse().map((r) =>
             dinilai.map((s) => {
               const terpilih = pilih === s
@@ -386,7 +293,6 @@ function TrenSemester({ t }) {
                   SERI.map((r) => teks(r.label) + ' ' + r.ambil(s)).join(', ')
                 }
                 {...pegangan(i)}
-                // Penanda fokusnya garis vertikal, titik berongga, dan kotak info, bukan garis kolom.
                 className="absolute inset-y-0 cursor-pointer focus-visible:outline-none"
                 style={{ left: kiri + '%', width: lebar + '%' }}
               />
@@ -395,10 +301,6 @@ function TrenSemester({ t }) {
         </div>
       </div>
 
-      {/* Nama semester, ditulis lengkap di bawah titiknya. Semester yang belum
-          dibuka tetap tertulis, dengan gembok, supaya mahasiswa melihat seluruh
-          programnya. Label pertama dan terakhir dirapatkan ke tepi supaya tidak
-          separuhnya keluar dari bidang. */}
       <div aria-hidden="true" className="relative ml-[34px] mr-1 mt-1.5 h-4">
         {daftar.map((sem, i) => (
           <span
@@ -416,8 +318,6 @@ function TrenSemester({ t }) {
         ))}
       </div>
 
-      {/* Isinya sama dengan aria-label kolom, jadi disembunyikan dari pembaca layar.
-          Di layar sentuh tembus ketukan, supaya tidak menelan ketukan ke tombol di bawahnya. */}
       {pilih ? (
         <div
           ref={tipRef}
@@ -437,7 +337,6 @@ function TrenSemester({ t }) {
             <span className="font-bold text-ink">{pilih.semester}</span>
             {SERI.map((r) => (
               <Fragment key={r.kunci}>
-                {/* Garis pendek berwarna seri, bukan teks berwarna: abu muda seri kumulatif hanya 3,22:1, kurang untuk teks kecil. */}
                 <span className="inline-flex items-center gap-1.5 text-ink-2">
                   <span className="h-[3px] w-3 shrink-0 rounded-full" style={{ background: r.warna }} />
                   {teks(r.label)}
@@ -453,21 +352,11 @@ function TrenSemester({ t }) {
   )
 }
 
-/* Grafik mana yang muncul di kartu nilai akhir bergantung pada data yang
-   sudah ada, bukan pada selera.
-
-   Tren antar semester baru punya arti kalau ada minimal dua semester bernilai;
-   dengan satu titik ia hanya bingkai kosong berisi satu noktah. Mahasiswa
-   semester satu justru yang paling banyak, jadi untuk mereka ditampilkan
-   sebaran aspek -- data yang pasti sudah ada, dan menjawab pertanyaan yang
-   memang relevan di tahap itu. */
+/* Tren butuh minimal dua semester bernilai; selain itu tampil sebaran aspek; lihat README.md › Grafik. */
 function GrafikRingkas({ t }) {
   const semesterDinilai = Object.values(t.semester).filter((s) => s.nilai != null).length
   const aspekDinilai = t.aspek.filter((a) => a.nilai != null).length
 
-  /* Mahasiswa yang benar-benar baru belum punya bahan untuk salah satu pun.
-     Pemisah kolomnya ikut dibawa ke sini supaya dalam keadaan itu tidak
-     tertinggal garis vertikal yang membatasi ruang kosong. */
   if (semesterDinilai < 2 && aspekDinilai < 2) return null
 
   return (
@@ -477,13 +366,6 @@ function GrafikRingkas({ t }) {
   )
 }
 
-/* Ubin ringkas untuk kolom kanan.
-
-   Judul dan angkanya duduk pada satu baris, bukan bertumpuk seperti di ubin
-   utama. Sebabnya ruang: ketiganya kini berbagi satu kolom sempit di samping
-   kartu nilai akhir, dan judul yang bertumpuk di atas angka membuat tiap ubin
-   setinggi empat baris — kolom kanan akan jadi lebih padat daripada kiri, dan
-   susunan yang dimaksudkan menonjolkan nilai akhir justru berbalik. */
 function UbinRingkas({ judul, nilai, satuan, ke, children }) {
   const t = useTeks()
   const isi = (
@@ -520,9 +402,6 @@ function StatusAspek({ a }) {
   return <StatusTeks>{t(a.status === 'menunggu' ? 'Belum dinilai' : 'Sementara')}</StatusTeks>
 }
 
-/* Dashboard hanya menampilkan sebagian; daftar lengkap tempatnya di
-   transkrip. Angka di tab tetap jumlah SEBENARNYA, supaya mahasiswa tahu ada
-   berapa aspek yang tidak ikut tampil di sini. */
 export const BATAS_BARIS_ASPEK = 5
 
 const TAB = [
@@ -532,8 +411,6 @@ const TAB = [
   { id: 'terkunci', label: 'Terkunci', cocok: (a) => a.status === 'terkunci' },
 ]
 
-/* Satu baris aspek. Diketuk untuk membuka rincian komponennya — sumber nilai
-   dan komponen mana yang belum masuk — tanpa harus pindah ke transkrip. */
 function BarisAspek({ a, terbuka, onToggle }) {
   const t = useTeks()
   const area = getArea(a.aspek.area)
@@ -635,9 +512,7 @@ function AspekSaya({ t }) {
         </div>
       </div>
 
-      {/* overflow-y-hidden wajib: begitu satu sumbu diberi overflow-x-auto,
-          sumbu lainnya ikut menjadi auto, dan -mb-px pada tab memunculkan
-          batang gulir vertikal setinggi 1 px di ujung kanan baris ini. */}
+      {/* overflow-y-hidden wajib: overflow-x-auto ikut membuat sumbu y auto dan memunculkan batang gulir 1 px. */}
       <div
         role="tablist"
         aria-label={teks('Saring aspek')}
@@ -826,7 +701,6 @@ function PerjalananSemester({ t }) {
 /* --------------------------------- halaman -------------------------------- */
 
 export default function Dashboard() {
-  // Ikut menghitung ulang begitu ada nilai yang masuk dari panel Kemahasiswaan.
   useStore()
   const teks = useTeks()
   const student = useStudent()
@@ -861,25 +735,10 @@ export default function Dashboard() {
       </header>
 
       {/* --------------------------------- ubin -------------------------------- */}
-      {/* --------------------------------------------------------------------
-          Satu kartu besar di kiri, tiga ubin ringkas menumpuk di kanan.
-
-          Sebelumnya keempatnya berukuran sama, dan itu berarti "85" bersaing
-          dengan "7/10", "3/10", dan "Belum tersedia" — padahal hanya satu dari
-          keempatnya yang menjawab pertanyaan pertama seorang mahasiswa. Ukuran
-          adalah cara paling murah menjawab "mana yang harus saya baca dulu",
-          dan ukuran yang sama berarti pertanyaan itu tidak dijawab sama
-          sekali.
-          -------------------------------------------------------------------- */}
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="kartu flex flex-col px-6 py-6 sm:px-7 sm:py-7">
           <p className="text-[14px] font-semibold text-ink-2">{teks('Nilai akhir')}</p>
 
-          {/* Angka di kiri, grafik di kanan. Menumpuk keduanya membuat kartu
-              ini jadi empat baris tulisan di atas satu grafik, dengan rongga
-              lebar di kanan angkanya -- dan rongga itu terbaca sebagai ada
-              yang belum selesai dipasang. Di ponsel keduanya tetap bertumpuk,
-              karena di sana lebar adalah barang langka. */}
           <div className="mt-2 flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:shrink-0 sm:flex-col sm:items-start sm:gap-y-1">
               <p className="text-[56px] font-extrabold leading-[0.9] tracking-tight text-ink sm:text-[64px]">
@@ -904,9 +763,6 @@ export default function Dashboard() {
             <GrafikRingkas t={t} />
           </div>
 
-          {/* Hanya di ponsel. Nilai akhir tetap terlihat sebagai kepala; tiga
-              ubin lainnya dilipat di bawahnya, dan ringkasannya tetap tertulis
-              di tombol ini supaya tidak ada yang benar-benar tersembunyi. */}
           <button
             type="button"
             onClick={() => setRinciBuka((v) => !v)}
@@ -932,8 +788,6 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Di ponsel ketiganya tersembunyi sampai tombol Rincian ditekan; sejak
-            640px ke atas selalu tampil, menumpuk di kolom kanan. */}
         <div id="ubin-rinci" className={(rinciBuka ? 'grid' : 'hidden') + ' gap-4 sm:grid'}>
           <UbinRingkas
             judul="Aspek dinilai"
@@ -995,7 +849,6 @@ export default function Dashboard() {
         <div className="min-w-0">
           <AspekSaya t={t} />
         </div>
-        {/* Komponen yang belum dinilai pindah ke lonceng di bilah atas. */}
         <div className="space-y-6">
           <PerjalananSemester t={t} />
           <CapaianArea t={t} />

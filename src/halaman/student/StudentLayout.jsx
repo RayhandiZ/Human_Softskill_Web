@@ -27,28 +27,6 @@ import { useTeks } from '../../lib/bahasa'
 import { kunciSesi, useProfil } from '../../lib/profil'
 import LoncengBelumDinilai from './LoncengBelumDinilai'
 
-/* --------------------------------------------------------------------------
-   Kerangka panel mahasiswa.
-
-   Sengaja BERBEDA dari panel Kemahasiswaan dan dari E-Learning: bukan bilah
-   biru pekat di atas dengan kartu profil di kiri, melainkan sidebar terang yang
-   mengambang di kiri, bilah atas yang menyatu dengan latar, dan kartu-kartu
-   bersudut lebar dengan bayangan pudar.
-
-   Yang diambil dari rujukan hanya suasananya — lapang, lembut, satu fokus per
-   baris. Aksesorisnya tidak: tidak ada kotak pencarian (tidak ada yang perlu
-   dicari di sepuluh aspek), tidak ada kalender (program ini tidak punya tenggat
-   yang diketahui aplikasi), tidak ada ikon tiga dimensi, tidak ada kartu
-   promosi. Setiap unsur di layar harus menjawab pertanyaan mahasiswa tentang
-   nilainya sendiri.
-
-   Kartu profil di kolom kiri versi lama dibuang: nama dan NIM pindah ke tombol
-   akun di kanan atas, nilai akhir pindah ke ubin pertama dashboard. Menu
-   samping yang dulu menumpuk di atas isi pada layar kecil kini tinggal di laci
-   garis tiga, jadi tidak lagi mendorong nilai ke bawah lipatan.
-   -------------------------------------------------------------------------- */
-
-/* Pintasan footer menunjuk ke halaman yang memang ada, bukan tautan hiasan. */
 const PINTASAN = [
   { ke: '/mahasiswa/transkrip', label: 'Transkrip', icon: IconDocument },
   { ke: '/mahasiswa/peta', label: 'Peta Perjalanan', icon: IconRoute },
@@ -64,29 +42,16 @@ const MENU = [
   { to: '/mahasiswa/sertifikat', label: 'Sertifikat', icon: IconCertificate },
 ]
 
-/* Konteks mahasiswa aktif.
-
-   react-router mengalirkan data ke halaman anak lewat context milik Outlet; di
-   Next layout dan halaman adalah dua modul terpisah, jadi jalurnya dibuat
-   eksplisit dengan React context. Halaman anak tetap memanggil useStudent()
-   seperti sebelumnya. */
 const KonteksMahasiswa = createContext(null)
 
 export const useStudent = () => useContext(KonteksMahasiswa)
 
-/* Daftar menu — dipakai sidebar dan laci, supaya keduanya tidak pernah berbeda
-   isi. Penanda aktif berupa latar biru muda dengan teks biru tua (rasio kontras
-   di atas 9:1), lebih lembut daripada isian pekat panel Kemahasiswaan tetapi
-   tetap terbaca sekali lihat. */
 function DaftarMenu({ onPilih, besar = false }) {
   const t = useTeks()
   const jalur = usePathname() ?? ''
 
-  // Butir yang baru diklik. Penanda langsung berangkat, tidak menunggu halaman tujuan selesai
-  // dimuat (di mode dev bisa satu-dua detik).
   const [tujuan, setTujuan] = useState(null)
   useEffect(() => setTujuan(null), [jalur])
-  // Navigasi yang batal tidak mengubah jalur, jadi penanda jangan tertinggal di tujuan.
   useEffect(() => {
     if (!tujuan) return undefined
     const id = setTimeout(() => setTujuan(null), 8000)
@@ -114,7 +79,6 @@ function DaftarMenu({ onPilih, besar = false }) {
               end={end}
               data-geser={to}
               onClick={(e) => {
-                // Klik tengah atau dengan tombol pengubah membuka tab baru; halaman ini tetap.
                 if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)) setTujuan(to)
                 onPilih?.(e)
               }}
@@ -153,7 +117,6 @@ function TombolTema() {
 }
 
 export default function StudentLayout({ children }) {
-  // Ikut menghitung ulang begitu ada nilai yang masuk dari panel Kemahasiswaan.
   const versi = useStore()
   const { user, logout } = useAuth()
   const teks = useTeks()
@@ -161,16 +124,13 @@ export default function StudentLayout({ children }) {
   const jalurHalaman = usePathname()
   const [laci, setLaci] = useState(false)
 
-  /* Yang tampil adalah mahasiswa yang sedang masuk. Selama datanya belum ada,
-     identitasnya diambil dari sesi dan seluruh aspeknya tampil belum dinilai. */
   const student = useMemo(() => mahasiswaSesi(user), [user, versi])
   const { foto } = useProfil(kunciSesi(user, student.nim))
   const t = transkripOf(student)
 
   return (
     <div className="min-h-screen bg-bg lg:pl-[264px] print:pl-0">
-      {/* print:pl-0 wajib: sidebar disembunyikan saat mencetak, dan tanpa ini
-          transkrip cetakan tetap bergeser 264 px ke kanan lalu terpotong. */}
+      {/* print:pl-0 wajib: sidebar disembunyikan saat mencetak. */}
       {/* -------------------------------- sidebar ------------------------------- */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] p-4 pr-0 lg:block print:hidden">
         <div className="kartu flex h-full flex-col px-3 py-5">
@@ -190,10 +150,6 @@ export default function StudentLayout({ children }) {
 
       <div className="flex min-h-screen flex-col">
         {/* ------------------------------ bilah atas ----------------------------- */}
-        {/* Bilah atas sengaja tembus pandang tipis dengan kabur yang ringan: isi
-            halaman terlihat samar lewat di bawahnya, tapi tidak sampai
-            mengganggu. 74% masih menyisakan kontras 7,37:1 pada kasus terburuk
-            — bilah gelap yang dilewati kartu putih — jauh di atas ambang 4,5:1. */}
         <header className="sticky top-0 z-20 bg-[color-mix(in_srgb,var(--bg)_72%,transparent)] backdrop-blur-sm print:hidden">
           <div className="mx-auto flex h-[72px] w-full max-w-[1200px] items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button
@@ -208,7 +164,6 @@ export default function StudentLayout({ children }) {
 
             <Link href="/mahasiswa" className="flex items-center gap-2.5 lg:hidden">
               <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
-              {/* Garis dan nama sistem hanya muncul bila layarnya cukup lebar untuk keduanya. */}
               <span aria-hidden="true" className="hidden h-6 w-px shrink-0 bg-line sm:block" />
               <span className="hidden text-[14px] font-extrabold tracking-tight text-ink sm:block">
                 HUMAN <span className="text-[var(--accent)]">SOFTSKILL</span>
@@ -240,8 +195,6 @@ export default function StudentLayout({ children }) {
         <Footer pintasan={PINTASAN} />
       </div>
 
-      {/* Tombol bantuan mengambang. Diletakkan di kerangka, bukan di tiap
-          halaman, supaya ia ada di mana pun mahasiswa berada. */}
       <LayananTambahan />
 
       {/* --------------------------- laci layar kecil -------------------------- */}

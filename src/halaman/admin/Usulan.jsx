@@ -19,25 +19,7 @@ import { USULAN_NILAI, putuskanUsulan, useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 
-/* --------------------------------------------------------------------------
-   Persetujuan nilai dari dosen.
-
-   Di sinilah syarat "perlu dikonfirmasi untuk di-approve" benar-benar
-   dijalankan. Nilai yang dikirim dosen belum menyentuh transkrip siapa pun
-   sampai ada yang menekan Setujui di halaman ini.
-
-   Ada DUA lapis konfirmasi, dan keduanya memang berbeda pekerjaan:
-
-   1. Sistem — memeriksa hal yang bisa diperiksa mesin: NIM terdaftar, komponen
-      cocok dengan unit asesmennya, nilai di rentang 0–100, dan yang terpenting
-      R1: aspek dari semester yang belum tiba ditolak. Pemeriksaan ini berjalan
-      sendiri, ditampilkan di bawah tiap usulan, dan tetap dijalankan ulang di
-      dalam store saat tombol ditekan.
-   2. Orang — menilai hal yang tidak bisa diperiksa mesin: apakah angkanya
-      masuk akal untuk kelas itu, apakah catatan dosennya menjelaskan sesuatu.
-
-   Baris yang gagal lapis pertama tidak ikut ditulis walau tombolnya ditekan.
-   -------------------------------------------------------------------------- */
+/* Dua lapis konfirmasi: sistem lalu orang; lihat README.md › Usulan nilai dosen. */
 
 const RUPA = {
   menunggu: { label: 'Menunggu keputusan', tone: 'warning', icon: IconClock },
@@ -155,15 +137,9 @@ export default function Usulan() {
 function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
   const t = useTeks()
   const [catatan, setCatatan] = useState('')
-  /* Galat tampil di dalam halaman, bukan lewat window.alert: dialog bawaan
-     peramban memblokir seluruh tab, tidak bisa diberi gaya, dan di sebagian
-     peramban ponsel tidak muncul sama sekali. */
   const [galat, setGalat] = useState('')
   const r = RUPA[u.status] ?? RUPA.menunggu
 
-  /* Pemeriksaan sistem dijalankan untuk ditampilkan. Yang mengikat tetap
-     pemeriksaan di dalam store saat tombol ditekan — ini hanya salinannya,
-     supaya keputusannya diambil dengan mata terbuka. */
   const periksa = useMemo(
     () => periksaUsulan(u.entri, { cariMahasiswa: getStudentByNim, sumber: u.sumber }),
     [u],

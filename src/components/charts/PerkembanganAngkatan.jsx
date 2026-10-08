@@ -5,8 +5,7 @@ import { CONFIG } from '../../lib/config'
 import { COHORTS, transkripOf } from '../../lib/data'
 import { useBahasa } from '../../lib/bahasa'
 
-// Pilihan "Semester N" = mahasiswa yang sudah bernilai di Semester 1 sampai N. Tiap batang dihitung
-// dari orang yang sama, jadi selisih antarbatang adalah perkembangan, bukan pergantian angkatan.
+// Semester N = mahasiswa yang sudah bernilai di Semester 1 sampai N, jadi tiap batang berisi orang yang sama.
 
 const TINGGI = 220
 const GARIS = [0, 20, 40, 60, 80, 100]
@@ -36,7 +35,6 @@ function kelompokSampai(rows, n) {
     })
   }
 
-  // Angkatan tertua dulu, sama dengan urutan tabel.
   const perAngkatan = [...COHORTS]
     .reverse()
     .map((angkatan) => {
@@ -69,7 +67,6 @@ function perubahan(t, batang, i) {
     : t('Turun {d} dari Semester {n}', { d: -d, n: lalu.sem })
 }
 
-// Jarak dari puncak batang ke tepi bawah tooltip: angka di atas batang ditambah celah.
 const RUANG_ANGKA = 28
 
 function Batang({ kelompok }) {
@@ -92,14 +89,12 @@ function Batang({ kelompok }) {
     setDiam(false)
     setArah(i)
   }
-  // Jeda singkat sebelum hilang, supaya tetikus sempat pindah ke tooltip tanpa ia lenyap.
   const lepas = () => {
     clearTimeout(jeda.current)
     jeda.current = setTimeout(() => setArah(null), 150)
   }
   useEffect(() => () => clearTimeout(jeda.current), [])
 
-  // Escape menyembunyikan tooltip tanpa memindahkan fokus atau tetikus.
   useEffect(() => {
     if (aktif == null) return undefined
     const tekan = (e) => e.key === 'Escape' && setDiam(true)
@@ -107,7 +102,6 @@ function Batang({ kelompok }) {
     return () => document.removeEventListener('keydown', tekan)
   }, [aktif])
 
-  // Di atas batangnya, digeser ke dalam kartu bila menabrak tepi. Diukur sebelum dilukis.
   useLayoutEffect(() => {
     if (aktif == null) {
       setPosisi(null)
@@ -118,7 +112,6 @@ function Batang({ kelompok }) {
     const tip = tipRef.current.getBoundingClientRect()
     const kiri = Math.min(Math.max(bt.left + bt.width / 2 - tip.width / 2 - w.left, 0), Math.max(0, w.width - tip.width))
     const atas = bt.top - w.top - RUANG_ANGKA - tip.height
-    // Pindah antarbatang meluncur; kemunculan pertama langsung di tempat.
     setPosisi((lama) => ({ kiri, atas, geser: lama != null }))
   }, [aktif, kelompok])
 
@@ -163,7 +156,6 @@ function Batang({ kelompok }) {
               style={{ bottom: tinggi(v) }}
             />
           ))}
-          {/* Putus-putus hanya untuk ambang, supaya tidak terbaca sebagai garis bantu. */}
           <span
             aria-hidden="true"
             className="absolute inset-x-0 border-t border-dashed border-ink-2"
@@ -172,7 +164,6 @@ function Batang({ kelompok }) {
 
           <div role="list" aria-label={t('Nilai rata-rata')} className="absolute inset-0 flex">
             {kelompok.batang.map((x, i) => (
-              // Seluruh kolom jadi area tunjuk, bukan hanya batang selebar 40px.
               <div
                 key={x.sem}
                 role="listitem"
@@ -185,15 +176,12 @@ function Batang({ kelompok }) {
                   setFokus(i)
                 }}
                 onBlur={() => setFokus((f) => (f === i ? null : f))}
-                // focus-visible:outline-none, bukan outline-none: aturan *:focus-visible global ditulis
-                // sesudah utilitas Tailwind, jadi hanya varian yang lebih spesifik yang menang.
+                // focus-visible:outline-none, bukan outline-none: aturan *:focus-visible global ditulis sesudah utilitas Tailwind.
                 className="group flex h-full flex-1 cursor-default flex-col items-center justify-end focus-visible:outline-none"
               >
-                {/* Berlatar kartu supaya garis bantu tidak mencoret angkanya. */}
                 <span className="mb-1.5 bg-surface px-1 text-[13px] font-bold leading-none text-ink">
                   {x.nilai}
                 </span>
-                {/* Cincin di batang menggantikan garis fokus kolom: kolomnya setinggi grafik, batangnyalah yang dibaca. */}
                 <span
                   ref={(el) => {
                     batangRef.current[i] = el
@@ -222,15 +210,12 @@ function Batang({ kelompok }) {
         ))}
       </div>
 
-      {/* Isinya sama dengan aria-label kolom, jadi disembunyikan dari pembaca layar. */}
       {b ? (
         <div
           ref={tipRef}
           aria-hidden="true"
           onPointerEnter={() => clearTimeout(jeda.current)}
           onPointerLeave={lepas}
-          // Di layar sentuh tooltip tembus ketukan: ia bisa menutupi tombol dropdown, dan singgah di
-          // atasnya hanya berguna bagi tetikus.
           className="absolute z-20 w-[216px] rounded-xl border border-line bg-surface px-3.5 py-3 shadow-pop animate-tip [@media(hover:none)]:pointer-events-none"
           style={{
             left: posisi?.kiri ?? 0,
@@ -294,8 +279,7 @@ function Penjelasan({ kelompok }) {
           </dd>
         </div>
         <div>
-          {/* Nama isian tanpa tanda hubung: { rata-rata: ... } dibaca "rata dikurangi rata" dan
-              menggagalkan kompilasi, sedangkan {rata-rata} tidak pernah terisi oleh penerjemah. */}
+          {/* Nama penanda tanpa tanda hubung: { rata-rata: ... } menggagalkan kompilasi. */}
           <dt className="text-ink-2">{t('Di atas rata-rata minimal {n}', { n: ambang })}</dt>
           <dd className="mt-0.5 font-bold tabular-nums text-ink">
             {kelompok.batang.map((b) => b.diAtas + '%').join(' → ')}
@@ -320,11 +304,9 @@ export default function PerkembanganAngkatan({ rows }) {
 
   const pilihan = Object.keys(kelompok).map(Number)
   const [sampai, setSampai] = useState(null)
-  // Bawaan: semester terjauh yang sudah ada datanya, karena itulah yang menjawab "naik atau tidak".
   const n = sampai != null && kelompok[sampai] ? sampai : pilihan[pilihan.length - 1]
   const aktif = n != null ? kelompok[n] : null
 
-  // Kunci mentah: ChartFrame yang menerjemahkan kepala dan isi tabel.
   const tabel = aktif
     ? {
         head: ['Angkatan', 'Mahasiswa', ...aktif.batang.map((b) => 'Semester ' + b.sem), ...(aktif.n > 1 ? ['Selisih'] : [])],
@@ -363,7 +345,6 @@ export default function PerkembanganAngkatan({ rows }) {
           <Penjelasan kelompok={aktif} />
         </div>
       ) : (
-        // Kosong berarti belum ada nilai yang masuk, bukan galat.
         <p className="px-3 py-6 text-[13px] leading-relaxed text-ink-2">
           {t('Belum ada nilai semester yang masuk, jadi perkembangan belum bisa dihitung. Masukkan nilai lewat halaman Input & Import Nilai, atau setujui usulan nilai dari dosen.')}
         </p>

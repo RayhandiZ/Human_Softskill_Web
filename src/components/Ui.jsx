@@ -69,7 +69,6 @@ export function Badge({ tone = 'neutral', icon: Icon, children, className = '' }
 
 const TONE_HURUF = { A: 'good', B: 'brand', C: 'warning', D: 'serious' }
 
-/** Huruf mutu resmi. Nilai di bawah 60 bukan huruf — ia sebuah status. */
 export function HurufBadge({ nilai, sementara = false, panjang = false }) {
   const t = useTeks()
   if (nilai == null) return <Badge tone="neutral">{t('Belum dinilai')}</Badge>
@@ -84,7 +83,6 @@ export function HurufBadge({ nilai, sementara = false, panjang = false }) {
   )
 }
 
-// Predikat sebagai teks biasa, tanpa lencana berwarna. panjang: ikut menyebut nama predikatnya.
 export function PredikatTeks({ nilai, panjang = false }) {
   const t = useTeks()
   if (nilai == null) return <span className="text-[13px] text-ink-2">{t('Belum dinilai')}</span>
@@ -97,26 +95,7 @@ export function PredikatTeks({ nilai, panjang = false }) {
   )
 }
 
-/* --------------------------------------------------------------------------
-   Status aspek dalam TEKS SAJA.
-
-   Dulu ini lencana berwarna: hijau untuk Final, kuning untuk Sementara.
-   Aturan warna status sendiri sudah dipatuhi — selalu disertai ikon dan
-   tulisan, tidak pernah warna saja. Yang luput: ketika HAMPIR SETIAP BARIS
-   punya lencana berwarna, warnanya berhenti menandai apa pun. Sepuluh baris
-   dengan sepuluh pil hijau dan kuning bukan sepuluh peringatan; ia sepuluh
-   hiasan yang justru menutupi angka nilainya.
-
-   Sekarang statusnya kata biasa. Yang membedakan tingkatannya berat huruf,
-   bukan rona: yang sudah final tampil pekat, yang masih berjalan tampil lebih
-   ringan. Tidak ada satu pun warna dipakai, jadi pembaca yang tidak bisa
-   membedakan warna dan lembar yang tercetak hitam-putih membaca hal yang sama
-   persis.
-
-   Warna TIDAK dipakai, tetapi kontras tetap diukur: teks status adalah
-   informasi, bukan hiasan. Karena itu yang redup memakai ink-2 (6,89:1), bukan
-   ink-3 yang hanya 3,22:1 di mode terang dan gagal ambang 4,5:1.
-   -------------------------------------------------------------------------- */
+/* Status ditulis polos tanpa warna; lihat README.md › Warna dan kontras. */
 export function StatusTeks({ kuat = false, className = '', children }) {
   return (
     <span
@@ -132,23 +111,7 @@ export function StatusTeks({ kuat = false, className = '', children }) {
   )
 }
 
-/* --------------------------------------------------------------------------
-   Penanda skema yang belum final: teks merah, tanpa pil.
-
-   Berbeda dari StatusTeks di atas yang sengaja tanpa warna. Status muncul di
-   HAMPIR SETIAP BARIS, jadi warnanya berhenti menandai apa pun. Penanda ini
-   kebalikannya: ia peringatan bahwa angkanya berdiri di atas skema penilaian
-   yang belum diresmikan, dan itu jarang. Yang jarang boleh berwarna.
-
-   Kurungnya disengaja. "(Draft)" terbaca sebagai catatan pinggir terhadap
-   kalimat di sebelahnya, sedangkan pil berwarna terbaca sebagai label yang
-   setara — padahal ini keterangan tentang label itu, bukan label lain.
-
-   Warnanya merah, bukan kuning. Kuning --warning hanya mencapai 1,83:1 di atas
-   kartu putih; sebagai pil berlatar tint ia masih terbaca, tetapi begitu
-   pilnya dilepas dan tinggal tulisannya, angka itu jadi gagal telak. Merah
-   --critical mencapai 4,80:1 di terang dan 6,18:1 di gelap.
-   -------------------------------------------------------------------------- */
+/* Penanda skema belum final: merah dalam kurung, bukan pil; lihat README.md › Warna dan kontras. */
 export function TandaDraft({ children, className = '' }) {
   return (
     <span
@@ -161,7 +124,6 @@ export function TandaDraft({ children, className = '' }) {
   )
 }
 
-/** Penanda aspek yang semesternya belum tiba (R2) — bentuk, bukan sekadar warna. */
 export function Terkunci({ semester, ringkas = false }) {
   const t = useTeks()
   return (
@@ -172,7 +134,6 @@ export function Terkunci({ semester, ringkas = false }) {
   )
 }
 
-/** Catatan kaki halus — dipakai untuk peringatan bobot sementara dan R10. */
 export function CatatanKaki({ children, icon = true }) {
   return (
     <p className="mt-3 flex items-start gap-1.5 text-[12px] leading-snug text-ink-3">
@@ -182,7 +143,6 @@ export function CatatanKaki({ children, icon = true }) {
   )
 }
 
-/** Halaman yang dijadwalkan pada fase berikutnya — jujur, bukan halaman kosong. */
 export function SegeraHadir({ judul, fase, children }) {
   const t = useTeks()
   return (
@@ -190,9 +150,6 @@ export function SegeraHadir({ judul, fase, children }) {
       <p className="label">{t('Fase {n}', { n: fase })}</p>
       <h1 className="mt-2 text-[22px] font-extrabold tracking-tight text-ink">{judul}</h1>
       <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-ink-2">{children}</p>
-      {/* <p className="mt-4 text-[13px] text-ink-3">
-        Model data dan aturan bisnisnya sudah siap; tinggal antarmukanya yang dirakit.
-      </p> */}
     </Card>
   )
 }
@@ -236,7 +193,6 @@ export function StatTile({ label, value, unit, hint, icon: Icon, tone = 'brand',
   )
 }
 
-/* Bar capaian dengan penanda target — nilai selalu dilabeli. */
 export function ScoreBar({ value, color = 'var(--c1)', target, height = 10 }) {
   return (
     <div className="relative w-full overflow-hidden rounded-full bg-[var(--grid)]" style={{ height }}>
@@ -285,11 +241,7 @@ export function ScoreRing({ value, size = 132, stroke = 12, color = 'var(--brand
 
 /* --------------------------------- kontrol -------------------------------- */
 
-/**
- * `tampilkan` menerjemahkan LABEL pilihan tanpa menyentuh nilainya. Nilai yang
- * dikirim ke induk tetap kalimat aslinya, sehingga penyaring di halaman tidak
- * perlu tahu bahasa apa yang sedang aktif.
- */
+/** tampilkan menerjemahkan label saja; nilai yang dikirim tetap kalimat aslinya. */
 export function Select({ label, value, onChange, options, className = '', tampilkan }) {
   const tampil = tampilkan ?? ((x) => x)
   return (
@@ -356,12 +308,6 @@ export function Tabs({ items, value, onChange }) {
   )
 }
 
-/**
- * Avatar pengguna. Bila ada foto tersimpan, foto itu yang dipakai; kalau tidak,
- * kembali ke inisial nama. Satu komponen untuk dua keadaan supaya ukuran dan
- * bentuk bulatnya tidak pernah berbeda antara navbar, kartu samping, dan
- * halaman profil.
- */
 export function Avatar({ initials, size = 40, tone = 'brand', src = null, alt = '' }) {
   if (src) {
     return (

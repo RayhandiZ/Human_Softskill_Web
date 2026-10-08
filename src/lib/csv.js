@@ -1,7 +1,3 @@
-/* Pengurai dan penyusun CSV seadanya — cukup untuk berkas nilai, dan menghindari
-   menambah pustaka baru. Menangani pemisah koma atau titik koma, tanda kutip
-   ganda, serta kutip berlipat ("") di dalam sel. */
-
 export function uraiCSV(teks) {
   const bersih = String(teks ?? '').replace(/^﻿/, '').replace(/\r\n?/g, '\n').trim()
   if (!bersih) return { kepala: [], baris: [] }
@@ -36,9 +32,6 @@ export function uraiCSV(teks) {
   baris.push(sel)
   semua.push(baris)
 
-  // Nama kolom dipertahankan apa adanya supaya layar pemetaan menampilkan
-  // header persis seperti yang ditulis dosen. Kunci huruf kecil ikut disertakan
-  // agar pembacaan seperti baris.nim tetap bekerja tanpa peduli kapitalisasi.
   const kepala = (semua.shift() ?? []).map((h) => h.trim())
   const kepalaNormal = kepala.map((h) => h.toLowerCase())
 
@@ -66,7 +59,6 @@ export function susunCSV(kepala, baris) {
   return [kepala.map(kutip).join(','), ...baris.map((r) => r.map(kutip).join(','))].join('\n')
 }
 
-/** Memicu unduhan berkas di peramban tanpa pustaka tambahan. */
 export function unduhBerkas(namaBerkas, isi, tipe = 'text/csv;charset=utf-8') {
   const blob = new Blob(['﻿' + isi], { type: tipe })
   const url = URL.createObjectURL(blob)

@@ -4,10 +4,6 @@ import { getArea } from '../../lib/curriculum'
 import { CATATAN_BOBOT_SEMENTARA } from '../../lib/config'
 import { useTeks } from '../../lib/bahasa'
 
-/* Sepuluh aspek CPMK sebagai bar horizontal dengan label nilai langsung.
-   Aspek yang semesternya belum tiba TIDAK digambar sebagai bar kosong atau nol
-   — barisnya diganti penanda gembok (R2). */
-
 export default function AspectBars({
   rows,
   title = 'Nilai per aspek CPMK',

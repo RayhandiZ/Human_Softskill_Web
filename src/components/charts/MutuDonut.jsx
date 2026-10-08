@@ -3,18 +3,6 @@ import ChartFrame from './ChartFrame'
 import { RUBRIK } from '../../lib/scoring'
 import { useTeks } from '../../lib/bahasa'
 
-/* --------------------------------------------------------------------------
-   Sebaran huruf mutu — satu-satunya grafik di halaman Ringkasan.
-
-   Bentuk donat dipakai karena tugas datanya memang bagian-terhadap-keseluruhan
-   dan segmennya hanya lima (batas amannya enam). Pembacaannya sekilas saja;
-   angka pastinya tetap tertulis di daftar sebelah kanan dan di tampilan tabel.
-
-   Warna A-D adalah SATU hue bertingkat karena huruf mutu itu skala berurutan,
-   bukan empat kategori setara. "Belum Memenuhi" bukan huruf mutu melainkan
-   status, jadi ia memakai token status dan selalu disertai label.
-   -------------------------------------------------------------------------- */
-
 const WARNA = { A: 'var(--mutu-a)', B: 'var(--mutu-b)', C: 'var(--mutu-c)', D: 'var(--mutu-d)' }
 
 function Keterangan({ active, payload, total }) {
@@ -51,9 +39,7 @@ export default function MutuDonut({ huruf, totalMahasiswa, height = 260 }) {
     },
   ].filter((d) => d.jumlah > 0)
 
-  /* Penyebutnya WAJIB jumlah seluruh irisan, bukan jumlah mahasiswa. Kalau ada
-     mahasiswa yang belum punya nilai sama sekali, ia tidak punya huruf mutu dan
-     tidak boleh ikut membagi — kalau tidak, persentasenya tidak akan genap 100. */
+  /* Penyebut = jumlah seluruh irisan, bukan jumlah mahasiswa; lihat README.md › Kenapa donat. */
   const total = data.reduce((a, d) => a + d.jumlah, 0)
   const belumDinilai = Math.max(0, (totalMahasiswa ?? total) - total)
   const persen = (n) => (total ? Math.round((n / total) * 100) : 0)
@@ -77,8 +63,6 @@ export default function MutuDonut({ huruf, totalMahasiswa, height = 260 }) {
     >
       <div className="grid items-center gap-6 px-3 sm:px-4 md:grid-cols-[240px_minmax(0,1fr)]">
         <div className="relative mx-auto" style={{ width: 230, height: 230 }}>
-          {/* Ukuran donat memang tetap, jadi lebih sederhana tanpa
-              ResponsiveContainer — sekaligus menghindari kontainer 0x0. */}
           <PieChart width={230} height={230}>
             <Pie
               data={data}
@@ -108,7 +92,6 @@ export default function MutuDonut({ huruf, totalMahasiswa, height = 260 }) {
           </div>
         </div>
 
-        {/* Angka pastinya ditulis, bukan diserahkan pada besar-kecil irisan. */}
         {data.length ? (
           <ul className="space-y-2.5">
             {data.map((d) => (

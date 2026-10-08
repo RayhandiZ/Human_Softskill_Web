@@ -1,20 +1,4 @@
-/* --------------------------------------------------------------------------
-   Kamus Indonesia ke Inggris.
-
-   Kuncinya adalah kalimat Indonesia persis seperti yang tertulis di halaman
-   (lihat bahasa.jsx untuk alasannya). Kalimat yang tidak ada di sini tetap
-   tampil dalam bahasa Indonesia, jadi kamus yang belum lengkap tidak pernah
-   membuat layar menampilkan kode mentah.
-
-   Karena itu pula kata yang EJAANNYA SAMA di kedua bahasa sengaja tidak
-   didaftarkan: "Dashboard", "Email", "Status", "Helpdesk", "draft", "Admin",
-   "Workspace", nama bulan yang sama, dan kode seperti "Area {kode}" semuanya
-   jatuh ke kunci aslinya tanpa perlu satu baris pun di sini.
-
-   Penanda {dalamKurungKurawal} WAJIB dipertahankan di sisi Inggrisnya, dan
-   boleh berpindah tempat bila tata bahasanya menuntut:
-     'Semester {n} dari {total}'  ->  'Semester {n} of {total}'
-   -------------------------------------------------------------------------- */
+/* Kamus Indonesia ke Inggris; aturan penulisan: lihat README.md › Kamus dan terjemahan. */
 
 export const EN = {
   /* ------------------------------ kerangka ------------------------------- */
@@ -59,7 +43,6 @@ export const EN = {
   'Masuk ke dashboard': 'Sign in to the dashboard',
   'Masuk menggunakan akun SSO kampus.':
     'Sign in using your UMN SSO account.',
-  // 'Terdeteksi sebagai': 'Detected as',
   'Kata sandi': 'Password',
   'Lupa kata sandi?': 'Forgot password?',
   Sembunyikan: 'Hide',
@@ -364,7 +347,7 @@ export const EN = {
   'Surel Softskill 5C': 'Soft Skill 5C email',
   'Untuk pertanyaan yang butuh lampiran': 'For questions that need an attachment',
 
-  /* ======================= panel dosen & Kemahasiswaan ==================== */
+  /* --------------------- panel dosen & Kemahasiswaan ---------------------- */
 
   /* --------------------------- kerangka & nav ---------------------------- */
   'Halaman lain': 'More pages',
@@ -848,7 +831,7 @@ export const EN = {
   'HUMAN Softskill merupakan sistem penilaian softskill yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:':
     'HUMAN Softskill is an assessment system built to evaluate and develop the interpersonal skills, technical skills, and other competencies of Universitas Multimedia Nusantara students. It rests on the three assessment areas below:',
 
-  // Lembar cetak transkrip. 'No' dioper sebagai daftar kepala tabel, tak terlihat pemindai.
+  // 'No' dioper sebagai kepala tabel lembar cetak, jadi tidak terlihat pemindai test:bahasa.
   No: 'No.',
   'Garis putus-putus: ambang {n}': 'Dashed line: threshold {n}',
   'Grafik nilai per semester, Semester {a} sebesar {na} sampai Semester {b} sebesar {nb}. {ringkas}':
@@ -858,10 +841,7 @@ export const EN = {
   'Tetap sejak Semester {n}': 'Unchanged since Semester {n}',
   'Turun {d} sejak Semester {n}': 'Down {d} since Semester {n}',
 
-  /* Judul dan kepala tabel yang dioper ke ChartFrame sebagai prop. Pemindai
-     di scripts/bahasa.mjs hanya mengenali t('...') di tempatnya, jadi kunci
-     di bawah ini tidak akan pernah muncul sebagai "belum diterjemahkan"
-     meskipun hilang. Ditulis tangan sampai pemindainya diperbaiki. */
+  /* Kunci di bawah dioper sebagai prop sehingga tidak terdeteksi test:bahasa; jaga manual. */
   'Perkembangan nilai per semester': 'Score progress by semester',
   'Pilih sampai semester berapa yang ingin dilihat. Batang hanya menghitung mahasiswa yang sudah punya nilai di semua semester yang tampil.':
     'Choose how far to look. Bars only count students who have a score in every semester shown.',
@@ -874,7 +854,7 @@ export const EN = {
   'Semester 2': 'Semester 2',
   'Semester 3': 'Semester 3',
 
-  // Panel perkembangan per semester di Overview admin.
+  /* ---------------------- perkembangan per semester ----------------------- */
   'Baru satu semester, belum ada pembanding': 'Only one semester so far, nothing to compare',
   'Belum ada nilai semester yang masuk, jadi perkembangan belum bisa dihitung. Masukkan nilai lewat halaman Input & Import Nilai, atau setujui usulan nilai dari dosen.':
     'No semester scores have come in yet, so progress cannot be calculated. Enter scores from the Score Entry & Import page, or approve a lecturer submission.',
@@ -884,17 +864,17 @@ export const EN = {
   'Semester 1 sampai {n}': 'Semester 1 to {n}',
   'Tampilkan sampai semester': 'Show up to semester',
 
-  // Tooltip batang.
+  /* ---------------------------- tooltip batang ---------------------------- */
   'rata-rata': 'average',
   'Naik {d} dari Semester {n}': 'Up {d} from Semester {n}',
   'Turun {d} dari Semester {n}': 'Down {d} from Semester {n}',
   'Sama dengan Semester {n}': 'Same as Semester {n}',
   '{a} dari {b} mahasiswa di atas rata-rata minimal {n}': '{a} of {b} students above the minimum average of {n}',
 
-  // Halaman masuk.
+  /* ---------------------------- halaman masuk ----------------------------- */
   '(membuka SSO UMN di tab baru)': '(opens UMN SSO in a new tab)',
 
-  // Lembar cetak transkrip. 'No' dioper sebagai daftar kepala tabel, tak terlihat pemindai.
+  /* ------------------------ lembar cetak transkrip ------------------------ */
   No: 'No.',
   'Aspek belum dinilai': 'Aspects not yet scored',
   'belum dinilai atau belum dibuka': 'not yet scored or not yet open',
@@ -905,7 +885,7 @@ export const EN = {
   'Transkrip Sementara': 'Provisional Transcript',
   'Transkrip Softskill': 'Softskill Transcript',
 
-  // Halaman sertifikat.
+  /* -------------------------- halaman sertifikat -------------------------- */
   '{n} dari {total} syarat belum terpenuhi.': '{n} of {total} requirements not yet met.',
   'atas keberhasilannya menyelesaikan seluruh {n} aspek CPMK, Semester 1 sampai {total}, dengan nilai akhir {nilai} dan predikat {huruf} ({label}).': 'for successfully completing all {n} CPMK aspects, Semester 1 to {total}, with a final score of {nilai} and grade {huruf} ({label}).',
   'Belum terpenuhi': 'Not yet met',

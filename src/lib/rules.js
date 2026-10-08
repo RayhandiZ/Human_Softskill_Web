@@ -2,18 +2,10 @@ import { CONFIG } from './config.js'
 import { KOMPONEN, aspekPunyaDraft, getAspek, getAspekList, getKomponenById } from './curriculum.js'
 import { hitungTranskrip, semesterDitutup } from './scoring.js'
 
-/* --------------------------------------------------------------------------
-   Aturan bisnis R1–R9 sebagai fungsi murni. Komponen halaman tidak boleh
-   menyimpulkan sendiri apakah sesuatu terkunci, final, atau layak sertifikat.
-   -------------------------------------------------------------------------- */
+/* Aturan bisnis sebagai fungsi murni; halaman tidak boleh menyimpulkan sendiri. */
 
-/* ---- R1 & R2 — gating semester, aspek terkunci tetap terlihat ------------- */
+/* ---- R1 & R2: gating semester, aspek terkunci tetap terlihat ------------- */
 
-/**
- * Seluruh 10 aspek, masing-masing dengan keterangan apakah boleh menampilkan
- * angka. Aspek yang belum tiba TETAP dikembalikan supaya mahasiswa melihat peta
- * perjalanannya — tetapi tanpa nilai apa pun (R2).
- */
 export function aspekTerlihat(student) {
   return getAspekList().map((a) => {
     const terkunci = a.semester > student.semesterAktif
@@ -31,12 +23,9 @@ export function aspekBolehDilihat(student, aspekId) {
   return Boolean(a) && a.semester <= student.semesterAktif
 }
 
-/* ---- R3 — nilai akhir tidak pernah diekstrapolasi ------------------------- */
+/* ---- R3: nilai akhir tidak pernah diekstrapolasi ------------------------- */
 
-/** Label wajib yang menyertai setiap nilai akhir. */
-/* Kalimatnya dikembalikan sebagai TEMPLAT berpenanda, bukan kalimat jadi.
-   Dengan begitu satu kalimat yang sama bisa diterjemahkan tanpa memecahnya
-   menjadi potongan-potongan yang tata bahasanya rusak di bahasa lain. */
+/* Dikembalikan sebagai templat berpenanda supaya bisa diterjemahkan utuh. */
 export function labelNilaiAkhir(akhir) {
   if (akhir.status === 'final') {
     return {
@@ -57,7 +46,7 @@ export function labelNilaiAkhir(akhir) {
   }
 }
 
-/* ---- R4 — aspek berkomponen draft tidak boleh final ----------------------- */
+/* ---- R4: aspek berkomponen draft tidak boleh final ----------------------- */
 
 export function bolehTandaiFinal(student, aspekId) {
   const aspek = getAspek(aspekId)
@@ -73,14 +62,10 @@ export function bolehTandaiFinal(student, aspekId) {
   if (aspekPunyaDraft(aspekId) && !CONFIG.IZINKAN_FINAL_DRAFT) {
     return { boleh: false, alasan: 'Skema penilaian aspek ini belum final (komponen berstatus draft).' }
   }
-  // Penutupan semester TIDAK dijadikan syarat: Kemahasiswaan boleh mengunci
-  // sebuah aspek begitu seluruh komponennya dinilai, tanpa menunggu semester
-  // berakhir. Bila kebijakannya berbeda, setel CONFIG.PENGUNCIAN_ASPEK ke
-  // 'semester' — mode itu yang menahannya sampai semester ditutup.
   return { boleh: true, alasan: null }
 }
 
-/* ---- R5 & R6 — kelayakan sertifikat dengan alasan yang bisa ditindaklanjuti */
+/* ---- R5 & R6: kelayakan sertifikat dengan alasan yang bisa ditindaklanjuti */
 
 export function kelayakanSertifikat(student) {
   const t = hitungTranskrip(student)
@@ -149,8 +134,6 @@ export function kelayakanSertifikat(student) {
   const gagal = syarat.filter((s) => !s.lolos)
   const layak = gagal.length === 0
 
-  // R6 — alasan spesifik, bukan "belum memenuhi syarat". Dibatasi dua klausa
-  // supaya tetap terbaca sebagai kalimat; sisanya ada di checklist.
   const klausa = gagal.map((s) => s.ringkas).filter(Boolean)
   const sisa = klausa.length - 2
   const alasanRingkas = layak
@@ -163,7 +146,7 @@ export function kelayakanSertifikat(student) {
   return { layak, syarat, gagal, alasanRingkas, transkrip: t }
 }
 
-/* ---- R7 — transkrip boleh diunduh kapan saja ------------------------------ */
+/* ---- R7: transkrip boleh diunduh kapan saja ------------------------------ */
 
 export function statusDokumenTranskrip(student) {
   const t = hitungTranskrip(student)
@@ -177,17 +160,13 @@ export function statusDokumenTranskrip(student) {
   }
 }
 
-/* ---- 9.4 — validasi import nilai ------------------------------------------ */
+/* ---- 9.4: validasi import nilai ------------------------------------------ */
 
 export function komponenUntukSumber(sumber) {
   return KOMPONEN.filter((x) => x.sumber === sumber)
 }
 
-/**
- * Memeriksa satu baris berkas import.
- * Penjaga utama R1: aspek dari semester yang belum tiba WAJIB ditolak.
- * Aspek dari semester lampau tetap diterima — perbaikan nilai lama itu wajar.
- */
+/** Penjaga utama R1: aspek dari semester yang belum tiba ditolak; semester lampau tetap diterima. */
 export function validasiBarisImport(baris, { cariMahasiswa, sumber, nimTerlihat = new Set() }) {
   const alasan = []
   const nim = String(baris.nim ?? '').trim()
@@ -244,13 +223,12 @@ export function validasiBatchImport(baris, { cariMahasiswa, sumber }) {
   }
 }
 
-/* ---- R9 — pratinjau sebelum mengunci angkatan ----------------------------- */
+/* ---- R9: pratinjau sebelum mengunci angkatan ----------------------------- */
 
 export function pratinjauPenguncian(mahasiswaAngkatan) {
   const dinilai = mahasiswaAngkatan.map((m) => ({
     mahasiswa: m,
-    // Penguncian itu sendiri yang membuat syarat 'terkunci' terpenuhi, jadi
-    // pratinjau menghitung seolah angkatan sudah dikunci.
+    // Pratinjau menghitung seolah angkatan sudah dikunci.
     kelayakan: kelayakanSertifikat({ ...m, statusAngkatan: 'terkunci' }),
   }))
   const berhak = dinilai.filter((x) => x.kelayakan.layak)
@@ -266,9 +244,8 @@ export function pratinjauPenguncian(mahasiswaAngkatan) {
   }
 }
 
-/* ---- R8 — mahasiswa tidak pernah menulis nilai ---------------------------- */
+/* ---- R8: mahasiswa tidak pernah menulis nilai ---------------------------- */
 
-/** Satu-satunya aksi tulis mahasiswa: mengajukan koreksi, tanpa mengubah angka. */
 export function buatPengajuanKoreksi({ student, komponenId, alasan, nilaiDiharapkan = null }) {
   const komponen = getKomponenById(komponenId)
   return {
@@ -288,16 +265,7 @@ export function buatPengajuanKoreksi({ student, komponenId, alasan, nilaiDiharap
 
 /* ---- Pemeriksaan sistem atas usulan nilai dosen --------------------------- */
 
-/**
- * "Perlu dikonfirmasi oleh sistem" — dan inilah pemeriksaannya.
- *
- * Sengaja memanggil validasiBatchImport, bukan menulis aturan sendiri. Lahirnya
- * jalur masuk baru adalah cara paling umum sebuah aturan bocor: R1 dijaga ketat
- * di jalur import, lalu jalur usulan dosen diam-diam melewatinya karena
- * pemeriksaannya ditulis ulang seadanya. Satu validator untuk semua pintu.
- *
- * `entri` berbentuk { nim, komponenId, nilai } — bentuk yang dipakai store.
- */
+/** Memakai validasiBatchImport, bukan aturan sendiri: satu validator untuk semua pintu. */
 export function periksaUsulan(entri, { cariMahasiswa, sumber }) {
   return validasiBatchImport(
     (entri ?? []).map((e) => ({ nim: e.nim, komponen: e.komponenId, nilai: e.nilai })),

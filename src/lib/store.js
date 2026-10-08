@@ -13,40 +13,16 @@ import { kirim } from './kirim.js'
 import { modeLokal } from './modeData.js'
 import { kunciAkun, pasangProfil } from './profil.js'
 
-/* --------------------------------------------------------------------------
-   Penyimpanan perubahan nilai.
-
-   Website menyimpan setiap perubahan ke basis data lewat API (bagian "ke server"
-   di bawah), lalu memuat ulang data halaman dari sana. Fungsi yang dipanggil
-   halaman karena itu asinkron: simpanBatch, rollbackBatch, setPenguncian,
-   putuskanKoreksi, usulkanNilai, putuskanUsulan, dan ajukanKoreksi.
-
-   Skrip uji berjalan tanpa server (mode lokal, lihat modeData.js). Untuk mereka
-   perubahan tetap diputar ulang di memori seperti pada masa purwarupa, dan yang
-   disimpan di peramban hanya DAFTAR BATCH PERUBAHAN — cukup untuk diputar ulang
-   di atas data yang sedang termuat di data.js.
-
-   Setiap penulisan selalu lewat sebuah batch supaya bisa di-rollback utuh (9.4)
-   dan tercatat di audit log (R12).
-   -------------------------------------------------------------------------- */
+/* Setiap penulisan lewat batch (rollback, audit log); lihat README.md › Penyimpanan perubahan. */
 
 export const SIMPAN_PERUBAHAN = true
 const KUNCI = 'sk5c.perubahan'
 
-/* Kunci lama menyimpan perubahan yang diputar di atas data contoh — usulan
-   contoh dan nilai untuk NIM yang kini tidak ada. Dibuang supaya tidak
-   muncul lagi di halaman. */
 const KUNCI_LAMA = 'sk5c.nilai'
 
 let versi = 0
 const listeners = new Set()
 
-/* Kapan data terakhir BERUBAH — bukan kapan halaman dibuka.
-
-   Disetel di satu tempat ini karena setiap perubahan, dari mana pun asalnya
-   (nilai tersimpan, koreksi diputuskan, data disegarkan, atau jendela lain
-   menulis lewat peristiwa storage), semuanya bermuara ke sini. Jadi penanda
-   waktunya mustahil tertinggal. */
 let waktuPerubahan = new Date()
 
 export const terakhirDiperbarui = () => waktuPerubahan
@@ -65,15 +41,13 @@ function subscribe(fn) {
 
 const bacaVersi = () => versi
 
-/** Membuat komponen ikut menghitung ulang setiap ada nilai yang berubah. */
+/** Komponen yang memanggil ini ikut menghitung ulang setiap data berubah. */
 export function useStore() {
   return useSyncExternalStore(subscribe, bacaVersi, bacaVersi)
 }
 
 /* ------------------------------ keadaan asli ------------------------------ */
 
-/* Nilai bawaan tiap komponen yang pernah disentuh, supaya seluruh perubahan
-   bisa dibatalkan dan diputar ulang dari nol tanpa menyalin seluruh data. */
 const ASLI = new Map()
 const kunciSel = (nim, komponenId) => nim + '|' + komponenId
 
@@ -98,14 +72,12 @@ function kembalikanSemua() {
 
 /* --------------------------------- batch ---------------------------------- */
 
-/** Batch perubahan yang masih berlaku — terbaru di depan. */
 export const BATCH_SESI = []
 
 let urut = 0
 
 const waktuSekarang = () => new Date().toISOString().slice(0, 16).replace('T', ' ')
 
-/** Menuliskan satu batch ke data mahasiswa dan menyusun jejak auditnya. */
 function terapkanBatch(batch) {
   batch.jejak = []
   const tanggal = batch.waktu.slice(0, 10)
@@ -141,8 +113,6 @@ function terapkanBatch(batch) {
 
 /* --------------------------- penguncian aspek ----------------------------- */
 
-/* Penandaan "final" atau "tahan sebagai sementara" per (mahasiswa, aspek).
-   Disimpan terpisah dari nilai karena sifatnya keputusan, bukan data asesmen. */
 export const PENGUNCIAN = []
 
 const NIM_KUNCI = new Set()
@@ -160,12 +130,6 @@ function terapkanPenguncian() {
   }
 }
 
-/**
- * Menandai satu aspek milik satu mahasiswa.
- *   status 'final'      kunci sebagai nilai final
- *   status 'sementara'  tahan sebagai sementara walau komponennya sudah lengkap
- *   status null         lepaskan penandaan, ikuti CONFIG.PENGUNCIAN_ASPEK
- */
 function setPenguncianLokal({ nim, aspekId, status, aktor }) {
   const i = PENGUNCIAN.findIndex((p) => p.nim === nim && p.aspekId === aspekId)
   if (i >= 0) PENGUNCIAN.splice(i, 1)
@@ -175,7 +139,6 @@ function setPenguncianLokal({ nim, aspekId, status, aktor }) {
   simpanKePenyimpanan()
 }
 
-/** Menandai banyak aspek sekaligus — dipakai setelah satu batch nilai masuk. */
 function setPenguncianBanyakLokal(daftar, { status, aktor }) {
   for (const { nim, aspekId } of daftar) {
     const i = PENGUNCIAN.findIndex((p) => p.nim === nim && p.aspekId === aspekId)
@@ -187,11 +150,6 @@ function setPenguncianBanyakLokal(daftar, { status, aktor }) {
   simpanKePenyimpanan()
 }
 
-/**
- * Memutar ulang seluruh batch dari keadaan bawaan.
- * Dipakai setelah menyimpan, setelah rollback, dan saat tab lain mengubah data —
- * jadi hasilnya selalu sama tak peduli urutan kejadiannya.
- */
 function terapkanUlang() {
   kembalikanSemua()
 
@@ -214,10 +172,6 @@ function terapkanUlang() {
   berubah()
 }
 
-/**
- * Menulis sekumpulan nilai sebagai satu batch.
- * `entri` berbentuk { nim, komponenId, nilai }.
- */
 function simpanBatchLokal({ sumber, semester, angkatanId, aktor, cara, entri }) {
   urut++
   const batch = {
@@ -240,7 +194,6 @@ function simpanBatchLokal({ sumber, semester, angkatanId, aktor, cara, entri }) 
   return batch
 }
 
-/** Mengembalikan seluruh nilai batch ke keadaan sebelumnya. */
 function rollbackBatchLokal(id) {
   const batch = BATCH_SESI.find((b) => b.id === id)
   if (!batch || batch.status === 'dibatalkan') return false
@@ -264,33 +217,12 @@ function putuskanKoreksiLokal(id, keputusan, { aktor, catatan }) {
 
 /* --------------------------- usulan nilai dosen --------------------------- */
 
-/* --------------------------------------------------------------------------
-   Dosen TIDAK menulis ke transkrip.
-
-   Ini keputusan yang menentukan bentuk seluruh fitur dosen. Kalau halaman
-   dosen boleh memanggil simpanBatch() sendiri, syarat "perlu dikonfirmasi dan
-   di-approve" hanya menjadi janji di antarmuka — nilainya sudah terlanjur masuk
-   sebelum siapa pun menyetujui, dan persetujuan berubah jadi formalitas yang
-   tidak menahan apa-apa.
-
-   Jadi dosen menulis ke antrean ini. Nilainya baru benar-benar menyentuh
-   transkrip ketika putuskanUsulan(..., 'disetujui') dipanggil dari panel
-   Kemahasiswaan — dan saat itu ia lewat simpanBatch() yang sama persis dengan
-   jalur admin, sehingga ikut tercatat di audit log dan tetap bisa di-rollback
-   sebagai satu batch.
-   -------------------------------------------------------------------------- */
+/* Dosen tidak menulis ke transkrip; lihat README.md › Usulan nilai dosen. */
 
 export const USULAN_NILAI = [...USULAN_AWAL]
 
 let urutUsulan = 0
 
-/**
- * Mencatat usulan nilai dari seorang dosen. Tidak ada satu angka pun yang
- * berpindah ke data mahasiswa di sini.
- *
- * `entri` berbentuk { nim, komponenId, nilai }.
- * `cara` 'manual' atau 'import' — apa yang benar-benar dilakukan dosen.
- */
 function usulkanNilaiLokal({ dosen, cara = 'manual', catatan = '', entri }) {
   if (!dosen?.nip) throw new Error('Usulan harus punya dosen pengusul.')
   const bersih = (entri ?? []).filter(
@@ -298,9 +230,6 @@ function usulkanNilaiLokal({ dosen, cara = 'manual', catatan = '', entri }) {
   )
   if (!bersih.length) throw new Error('Tidak ada nilai yang bisa diusulkan.')
 
-  /* Satu kelas bisa berisi mahasiswa dari beberapa angkatan. Menulis salah
-     satunya saja akan menyesatkan pembaca riwayat batch, jadi keadaan campuran
-     disebut apa adanya. */
   const angkatan = [
     ...new Set(bersih.map((e) => getStudentByNim(e.nim)?.angkatanId).filter(Boolean)),
   ]
@@ -334,16 +263,6 @@ function usulkanNilaiLokal({ dosen, cara = 'manual', catatan = '', entri }) {
   return usulan
 }
 
-/**
- * Keputusan Kemahasiswaan atas satu usulan.
- *
- *   'disetujui' → nilainya ditulis lewat simpanBatch(), jalur yang sama dengan
- *                 input admin; batch-nya tercatat dan bisa di-rollback.
- *   'ditolak'   → tidak ada nilai yang berpindah; usulannya tetap tersimpan
- *                 sebagai catatan, lengkap dengan alasannya.
- *
- * Mengembalikan boolean — pembungkus asinkronnya ada di bagian "ke server".
- */
 function putuskanUsulanLokal(id, keputusan, { aktor, catatan = '' } = {}) {
   const u = USULAN_NILAI.find((x) => x.id === id)
   if (!u) return false
@@ -353,12 +272,7 @@ function putuskanUsulanLokal(id, keputusan, { aktor, catatan = '' } = {}) {
   }
 
   if (keputusan === 'disetujui') {
-    /* Konfirmasi oleh SISTEM, bukan sekadar oleh orang yang menekan tombol.
-
-       Diperiksa di sini, bukan hanya di halaman persetujuan: aturan yang hanya
-       dijaga antarmuka akan bocor pada pemanggil berikutnya. Baris yang tidak
-       lolos tidak ikut ditulis, dan alasannya disimpan supaya kedua pihak bisa
-       membaca apa yang terjadi. */
+    /* Diperiksa di sini, bukan hanya di halaman: aturan yang dijaga antarmuka saja akan bocor. */
     const periksa = periksaUsulan(u.entri, { cariMahasiswa: getStudentByNim, sumber: u.sumber })
     u.ditolakSistem = periksa.ditolak.map((x) => ({
       nim: x.nim,
@@ -376,9 +290,7 @@ function putuskanUsulanLokal(id, keputusan, { aktor, catatan = '' } = {}) {
       sumber: u.sumber,
       semester: u.semester,
       angkatanId: u.angkatanId,
-      /* Pelakunya tetap dosen pengusul — dialah yang menilai. Penyetujunya
-         dicatat terpisah di bawah, supaya jejaknya tidak kehilangan salah satu
-         dari keduanya. */
+      /* Pelakunya tetap dosen pengusul; penyetujunya dicatat terpisah. */
       aktor: u.dosenNama,
       cara: u.cara,
       entri: periksa.diterima.map(({ nim, komponenId, nilai }) => ({ nim, komponenId, nilai })),
@@ -402,17 +314,13 @@ export const usulanMenunggu = () => USULAN_NILAI.filter((u) => u.status === 'men
 
 export const usulanDosen = (nip) => USULAN_NILAI.filter((u) => u.dosenNip === nip)
 
-/* Peta (nim|komponenId) → usulan terkait. Dibangun ulang hanya ketika data
-   berubah: daftar pengumpulan memanggilnya ratusan kali per render, dan
-   pemindaian linear di tiap baris akan terasa. */
 let petaUsulan = null
 let petaVersi = -1
 
 function segarkanPeta() {
   if (petaVersi === versi && petaUsulan) return petaUsulan
   petaUsulan = new Map()
-  /* Dibaca dari belakang supaya usulan TERBARU yang menang bila satu komponen
-     pernah diusulkan lebih dari sekali. */
+  /* Dibaca dari belakang supaya usulan terbaru yang menang. */
   for (let i = USULAN_NILAI.length - 1; i >= 0; i--) {
     const u = USULAN_NILAI[i]
     for (const e of u.entri) petaUsulan.set(e.nim + '|' + e.komponenId, { usulan: u, entri: e })
@@ -421,18 +329,7 @@ function segarkanPeta() {
   return petaUsulan
 }
 
-/**
- * Status satu pengumpulan — dihitung, bukan disimpan.
- *
- * Menyimpannya sebagai kolom sendiri akan melahirkan sumber kebenaran kedua
- * yang bisa berbeda dari nilai yang benar-benar tersimpan; satu rollback saja
- * sudah cukup membuat keduanya berselisih.
- *
- *   'dinilai'  nilainya sudah ada di transkrip
- *   'menunggu' sudah diusulkan dosen, menunggu keputusan Kemahasiswaan
- *   'ditolak'  usulan terakhirnya ditolak — perlu diusulkan ulang
- *   'masuk'    baru terkumpul, belum disentuh
- */
+/** Dihitung, bukan disimpan: masuk | menunggu | ditolak | dinilai. */
 export function statusPengumpulan({ nim, komponenId, aspekId }) {
   const tersimpan = getStudentByNim(nim)?.nilai?.[aspekId]?.komponen?.[komponenId]
   if (tersimpan) return { id: 'dinilai', nilai: tersimpan.nilai, oleh: tersimpan.penilai }
@@ -486,13 +383,11 @@ function simpanKePenyimpanan() {
       }),
     )
   } catch {
-    /* kuota penuh atau penyimpanan diblokir — perubahan tetap hidup di memori */
   } finally {
     sedangMenulis = false
   }
 }
 
-/** Membaca kembali perubahan dari penyimpanan dan memutarnya ulang. */
 export function muatDariPenyimpanan() {
   if (!adaPenyimpanan()) return
   let data
@@ -507,10 +402,6 @@ export function muatDariPenyimpanan() {
   for (const b of data.batch) BATCH_SESI.push({ ...b, jejak: [], jumlah: b.entri.length })
   urut = data.urut ?? BATCH_SESI.length
 
-  /* Hanya ditimpa bila penyimpanannya memang memuat daftar usulan. Berkas
-     tersimpan dari versi sebelum fitur ini ada tidak punya kuncinya, dan
-     mengosongkan daftar karenanya akan menghapus contoh bawaan tanpa ada yang
-     menggantikan. */
   if (Array.isArray(data.usulan)) {
     USULAN_NILAI.length = 0
     for (const u of data.usulan) USULAN_NILAI.push(u)
@@ -537,38 +428,25 @@ export function muatDariPenyimpanan() {
 
 /* ------------------------------ segarkan data ----------------------------- */
 
-/* Kapan data terakhir dibaca ulang. Dibaca komponen lewat useStore(), jadi
-   ikut menyegar sendiri setiap ada perubahan. */
 let waktuSegar = null
 
 export const terakhirSegar = () => waktuSegar
 
-/**
- * SATU-SATUNYA pintu untuk memuat ulang data mahasiswa.
- *
- * Di website ia membaca ulang seluruh data dari basis data. Dalam mode lokal ia
- * membaca ulang perubahan nilai yang tersimpan di peramban (termasuk yang
- * disimpan jendela lain), lalu memutarnya ulang di atas data dasar.
- */
+/** Satu-satunya pintu memuat ulang data. */
 export async function segarkanData() {
   if (!modeLokal()) {
     try {
       await muatDariServer()
     } catch {
-      /* data lama tetap tampil */
     }
     return waktuSegar
   }
   muatDariPenyimpanan()
-  /* terapkanUlang() sudah dipanggil di dalam muatDariPenyimpanan bila ada
-     perubahan tersimpan. Bila tidak ada, tetap perlu memberi tahu komponen —
-     kalau tidak, menekan tombolnya akan terasa tidak melakukan apa-apa. */
   waktuSegar = new Date()
   berubah()
   return waktuSegar
 }
 
-/** Menghapus seluruh perubahan lokal. Di basis data, batch dibatalkan satu per satu. */
 export function bersihkanPerubahan() {
   if (!modeLokal()) throw new Error('Perubahan di basis data dibatalkan per batch lewat tombol Rollback.')
   BATCH_SESI.length = 0
@@ -581,14 +459,11 @@ export function bersihkanPerubahan() {
   try {
     localStorage.removeItem(KUNCI)
   } catch {
-    /* diabaikan */
   }
 }
 
 /* -------------------------------- ke server ------------------------------- */
 
-/* Keadaan pemuatan dari server. Dibaca kerangka aplikasi (PemuatData) supaya
-   panel tidak sempat menulis "belum ada data" selagi datanya masih di jalan. */
 let muat = { keadaan: 'belum', pesan: null } // belum | memuat | siap | galat
 let urutMuat = 0
 
@@ -603,7 +478,6 @@ export function useStatusMuat() {
   return muat
 }
 
-/** Memuat seluruh data halaman pemilik sesi dari basis data, lalu memasangnya. */
 export async function muatDariServer() {
   const ke = ++urutMuat
   if (muat.keadaan !== 'siap') aturMuat('memuat')
@@ -630,7 +504,7 @@ export async function muatDariServer() {
   }
 }
 
-/** Mengosongkan data saat keluar, supaya akun berikutnya tidak melihat sisa akun sebelumnya. */
+/** Dikosongkan saat keluar supaya akun berikutnya tidak melihat sisa akun sebelumnya. */
 export function kosongkanDataServer() {
   urutMuat++
   isiData()
@@ -640,42 +514,30 @@ export function kosongkanDataServer() {
   berubah()
 }
 
-/* Setiap penulisan dikirim ke API, lalu seluruh data dimuat ulang dari basis
-   data — yang tampil selalu yang benar-benar tersimpan, bukan tebakan peramban. */
 async function tulis(alamat, isi) {
   const hasil = await kirim(alamat, { isi })
   await muatDariServer()
   return hasil
 }
 
-/**
- * Menulis sekumpulan nilai sebagai satu batch.
- * `entri` berbentuk { nim, komponenId, nilai }.
- */
 export async function simpanBatch(isi) {
   if (modeLokal()) return simpanBatchLokal(isi)
   const { sumber, semester, angkatanId, cara, entri } = isi
   return tulis('/api/nilai', { sumber, semester, angkatanId, cara, entri })
 }
 
-/** Mengembalikan seluruh nilai batch ke keadaan sebelumnya. false bila sudah dibatalkan. */
+/** false bila sudah dibatalkan. */
 export async function rollbackBatch(id) {
   if (modeLokal()) return rollbackBatchLokal(id)
   return (await tulis('/api/nilai/rollback', { id })).ok
 }
 
-/**
- * Menandai satu aspek milik satu mahasiswa.
- *   status 'final'      kunci sebagai nilai final
- *   status 'sementara'  tahan sebagai sementara walau komponennya sudah lengkap
- *   status null         lepaskan penandaan, ikuti CONFIG.PENGUNCIAN_ASPEK
- */
+/** status: 'final' | 'sementara' | null (ikuti CONFIG.PENGUNCIAN_ASPEK). */
 export async function setPenguncian(isi) {
   if (modeLokal()) return setPenguncianLokal(isi)
   await tulis('/api/penguncian', { daftar: [{ nim: isi.nim, aspekId: isi.aspekId }], status: isi.status ?? null })
 }
 
-/** Menandai banyak aspek sekaligus — dipakai setelah satu batch nilai masuk. */
 export async function setPenguncianBanyak(daftar, opsi) {
   if (modeLokal()) return setPenguncianBanyakLokal(daftar, opsi)
   await tulis('/api/penguncian', {
@@ -690,24 +552,19 @@ export async function putuskanKoreksi(id, keputusan, opsi) {
   return (await tulis('/api/koreksi/keputusan', { id, keputusan, catatan: opsi?.catatan ?? null })).ok
 }
 
-/** Mencatat usulan nilai dosen. Tidak ada satu angka pun yang berpindah ke transkrip. */
 export async function usulkanNilai(isi) {
   if (modeLokal()) return usulkanNilaiLokal(isi)
   const { id } = await tulis('/api/usulan', { cara: isi.cara, catatan: isi.catatan, entri: isi.entri })
   return USULAN_NILAI.find((u) => u.id === id) ?? { id, entri: isi.entri ?? [] }
 }
 
-/** Keputusan Kemahasiswaan atas satu usulan. false bila sudah diputuskan sebelumnya. */
+/** false bila sudah diputuskan sebelumnya. */
 export async function putuskanUsulan(id, keputusan, opsi = {}) {
   if (modeLokal()) return putuskanUsulanLokal(id, keputusan, opsi)
   return (await tulis('/api/usulan/keputusan', { id, keputusan, catatan: opsi.catatan ?? '' })).ok
 }
 
-/**
- * Satu-satunya aksi tulis milik mahasiswa (R8).
- * Pengajuan TIDAK mengubah nilai apa pun — ia hanya masuk ke antrean
- * Kemahasiswaan untuk diputuskan.
- */
+/** Satu-satunya aksi tulis mahasiswa (R8); tidak mengubah nilai. */
 export async function ajukanKoreksi(isi) {
   if (modeLokal()) return ajukanKoreksiLokal(isi)
   const { id } = await tulis('/api/koreksi', {
@@ -723,20 +580,14 @@ export async function ajukanKoreksi(isi) {
 if (adaPenyimpanan()) {
   try {
     localStorage.removeItem(KUNCI_LAMA)
-    /* Di website perubahan tersimpan di basis data; sisa perubahan lokal dari
-       masa purwarupa tidak berlaku lagi. */
     if (!modeLokal()) localStorage.removeItem(KUNCI)
   } catch {
-    /* diabaikan */
   }
 }
 
 if (modeLokal()) {
-  /* Muat perubahan yang tersimpan sebelum komponen pertama dirender. */
   muatDariPenyimpanan()
 
-  /* Tab lain menulis → ikut menyesuaikan, sehingga panel admin dan panel
-     mahasiswa yang dibuka berdampingan selalu menampilkan angka yang sama. */
   if (typeof window !== 'undefined' && adaPenyimpanan()) {
     window.addEventListener('storage', (e) => {
       if (e.key === KUNCI && !sedangMenulis) muatDariPenyimpanan()
@@ -744,7 +595,6 @@ if (modeLokal()) {
   }
 }
 
-/** Keterangan di bawah formulir penilaian: di mana perubahan disimpan. */
 export const peringatanSesi = () =>
   !modeLokal()
     ? 'Setiap penyimpanan langsung tercatat di basis data dan bisa dibatalkan per batch.'
@@ -755,11 +605,6 @@ export const peringatanSesi = () =>
 
 /* ------------------------- pengajuan koreksi mahasiswa -------------------- */
 
-/**
- * Satu-satunya aksi tulis milik mahasiswa (R8).
- * Pengajuan TIDAK mengubah nilai apa pun — ia hanya masuk ke antrean
- * Kemahasiswaan untuk diputuskan.
- */
 function ajukanKoreksiLokal({ student, komponenId, alasan, nilaiDiharapkan = null }) {
   const komponen = getKomponenById(komponenId)
   if (!komponen) throw new Error('Komponen tidak dikenal.')
@@ -786,5 +631,4 @@ function ajukanKoreksiLokal({ student, komponenId, alasan, nilaiDiharapkan = nul
   return pengajuan
 }
 
-/** Pengajuan milik seorang mahasiswa — dipakai halaman transkrip. */
 export const koreksiMilik = (nim) => PENGAJUAN_KOREKSI.filter((k) => k.nim === nim)

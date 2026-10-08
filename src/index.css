@@ -13,18 +13,14 @@
   --text-secondary: #545879;
   --text-muted: #8a8ea9;
 
-  /* Merek biru. --brand-ink bukan sekadar warna tautan: ia juga dipakai sebagai
-     warna data pada cincin nilai akhir, radar cluster, dan bar nilai akhir.
-     Karena Area A (--c1) sudah biru, nada ini sengaja dipilih jauh lebih gelap
-     supaya keduanya tidak tertukar — terukur ΔE 19,5 pada penglihatan normal
-     dan 19,0 pada simulasi buta warna. */
+  /* Lebih gelap dari --c1 supaya tidak tertukar dengan biru Area A. */
   --brand: #12508f;
   --brand-deep: #082a52;
   --brand-ink: #104281;
   --brand-soft: #e7effb;
   --accent: #e0a33a;
 
-  /* 5C categorical slots — validated (light, surface #ffffff) */
+  /* Slot kategorikal area (terang). */
   --c1: #2a78d6;
   --c2: #eb6834;
   --c3: #1baf7a;
@@ -36,24 +32,16 @@
   --serious: #ec835a;
   --critical: #d03b3b;
 
-  /* Amber versi TEKS.
-
-     --warning dirancang sebagai warna isian: di atas tint tipisnya ia terbaca
-     baik. Sebagai tulisan di atas kartu putih ia hanya 1,83:1, jauh di bawah
-     ambang 4,5:1 — dan tulisan seperti "Terlambat" justru yang paling perlu
-     terbaca sekali lihat. Nilai ini 5,09:1 dengan rona yang sama. */
+  /* Amber untuk teks: --warning hanya 1,83:1 di kartu putih. */
   --warning-ink: #96640a;
 
-  /* Huruf mutu adalah skala BERURUTAN (A > B > C > D), jadi warnanya satu hue
-     bertingkat — bukan empat hue berbeda. Tervalidasi sebagai ordinal ramp:
-     lightness monoton, jarak antarlangkah >= 0.06, ujung terang 2.11:1. */
+  /* Huruf mutu: satu hue bertingkat (skala berurutan). */
   --mutu-a: #1c5cab;
   --mutu-b: #2a78d6;
   --mutu-c: #5598e7;
   --mutu-d: #86b6ef;
 
-  /* Urutan semester, terang ke gelap. Diuji validator dataviz --ordinal;
-     ujung terangnya 3,64:1 di atas kartu. */
+  /* Urutan semester, terang ke gelap. */
   --semester-1: #3987e5;
   --semester-2: #256abf;
   --semester-3: #104281;
@@ -72,43 +60,33 @@
   --text-secondary: #a9b2c9;
   --text-muted: #7b869e;
 
-  /* Pada latar gelap arahnya dibalik: --brand-ink jadi biru muda agar terbaca,
-     dan tetap dijaga jauh dari --c1 (ΔE 20,7). */
+  /* Latar gelap: --brand-ink jadi biru muda, tetap jauh dari --c1. */
   --brand: #14538f;
   --brand-deep: #071a30;
   --brand-ink: #9ec5f4;
   --brand-soft: #12263f;
   --accent: #e8b455;
 
-  /* Merah versi terang untuk latar gelap.
-
-     Nilai terangnya (#d03b3b) hanya mencapai 3,56:1 di atas kartu gelap dan
-     gagal ambang 4,5:1 — padahal warna ini dipakai untuk pesan GALAT, yaitu
-     kalimat yang justru paling perlu terbaca. #f87171 mencapai 6,18:1.
-
-     Aman dinaikkan karena --critical tidak pernah dipakai sebagai latar di
-     aplikasi ini, hanya sebagai warna teks dan sebagai tint tipis. */
+  /* Latar gelap: merah dinaikkan, #d03b3b hanya 3,56:1. */
   --critical: #f87171;
 
-  /* Di latar gelap arahnya berbalik: amber aslinya sudah 9,32:1, jadi yang
-     dipakai justru warna terangnya, bukan versi tuanya. */
+  /* Latar gelap: amber aslinya sudah 9,32:1. */
   --warning-ink: #fab219;
 
-  /* 5C categorical slots — validated (dark, surface #131c2b) */
+  /* Slot kategorikal area (gelap). */
   --c1: #3987e5;
   --c2: #d95926;
   --c3: #199e70;
   --c4: #c98500;
   --c5: #d55181;
 
-  /* Pada latar gelap urutannya dibalik: makin terang berarti makin baik. */
+  /* Latar gelap: makin terang makin baik. */
   --mutu-a: #cde2fb;
   --mutu-b: #86b6ef;
   --mutu-c: #3987e5;
   --mutu-d: #184f95;
 
-  /* Dibalik di latar gelap: semester terakhir yang paling terang. Ujung
-     gelapnya 3,17:1 di atas kartu. */
+  /* Latar gelap: semester terakhir paling terang. */
   --semester-1: #256abf;
   --semester-2: #5598e7;
   --semester-3: #9ec5f4;
@@ -141,15 +119,7 @@ body {
     @apply bg-surface border border-line rounded-2xl shadow-card;
   }
   .card-pad { @apply p-5 sm:p-6; }
-  /* Kartu panel mahasiswa — sudut lebih bulat dan bayangan lebih lembut dari
-     .card, tanpa ornamen lain. Bayangannya lebar dan sangat pudar supaya kartu
-     terasa mengambang di atas latar; di mode gelap bayangan tidak terlihat,
-     jadi pemisahnya tetap garis tepi.
-
-     Bayangan ditulis sebagai CSS biasa, BUKAN utilitas dari tailwind.config.js.
-     Utilitas tema baru dikenali setelah server dev membaca ulang config-nya;
-     kalau config dan berkas ini berubah hampir bersamaan, server yang sedang
-     berjalan memproses berkas ini dengan config lama dan gagal. */
+  /* Bayangan sengaja CSS biasa, bukan utilitas config: server dev bisa memproses berkas ini dengan config lama. */
   .kartu {
     @apply bg-surface border border-line rounded-3xl;
     box-shadow: 0 1px 2px rgba(16, 20, 50, 0.04), 0 10px 30px -14px rgba(16, 20, 50, 0.14);
@@ -173,14 +143,12 @@ body {
 .animate-rise { animation: rise .35s cubic-bezier(.22,.68,.35,1) both; }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
-/* Isi halaman masuk sesudah pindah menu, supaya mata ikut berpindah dari sidebar ke isi.
-   backwards, bukan both: dengan both Chrome menahan transform identitas setelah animasi selesai,
-   dan itu membuat setiap elemen fixed di halaman mengacu ke pembungkus ini, bukan ke layar. */
+/* backwards, bukan both: both membuat elemen fixed mengacu ke pembungkus ini; lihat README.md › Gerak. */
 .animate-halaman { animation: halaman .22s cubic-bezier(.22,.68,.35,1) backwards; }
 @keyframes halaman { from { opacity: 0; transform: translateY(4px); } }
 @media print { .animate-halaman { animation: none; } }
 
-/* Sertifikat dicetak A4 lanskap; halaman lain (transkrip) tetap potret bawaan. */
+/* Sertifikat A4 lanskap; halaman lain tetap potret. */
 @page sertifikat {
   size: A4 landscape;
   margin: 12mm;
@@ -190,19 +158,7 @@ body {
   height: calc(210mm - 24mm);
 }
 
-/* --------------------------------------------------------------------------
-   Panel kaca — lapisan tembus pandang yang mengaburkan apa pun di belakangnya.
-
-   Dipakai untuk menu kecil yang melayang di atas isi halaman. Lapisannya
-   sengaja masih 82% warna permukaan, bukan setengah tembus: yang dicari kesan
-   mengambang, bukan panel bening. Teks di atasnya harus tetap terbaca walau
-   kebetulan melayang di atas tabel penuh angka.
-
-   saturate menaikkan kepekatan warna yang terlihat menembus lapisan — itulah
-   yang membuat kaca terasa "basah" alih-alih sekadar buram.
-
-   Garis putih tipis di dalam tepi atas meniru pantulan cahaya pada tepi kaca.
-   -------------------------------------------------------------------------- */
+/* ------------------------------- panel kaca ------------------------------- */
 .kaca {
   background: color-mix(in srgb, var(--surface) 10%, transparent);
   -webkit-backdrop-filter: blur(10px) saturate(180%);
@@ -220,29 +176,14 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
-/* Peramban tanpa backdrop-filter akan menampilkan panel setengah tembus tanpa
-   kabur — angka tabel di belakangnya akan tembus dan tidak terbaca. Di sana
-   lapisannya dibuat pekat penuh. */
+/* Tanpa backdrop-filter: lapisan pekat supaya isi di belakang tidak tembus. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .kaca {
     background: var(--surface);
   }
 }
 
-/* --------------------------------------------------------------------------
-   Pil kaca yang meluncur di dalam pemilih bahasa.
-
-   Ini PENDEKATAN kaca cair ala Apple, bukan bahan resminya: Apple hanya
-   mendokumentasikan Liquid Glass untuk platformnya sendiri dan tidak pernah
-   merilis CSS-nya. Yang bisa ditiru di web adalah bahan pembentuk kesannya:
-   blur di belakang, saturasi yang dinaikkan supaya warna di baliknya terangkat,
-   satu gradien tipis sebagai pantulan cahaya, garis terang di tepi atas, dan
-   bayangan pendek supaya pilnya terbaca mengambang di atas jalurnya.
-
-   Dipisahkan dari .kaca karena tugasnya lain: .kaca membuat PANEL besar,
-   sedangkan ini benda kecil yang bergerak dan harus tetap punya kontras tinggi
-   terhadap tulisan di atasnya.
-   -------------------------------------------------------------------------- */
+/* ------------------------ pil kaca pemilih bahasa ------------------------- */
 .pil-kaca {
   background:
     linear-gradient(145deg, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.35)),
@@ -266,8 +207,6 @@ body {
     inset 0 1px 0 rgb(255 255 255 / 0.2);
 }
 
-/* Varian di atas bilah biru: pilnya putih beku, karena tulisan di atasnya
-   berwarna biru tua dan butuh latar terang untuk tetap terbaca. */
 .pil-kaca-putih {
   background:
     linear-gradient(145deg, rgb(255 255 255 / 0.98), rgb(255 255 255 / 0.82)),
@@ -280,8 +219,7 @@ body {
     inset 0 1px 0 rgb(255 255 255 / 0.95);
 }
 
-/* Tanpa dukungan backdrop-filter, pilnya diisi penuh supaya tetap terlihat
-   sebagai penanda posisi, bukan kotak samar. */
+/* Tanpa backdrop-filter: pil diisi penuh. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .pil-kaca {
     background: var(--brand-soft);
@@ -291,8 +229,7 @@ body {
   }
 }
 
-/* Sebagian pengguna mematikan efek tembus pandang di tingkat sistem. Blur-nya
-   dilepas, warnanya dipadatkan; posisinya tetap terbaca. */
+/* Efek tembus pandang dimatikan sistem: blur dilepas. */
 @media (prefers-reduced-transparency: reduce) {
   .pil-kaca,
   .pil-kaca-putih {
@@ -307,9 +244,6 @@ body {
   }
 }
 
-/* Muncul dengan sedikit pegas: mengembang dari titik tumpu di sudut atas,
-   seperti tetesan yang menyebar. Lengkung cubic-bezier melewati 1 sedikit
-   supaya ada dorongan kecil di akhir. */
 .animate-kaca {
   transform-origin: top left;
   animation: kaca 0.19s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
@@ -327,7 +261,6 @@ body {
   }
 }
 
-/* Tooltip grafik: pudar dan naik sedikit dari arah batang yang ditunjuk. */
 .animate-tip {
   transform-origin: bottom center;
   animation: tip 0.14s cubic-bezier(0.22, 0.68, 0.35, 1) both;
@@ -339,7 +272,6 @@ body {
   }
 }
 
-/* Kebalikan kaca dan lebih cepat, dipercepat ke akhir: menu yang ditutup tidak perlu ditonton. */
 .animate-surut {
   transform-origin: top left;
   animation: surut 0.12s cubic-bezier(0.4, 0, 1, 1) both;
@@ -351,22 +283,12 @@ body {
   }
 }
 
-/* Laci menu di layar kecil. Kedua kelas ini ikut dinetralkan oleh blok
-   prefers-reduced-motion di bawah, jadi tidak perlu penanganan terpisah. */
 .animate-geser { animation: geser .24s cubic-bezier(.22,.68,.35,1) both; }
 @keyframes geser { from { transform: translateX(-100%); } to { transform: none; } }
 
 .animate-pudar { animation: pudar .24s ease both; }
 
-/* --------------------------------------------------------------------------
-   Layanan tambahan yang mengambang di sudut kanan bawah.
-
-   Panelnya memakai .kaca, tetapi latarnya dipadatkan jauh di atas nilai
-   bawaannya: .kaca dirancang untuk panel kecil di atas satu kartu, sedangkan
-   panel ini melayang di atas apa pun yang kebetulan ada di bawahnya — tabel
-   padat, grafik, foto. Pada 10% saja teksnya akan bertabrakan dengan isi
-   halaman di baliknya.
-   -------------------------------------------------------------------------- */
+/* ---------------------------- layanan tambahan ---------------------------- */
 .layanan-panel {
   background: color-mix(in srgb, var(--surface) 86%, transparent);
   -webkit-backdrop-filter: blur(20px) saturate(185%);
@@ -388,7 +310,6 @@ body {
   }
 }
 
-/* Tiap baris menyusul panelnya, bukan muncul bersamanya. */
 .layanan-item {
   animation: layanan-item 0.34s cubic-bezier(0.22, 0.68, 0.35, 1) both;
 }
@@ -403,9 +324,6 @@ body {
   }
 }
 
-/* Tombolnya padat, bukan kaca: ia aksi utama dan harus punya kontras penuh
-   terhadap apa pun yang lewat di belakangnya. Sentuhan kacanya ada di garis
-   terang tepi atas dan bayangan yang melembut, bukan pada tembus pandangnya. */
 .layanan-tombol {
   box-shadow:
     0 12px 30px -10px rgba(16, 20, 50, 0.55),
@@ -426,7 +344,7 @@ body {
   transform: translateY(0) scale(0.94);
 }
 
-/* Tanpa dukungan backdrop-filter, panelnya diisi penuh. */
+/* Tanpa backdrop-filter: panel diisi penuh. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .layanan-panel {
     background: var(--surface);
@@ -441,9 +359,6 @@ body {
   }
 }
 
-/* Pudar sangat pendek saat bahasa berganti. Sengaja tidak mulai dari nol:
-   teks yang hilang sama sekali lalu muncul lagi terbaca seperti halaman
-   dimuat ulang, sedangkan 55% terbaca sebagai teks yang berganti di tempat. */
 .ganti-bahasa main {
   animation: ganti-bahasa 0.28s cubic-bezier(0.22, 0.68, 0.35, 1) both;
 }
@@ -457,10 +372,7 @@ body {
 }
 @keyframes pudar { from { opacity: 0; } to { opacity: 1; } }
 
-/* --------------------------------------------------------------------------
-   Cetak — transkrip harus terbaca sebagai dokumen, bukan tangkapan layar
-   aplikasi. Navigasi, sidebar, dan tombol disembunyikan; latar dipaksa putih.
-   -------------------------------------------------------------------------- */
+/* --------------------------------- cetak ---------------------------------- */
 
 @media print {
   :root {
@@ -502,7 +414,7 @@ body {
   }
 }
 
-/* Hormati preferensi pengguna yang membatasi gerak. */
+/* Hormati preferensi kurangi gerak. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

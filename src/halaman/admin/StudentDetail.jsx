@@ -14,7 +14,6 @@ import { useStore } from '../../lib/store'
 
 export default function StudentDetail() {
   const teks = useTeks()
-  // Ikut menghitung ulang begitu ada nilai yang masuk dari panel Kemahasiswaan.
   useStore()
   const { id } = useParams()
   const student = getStudent(id)
@@ -45,7 +44,6 @@ export default function StudentDetail() {
         {teks('Kembali ke data mahasiswa')}
       </Link>
 
-      {/* Transkrip yang dilihat admin persis sama dengan yang dilihat mahasiswa. */}
       <Transkrip student={student} />
 
       <Card className="print:hidden">
@@ -120,17 +118,12 @@ export default function StudentDetail() {
 
 /* ------------------------- penguncian status aspek ------------------------ */
 
-/* Melengkapi mode otomatis di CONFIG.PENGUNCIAN_ASPEK: Kemahasiswaan bisa
-   mengunci sebuah aspek lebih awal, atau menahannya tetap sementara karena
-   nilainya masih mungkin direvisi. */
 function PanelStatusAspek({ student }) {
   const teks = useTeks()
   const { admin } = useAuth()
   const t = transkripOf(student)
   const terbuka = t.aspek.filter((a) => !a.terkunci)
 
-  /* setPenguncian asinkron: penandaannya disimpan ke basis data, lalu data
-     halaman dimuat ulang. Galat dari server tampil di atas daftar aspek. */
   const [galat, setGalat] = useState('')
 
   const ubah = async (aspekId, status) => {

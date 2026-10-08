@@ -9,26 +9,6 @@ import { useStore } from '../../lib/store'
 import { useStudent } from './StudentLayout'
 import { useTeks } from '../../lib/bahasa'
 
-/* --------------------------------------------------------------------------
-   Road Map — perjalanan tiga semester program softskill.
-
-   Tiap semester dijalani lewat tepat tiga jalur: satu modul PDP, satu mata
-   kuliah Humaniora, dan satu program Kemahasiswaan. Karena itu rincian setiap
-   semester disusun PER KEGIATAN yang benar-benar dijalani mahasiswa ("Tugas 1:
-   Refleksi Diri", "UTS: Refleksi Pribadi", "Mentoring 5C: Kehadiran"), bukan
-   per istilah kurikulum. Kode aspek hanya menempel kecil di tiap kegiatan
-   sebagai keterangan ke mana nilainya mengalir.
-
-   Halaman ini juga menjawab "kenapa nilai saya belum lengkap" tanpa perlu
-   bertanya: kegiatan yang nilainya belum masuk ditulis terang-terangan, dan
-   semester yang belum dibuka tetap memperlihatkan kegiatan apa yang akan
-   datang — tanpa angka, tidak pernah sebagai 0 (R2).
-
-   Hanya satu semester terbuka pada satu waktu, supaya halaman tidak memanjang
-   tiga kali lipat di ponsel. Yang terbuka pertama kali adalah semester yang
-   sedang berjalan.
-   -------------------------------------------------------------------------- */
-
 const keadaanOf = (s) => (s.terkunci ? 'terkunci' : s.ditutup ? 'selesai' : 'berjalan')
 
 const RINGKAS_KEADAAN = {
@@ -37,19 +17,13 @@ const RINGKAS_KEADAAN = {
   terkunci: 'Belum dibuka',
 }
 
-/* Status satu aspek dalam kalimat pendek — ikon saja tidak cukup untuk
-   membedakan status, jadi labelnya selalu ikut. */
 function StatusSingkat({ a }) {
   const t = useTeks()
   if (a.status === 'final') return <StatusTeks kuat>{t('Final')}</StatusTeks>
-  /* Gembok di sini bukan hiasan status: ia menandai semester yang memang belum
-     dibuka, bukan pekerjaan yang belum selesai. Tidak berwarna, jadi tetap
-     sejalan dengan teks status di sebelahnya. */
   if (a.status === 'terkunci') return <Terkunci semester={a.aspek.semester} />
   return <StatusTeks>{t(a.status === 'menunggu' ? 'Belum dinilai' : 'Sementara')}</StatusTeks>
 }
 
-/* Satu jalur kegiatan (PDP / MK Humaniora / Kemahasiswaan) dalam satu semester. */
 function Jalur({ sumber, nama, kegiatan, terkunci }) {
   const t = useTeks()
   const dinilai = kegiatan.filter((x) => x.k.terisi).length
@@ -109,7 +83,6 @@ function Jalur({ sumber, nama, kegiatan, terkunci }) {
   )
 }
 
-/* Satu titik pada garis waktu beserta kartunya. */
 function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
   const t = useTeks()
   const keadaan = keadaanOf(s)
@@ -138,7 +111,6 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
 
   return (
     <li className="relative pb-5 pl-12 last:pb-0 sm:pl-14">
-      {/* garis ke titik berikutnya — terisi bila semester ini sudah dilewati */}
       {!terakhir ? (
         <span
           aria-hidden="true"
@@ -221,7 +193,6 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
               </p>
             ) : null}
 
-            {/* aspek yang dibentuk semester ini */}
             <section>
               <h3 className="text-[14px] font-bold text-ink">{t('Aspek yang dibentuk')}</h3>
               <ul className="mt-2.5 grid gap-2 sm:grid-cols-2">
@@ -247,7 +218,6 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
               </ul>
             </section>
 
-            {/* kegiatan per jalur */}
             <section>
               <h3 className="text-[14px] font-bold text-ink">
                 {t(
@@ -282,7 +252,6 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
 }
 
 export default function Peta() {
-  // Ikut menghitung ulang begitu ada nilai yang masuk dari panel Kemahasiswaan.
   useStore()
   const teks = useTeks()
   const student = useStudent()
@@ -292,8 +261,6 @@ export default function Peta() {
   const berjalan = daftar.find((s) => keadaanOf(s) === 'berjalan')
   const semuaSelesai = daftar.every((s) => keadaanOf(s) === 'selesai')
 
-  /* Semester berjalan terbuka lebih dulu. Bila program sudah selesai, yang
-     terbuka semester terakhir — di situlah nilai final terakhir ditetapkan. */
   const [buka, setBuka] = useState(
     () => berjalan?.semester ?? (semuaSelesai ? daftar[daftar.length - 1]?.semester : daftar[0]?.semester),
   )

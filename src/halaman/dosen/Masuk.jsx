@@ -24,25 +24,11 @@ import { useAuth } from '../../lib/auth'
 import { LencanaStatus, RUPA_STATUS, URUTAN_STATUS } from './status'
 import { useTeks } from '../../lib/bahasa'
 
-/* --------------------------------------------------------------------------
-   Halaman pertama panel dosen: siapa saja yang sudah mengumpulkan.
-
-   Isinya adalah daftar NAMA, bukan ringkasan angka — karena pekerjaan yang
-   menunggu di sini memang per orang: "Andreas sudah kirim, nilainya belum
-   saya isi". Angka di atas hanya memberi tahu seberapa banyak sisanya.
-
-   Yang tidak ada di halaman ini, dan memang tidak boleh ada: kolom nilai.
-   Menilai punya halamannya sendiri, supaya tidak ada nilai yang tersimpan
-   sambil lalu ketika seseorang sebenarnya hanya sedang membaca daftar.
-   -------------------------------------------------------------------------- */
-
 const PER_HALAMAN = 12
 const SEMUA_KOMPONEN = 'Semua tugas'
 const SEMUA_STATUS = 'Semua status'
 
 export default function Masuk() {
-  /* Ikut menghitung ulang setiap ada usulan yang diputuskan Kemahasiswaan.
-     Nomor versinya ditahan karena status tiap baris ikut berubah bersamanya. */
   const versi = useStore()
   const t = useTeks()
   const { user } = useAuth()
@@ -55,9 +41,7 @@ export default function Masuk() {
 
   const komponen = useMemo(() => komponenDosen(dosen), [dosen])
 
-  /* Status dihitung sekali di sini lalu dibawa turun bersama barisnya. Kalau
-     tiap sel memanggilnya sendiri, satu baris bisa menampilkan dua jawaban
-     berbeda ketika data berubah di tengah render. */
+  /* Status dihitung sekali per baris supaya satu baris tidak menampilkan dua jawaban. */
   const baris = useMemo(() => {
     if (!dosen) return []
     return pengumpulanDosen(dosen.nip).map((p) => ({ ...p, status: statusPengumpulan(p) }))
@@ -88,9 +72,7 @@ export default function Masuk() {
     setHalaman(1)
   }
 
-  /* Pilihan dropdown ditampilkan dalam bahasa aktif, tetapi nilai yang
-     disimpan tetap kalimat Indonesianya — penyaringnya membandingkan dengan
-     data, bukan dengan tulisan di layar. */
+  /* Label dalam bahasa aktif, tetapi nilai yang disimpan tetap kalimat Indonesianya. */
   const pilihanStatus = [SEMUA_STATUS, ...URUTAN_STATUS.map((id) => RUPA_STATUS[id].label)]
 
   if (!dosen) {
@@ -107,19 +89,8 @@ export default function Masuk() {
         <h1 className="text-[26px] font-extrabold tracking-tight text-ink">
           {t('Data masuk')}
         </h1>
-        {/* <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-2">
-          {t('Berkas yang dikirim mahasiswa {prodi} untuk {unit} Semester {semester}.', {
-            prodi: dosen.prodi,
-            unit: SUMBER[dosen.sumber]?.nama ?? dosen.sumber,
-            semester: dosen.semester,
-          })}{' '}
-          {t('Nilai tidak pernah datang dari mahasiswa. Yang mereka kirim hanya pekerjaannya.')}
-        </p> */}
       </header>
 
-      {/* Satu angka besar: yang masih menunggu dikerjakan. Sisanya keterangan
-          pendamping — kalau semuanya dibesarkan, tidak ada yang menonjol dan
-          halaman ini berhenti memberi tahu apa yang harus dilakukan hari ini. */}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,2fr)]">
         <Card className="px-6 py-7">
           <p className="text-[15px] font-semibold text-ink-2">{t('Menunggu dinilai')}</p>

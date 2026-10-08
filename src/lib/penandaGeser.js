@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
-// Kurva yang sama dengan laci, panel layanan, dan pudar ganti bahasa: gerak struktural meluncur,
-// sedangkan kendali kecil yang bisa dipegang (pil bahasa) memakai kurva yang memantul.
 const LENGKUNG = 'cubic-bezier(.22,.68,.35,1)'
 const DURASI = '.32s'
 
-// Meluncur ke butir [data-geser] yang nilainya sama dengan `aktif`. Selama `siap` palsu
-// (belum terukur: sebelum hidrasi, laci tertutup), pemanggil memakai latar statisnya sendiri.
+// Selama `siap` palsu (belum terukur), pemanggil memakai latar statisnya sendiri.
 export function usePenandaGeser(aktif) {
   const wadah = useRef(null)
   const aktifRef = useRef(aktif)
@@ -24,13 +21,11 @@ export function usePenandaGeser(aktif) {
     )
   }, [])
 
-  // Diukur sebelum dilukis, supaya penanda sudah berangkat pada bingkai pertama sesudah klik.
   useLayoutEffect(() => {
     aktifRef.current = aktif
     ukur()
   }, [aktif, ukur])
 
-  // Penempatan pertama dan perubahan ukuran (laci dibuka, zoom) langsung melompat, tanpa meluncur.
   useEffect(() => {
     const el = wadah.current
     if (!el || typeof ResizeObserver === 'undefined') return undefined

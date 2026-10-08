@@ -11,27 +11,6 @@ import TombolBahasa from './TombolBahasa'
 import { IconMenu, IconMoon, IconSun } from './Icons'
 import LogoPdp from './LogoPdp'
 
-/* Bilah atas panel Kemahasiswaan. Panel mahasiswa memakai kerangka sendiri
-   (sidebar + bilah terang) — lihat StudentLayout.
-
-   Setiap kendali di sini harus menuju ke suatu tempat. Tombol pesan dibuang
-   karena fitur pesan memang belum ada. Lonceng tidak lagi dibangun di sini,
-   melainkan dikirim lewat prop `aksi` — isinya pekerjaan khas panel ini, dan
-   kerangkanya tidak perlu tahu apa-apa tentang itu.
-
-   Di bawah 768px tautan navigasi pindah ke laci: berjejer mendatar, tiga tautan
-   sudah cukup untuk memotong judulnya di tengah kata pada layar 390px, dan
-   menggulirkannya ke samping menyembunyikan tautan terakhir tanpa petunjuk apa
-   pun bahwa ia ada.
-
-   Fotonya DITERIMA dari layout, bukan dicari sendiri: yang tahu persis siapa
-   pemilik sesi adalah layout, dan dua tempat yang menyusun kunci akun sendiri-
-   sendiri bisa berbeda untuk orang yang sama. */
-/**
- * @param links     tautan mendatar di bilah atas (layar lebar)
- * @param kelompok  isi laci, dikelompokkan: [{ judul, item: [{to,label,icon,end,lencana}] }]
- *                  Bila kosong, laci memakai `links` apa adanya.
- */
 export default function Navbar({ links = [], kelompok = null, aksi = null, foto = null }) {
   const { user, logout } = useAuth()
   const { theme, toggle } = useTheme()
@@ -43,9 +22,6 @@ export default function Navbar({ links = [], kelompok = null, aksi = null, foto 
 
   return (
     <header className="sticky top-0 z-40 bg-brand text-white">
-      {/* Bilah ini sengaja TIDAK ikut max-w-shell seperti isi halaman: sebagai
-          bilah tempel yang membentang penuh, kedua ujungnya memang menempel ke
-          tepi. Sisa px-4/px-6 hanya jarak aman agar tidak menyentuh bingkai. */}
       <div className="flex h-[64px] w-full items-center gap-3 px-4 sm:px-6">
         <button
           type="button"
@@ -59,7 +35,6 @@ export default function Navbar({ links = [], kelompok = null, aksi = null, foto 
 
         <Link href="/" className="flex items-center gap-2.5 text-white">
           <LogoPdp keterangan={false} className="h-7 w-auto shrink-0" />
-          {/* Garis dan nama sistem hanya muncul bila layarnya cukup lebar untuk keduanya. */}
           <span aria-hidden="true" className="hidden h-6 w-px shrink-0 bg-white/30 sm:block" />
           <span className="hidden whitespace-nowrap text-[15px] font-extrabold tracking-tight sm:block">
             HUMAN <span className="text-[var(--accent)]">SOFTSKILL</span>
@@ -103,17 +78,11 @@ export default function Navbar({ links = [], kelompok = null, aksi = null, foto 
       </div>
 
       {/* --------------------------------- laci --------------------------------- */}
-      {/* Panelnya gelap, senada dengan bilah atas. Isinya seluruh tujuan panel
-          ini — termasuk halaman yang di layar hanya dimasuki lewat kartu di
-          Ringkasan. Karena tersembunyi, ia tidak menambah keramaian layar,
-          tetapi memberi peta lengkap bagi yang mencarinya. */}
       <Laci buka={laci} onTutup={() => setLaci(false)} nada="gelap">
         <nav className="px-3 py-4">
           {(kelompok ?? [{ judul: null, item: links }]).map((g, i) => (
             <div key={g.judul ?? i} className={i ? 'mt-5' : ''}>
               {g.judul ? (
-                /* Putih 55% = kontras 5,32:1 di atas latar biru tua — masih di
-                   atas ambang 4,5:1 untuk teks kecil. */
                 <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[.12em] text-white/55">
                   {t(g.judul)}
                 </p>
@@ -132,8 +101,6 @@ export default function Navbar({ links = [], kelompok = null, aksi = null, foto 
                     >
                       {({ isActive }) => (
                         <>
-                          {/* Batang penanda di tepi kiri: pembeda yang tidak
-                              bergantung pada warna latar saja. */}
                           {isActive ? (
                             <span
                               aria-hidden="true"

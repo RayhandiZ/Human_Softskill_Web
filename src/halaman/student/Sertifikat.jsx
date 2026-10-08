@@ -10,8 +10,7 @@ import { useStudent } from './StudentLayout'
 const nomorSertifikat = (student) =>
   'SRT/' + student.angkatanId + '/' + student.nim.slice(-5) + '/' + new Date().getFullYear()
 
-// Lembar A4 lanskap yang hanya ada di kertas. Tidak dirender sama sekali selama belum layak,
-// jadi Ctrl+P pada mahasiswa yang belum layak tidak pernah menghasilkan sertifikat.
+// Tidak dirender selama belum layak, jadi Ctrl+P tidak pernah menghasilkan sertifikat.
 function LembarSertifikat({ student, transkrip: t }) {
   const { t: teks, bahasa } = useBahasa()
   const tanggal = new Date().toLocaleDateString(bahasa === 'en' ? 'en-GB' : 'id-ID', {
@@ -107,7 +106,6 @@ export default function Sertifikat() {
               </p>
             </div>
 
-            {/* disabled sungguhan, bukan hanya tampak pudar: tidak bisa diklik maupun dipicu papan ketik. */}
             <button
               type="button"
               onClick={() => window.print()}

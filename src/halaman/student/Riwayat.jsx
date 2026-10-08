@@ -8,24 +8,7 @@ import { koreksiMilik, useStore } from '../../lib/store'
 import { useStudent } from './StudentLayout'
 import { useTeks } from '../../lib/bahasa'
 
-/* --------------------------------------------------------------------------
-   History — lawan dari lonceng "Belum dinilai".
-
-   Lonceng menjawab "apa yang masih ditunggu"; halaman ini menjawab "apa yang
-   sudah masuk, siapa yang menetapkannya, dan kapan". Keduanya membaca data
-   yang sama, jadi tidak mungkin berselisih.
-
-   Satu pembedaan yang dijaga ketat, karena inilah yang sering disalahpahami:
-
-     FINAL      aspeknya sudah dikunci Kemahasiswaan — nilainya tidak akan
-                berubah lagi. Barulah pantas disebut "disetujui".
-     SEMENTARA  nilainya sudah masuk dari penilai, tetapi aspeknya belum
-                dikunci, jadi masih bisa berubah. Menyebutnya "disetujui" akan
-                menyesatkan.
-
-   Karena itu kalimat tiap barisnya berbeda: "Disetujui oleh ..." hanya untuk
-   yang final, dan "Dinilai oleh ... — belum dikunci" untuk yang sementara.
-   -------------------------------------------------------------------------- */
+/* "disetujui oleh" hanya untuk aspek final; lihat README.md › Empat keadaan sebuah aspek. */
 
 const BULAN = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -133,15 +116,12 @@ function Koreksi({ k }) {
 /* --------------------------------- halaman -------------------------------- */
 
 export default function Riwayat() {
-  // Ikut menghitung ulang begitu ada nilai yang masuk dari panel Kemahasiswaan.
   useStore()
   const t = useTeks()
   const student = useStudent()
   const tr = transkripOf(student)
   const [tab, setTab] = useState('semua')
 
-  /* Hanya komponen yang benar-benar sudah ada nilainya. Yang belum masuk
-     tempatnya di lonceng, bukan di riwayat. */
   const semua = tr.aspek
     .filter((a) => !a.terkunci)
     .flatMap((a) =>
@@ -158,7 +138,6 @@ export default function Riwayat() {
   const aktif = TAB.find((x) => x.id === tab)
   const daftar = semua.filter(aktif.cocok)
 
-  /* Dikelompokkan per bulan supaya terbaca sebagai riwayat, bukan tabel. */
   const kelompok = []
   for (const e of daftar) {
     const label = bulanTahun(t, e.k.tanggal)

@@ -3,9 +3,6 @@ import { COHORTS, FACULTIES, programStudi } from '../lib/data'
 import { CONFIG } from '../lib/config'
 import { useTeks } from '../lib/bahasa'
 
-/* Satu baris kendali di atas grafik dan tabel. Filter memilih baris data,
-   bukan mengganti warna seri. */
-
 export const DEFAULT_FILTER = {
   faculty: 'Semua',
   program: 'Semua',

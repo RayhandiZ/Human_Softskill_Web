@@ -1,6 +1,5 @@
 import { IconChat, IconMail, IconPhone } from '../components/Icons'
 
-// Kata sandi dikelola SSO UMN, bukan aplikasi ini, jadi pemulihannya juga di sana.
 export const SSO_LUPA_SANDI = 'https://sso.umn.ac.id/password/public/forgottenpassword'
 
 const NOMOR_WHATSAPP = '622154220808'

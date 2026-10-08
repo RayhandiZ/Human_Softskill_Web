@@ -1,13 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { IconCheck, IconChevronDown } from './Icons'
 
-// Pilihan tunggal dengan panel melayang, pola listbox WAI-ARIA: panah, Home/End, Enter/Spasi, Escape.
-// Panelnya padat, bukan kaca: ia melayang di atas grafik, dan teks di atas kaca yang menutupi
-// batang gelap tidak bisa dijamin kontrasnya.
 export default function PilihanMengambang({ label, nilai, pilihan, onPilih, namaDaftar }) {
   const idDaftar = useId()
   const [buka, setBuka] = useState(false)
-  // Tetap terpasang selama animasi tutup berjalan.
   const [pasang, setPasang] = useState(false)
   const [sorot, setSorot] = useState(0)
   const wadah = useRef(null)

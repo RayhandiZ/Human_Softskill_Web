@@ -5,26 +5,7 @@ import { IconChat, IconChevronRight, IconClock, IconInfo, IconX } from './Icons'
 import { KONTAK_UMN, LAYANAN } from '../lib/layanan'
 import { useTeks } from '../lib/bahasa'
 
-/* --------------------------------------------------------------------------
-   Layanan tambahan — tombol mengambang di sudut kanan bawah panel mahasiswa.
-
-   Kenapa mengambang, bukan satu bagian di kaki halaman: orang mencari bantuan
-   justru ketika sedang tersesat di tengah halaman, dan kaki halaman baru
-   ditemukan setelah menggulir sampai habis. Yang mengambang selalu berada
-   sejauh satu ketukan dari mana pun pembacanya berada.
-
-   Kontaknya sendiri TIDAK ditulis ulang di sini; semuanya dibaca dari
-   lib/layanan.js, satu tempat yang juga dipakai kaki halaman.
-
-   Beberapa hal yang sengaja dipasang:
-
-   - print:hidden. Halaman transkrip memang dicetak, dan tombol bantuan yang
-     ikut tercetak di atas kertas transkrip resmi hanya jadi noda tinta.
-   - z-40, di bawah laci navigasi yang z-50. Saat laci terbuka, tombol ini
-     harus berada DI BALIK lapisan gelapnya, bukan mengambang di atasnya.
-   - Tautan wa.me dibuka di tab baru dengan rel noopener: halaman yang dibuka
-     lewat target _blank bisa menyentuh window.opener tanpa itu.
-   -------------------------------------------------------------------------- */
+/* Tetap di bawah laci navigasi (z-40 < z-50) dan tidak ikut tercetak. */
 
 export default function LayananTambahan() {
   const t = useTeks()
@@ -40,8 +21,6 @@ export default function LayananTambahan() {
     const tombolEsc = (e) => {
       if (e.key !== 'Escape') return
       setBuka(false)
-      /* Fokus dikembalikan ke tombolnya. Tanpa ini, pengguna papan ketik yang
-         menutup panel akan terlempar ke awal halaman. */
       tombol.current?.focus()
     }
     document.addEventListener('mousedown', diLuar)
@@ -59,9 +38,6 @@ export default function LayananTambahan() {
           id="panel-layanan"
           role="dialog"
           aria-label={t('Layanan tambahan')}
-          /* kaca = bahan yang sama dengan panel lain di aplikasi ini. Lebarnya
-             menyusut sendiri di layar sempit supaya tidak pernah menyentuh
-             tepi kiri. */
           className="kaca layanan-panel absolute bottom-[calc(100%+12px)] right-0 w-[min(304px,calc(100vw-2.5rem))] overflow-hidden rounded-3xl"
         >
           <div className="border-b border-[color-mix(in_srgb,var(--border)_60%,transparent)] px-4 py-3.5">
@@ -76,8 +52,6 @@ export default function LayananTambahan() {
               <li
                 key={l.id}
                 className="layanan-item"
-                /* Muncul berurutan, bukan serentak. Jeda 55 ms cukup untuk
-                   terbaca sebagai urutan, belum terasa sebagai antrean. */
                 style={{ animationDelay: i * 55 + 'ms' }}
               >
                 <a
@@ -127,8 +101,6 @@ export default function LayananTambahan() {
         className="layanan-tombol grid h-14 w-14 place-items-center rounded-full bg-brand text-white"
       >
         <span
-          /* Ikonnya berputar saat berganti, bukan bertukar mendadak: yang
-             berputar terbaca sebagai benda yang sama berubah keadaan. */
           className={
             'transition-transform duration-300 ' + (buka ? 'rotate-90' : 'rotate-0')
           }

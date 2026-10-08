@@ -8,11 +8,6 @@ import { SSO_LUPA_SANDI } from '../lib/layanan'
 import TombolBahasa from '../components/TombolBahasa'
 import { AREA } from '../lib/curriculum'
 
-// const DEMO = [
-//   { role: 'User', email: 'rayhandi.zulmi@student.umn.ac.id', password: 'user123' },
-//   { role: 'Admin', email: 'admin@umn.ac.id', password: 'admin123' },
-// ]
-
 export default function Login() {
   const { user, login } = useAuth()
   const t = useTeks()
@@ -22,8 +17,6 @@ export default function Login() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  /* Sudah masuk? Lempar ke panelnya. Perpindahan rute harus terjadi di dalam
-     efek — memanggil router selagi merender akan ditolak React. */
   useEffect(() => {
     if (user) router.replace(panelUntuk(user.role))
   }, [user, router])
@@ -50,7 +43,7 @@ export default function Login() {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.15fr_minmax(420px,540px)]">
-      {/* Panel kiri — identitas sistem */}
+      {/* --------------------------- panel kiri --------------------------- */}
       <aside className="relative hidden overflow-hidden bg-brand-deep p-12 text-white lg:flex lg:flex-col">
         <svg className="pointer-events-none absolute -right-24 -top-24 h-[520px] w-[520px] opacity-[.09]" viewBox="0 0 200 200" aria-hidden="true">
           <circle cx="100" cy="100" r="98" fill="none" stroke="white" strokeWidth="1.5" />
@@ -59,8 +52,6 @@ export default function Login() {
           <circle cx="100" cy="100" r="20" fill="white" />
         </svg>
 
-        {/* Logo PDP berdampingan dengan nama sistem. Garis dan nama sistem sejajar dengan
-            huruf "pdp" (54 px pertama logo), jadi tiga baris keterangan PDP menggantung di bawahnya. */}
         <div className="flex items-start gap-4 self-start">
           <LogoPdp className="h-[92px] w-auto text-white" />
           <div className="flex h-[54px] items-center gap-4">
@@ -104,18 +95,13 @@ export default function Login() {
         </p>
       </aside>
 
-      {/* Panel kanan — formulir */}
+      {/* -------------------------- panel kanan --------------------------- */}
       <main className="flex items-center justify-center bg-bg px-5 py-12 sm:px-10">
         <div className="w-full max-w-[400px] animate-rise">
-          {/* Pemilih bahasa harus ada di halaman ini juga: kalau baru muncul
-              setelah masuk, orang yang tidak membaca bahasa Indonesia tidak
-              punya cara melewati gerbang pertamanya. */}
           <div className="mb-6 flex justify-end">
             <TombolBahasa nada="terang" />
           </div>
 
-          {/* Di layar kecil panel kiri tersembunyi, jadi nama sistem ikut tampil di sini.
-              Tiga baris keterangan PDP tidak terbaca pada ukuran ini — hurufnya saja. */}
           <div className="mb-8 flex items-center justify-center gap-3 text-ink lg:hidden">
             <LogoPdp keterangan={false} className="h-7 w-auto" />
             <span aria-hidden="true" className="h-6 w-px bg-line" />
@@ -143,14 +129,6 @@ export default function Login() {
                 value={form.email}
                 onChange={set('email')}
               />
-              {/* {detected ? (
-                <p className="mt-2 text-[12.5px] font-semibold text-ink-3">
-                  {t('Terdeteksi sebagai')}{' '}
-                  <span className="text-brand-ink">
-                    {t(LABEL_PERAN[detected] ?? 'Admin')}
-                  </span>
-                </p>
-              ) : null} */}
             </div>
 
             <div>
@@ -180,7 +158,6 @@ export default function Login() {
               </div>
               
               <div className="mt-2 flex justify-end">
-                {/* Tab baru: formulir masuk ini tetap terbuka setelah sandi diatur ulang di SSO. */}
                 <a
                   href={SSO_LUPA_SANDI}
                   target="_blank"
@@ -208,33 +185,6 @@ export default function Login() {
               {t(busy ? 'Memverifikasi…' : 'Masuk')}
             </button>
           </form>
-
-          {/* <div className="my-7 flex items-center gap-4">
-            <span className="h-px flex-1 bg-line" />
-            <span className="text-[12px] font-bold uppercase tracking-[.08em] text-ink-3">Akun demo</span>
-            <span className="h-px flex-1 bg-line" />
-          </div>
-
-          <div className="grid gap-2.5">
-            {DEMO.map((d) => (
-              <button
-                key={d.role}
-                type="button"
-                onClick={() => setForm({ email: d.email, password: d.password })}
-                className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3 text-left transition hover:border-brand-ink hover:bg-surface-2"
-              >
-                <span>
-                  <span className="block text-[13.5px] font-bold text-ink">{d.role}</span>
-                  <span className="block truncate text-[12px] text-ink-3">{d.email}</span>
-                </span>
-                <span className="shrink-0 text-[12px] font-bold text-brand-ink">Isi otomatis</span>
-              </button>
-            ))}
-          </div> */}
-
-          {/* <p className="mt-8 text-center text-[12px] leading-relaxed text-ink-3">
-            Purwarupa antarmuka — data yang ditampilkan masih contoh dan belum terhubung ke basis data kampus.
-          </p> */}
         </div>
       </main>
     </div>

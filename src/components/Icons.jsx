@@ -1,5 +1,3 @@
-/* Ikon garis inline — satu set kecil supaya tidak menambah dependensi. */
-
 const base = {
   fill: 'none',
   stroke: 'currentColor',
@@ -131,7 +129,6 @@ export const IconChevronRight = (p) => (
   </Svg>
 )
 
-// Penanda tautan yang membuka situs lain di tab baru.
 export const IconTabBaru = (p) => (
   <Svg {...p}>
     <path d="M14 4h6v6" />
@@ -207,7 +204,6 @@ export const IconDocument = (p) => (
   <Svg {...p}>
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
     <path d="M14 2v6h6" />
-    {/* Garis-garis teks */}
     <line x1="16" y1="13" x2="8" y2="13" />
     <line x1="16" y1="17" x2="8" y2="17" />
     <polyline points="10 9 9 9 8 9" />
@@ -222,16 +218,6 @@ export const IconBook = (p) => (
 )
 
 export const IconLogo = ({ size = 26, ...rest }) => (
-  /* Piringan biru yang "melarut" menjadi kotak-kotak di sisi kiri atas, dengan
-     cincin putih mengelilinginya.
-
-     Warnanya sengaja TETAP, tidak mengikuti currentColor. Alasannya: warna
-     piringan hampir sama dengan biru navbar, jadi tanpa cincin putih lambangnya
-     akan lesap ke latar. Cincin itulah yang memisahkannya di navbar, sekaligus
-     tidak mengganggu saat lambang berdiri di atas kartu putih.
-
-     Kotak-kotaknya kini putih pejal, bukan lubang tembus — seluruhnya berada di
-     dalam r=42 sehingga tidak pernah menyentuh cincin. */
   <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true" {...rest}>
     <circle cx="50" cy="50" r="45" fill="#0b5ca0" />
     <circle cx="50" cy="50" r="46.5" fill="none" stroke="#ffffff" strokeWidth="4" />
@@ -255,7 +241,6 @@ export const IconLock = (p) => (
   </Svg>
 )
 
-/* Kotak masuk — dipakai panel dosen untuk pengumpulan yang baru datang. */
 export const IconInbox = (p) => (
   <Svg {...p}>
     <path d="M3.4 13.2 6 5.6A2 2 0 0 1 7.9 4.2h8.2A2 2 0 0 1 18 5.6l2.6 7.6" />

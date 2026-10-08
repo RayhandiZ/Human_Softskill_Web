@@ -3,10 +3,9 @@ import { CONFIG } from '../../lib/config'
 import { BELUM_MEMENUHI, RUBRIK, hurufMutu } from '../../lib/scoring'
 import { useBahasa } from '../../lib/bahasa'
 
-// Lembar resmi yang hanya muncul di kertas: tabel dan tulisan, tanpa grafik dan tombol.
-// Bentuknya mengikuti transkrip akademik UMN supaya terbaca sebagai dokumen kampus.
+// Lembar resmi khusus kertas; lihat README.md › Cetak.
 
-// Penanda nilai yang belum ada, seperti "..." pada transkrip akademik. Bukan nol (R2).
+// Nilai yang belum ada ditulis "...", bukan 0 (R2).
 const BELUM = '...'
 
 function Baris({ label, isi }) {
@@ -32,7 +31,7 @@ export default function LembarCetak({ student, transkrip: t }) {
 
   return (
     <section
-      // Latar belang tabel ikut tercetak; tanpa ini peramban membuang semua warna latar.
+      // Latar belang ikut tercetak; tanpa ini peramban membuang warna latar.
       className="lembar-cetak hidden bg-white pb-16 font-mono text-[10.5px] leading-snug text-black [print-color-adjust:exact] print:block"
     >
       <header className="flex items-start justify-end gap-2">
@@ -133,8 +132,7 @@ export default function LembarCetak({ student, transkrip: t }) {
       <p className="mt-6">{'Tangerang, ' + tanggal}</p>
       <div className="mt-16 w-[260px] border-t border-black pt-1">{teks('Head of Department')}</div>
 
-      {/* Fixed di kertas berarti diulang di kaki setiap halaman. Sengaja div, bukan footer:
-          aturan cetak global menyembunyikan semua <footer> (kaki situs). */}
+      {/* Sengaja div, bukan <footer>: aturan cetak global menyembunyikan semua <footer>. */}
       <div className="fixed inset-x-0 bottom-0 text-center font-sans text-[8.5px] font-bold">
         Kampus UMN, Scientia Garden | Jl. Boulevard Gading Serpong, Tangerang | T. 6221 5422 0808 | F. 6221
         5422 0800 | www.umn.ac.id

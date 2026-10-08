@@ -5,27 +5,7 @@ import { IconRefresh } from '../../components/Icons'
 import { segarkanData, terakhirDiperbarui, useStore } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
 
-/* --------------------------------------------------------------------------
-   Penanda kesegaran data di panel Kemahasiswaan.
-
-   Tiga hal yang membuatnya hidup, bukan sekadar teks mati:
-
-   1. Ikut berubah begitu datanya benar-benar berubah — nilai tersimpan,
-      koreksi diputuskan, atau jendela lain menulis lewat peristiwa storage.
-      Semuanya bermuara ke store yang sama.
-   2. Keterangan relatifnya berdetak sendiri tiap 30 detik, jadi "baru saja"
-      berubah menjadi "3 menit lalu" tanpa halaman disentuh.
-   3. Bisa disegarkan manual lewat tombolnya.
-
-   Waktunya ditulis dalam zona Asia/Jakarta dan diberi label WIB secara tegas —
-   kalau hanya memakai jam perangkat, dosen yang komputernya kebetulan berzona
-   lain akan membaca jam yang berbeda untuk data yang sama.
-
-   Sengaja TIDAK ada penarikan berkala ke peladen: basis data belum tersambung,
-   dan jam yang berdetak sendiri tanpa ada yang ditarik hanya akan mengaku
-   memperbarui sesuatu. Saat basis data masuk, cukup panggil segarkanData()
-   pada selang tertentu — bagian ini tidak perlu diubah.
-   -------------------------------------------------------------------------- */
+/* Waktu selalu ditulis WIB (Asia/Jakarta), bukan zona perangkat. */
 
 const ZONA = 'Asia/Jakarta'
 const DETAK = 30_000
@@ -38,8 +18,7 @@ const tanggalnya = (d) =>
     timeZone: ZONA,
   }).format(d)
 
-/* en-GB dipakai khusus untuk jam agar pemisahnya titik dua (13:39), bukan
-   titik seperti gaya Indonesia (13.39). */
+/* en-GB supaya jam memakai titik dua (13:39). */
 const jamnya = (d) =>
   new Intl.DateTimeFormat('en-GB', {
     hour: '2-digit',
@@ -59,13 +38,10 @@ function selisih(t, dari, sampai) {
 }
 
 export default function StatusData() {
-  // Ikut menghitung ulang setiap ada perubahan data.
   useStore()
   const t = useTeks()
 
-  /* Dirender hanya setelah menempel di peramban. Jamnya berbeda antara render
-     di server dan render pertama di klien, dan React menolak hidrasi yang
-     isinya tidak sama. */
+  /* Dirender sesudah menempel: jam server dan peramban berbeda. */
   const [siap, setSiap] = useState(false)
   const [sekarang, setSekarang] = useState(null)
 

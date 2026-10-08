@@ -3,31 +3,13 @@ import { IconX } from './Icons'
 import LogoPdp from './LogoPdp'
 import { useTeks } from '../lib/bahasa'
 
-/* --------------------------------------------------------------------------
-   Laci navigasi untuk layar kecil — dipakai panel Kemahasiswaan dan panel
-   mahasiswa, jadi perilakunya cukup ditulis sekali:
-
-   - gulir halaman di belakangnya dikunci selama terbuka, supaya menutup laci
-     tidak meninggalkan pembacanya di posisi lain;
-   - Escape, tepukan di latar gelap, dan tombol silang semuanya menutup;
-   - fokus pindah ke panel saat dibuka, agar pengguna papan ketik tidak
-     tertinggal di tombol garis tiga di belakang lapisan gelap.
-   -------------------------------------------------------------------------- */
-
-/**
- * @param nada 'terang' — panel putih, dipakai panel mahasiswa.
- *             'gelap'  — panel biru tua, dipakai panel Kemahasiswaan agar
- *                        senada dengan bilah atasnya yang juga biru.
- */
 export default function Laci({ buka, onTutup, label = 'Menu navigasi', nada = 'terang', children }) {
   const gelap = nada === 'gelap'
   const t = useTeks()
 
   const panelRef = useRef(null)
 
-  /* Penutup disimpan di ref: bila induknya mengirim fungsi panah baru setiap
-     render, efek di bawah tidak ikut menyala ulang dan merebut fokus dari
-     tautan yang sedang dipilih. */
+  /* Disimpan di ref supaya fungsi baru dari induk tidak memicu ulang efek dan merebut fokus. */
   const tutupRef = useRef(onTutup)
   tutupRef.current = onTutup
 

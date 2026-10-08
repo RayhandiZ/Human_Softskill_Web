@@ -4,23 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import { IconCheck, IconMinus, IconPlus, IconX } from './Icons'
 import { potongFoto } from '../lib/profil'
 
-/* --------------------------------------------------------------------------
-   Penyunting foto profil: geser untuk mengatur posisi, tarik penggeser untuk
-   memperbesar.
-
-   Kotak pratinjau berbentuk lingkaran karena avatar di seluruh aplikasi juga
-   bulat — yang dilihat saat menyunting harus sama persis dengan yang nanti
-   tampil, bukan bujur sangkar yang ternyata terpangkas.
-
-   Geseran DIBATASI supaya gambar selalu menutupi seluruh lingkaran. Tanpa itu,
-   foto bisa digeser sampai menyisakan bidang kosong, dan hasil potongannya
-   memuat bagian putih yang tidak pernah terlihat saat menyunting.
-
-   Dapat dipakai papan ketik: tombol panah menggeser, dan penggeser perbesaran
-   adalah <input type="range"> biasa. Menyeret dengan tetikus bukan satu-satunya
-   jalan.
-   -------------------------------------------------------------------------- */
-
 const TAMPIL = 240
 const SKALA_MIN = 1
 const SKALA_MAKS = 3
@@ -34,7 +17,6 @@ export default function PenyuntingFoto({ sumber, onSelesai, onBatal, judul = 'At
   const areaRef = useRef(null)
   const seret = useRef(null)
 
-  /* Ukuran gambar saat perbesaran 1: "cover" terhadap kotak pratinjau. */
   useEffect(() => {
     let batal = false
     const img = new Image()
@@ -49,15 +31,12 @@ export default function PenyuntingFoto({ sumber, onSelesai, onBatal, judul = 'At
     }
   }, [sumber])
 
-  /* Batas geseran: setengah dari kelebihan gambar terhadap kotak. */
   const batas = {
     x: Math.max(0, (ukuranDasar.lebar * skala - TAMPIL) / 2),
     y: Math.max(0, (ukuranDasar.tinggi * skala - TAMPIL) / 2),
   }
   const jepit = (nilai, maks) => Math.max(-maks, Math.min(maks, nilai))
 
-  /* Memperkecil harus ikut menarik gambar kembali ke dalam batas barunya,
-     kalau tidak akan tersisa bidang kosong di tepi. */
   useEffect(() => {
     setGeser((g) => ({ x: jepit(g.x, batas.x), y: jepit(g.y, batas.y) }))
     // eslint-disable-next-line react-hooks/exhaustive-deps

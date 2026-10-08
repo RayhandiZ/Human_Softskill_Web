@@ -2,18 +2,7 @@ import { CONFIG, subscribeConfig } from './config.js'
 import { AREA, CLUSTER, getAspekList, getKomponen } from './curriculum.js'
 import { hitungTranskrip, hurufMutu } from './scoring.js'
 
-/* --------------------------------------------------------------------------
-   Sumber data seluruh halaman.
-
-   Data master — angkatan, fakultas, dan program studi — dibaca dari basis
-   data lewat isiMaster(); periode akademik masih ditulis di sini. Data isian
-   (mahasiswa, nilai, pengumpulan, usulan, koreksi, dan riwayatnya) dimulai
-   KOSONG: halaman menampilkan keadaan "belum ada data" sampai ada yang
-   mengisinya lewat isiData().
-
-   Data contoh purwarupa tinggal di scripts/dataContoh.js dan hanya dipakai
-   skrip uji dan seed contoh. Halaman tidak pernah mengimpornya.
-   -------------------------------------------------------------------------- */
+/* Data master dari basis data, data isian mulai kosong; lihat README.md › Data dan store. */
 
 /* ------------------------------ periode akademik -------------------------- */
 
@@ -31,34 +20,19 @@ function periodeSetelah(p, n) {
 
 export const labelPeriode = (p) => p.semester + ' ' + p.tahun
 
-/** Periode akademik tiap semester program untuk angkatan yang masuk pada `intake`. */
 export const periodeAngkatan = (intake) => [0, 1, 2].map((n) => periodeSetelah(intake, n))
 
 const isiUlang = (larik, isi) => larik.splice(0, larik.length, ...(isi ?? []))
 
-/**
- * semesterAktif TIDAK PERNAH diinput — selalu diturunkan dari jarak antara
- * periode masuk angkatan dan periode aktif, dibatasi panjang program.
- */
 export function turunkanSemesterAktif(intake, aktif = PERIODE_AKTIF) {
   const jarak = ordinal(aktif) - ordinal(intake) + 1
   return Math.max(1, Math.min(CONFIG.TOTAL_SEMESTER_PROGRAM, jarak))
 }
 
-/* --------------------------------------------------------------------------
-   Data master: angkatan, fakultas, dan program studi.
-
-   Di aplikasi, isinya dibaca dari basis data setiap halaman dimuat
-   (app/layout.jsx → isiMaster). Isi awal di bawah hanya dipakai selama itu
-   belum terjadi — skrip uji, atau basis data yang tidak bisa dihubungi — dan
-   sekaligus menjadi isi yang ditanam `npm run db:seed`.
-   -------------------------------------------------------------------------- */
+/* Isi awal hanya dipakai bila basis data tak terhubung, dan menjadi sumber npm run db:seed. */
 
 /* --------------------------------- angkatan ------------------------------- */
 
-/* Penerimaan Genap sengaja disertakan. Tanpanya, pada periode aktif Ganjil
-   seluruh angkatan hanya berada di semester ganjil (1 dan 3) dan semester 2
-   tidak akan pernah bisa didemokan. */
 const ANGKATAN_AWAL = [
   { id: '2026', angkatan: 2026, label: '2026', intake: { tahun: '2026/2027', semester: 'Ganjil' }, status: 'aktif' },
   { id: '2025B', angkatan: 2025, label: '2025 Genap', intake: { tahun: '2025/2026', semester: 'Genap' }, status: 'aktif' },
@@ -66,11 +40,9 @@ const ANGKATAN_AWAL = [
   { id: '2024', angkatan: 2024, label: '2024', intake: { tahun: '2024/2025', semester: 'Ganjil' }, status: 'terkunci' },
 ]
 
-/* Seperti data isian, larik dan peta master diisi ulang di tempat, bukan
-   diganti: halaman memegang rujukannya sejak modul dimuat. */
+/* Larik di berkas ini diisi ulang di tempat, bukan diganti: halaman memegang rujukannya. */
 export const COHORTS = []
 
-/** Angkatan terbaru lebih dulu, apa pun urutan sumbernya. */
 function pasangAngkatan(daftar) {
   const urut = [...daftar].sort((a, b) => ordinal(b.intake) - ordinal(a.intake))
   isiUlang(
@@ -86,10 +58,6 @@ function pasangAngkatan(daftar) {
 export const getAngkatan = (id) => COHORTS.find((c) => c.id === id) ?? null
 
 /* ------------------------------ fakultas & prodi -------------------------- */
-
-/* Program studi UMN jenjang S1 dan D3. Program magister (Manajemen Teknologi
-   dan Ilmu Komunikasi S2) sengaja tidak disertakan karena pembinaan softskill
-   ini hanya berjalan pada Semester 1–3 jenjang sarjana dan diploma. */
 
 const FAKULTAS_AWAL = [
   {
@@ -133,8 +101,6 @@ export const PROGRAMS = []
 export const FACULTY_OF = {}
 export const JENJANG_OF = {}
 
-/* Satu program studi hanya milik satu fakultas, jadi fakultasnya bisa
-   disimpulkan dari prodinya — tidak perlu dipilih dua kali. */
 export const FAKULTAS_OF = {}
 
 const isiPeta = (peta, pasangan) => {
@@ -153,20 +119,14 @@ function pasangFakultas(daftar) {
   isiPeta(FAKULTAS_OF, PROGRAMS.map((p) => [p.program, p.faculty]))
 }
 
-/** Nama program studi pada sebuah fakultas — 'Semua' berarti seluruh fakultas. */
 export function programStudi(faculty = 'Semua') {
   return (faculty === 'Semua' ? PROGRAMS : PROGRAMS.filter((p) => p.faculty === faculty)).map((p) => p.program)
 }
 
 /* --------------------------- pemasangan data master ----------------------- */
 
-/** Isi awal dalam bentuk yang diterima isiMaster() — juga sumber `npm run db:seed`. */
 export const MASTER_AWAL = { angkatan: ANGKATAN_AWAL, fakultas: FAKULTAS_AWAL }
 
-/**
- * Mengganti data master dengan isi basis data (src/server/master.js), dalam
- * bentuk yang sama dengan MASTER_AWAL. Daftar yang tidak dikirim tidak diubah.
- */
 export function isiMaster({ angkatan, fakultas } = {}) {
   if (angkatan) pasangAngkatan(angkatan)
   if (fakultas) pasangFakultas(fakultas)
@@ -178,8 +138,6 @@ pasangFakultas(FAKULTAS_AWAL)
 
 /* -------------------------------- data isian ------------------------------ */
 
-/* Dimulai kosong. Larik yang sama diisi ulang, bukan diganti, karena store.js
-   dan halaman memegang rujukannya sejak modul dimuat. */
 export const STUDENTS = []
 export const AUDIT_LOG = []
 export const PENGAJUAN_KOREKSI = []
@@ -187,14 +145,7 @@ export const PENGUMPULAN = []
 export const USULAN_AWAL = []
 export const BATCH_IMPORT = []
 
-/**
- * Mengganti seluruh data isian sekaligus — nanti dipanggil pemuat basis data,
- * hari ini hanya oleh skrip uji. Kunci yang tidak disebut ikut dikosongkan
- * supaya sisa muatan sebelumnya tidak tercampur.
- *
- * Sesudahnya panggil bersihkanPerubahan() di store.js: antrean usulan di sana
- * disalin dari USULAN_AWAL dan tidak ikut berubah sendiri.
- */
+/** Mengganti seluruh data isian; kunci yang tidak disebut ikut dikosongkan. Mode lokal: panggil bersihkanPerubahan() sesudahnya. */
 export function isiData({ mahasiswa, audit, koreksi, pengumpulan, usulan, batchImport } = {}) {
   isiUlang(STUDENTS, mahasiswa)
   isiUlang(AUDIT_LOG, audit)
@@ -210,10 +161,8 @@ export const getStudentByNim = (nim) => STUDENTS.find((s) => s.nim === String(ni
 
 export const auditUntuk = (nim) => AUDIT_LOG.filter((l) => l.nim === nim)
 
-/** Pengumpulan yang menjadi tanggung jawab seorang dosen. */
 export const pengumpulanDosen = (nip) => PENGUMPULAN.filter((p) => p.dosenNip === nip)
 
-/** Kelas yang dipegang seorang dosen — dipakai menyaring daftar pengumpulan. */
 export function komponenDosen(dosen) {
   if (!dosen) return []
   return getAspekList()
@@ -224,11 +173,8 @@ export function komponenDosen(dosen) {
 
 /* --------------------------- akun yang sedang masuk ----------------------- */
 
-/* Login masih memakai akun purwarupa (lihat auth.jsx), jadi identitas pemilik
-   sesi dibaca dari sesinya. Nilainya tidak ikut: mahasiswa yang belum ada di
-   data isian tampil dengan seluruh aspek belum masuk, bukan dengan angka contoh. */
+/* Identitas dari sesi (basis data); orang yang belum ada di data isian tampil tanpa nilai. */
 
-/** Mahasiswa pemilik sesi — dari data isian bila ada, selain itu dari sesinya. */
 export function mahasiswaSesi(user) {
   if (!user) return null
   return (
@@ -262,7 +208,6 @@ function mahasiswaDariSesi(user) {
   }
 }
 
-/** Dosen pemilik sesi. Kelas yang dipegangnya ikut tersimpan di sesi saat masuk. */
 export function dosenSesi(user) {
   if (user?.role !== 'dosen' || !user.nip) return null
   return {
@@ -280,16 +225,11 @@ export function dosenSesi(user) {
 
 /* ------------------------------- transkrip ------------------------------- */
 
-/* Menghitung 10 aspek untuk ratusan mahasiswa berkali-kali per render itu
-   mahal, jadi hasilnya disimpan. Cache dibuang saat konfigurasi berubah karena
-   seluruh angka ikut berubah. */
-
 let cache = new Map()
 subscribeConfig(() => {
   cache = new Map()
 })
 
-/** Dipanggil store.js setiap kali ada nilai yang berubah. */
 export function resetTranskripCache() {
   cache = new Map()
 }
@@ -337,7 +277,6 @@ export function ringkas(rows) {
   }
 }
 
-/** Rata-rata tiap aspek CPMK pada sekumpulan mahasiswa. */
 export function rataAspek(rows) {
   return getAspekList().map((a) => {
     const nilai = rows.map((s) => transkripOf(s).aspekById[a.id]?.nilai).filter((n) => n != null)
@@ -345,10 +284,6 @@ export function rataAspek(rows) {
   })
 }
 
-/* Sumbunya dibaca dari kurikulum, bukan dari transkrip mahasiswa pertama —
-   daftar yang kosong pun tetap punya cluster dan area. */
-
-/** Rata-rata tiap cluster — sumbu radar. */
 export function rataCluster(rows) {
   return CLUSTER.map((c) => {
     const nilai = rows.map((s) => transkripOf(s).cluster[c.id]?.nilai).filter((n) => n != null)
@@ -387,7 +322,6 @@ export function byAngkatan(rows) {
   })
 }
 
-/** Kelengkapan komponen per semester dan per sumber — panel utama admin. */
 export function kelengkapanMatriks(rows) {
   const hasil = []
   for (let sem = 1; sem <= CONFIG.TOTAL_SEMESTER_PROGRAM; sem++) {
@@ -413,18 +347,6 @@ export function kelengkapanMatriks(rows) {
   return hasil
 }
 
-/* --------------------------------------------------------------------------
-   Pekerjaan penilaian yang masih menganggur.
-
-   Dikelompokkan persis seperti yang diminta Langkah 1 pada halaman Input Nilai:
-   ANGKATAN × SEMESTER × SUMBER. Dengan begitu satu baris pada lonceng bisa
-   langsung menjadi satu sasaran input — pengguna tidak perlu menerjemahkan
-   sendiri "ada 340 nilai kosong" menjadi pilihan dropdown.
-
-   Per mahasiswa akan terlalu banyak (ratusan mahasiswa × puluhan komponen);
-   per semester saja terlalu kasar karena satu semester diisi oleh tiga unit
-   penilai yang berbeda.
-   -------------------------------------------------------------------------- */
 export function pekerjaanPenilaian(rows = STUDENTS) {
   const hasil = []
 
@@ -433,7 +355,6 @@ export function pekerjaanPenilaian(rows = STUDENTS) {
     if (!mhs.length) continue
 
     for (let sem = 1; sem <= CONFIG.TOTAL_SEMESTER_PROGRAM; sem++) {
-      // Semester yang belum dibuka tidak punya pekerjaan — bukan nol, melainkan belum waktunya.
       if (c.semesterAktif < sem) continue
       const aspek = getAspekList().filter((a) => a.semester === sem)
 
@@ -466,8 +387,6 @@ export function pekerjaanPenilaian(rows = STUDENTS) {
             sumber,
             kosong,
             mahasiswa: mhsKurang.size,
-            /* Bila yang tertinggal cuma satu orang, NIM-nya ikut dibawa supaya
-               halaman input bisa langsung menyaring ke baris orang itu. */
             nimTunggal: mhsKurang.size === 1 ? [...mhsKurang][0] : null,
             aspek: aspekKurang,
           })
@@ -476,18 +395,9 @@ export function pekerjaanPenilaian(rows = STUDENTS) {
     }
   }
 
-  /* Yang paling banyak tertunda muncul lebih dulu — itu yang paling menahan
-     terbitnya nilai akhir. */
   return hasil.sort((a, b) => b.kosong - a.kosong)
 }
 
-/* --------------------------------------------------------------------------
-   Dua hal yang perlu ditinjau Kemahasiswaan, di luar urusan memasukkan nilai.
-
-   Keduanya bukan pekerjaan mengetik melainkan keputusan: menindaklanjuti
-   mahasiswa yang nilainya belum cukup, dan mengunci angkatan yang sudah
-   tuntas. Karena itu dikumpulkan terpisah dari pekerjaanPenilaian().
-   -------------------------------------------------------------------------- */
 export function perluDitinjau(rows = STUDENTS) {
   const dibawahAmbang = rows.filter((s) => {
     if (s.semesterAktif < CONFIG.TOTAL_SEMESTER_PROGRAM) return false

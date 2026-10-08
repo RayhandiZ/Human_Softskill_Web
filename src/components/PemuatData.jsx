@@ -8,15 +8,12 @@ import { modeLokal } from '../lib/modeData'
 import { kosongkanDataServer, muatDariServer, useStatusMuat } from '../lib/store'
 import { IconAlert, IconLogo, IconRefresh } from './Icons'
 
-// Memuat data halaman dari basis data begitu ada yang masuk, dan menahan panel sampai datanya
-// tiba. Tanpa ini, halaman sempat menulis "belum ada data" padahal datanya masih di jalan.
 export default function PemuatData({ children }) {
   const { user, siap, logout } = useAuth()
   const status = useStatusMuat()
   const t = useTeks()
   const akun = user ? user.role + ':' + (user.nim ?? user.nip ?? user.email) : null
 
-  // Jawaban 401 dari pintu API mana pun berarti sesinya sudah berakhir.
   useEffect(() => {
     aturSaatSesiHabis(logout)
     return () => aturSaatSesiHabis(null)

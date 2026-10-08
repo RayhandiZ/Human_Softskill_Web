@@ -106,6 +106,10 @@ Membedakan keempatnya adalah aturan bisnis, bukan urusan tampilan.
 
 Komponen yang belum terisi **dikeluarkan dari pembagi**, tidak pernah dianggap nol.
 
+Di halaman Riwayat, kalimat *disetujui oleh …* hanya dipakai untuk aspek yang sudah final. Aspek
+yang masih sementara ditulis *dinilai oleh … (belum dikunci, masih bisa berubah)*, karena
+menyebutnya "disetujui" akan menyesatkan.
+
 ## Peta berkas
 
 ```
@@ -346,8 +350,17 @@ contoh isinya, skala, komponen tujuan, dan tingkat keyakinan — semuanya bisa d
 dropdown, dan pratinjau perhitungan ikut berubah seketika. Baru setelah itu tombol
 “Isi otomatis” menuliskannya sebagai satu batch yang tetap bisa di-rollback.
 
-Tersedia tombol **Contoh rekap mentah** yang mengunduh berkas gaya dosen (nama kolom
-seadanya, skala 0–10) untuk mencoba alurnya tanpa menyiapkan data sendiri.
+Tersedia tombol **Contoh rekap mentah** yang mengunduh berkas gaya dosen: nama kolom seadanya,
+berisi NIM dan nama mahasiswa sungguhan dari basis data, dengan **kolom nilai kosong**. Kolom
+nilainya sengaja tidak diisi: angka karangan di berkas itu akan tercatat sebagai nilai asli bila
+berkasnya diunggah balik.
+
+### Sasaran dari alamat URL
+
+Lonceng panel Kemahasiswaan menautkan ke `/admin/nilai` lengkap dengan semester, sumber, angkatan,
+program studi, aspek, dan kadang NIM, sehingga sekali klik daftar mahasiswa yang perlu dinilai
+sudah terbuka. Setiap nilai dari alamat diperiksa dulu: alamat bisa diketik tangan atau sudah
+usang, jadi pilihan yang tidak dikenal jatuh ke bawaan, bukan membuat halaman kosong.
 
 ## Kapan aspek berubah dari sementara menjadi final
 
@@ -414,6 +427,16 @@ dan perjalanan program dua kali. Sekarang masing-masing punya satu rumah:
 
 Halaman Ringkasan mahasiswa turun dari 29.802 menjadi 21.186 karakter.
 
+Aturan tampilan dashboard mahasiswa:
+
+- urutannya mengikuti pertanyaan mahasiswa: berapa nilai saya, sudah sejauh mana, aspek mana
+  saja beserta statusnya, lalu apa yang masih ditunggu;
+- **satu angka besar saja** (nilai akhir); angka lain lebih kecil supaya mata tahu harus mulai
+  dari mana;
+- nilai akhir selalu disertai status dan dasar hitungnya (R3);
+- aspek terkunci tampil dengan gembok dan semester pembukaannya, tidak pernah sebagai 0 (R2);
+- grafik di kartu nilai akhir mengikuti data yang ada, lihat *Grafik* di bagian Catatan kode.
+
 Tombol **Ajukan koreksi nilai** yang sebelumnya mati kini membuka formulir
 sungguhan: mahasiswa memilih komponen, menuliskan alasan, dan pengajuannya masuk
 ke antrean Kemahasiswaan. Ini tetap satu-satunya aksi tulis milik mahasiswa (R8)
@@ -456,6 +479,180 @@ tidak boleh dikembalikan begitu saja:
   supaya pengguna bertema gelap tidak melihat kedipan putih.
 - **Penjaga peran berpindah lewat router di dalam efek**, bukan mengembalikan `<Navigate>`:
   mengubah rute selagi merender ditolak React.
+
+## Catatan kode
+
+Penjelasan yang dulu tersebar sebagai komentar panjang di kode front-end. Komentar di kode kini
+pendek dan menunjuk ke sini, misalnya `lihat README.md › Hidrasi`.
+
+### Hidrasi
+
+Next merender halaman di server lebih dulu, lalu peramban menghidrasinya. Apa pun yang hanya ada
+di peramban harus menunggu komponen menempel:
+
+- **Sesi** (`src/lib/auth.jsx`) dibaca sesudah menempel. `siap` menandai pembacaan selesai;
+  sebelum itu pintu depan (`app/page.jsx`) dan penjaga peran tidak boleh menyimpulkan "belum
+  masuk", kalau tidak pengguna yang sudah masuk ikut ditendang ke halaman masuk.
+- **Tema** dipasang skrip kecil di `<head>` (`src/lib/theme.jsx`) sebelum halaman digambar,
+  jadi `<html>` wajib memakai `suppressHydrationWarning`.
+- **Bahasa** selalu mulai dari Indonesia, sama dengan HTML dari server. Pilihan tersimpan baru
+  dipasang setelah menempel. Bawaannya Indonesia, bukan bahasa peramban.
+- **Tulis setelah baca**: sesi, tema, dan bahasa baru ditulis ke `localStorage` setelah
+  pembacaan awal selesai. Tanpa penjagaan itu, render pertama menimpa pilihan yang tersimpan.
+- **Jam** di penanda kesegaran data (`StatusData.jsx`) dirender sesudah menempel karena jam
+  server dan peramban berbeda.
+
+### Data dan store
+
+- Setiap halaman yang membaca nilai memanggil `useStore()` dan memasukkan `versi` darinya ke
+  dependensi `useMemo`, supaya ikut menghitung ulang setiap data berubah.
+- Larik di `src/lib/data.js` (master maupun isian) **diisi ulang di tempat, tidak pernah
+  diganti**: halaman dan `store.js` memegang rujukannya sejak modul dimuat.
+- Data master dipasang `app/penyedia.jsx` sebelum anak pertama dirender, jadi isi awal dari kode
+  tidak sempat tampil dan render server sama dengan render peramban. `app/layout.jsx` dirender
+  per permintaan; kalau basis data mati, isi awal dari kode yang dipakai supaya situs tetap jalan.
+- `PemuatData.jsx` menahan panel sampai `/api/data` selesai, supaya halaman tidak sempat
+  menulis "belum ada data" selagi datanya masih di jalan.
+- Setiap penulisan dikirim ke API, lalu seluruh data dimuat ulang dari basis data. Pemuatan yang
+  sudah didahului pemuatan lebih baru diabaikan. Saat keluar, data dikosongkan supaya akun
+  berikutnya tidak melihat sisa akun sebelumnya.
+- Status pengumpulan (`masuk`, `menunggu`, `ditolak`, `dinilai`) **dihitung**, tidak disimpan.
+  Sebagai kolom tersendiri ia akan jadi sumber kebenaran kedua yang bisa berselisih dengan nilai
+  setelah satu rollback saja.
+- Mode lokal hanya untuk skrip uji (`scripts/modeLokal.js`); website selalu lewat server.
+
+### Usulan nilai dosen
+
+- Dosen **tidak pernah menulis ke transkrip**. Halaman dosen hanya memanggil `usulkanNilai()`,
+  dan nilainya masuk ke antrean usulan.
+- Kemahasiswaan memutuskan di `/admin/usulan`. *Disetujui*: nilainya ditulis lewat
+  `simpanBatch()`, jalur yang sama dengan input admin, jadi tercatat di audit log dan bisa
+  di-rollback. *Ditolak*: tidak ada nilai yang berpindah; usulannya tetap tersimpan beserta
+  alasannya.
+- Konfirmasinya dua lapis. **Sistem** memeriksa yang bisa diperiksa mesin (NIM terdaftar,
+  komponen cocok dengan unit asesmennya, nilai 0 sampai 100, dan R1); **orang** menilai apakah
+  angkanya masuk akal. Pemeriksaan sistem memakai `validasiBatchImport()` yang sama dengan
+  import, dan dijalankan ulang saat tombol ditekan; yang tampil di halaman hanya salinannya.
+  Baris yang gagal tidak ikut ditulis.
+- Pelaku nilai tetap dosen pengusul; penyetujunya dicatat terpisah.
+
+### Kamus dan terjemahan
+
+- Kunci kamus adalah **kalimat Indonesia** persis seperti di halaman, bukan kode seperti
+  `dashboard.nilaiAkhir`. Kalimat tanpa padanan jatuh kembali ke bahasa Indonesia, tidak pernah
+  tampil sebagai kode mentah.
+- Kunci dirapikan sebelum dicocokkan (spasi dan baris baru dipadatkan), jadi penataan ulang kode
+  tidak memutus terjemahan.
+- Urutannya: kamus `teks.js`, lalu penerjemah bawaan peramban, lalu bahasa Indonesia. Penerjemah
+  peramban hanya ada di Chromium versi baru dan berjalan di perangkat; ia hanya mengisi kalimat
+  yang belum ada di kamus dan tidak pernah menimpanya. Hasil mesin yang kehilangan penanda `{n}`
+  dibuang. `dumpOtomatis()` di konsol mencetak hasil mesin untuk ditempel ke `teks.js`.
+- Kata yang ejaannya sama di kedua bahasa (Dashboard, Email, Status, Helpdesk, …) tidak
+  didaftarkan. Nilai kosong berarti belum diterjemahkan; `npm run bahasa:sync` menulis kunci
+  baru dengan nilai kosong.
+- Penanda `{dalamKurungKurawal}` wajib ada juga di sisi Inggris. Nama penanda tidak boleh memakai
+  tanda hubung: `{ rata-rata: … }` dibaca sebagai pengurangan dan menggagalkan kompilasi.
+- Kunci yang dioper sebagai prop (judul dan kepala tabel `ChartFrame`, kepala tabel lembar cetak)
+  tidak terdeteksi pemindai `test:bahasa`, jadi dijaga manual di bagian akhir `teks.js`.
+- Pilihan dropdown ditampilkan dalam bahasa aktif, tetapi nilai yang dikirim tetap kalimat
+  Indonesianya, karena penyaringnya membandingkan dengan data.
+- Menu admin memakai kata "Penilaian", bukan "Nilai": kunci `'Nilai'` sudah berarti kepala
+  kolom tabel (satu angka), dan satu kunci tidak bisa melayani dua arti.
+
+### Pemilih bahasa
+
+`src/components/TombolBahasa.jsx` bisa diklik, diseret, dan dipakai dengan papan ketik (Tab lalu
+panah kiri/kanan). Bagian yang mudah rusak:
+
+- Pemilihan lewat penunjuk diselesaikan di **`pointerup`**, bukan di `onClick` tombolnya.
+  Karena `setPointerCapture`, peramban mengirim `click` ke wadah, bukan ke tombol tempat jari
+  turun, sehingga `onClick` tombol tidak pernah menyala. Penangkapan penunjuk tetap dipakai
+  karena tanpanya seretan berhenti begitu jari keluar dari kendali selebar 74 px.
+- `onClick` tombol hanya melayani klik yang bukan dari penunjuk (papan ketik dan `.click()` dari
+  kode), dikenali dari `event.detail === 0`.
+- Sesudah seretan, peramban ponsel mengirim klik kesesuaian (detail-nya bisa 0) ke tombol tempat
+  jari turun. Klik itu diabaikan supaya tidak membalikkan pilihan yang baru diseret.
+- Selama diseret, transisi pil dimatikan, dan `touch-none` wajib supaya seretan di ponsel tidak
+  ikut menggulir halaman.
+
+### Grafik
+
+- **Kartu nilai akhir mahasiswa**: tren dua garis (nilai semester dan kumulatif) baru tampil bila
+  ada minimal dua semester bernilai; selain itu tampil sebaran aspek.
+- **Sumbu Y tren boleh dipotong, asal dilabeli**: lebar jendelanya minimal 20 angka
+  (`src/lib/kurva.js`) dan angka di ujung sumbu selalu ditulis. Grafik batang selalu mulai dari
+  nol.
+- **Kurva monoton** (Fritsch-Carlson, `kurva.js`) tidak pernah melampaui titik datanya: nilai 86,
+  85, 86 tidak boleh tergambar menyentuh 84. Kurva hanya ditarik melintasi semester yang
+  berurutan, dan semester yang belum dibuka tidak digambar (R2).
+- SVG tren memakai `preserveAspectRatio="none"`, jadi titiknya ditulis sebagai HTML (`<circle>`
+  akan jadi lonjong) dan garisnya memakai `vectorEffect="non-scaling-stroke"` supaya tebalnya
+  tidak ikut teregang.
+- **Sebaran aspek** memakai titik pada jalur 0 sampai 100 bertanda rata-rata minimal, bukan
+  batang: selisih 84 dan 87 pada batang setinggi 40 px hanya satu piksel. Titiknya satu warna,
+  karena warna area hanya 2,76:1 dan 2,43:1 di atas jalur (di bawah 3:1).
+- **Tooltip** (`src/lib/tunjuk.js`, WCAG 1.4.13) muncul lewat tetikus, fokus papan ketik, atau
+  ketukan; tetap ada saat tetikus singgah di atasnya; Escape menyembunyikannya tanpa memindahkan
+  fokus. Isinya `aria-hidden` karena sudah dibacakan lewat `aria-label`, dan di layar sentuh ia
+  tembus ketukan.
+- **Perkembangan per semester** (Ringkasan admin): pilihan "Semester N" berisi mahasiswa yang
+  sudah bernilai di Semester 1 sampai N, jadi tiap batang dihitung dari orang yang sama dan
+  selisihnya adalah perkembangan. Garis putus-putus hanya untuk rata-rata minimal.
+- Setiap grafik punya tampilan tabel lewat `ChartFrame`. Penyebut persentase donat adalah jumlah
+  seluruh irisan, lihat *Kenapa donat* di atas.
+
+### Warna dan kontras
+
+- **Status ditulis polos**: kata biasa tanpa warna, ikon, atau pil. Status muncul di hampir setiap
+  baris, jadi warna di sana berhenti menandai apa pun. Tingkatannya dibedakan berat huruf (final
+  pekat, berjalan lebih ringan), dan teks redupnya memakai `ink-2` (6,89:1), bukan `ink-3`
+  (3,22:1).
+- **Penanda (Draft)** ditulis merah dalam kurung, bukan pil kuning. `--warning` hanya 1,83:1
+  sebagai teks di kartu putih, sedangkan `--critical` 4,80:1 (terang) dan 6,18:1 (gelap). Yang
+  jarang boleh berwarna.
+- Teks amber memakai `--warning-ink` (5,09:1), bukan `--warning`.
+- Lencana lonceng mahasiswa biru, bukan merah: komponen yang belum dinilai bukan galat.
+- Warna identitas hanya milik **area** (tiga slot kategorikal di `index.css`); cluster dan aspek
+  dikenali lewat kode dan label. `--brand-ink` sengaja jauh lebih gelap dari `--c1` (ΔE 19,5)
+  supaya tidak tertukar dengan Area A.
+- Teks putih 55% di atas biru tua masih 5,32:1; bilah atas mahasiswa (latar 74%) 7,37:1 pada
+  kasus terburuk.
+
+### Gerak
+
+- Isi halaman memudar singkat setiap pindah menu (pembungkusnya diberi `key` per jalur).
+  `.animate-halaman` memakai `animation-fill-mode: backwards`, **bukan** `both`: dengan `both`,
+  Chrome menahan `transform` sesudah animasi dan setiap elemen `fixed` di halaman ikut mengacu ke
+  pembungkus itu, bukan ke layar.
+- Sorotan menu sidebar (`src/lib/penandaGeser.js`) diukur sebelum dilukis; penempatan pertama
+  dan perubahan ukuran langsung melompat tanpa meluncur.
+- Semua gerak dimatikan oleh blok `prefers-reduced-motion` di akhir `index.css`.
+
+### Cetak
+
+- Transkrip mencetak `LembarCetak.jsx`, lembar resmi yang hanya ada di kertas. Tampilan layar,
+  grafik, tombol, dan bantuan mengambang tidak ikut tercetak.
+- Tabel lebar diberi `print:overflow-visible print:min-w-0`: di kertas tidak ada yang bisa
+  digulir, dan A4 potret bermargin 14 mm hanya menyisakan sekitar 688 px. Kerangka mahasiswa
+  memakai `print:pl-0` karena sidebar disembunyikan saat mencetak.
+- Latar belang tabel memakai `print-color-adjust: exact`; tanpa itu peramban membuang warna latar.
+- Alamat kampus di kaki lembar adalah `div` dengan posisi `fixed` (diulang di setiap halaman),
+  bukan `<footer>`, karena aturan cetak global menyembunyikan semua `<footer>`.
+- Sertifikat dicetak A4 lanskap dan tidak dirender sama sekali selama belum layak, jadi Ctrl+P
+  tidak pernah menghasilkan sertifikat.
+- Nilai yang belum ada ditulis "...", bukan 0 (R2).
+
+### Halaman profil
+
+- Satu halaman untuk tiga peran. **Kolom abu** milik institusi (nama, NIM, email, program studi,
+  angkatan) dan tidak bisa disunting: kalau bisa, mahasiswa dapat menampilkan NIM orang lain di
+  transkripnya. **Kolom putih** milik pengguna (telepon, ponsel, alamat, foto) dan tidak
+  memengaruhi nilai apa pun.
+- Kunci akun: NIM untuk mahasiswa dan NIP untuk dosen, bukan email. Kunci selalu disusun lewat
+  `kunciSesi()`; kalau tiap tempat menghitung sendiri, avatar dan halaman profil bisa memakai
+  kunci berbeda untuk orang yang sama.
+- Foto disimpan 256 px, ditambah gambar asal yang diperkecil supaya bisa disunting ulang tanpa
+  pecah. Berkas sumber dibatasi 5 MB.
 
 ## Status pengerjaan
 

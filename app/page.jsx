@@ -4,9 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { panelUntuk, useAuth } from '../src/lib/auth'
 
-/* Pintu depan: mengarahkan ke panel sesuai peran, atau ke halaman masuk.
-   Menunggu `siap` supaya pengguna yang sesinya masih dibaca tidak telanjur
-   dilempar ke halaman masuk. */
+/* Tunggu `siap`: sesi yang masih dibaca jangan dilempar ke halaman masuk. */
 export default function Beranda() {
   const { user, siap } = useAuth()
   const router = useRouter()

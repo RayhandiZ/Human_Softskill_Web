@@ -2,10 +2,6 @@ import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, Responsi
 import ChartFrame, { VizTooltip } from './ChartFrame'
 import { CLUSTER } from '../../lib/curriculum'
 
-/* Enam sumbu cluster, satu seri. Cluster yang seluruh aspeknya belum dibuka
-   TIDAK digambar di angka nol — nilainya null sehingga sumbunya kosong, dan
-   keadaannya dijelaskan lewat daftar di bawah grafik (R2). */
-
 export default function RadarCluster({
   data,
   title = 'Profil enam cluster',

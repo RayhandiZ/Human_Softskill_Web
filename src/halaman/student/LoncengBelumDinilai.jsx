@@ -4,25 +4,6 @@ import { IconBell, IconChevronRight, IconInfo } from '../../components/Icons'
 import { SUMBER } from '../../lib/curriculum'
 import { useTeks } from '../../lib/bahasa'
 
-/* --------------------------------------------------------------------------
-   Lonceng "Belum dinilai" di bilah atas panel mahasiswa.
-
-   Isinya komponen asesmen pada semester yang sudah dibuka tetapi nilainya
-   belum diunggah penilai. Dulu tampil sebagai kartu di dashboard; sebagai
-   lonceng ia tidak memakan ruang gulir, dan tetap terlihat dari halaman mana
-   pun.
-
-   Dua keputusan yang disengaja:
-   - Lencananya BIRU, bukan merah. Ini bukan galat dan bukan tugas yang
-     terlambat — mahasiswa tidak perlu melakukan apa pun. Merah akan membuat
-     sebelas komponen yang wajar belum dinilai terbaca seperti sebelas masalah.
-     Kalimat pertama di panelnya pun menegaskan hal yang sama.
-   - Lonceng hanya muncul bila memang ada yang ditunggu, sama seperti lonceng
-     panel Kemahasiswaan: kendali yang tidak menuju ke mana pun lebih
-     membingungkan daripada tidak ada.
-   -------------------------------------------------------------------------- */
-
-/** Aspek yang masih punya komponen kosong, beserta komponennya. */
 export const belumDinilai = (t) =>
   t.aspek
     .filter((a) => !a.terkunci && a.komponenKosong.length > 0)
@@ -68,9 +49,6 @@ export default function LoncengBelumDinilai({ t }) {
       </button>
 
       {buka ? (
-        /* Di ponsel panel dipasang tetap selebar layar: lonceng letaknya dekat
-           tepi kanan, dan panel 360px yang ditambatkan ke lonceng akan meluber
-           keluar layar di sisi kiri. */
         <div
           role="dialog"
           aria-label={teks('Komponen belum dinilai')}

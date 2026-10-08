@@ -14,19 +14,9 @@ import { useStore, usulanDosen } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 
-/* --------------------------------------------------------------------------
-   Apa yang terjadi pada nilai yang sudah dikirim.
-
-   Halaman ini ada karena persetujuan berarti menunggu, dan menunggu tanpa
-   kabar adalah cara tercepat membuat orang berhenti memakai sebuah alur.
-   Dosen perlu bisa menjawab tiga pertanyaan sendiri: sudah saya kirim belum,
-   sudah diputuskan belum, dan kalau ditolak — kenapa.
-   -------------------------------------------------------------------------- */
-
 const RUPA = {
   menunggu: { label: 'Menunggu keputusan' },
   disetujui: { label: 'Disetujui' },
-  // Ditebalkan karena menunggu tindakan dosen: diusulkan ulang.
   ditolak: { label: 'Ditolak', perluTindakan: true },
 }
 

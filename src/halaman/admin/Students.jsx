@@ -27,9 +27,6 @@ const KOLOM = [
 
 export default function Students() {
   const t = useTeks()
-  // Ikut menghitung ulang begitu ada nilai yang masuk dari panel Kemahasiswaan.
-  /* Ikut menghitung ulang setiap ada nilai yang tersimpan — dan setiap data
-     disegarkan, karena segarkanData() memakai saluran yang sama. */
   const versi = useStore()
   const segar = terakhirSegar()
   const [filter, setFilter] = useState(DEFAULT_FILTER)
@@ -79,8 +76,6 @@ export default function Students() {
   const halaman = Math.max(1, Math.ceil(urut.length / PAGE_SIZE))
   const tampil = urut.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  /* Tombol ini sebelumnya tidak menuju ke mana pun. Isinya persis tabel yang
-     sedang tampil, mengikuti filter dan urutan yang dipilih. */
   function eksporCSV() {
     unduhBerkas(
       'data-mahasiswa-' + new Date().toISOString().slice(0, 10) + '.csv',
@@ -110,9 +105,6 @@ export default function Students() {
             {t('rata-rata {n}', { n: r.rata ?? '-' })} ·{' '}
             {t('{n} transkrip final', { n: r.final })}
           </p>
-          {/* Penanda waktu hanya muncul setelah benar-benar disegarkan —
-              menuliskannya sejak awal akan mengaku melakukan sesuatu yang
-              belum terjadi. */}
           {segar ? (
             <p className="mt-1 text-[12.5px] text-ink-3">
               {t('Terakhir disegarkan {jam}', {
@@ -122,9 +114,6 @@ export default function Students() {
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {/* Satu pintu memuat ulang data. Hari ini ia membaca ulang sumber
-              yang ada; saat basis data tersambung, hanya segarkanData() di
-              store yang berubah — tombol ini tidak. */}
           <button type="button" className="btn-ghost" onClick={segarkanData}>
             <IconRefresh size={17} />
             {t('Segarkan data')}
@@ -184,7 +173,6 @@ export default function Students() {
                     <Link href={'/admin/mahasiswa/' + x.s.id} className="text-[14px] font-bold text-ink hover:text-brand-ink">
                       {x.s.name}
                     </Link>
-                    {/* Email ditampilkan karena itulah identitas mahasiswa saat masuk. */}
                     <span className="block text-[12px] text-ink-3">{x.s.email}</span>
                   </td>
                   <td className="table-cell">{x.s.program}</td>

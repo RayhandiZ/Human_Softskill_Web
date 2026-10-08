@@ -10,26 +10,7 @@ import { useStore } from '../lib/store'
 import { BATAS_FOTO_MB, bacaFoto, kunciSesi, simpanProfil, useProfil } from '../lib/profil'
 import PenyuntingFoto from '../components/PenyuntingFoto'
 
-/* --------------------------------------------------------------------------
-   Halaman profil untuk TIGA peran, satu berkas.
-
-   Susunannya mengambil konsep dari halaman profil E-Learning: judul berisi nama
-   dan NIM, bagian-bagian yang bisa dilipat, label di kiri dan kolom isian di
-   kanan, foto dengan area seret-dan-lepas, lalu satu tombol simpan di bawah.
-
-   Yang paling penting dari rujukan itu justru bukan tata letaknya, melainkan
-   PEMBEDAAN DUA JENIS KOLOM:
-
-     abu, tidak bisa disunting  → milik institusi. Nama, NIM, email, program
-                                  studi, angkatan. Kalau ini bisa ditimpa dari
-                                  sini, seseorang bisa menampilkan NIM orang
-                                  lain pada transkripnya sendiri.
-     putih, bisa disunting      → milik orangnya. Telepon, ponsel, alamat, foto.
-                                  Tidak satu pun memengaruhi perhitungan nilai.
-
-   Tombol "Perbarui profil" hanya menyentuh kelompok kedua, dan simpanannya
-   nyata — lihat lib/profil.js.
-   -------------------------------------------------------------------------- */
+/* Kolom abu milik institusi, kolom putih milik pengguna; lihat README.md › Halaman profil. */
 
 /* ------------------------------ bagian bisa dilipat ----------------------- */
 
@@ -55,8 +36,6 @@ function Seksi({ judul, terbuka, onToggle, children }) {
   )
 }
 
-/* Satu baris formulir: label di kiri, kendali di kanan. Pada layar sempit
-   labelnya naik ke atas kolomnya sendiri agar tidak berdesakan. */
 function Baris({ label, htmlFor, children, catatan }) {
   return (
     <div className="grid gap-x-6 gap-y-1.5 py-3 sm:grid-cols-[170px_minmax(0,1fr)] sm:items-start">
@@ -74,8 +53,6 @@ function Baris({ label, htmlFor, children, catatan }) {
   )
 }
 
-/* Kolom terkunci. Abu penuh dan tanpa bingkai fokus — bentuknya sendiri sudah
-   memberi tahu bahwa isinya tidak bisa diketik, sebelum ada yang mencoba. */
 function Tetap({ children, angka = false }) {
   return (
     <p
@@ -104,9 +81,6 @@ export default function Profil() {
   const mahasiswa = user?.role === 'student'
   const student = mahasiswa ? mahasiswaSesi(user) : null
 
-  /* Halaman ini dipakai tiga peran. Yang berbeda hanya identitas dan satu
-     seksi keterangan; seluruh isian yang bisa disunting — telepon, alamat,
-     foto — sama persis, jadi tidak ada alasan membuat tiga halaman. */
   const dosen = dosenSesi(user)
 
   const kunci = kunciSesi(user, student?.nim)
@@ -117,17 +91,10 @@ export default function Profil() {
   const [galat, setGalat] = useState(null)
   const [tersimpanPesan, setTersimpanPesan] = useState(false)
   const [seret, setSeret] = useState(false)
-  /* Gambar yang sedang diatur posisinya. Selama ini terisi, penyunting terbuka
-     dan belum ada apa pun yang masuk ke formulir. */
   const [sedangDiatur, setSedangDiatur] = useState(null)
   const berkasRef = useRef(null)
 
-  /* Berpindah akun (keluar lalu masuk sebagai orang lain) harus memuat ulang
-     isian, bukan meninggalkan ketikan pemilik sesi sebelumnya di layar.
-
-     Yang diamati KUNCI AKUN, bukan objek `tersimpan`. Objek itu berganti
-     identitas setiap kali disimpan, dan menyalakan efek ini di situ akan
-     langsung menghapus pesan "Perubahan tersimpan" yang baru saja muncul. */
+  /* Amati kunci akun, bukan objek `tersimpan`: objek itu berganti setiap kali disimpan. */
   const kunciSebelumnya = useRef(kunci)
   useEffect(() => {
     if (kunciSebelumnya.current === kunci) return
@@ -138,7 +105,7 @@ export default function Profil() {
   }, [kunci, tersimpan])
 
   const nama = mahasiswa ? student.name : (dosen?.nama ?? admin.name)
-  const email = mahasiswa ? student.email : (dosen?.email ?? admin.email)
+  const email = mahasiswa ? student.email : (dosen?.email ?? user?.email ?? '')
   const inisial = mahasiswa
     ? student.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
     : (dosen?.inisial ?? 'KH')
@@ -171,8 +138,6 @@ export default function Profil() {
     setTersimpanPesan(false)
   }
 
-  /* Berkas yang dipilih TIDAK langsung menjadi foto: ia dibuka di penyunting
-     dulu supaya posisinya bisa diatur. */
   async function ambilFoto(file) {
     setGalat(null)
     try {
@@ -272,7 +237,6 @@ export default function Profil() {
         )}
         <Baris
           label={t('Alamat email')}
-          // catatan="Kolom abu berasal dari sistem akademik dan tidak dapat diubah di sini."
         >
           <Tetap>{email}</Tetap>
         </Baris>
@@ -292,16 +256,11 @@ export default function Profil() {
               <span className="block text-[14.5px] text-ink-2">
                 {t(tersimpan.foto ? 'Terpasang' : 'Belum ada, inisial nama yang dipakai')}
               </span>
-              {/* Menyunting ulang memakai gambar ASAL yang tersimpan, bukan
-                  hasil potongan 256 px — kalau tidak, memperbesar sedikit saja
-                  sudah membuat fotonya pecah. */}
+              {/* Sunting ulang memakai gambar asal, bukan potongan 256 px yang akan pecah. */}
               {tersimpan.foto ? (
                 <button
                   type="button"
                   onClick={() => setSedangDiatur(tersimpan.fotoSumber ?? tersimpan.foto)}
-                  /* Nama panjangnya dieja untuk pembaca layar: "Edit" sendirian
-                     tidak memberi tahu apa yang disunting. Tetap diawali kata
-                     yang terlihat, supaya perintah suara tetap cocok. */
                   aria-label={t('Edit foto profil')}
                   className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold text-ink-2 transition hover:border-brand-ink hover:text-brand-ink"
                 >
@@ -502,7 +461,6 @@ export default function Profil() {
         <Baris
           label={t('Alamat')}
           htmlFor="alamat"
-          // catatan="Hanya dipakai bila Biro Kemahasiswaan perlu menghubungi Anda. Kolom ini boleh dikosongkan."
         >
           <textarea
             id="alamat"
@@ -557,11 +515,6 @@ export default function Profil() {
           </span>
         ) : null}
       </div>
-
-      {/* <p className="pt-1 text-[13px] leading-relaxed text-ink-3">
-        Telepon, ponsel, alamat, dan foto tersimpan di peramban ini saja — purwarupa ini belum
-        terhubung ke basis data kampus. Nama, NIM, program studi, dan angkatan diurus lewat BAAK.
-      </p> */}
     </form>
   )
 }

@@ -23,22 +23,8 @@ import { CONFIG } from '../../lib/config'
 import { useStore, usulanMenunggu } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
 
-/* --------------------------------------------------------------------------
-   Lonceng panel Kemahasiswaan — pasangan dari lonceng panel mahasiswa.
+/* Tiap baris membuka Input Nilai dengan sasaran terisi; lihat README.md › Input nilai. */
 
-   Keduanya kini berperilaku sama: sebuah panel yang bisa dibuka, bukan tautan
-   yang langsung melempar. Bedanya isi, karena pekerjaannya memang berbeda —
-   mahasiswa MENUNGGU nilai, Kemahasiswaan MEMASUKKAN nilai.
-
-   Yang membuat panel ini berguna: tiap baris bukan sekadar kabar, melainkan
-   PINTASAN KERJA. Sekali diketuk, halaman Input Nilai terbuka dengan seluruh
-   pilihan Langkah 1 sudah terisi — semester, unit penilai, angkatan, program
-   studi, dan aspeknya — sehingga daftar mahasiswa beserta nama dan NIM-nya
-   langsung tampil siap diisi. Tanpa itu, pengguna harus menerjemahkan sendiri
-   "417 nilai kosong" menjadi lima pilihan dropdown yang tepat.
-   -------------------------------------------------------------------------- */
-
-/** Menyusun alamat halaman input lengkap dengan sasarannya. */
 function tautanInput({ semester, sumber, angkatanId, prodi, aspekId, nim, tab }) {
   const q = new URLSearchParams()
   if (semester) q.set('semester', String(semester))
@@ -51,7 +37,6 @@ function tautanInput({ semester, sumber, angkatanId, prodi, aspekId, nim, tab })
   return '/admin/nilai?' + q.toString()
 }
 
-/** Pengajuan koreksi → sasaran input milik mahasiswa yang mengajukan. */
 function tautanKoreksi(k) {
   const komponen = getKomponenById(k.komponenId)
   const aspek = getAspek(k.aspekId)
@@ -93,22 +78,14 @@ function Baris({ href, onPilih, ikon: Ikon, judul, rinci, jumlah }) {
 
 export default function LoncengKemahasiswaan() {
   const t = useTeks()
-  // Ikut berubah begitu ada nilai yang tersimpan atau koreksi yang diputuskan.
   const versi = useStore()
   const [buka, setBuka] = useState(false)
   const ref = useRef(null)
 
   const koreksi = PENGAJUAN_KOREKSI.filter((k) => k.status === 'menunggu')
-  /* Usulan nilai dari dosen. Diletakkan paling atas di panel ini karena
-     inilah satu-satunya antrean yang MENAHAN pekerjaan orang lain: selama
-     belum diputuskan, nilai yang sudah dikerjakan dosen tidak sampai ke
-     mahasiswa mana pun. */
   const usulan = usulanMenunggu()
   const pekerjaan = useMemo(() => pekerjaanPenilaian(), [versi])
 
-  /* Dua keputusan yang dulu berdiri sendiri sebagai kartu "Requires Review" di
-     Ringkasan. Dipindah ke sini karena kartu itu mengulang angka yang sama
-     dengan daftar "Belum dinilai" di panel ini. */
   const tinjau = useMemo(() => perluDitinjau(), [versi])
   const tinjauan = [
     tinjau.dibawahAmbang > 0 && {
@@ -166,23 +143,11 @@ export default function LoncengKemahasiswaan() {
       </button>
 
       {buka ? (
-        /* Di layar kecil panel dipasang selebar layar: loncengnya dekat tepi
-           kanan, dan panel selebar 380px yang ditambatkan padanya akan meluber
-           keluar layar di sisi kiri. */
         <div
           role="dialog"
           aria-label={t('Pekerjaan yang menunggu')}
           className="fixed inset-x-4 top-[72px] z-50 overflow-hidden rounded-2xl border border-line bg-surface text-left shadow-pop animate-rise sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[420px]"
         >
-          {/* <div className="border-b border-line px-4 py-3.5"> */}
-            {/* <p className="flex items-baseline justify-between gap-3">
-              <span className="text-[15px] font-bold text-ink">Perlu ditangani</span>
-              <span className="text-[13px] font-semibold text-ink-2">{jumlah} hal</span>
-            </p> */}
-            {/* <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
-              Pilih satu — halaman input terbuka dengan sasarannya sudah terisi.
-            </p> */}
-          {/* </div> */}
 
           <div className="max-h-[min(55vh,460px)] overflow-y-auto px-2 py-2">
             {usulan.length ? (

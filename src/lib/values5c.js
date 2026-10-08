@@ -1,13 +1,4 @@
-/* --------------------------------------------------------------------------
-   5C — nilai inti institusi.
-
-   PENTING: 5C BUKAN sumbu penilaian. Sumbu penilaian adalah 10 aspek CPMK
-   (lihat curriculum.js). 5C hadir sebagai MATERI Mentoring 5C pada semester 1,
-   yang menyumbang komponen asesmen ke aspek A.1 dan A.2.
-
-   Modul ini hanya menyediakan teks penjelas untuk halaman Peta Perjalanan dan
-   kop dokumen. Tidak ada satu pun angka yang boleh dihitung darinya.
-   -------------------------------------------------------------------------- */
+/* 5C hanya materi Mentoring, bukan sumbu penilaian; jangan hitung apa pun dari sini. */
 
 export const NILAI_5C = [
   { kode: 'C1', nama: 'Caring', ringkas: 'Peduli pada sesama dan lingkungan.' },
@@ -25,7 +16,6 @@ export const MENTORING = {
   aspekTerkait: ['A1', 'A2', 'A3'],
 }
 
-/** Program kemahasiswaan per semester — dipakai di Peta Perjalanan. */
 export const PROGRAM_ENGAGEMENT = [
   { semester: 1, nama: 'Mentoring 5C', ringkas: MENTORING.ringkas },
   {

@@ -26,20 +26,8 @@ import {
 import { useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 
-/* --------------------------------------------------------------------------
-   Halaman pertama yang dilihat dosen dan staf kemahasiswaan.
+/* Sengaja tenang; lihat README.md › Ringkasan admin sengaja dibuat tenang. */
 
-   Sengaja dibuat tenang: sedikit angka, huruf besar, kalimat biasa, dan tautan
-   yang menyebut tujuannya. Grafiknya SATU saja — sebaran huruf mutu — karena
-   itulah pertanyaan yang paling sering ditanyakan sekilas. Filter bertingkat,
-   tabel padat, dan grafik lainnya tinggal di halaman rincian masing-masing.
-   Halaman ini hanya menjawab dua hal: bagaimana keadaannya, dan apa yang perlu
-   saya kerjakan.
-   -------------------------------------------------------------------------- */
-
-/* Satu angka besar, satu kalimat penjelas, dan — bila bermakna — satu
-   persentase dengan bilah tipis. Persentasenya selalu ditulis angkanya, bilah
-   hanya membantu membandingkan sekilas. */
 function Angka({ nilai, satuan, judul, keterangan, persen, persenLabel, kaki }) {
   const t = useTeks()
   return (
@@ -67,21 +55,15 @@ function Angka({ nilai, satuan, judul, keterangan, persen, persenLabel, kaki }) 
         </div>
       ) : null}
 
-      {/* Bersyarat: tanpa ini, kartu yang keterangannya kosong tetap menyisakan
-          satu baris kosong beserta jaraknya. */}
       {keterangan ? (
         <p className="mt-3 text-[14.5px] leading-relaxed text-ink-2">{t(keterangan)}</p>
       ) : null}
 
-      {/* Kaki kartu — tempat tombol lipat, mengikuti pola kartu "Nilai akhir"
-          di panel mahasiswa. Hanya kartu pertama yang memilikinya. */}
       {kaki}
     </Card>
   )
 }
 
-/* Baris kaki di dalam kartu: ringkasan di kiri, tombol lipat di kanan. Hanya
-   muncul di ponsel; di layar lebar seluruh kartu memang sudah terlihat. */
 function KakiLipat({ buka, onToggle, idIsi, ringkas }) {
   const t = useTeks()
   return (
@@ -104,12 +86,10 @@ function KakiLipat({ buka, onToggle, idIsi, ringkas }) {
   )
 }
 
-/* Tautan ke halaman lain — judul besar, satu kalimat, dan "Lihat selengkapnya". */
 function Pintu({ ke, judul, keterangan, icon: Icon, sembunyi = false }) {
   const t = useTeks()
   return (
-    /* Kelas sembunyi dipasang pada <li>-nya sendiri, bukan pada pembungkus
-       tambahan: <li> di dalam <li> bukan markup yang sah. */
+    /* Kelas sembunyi dipasang di <li> sendiri: <li> di dalam <li> tidak sah. */
     <li className={sembunyi ? 'hidden sm:block' : undefined}>
       <Link
         href={ke}
@@ -131,7 +111,6 @@ function Pintu({ ke, judul, keterangan, icon: Icon, sembunyi = false }) {
 
 export default function Overview() {
   const teks = useTeks()
-  // Ikut menghitung ulang begitu ada nilai yang masuk dari panel Kemahasiswaan.
   const versi = useStore()
   const { admin } = useAuth()
 
@@ -139,8 +118,6 @@ export default function Overview() {
 
   const angka = useMemo(() => ringkas(rows), [rows])
 
-  /* Dua bagian yang paling memanjangkan gulir di ponsel. Di layar >= 640px
-     keduanya terbentang sendiri dan tombolnya tidak dirender sama sekali. */
   const [bukaAngka, setBukaAngka] = useState(false)
   const [bukaHalaman, setBukaHalaman] = useState(false)
 
@@ -171,7 +148,6 @@ export default function Overview() {
           nilai={angka.total.toLocaleString('id-ID')}
           persen={persenLengkap}
           persenLabel="Nilai yang sudah masuk"
-          // keterangan="Tersebar di empat fakultas, angkatan 2024 sampai 2026."
           kaki={
             <KakiLipat
               buka={bukaAngka}
@@ -186,8 +162,7 @@ export default function Overview() {
           }
         />
 
-        {/* sm:contents melebur pembungkus ini di layar lebar, sehingga kedua
-            kartu kembali menjadi anggota grid induknya seperti biasa. */}
+        {/* sm:contents melebur pembungkus ini di layar lebar. */}
         <div
           id="angka-lain"
           className={(bukaAngka ? 'grid ' : 'hidden ') + 'gap-5 sm:contents'}
@@ -198,7 +173,6 @@ export default function Overview() {
           satuan="dari 100"
           persen={bagi(angka.diAtasAmbang)}
           persenLabel={teks('Di atas batas {ambang}', { ambang: CONFIG.AMBANG_SERTIFIKAT })}
-          // keterangan={'Batas kelulusan pembinaan adalah ' + CONFIG.AMBANG_SERTIFIKAT + '.'}
         />
         <Angka
           judul="Nilai sudah final"
@@ -206,7 +180,6 @@ export default function Overview() {
           satuan={teks('dari {n}', { n: angka.total.toLocaleString('id-ID') })}
           persen={bagi(angka.final)}
           persenLabel="Sudah dikunci"
-          // keterangan="Mahasiswa yang seluruh sepuluh aspeknya sudah dinilai dan dikunci."
         />
         </div>
       </section>
@@ -274,8 +247,6 @@ export default function Overview() {
             judul="Log Aktivitas"
             keterangan="Catatan setiap perubahan nilai beserta siapa yang mengubahnya."
           />
-          {/* Tombol berbentuk kartu, jadi ia terbaca sebagai bagian dari
-              daftar — bukan kendali yang melayang di atasnya. */}
           <li className="sm:hidden">
             <button
               type="button"

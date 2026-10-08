@@ -1,9 +1,6 @@
 import { StatusTeks } from '../../components/Ui'
 import { useTeks } from '../../lib/bahasa'
 
-// Rupa keempat status pengumpulan, dipakai tiga halaman. Teks saja seperti panel mahasiswa:
-// yang menunggu tindakan dosen ditebalkan, sisanya biasa. Tanpa warna, ikon, atau kapsul.
-
 export const RUPA_STATUS = {
   masuk: {
     label: 'Belum dinilai',

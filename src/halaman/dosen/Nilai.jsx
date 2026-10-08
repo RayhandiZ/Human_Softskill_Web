@@ -31,18 +31,7 @@ import { useAuth } from '../../lib/auth'
 import { LencanaStatus, RUPA_STATUS } from './status'
 import { useTeks } from '../../lib/bahasa'
 
-/* --------------------------------------------------------------------------
-   Input nilai oleh dosen — manual maupun otomatis dari berkas.
-
-   Satu hal yang membedakannya dari halaman input milik Kemahasiswaan: tombol
-   di ujung alur ini berbunyi "Kirim untuk disetujui", bukan "Simpan". Itu
-   bukan pilihan kata; itu memang yang terjadi. Nilainya masuk ke antrean
-   usulan dan belum menyentuh transkrip siapa pun sampai Biro Kemahasiswaan
-   memutuskan.
-
-   Karena itu halaman ini tidak pernah memanggil simpanBatch(). Satu-satunya
-   pintu keluarnya adalah usulkanNilai().
-   -------------------------------------------------------------------------- */
+/* Dosen tidak pernah memanggil simpanBatch(); jalan keluarnya hanya usulkanNilai(); lihat README.md › Usulan nilai dosen. */
 
 const BISA_DINILAI = new Set(['masuk', 'ditolak'])
 
@@ -55,8 +44,6 @@ export default function NilaiDosen() {
 
   const daftarKomponen = useMemo(() => komponenDosen(dosen), [dosen])
 
-  /* Sasaran boleh datang dari halaman Pengumpulan: sekali klik "Nilai" pada
-     satu baris, tugasnya sudah terpilih dan mahasiswanya sudah tersaring. */
   const [komponenId, setKomponenId] = useState(() => {
     const dari = params?.get('komponen')
     return daftarKomponen.some((k) => k.id === dari) ? dari : (daftarKomponen[0]?.id ?? null)
@@ -65,9 +52,6 @@ export default function NilaiDosen() {
   const [tab, setTab] = useState('manual')
   const [catatan, setCatatan] = useState('')
   const [terkirim, setTerkirim] = useState(null)
-  /* Galat tampil di dalam halaman, bukan lewat window.alert: dialog bawaan
-     peramban memblokir seluruh tab, tidak bisa diberi gaya, dan di sebagian
-     peramban ponsel tidak muncul sama sekali. */
   const [galat, setGalat] = useState('')
 
   const komponen = komponenId ? getKomponenById(komponenId) : null
@@ -82,7 +66,6 @@ export default function NilaiDosen() {
 
   const bisa = baris.filter((b) => BISA_DINILAI.has(b.status.id))
 
-  /** Satu-satunya jalan keluar halaman ini. true bila usulannya sudah tersimpan. */
   async function kirim(entri, cara) {
     setGalat('')
     try {
@@ -401,10 +384,6 @@ function IsiManual({ galat, baris, bisa, cari, setCari, onKirim }) {
 
 /* ------------------------------ cara 2: otomatis -------------------------- */
 
-/* Kolom NIM dicari dengan daftar nama yang lazim dipakai dosen di berkas
-   nilainya sendiri. Kolom nilainya memakai skorKecocokan() — pencocok yang
-   sama dengan yang dipakai halaman import milik Kemahasiswaan, jadi keduanya
-   tidak akan pernah menebak berbeda untuk berkas yang sama. */
 const NAMA_NIM = ['nim', 'npm', 'no induk', 'nomor induk', 'student id', 'id mahasiswa']
 
 const normal = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '')
@@ -462,9 +441,6 @@ function IsiOtomatis({ galatKirim, komponen, baris, bisa, onKirim }) {
     pembaca.readAsText(file)
   }
 
-  /* Tiap baris berkas dicocokkan ke kelas ini. Yang tidak cocok TIDAK dibuang
-     diam-diam — ia ditampilkan beserta alasannya, karena satu NIM salah ketik
-     yang hilang tanpa jejak jauh lebih berbahaya daripada satu baris merah. */
   const periksa = useMemo(() => {
     if (!urai) return []
     const terpakai = new Set()
@@ -602,7 +578,6 @@ function IsiOtomatis({ galatKirim, komponen, baris, bisa, onKirim }) {
                     </td>
                     <td className="px-4 py-2.5">
                       {p.masalah ? (
-                        // Masalah tetap merah: ini galat yang menahan baris, sama seperti (Draft) di panel mahasiswa.
                         <span className="text-[12.5px] font-bold text-[var(--critical)]">{p.masalah}</span>
                       ) : (
                         <StatusTeks>{t('siap diusulkan')}</StatusTeks>

@@ -3,9 +3,6 @@ import { IconDocument } from '../Icons'
 import { Pill } from '../Ui'
 import { useTeks } from '../../lib/bahasa'
 
-/* Bingkai bersama untuk setiap grafik: judul, legenda, dan tampilan tabel.
-   Tabel wajib ada supaya angka tetap terbaca tanpa mengandalkan warna. */
-
 export default function ChartFrame({
   title,
   subtitle,
@@ -104,7 +101,6 @@ export default function ChartFrame({
   )
 }
 
-/* Tooltip seragam untuk semua grafik Recharts. */
 export function VizTooltip({ active, payload, label, suffix = '' }) {
   if (!active || !payload || !payload.length) return null
   return (

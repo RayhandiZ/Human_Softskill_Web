@@ -27,8 +27,6 @@ import { ajukanKoreksi, koreksiMilik, useStore } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
 import LembarCetak from './LembarCetak'
 
-/* Tanpa `tone`: status di transkrip pun kata biasa, bukan pil berwarna.
-   Lihat StatusTeks di components/Ui.jsx untuk alasannya. */
 const STATUS_LABEL = {
   terkunci: { teks: 'Terkunci' },
   menunggu: { teks: 'Menunggu nilai' },
@@ -40,7 +38,6 @@ const nomorDokumen = (student) =>
   'TSK/' + student.angkatanId + '/' + student.nim.slice(-5) + '/' + new Date().getFullYear()
 
 export default function Transkrip({ student }) {
-  // Ikut menghitung ulang begitu ada nilai yang masuk dari panel Kemahasiswaan.
   useStore()
   const teks = useTeks()
   const t = transkripOf(student)
@@ -54,7 +51,6 @@ export default function Transkrip({ student }) {
 
   return (
     <>
-      {/* Di kertas hanya lembar resmi yang tercetak; seluruh tampilan layar disembunyikan. */}
       <LembarCetak student={student} transkrip={t} />
     <div className="space-y-6 print:hidden">
       {/* ------------------------------ kop dokumen ------------------------------ */}
@@ -140,11 +136,7 @@ export default function Transkrip({ student }) {
           icon={IconDownload}
         />
 
-        {/* print:overflow-visible + print:min-w-0 — sebab pemotongan di kertas.
-            Di layar, tabel selebar 820px bisa digulir mendatar. Di kertas
-            tidak ada yang bisa digulir: apa pun yang melewati lebar halaman
-            hilang begitu saja, tanpa tanda apa pun bahwa ia pernah ada.
-            A4 potret bermargin 14mm hanya menyisakan sekitar 688px. */}
+        {/* Di kertas tidak ada yang bisa digulir: print:overflow-visible + print:min-w-0; lihat README.md › Cetak. */}
         <div className="overflow-x-auto print:overflow-visible">
           <table className="w-full min-w-[820px] border-collapse print:min-w-0 print:table-fixed">
             <thead>
@@ -290,10 +282,6 @@ export default function Transkrip({ student }) {
       </Card>
 
       {/* -------------------------------- grafik -------------------------------- */}
-      {/* print:hidden — transkrip yang dicetak adalah dokumen resmi berisi
-          angka, bukan laporan analitik. Radar dan batang di sini menambah dua
-          halaman kertas tanpa menambah satu pun keterangan yang belum ada di
-          tabel di atasnya. */}
       <div className="grid gap-6 xl:grid-cols-2 print:hidden">
         <RadarCluster data={clusterRows} seriesName={student.name.split(' ')[0]} />
         <AspectBars rows={t.aspek} />
@@ -380,8 +368,6 @@ function BarisRincian({ aspek }) {
           )}
         </p>
 
-        {/* Sebab yang sama dengan tabel utama: baris aspek yang sedang dibuka
-            ikut tercetak, dan 680px pun masih melewati lebar kertas. */}
         <div className="overflow-x-auto rounded-xl border border-line bg-surface print:overflow-visible">
           <table className="w-full min-w-[680px] border-collapse print:min-w-0 print:table-fixed">
             <thead>
@@ -459,8 +445,6 @@ function BarisRincian({ aspek }) {
 
 /* ------------------------- formulir pengajuan koreksi --------------------- */
 
-/* Satu-satunya aksi tulis milik mahasiswa. Pengajuan tidak mengubah nilai —
-   ia masuk ke antrean Kemahasiswaan untuk diputuskan. */
 function FormKoreksi({ student, transkrip, onSelesai }) {
   const t = useTeks()
   const terbuka = transkrip.aspek.filter((a) => !a.terkunci)

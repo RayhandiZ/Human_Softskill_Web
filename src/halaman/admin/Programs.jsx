@@ -9,7 +9,6 @@ import { useStore } from '../../lib/store'
 
 export default function Programs() {
   const t = useTeks()
-  // Ikut menghitung ulang begitu ada nilai yang masuk dari panel Kemahasiswaan.
   const versi = useStore()
   const [filter, setFilter] = useState(DEFAULT_FILTER)
   const [tampilan, setTampilan] = useState('prodi')
@@ -45,8 +44,6 @@ export default function Programs() {
             ...a,
           }))
 
-  /* Sebelumnya tombol ini tidak berbuat apa-apa. Isinya tabel perbandingan
-     yang sedang tampil, mengikuti tab dan filter yang aktif. */
   function unduhRekap() {
     unduhBerkas(
       'rekap-' + tampilan + '-' + new Date().toISOString().slice(0, 10) + '.csv',

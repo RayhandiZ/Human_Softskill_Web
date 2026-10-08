@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-// Titik data yang sedang ditunjuk: lewat tetikus, fokus papan ketik, atau ketukan (yang memberi fokus).
-// Tetikus boleh singgah di tooltip tanpa ia hilang, dan Escape menyembunyikannya (WCAG 1.4.13).
+// Tooltip WCAG 1.4.13: tetap saat tetikus singgah, Escape menyembunyikan.
 export function useTunjuk() {
   const jeda = useRef(0)
   const [arah, setArah] = useState(null)
@@ -9,7 +8,6 @@ export function useTunjuk() {
   const [diam, setDiam] = useState(false)
   const aktif = diam ? null : (arah ?? fokus)
 
-  // Jeda singkat sebelum hilang, supaya tetikus sempat pindah ke tooltip.
   const lepas = () => {
     clearTimeout(jeda.current)
     jeda.current = setTimeout(() => setArah(null), 150)

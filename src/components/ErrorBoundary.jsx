@@ -1,8 +1,5 @@
 import { Component } from 'react'
 
-/* Tanpa ini, satu galat saat render membuat React melepas seluruh pohon komponen
-   dan yang tersisa hanya halaman kosong tanpa petunjuk apa pun. */
-
 export default class ErrorBoundary extends Component {
   state = { error: null }
 

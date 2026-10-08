@@ -6,17 +6,6 @@ import { useTeks } from '../lib/bahasa'
 import { Avatar } from './Ui'
 import { IconChevronDown, IconChevronRight, IconLogout, IconUsers } from './Icons'
 
-/* --------------------------------------------------------------------------
-   Tombol avatar beserta menunya: identitas, Profil, dan Keluar.
-
-   Dipakai di dua latar berbeda — bilah biru panel Kemahasiswaan ('onbrand')
-   dan bilah terang panel mahasiswa ('terang') — jadi hanya warnanya yang
-   bercabang; isi dan perilakunya satu.
-
-   `rinci` menampilkan nama dan keterangan di samping avatar. Di layar sempit
-   teksnya disembunyikan dan tinggal avatarnya saja.
-   -------------------------------------------------------------------------- */
-
 export default function MenuAkun({ foto = null, tone = 'onbrand', rinci = null }) {
   const { user, logout } = useAuth()
   const t = useTeks()
@@ -24,8 +13,6 @@ export default function MenuAkun({ foto = null, tone = 'onbrand', rinci = null }
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
-  /* Profil tinggal di dalam panel masing-masing supaya kerangka yang
-     membungkusnya tetap sesuai peran. */
   const profilKe = panelUntuk(user?.role) + '/profil'
   const terang = tone === 'terang'
 

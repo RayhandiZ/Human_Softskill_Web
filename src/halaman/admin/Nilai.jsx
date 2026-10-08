@@ -66,22 +66,12 @@ const PAGE_SIZE = 10
 const SEMESTER_KOSONG = '— Pilih semester —'
 
 
-/* Tanda status per baris — satu-satunya tempat status ditentukan.
-   Baris tanpa tanda mengikuti aturan sistem: aspek menjadi final sendiri
-   begitu seluruh komponennya terisi. */
 const TANDA_BARIS = [
   { id: 'sementara', label: 'Sementara', ringkas: 'tahan walau sudah lengkap' },
   { id: 'final', label: 'Final', ringkas: 'kunci, nilai berhenti berubah' },
 ]
 
-/**
- * Menerapkan status ke aspek-aspek yang tersentuh sebuah batch.
- *
- * Hanya menyentuh pasangan (mahasiswa, aspek) yang benar-benar ikut tersimpan —
- * bukan seluruh angkatan. Status ditentukan per baris: yang tidak ditandai
- * mengikuti aturan sistem, sehingga satu penyimpanan bisa mengunci sebagian
- * orang dan menahan sebagian lainnya.
- */
+/** Tanda status hanya diterapkan ke pasangan (mahasiswa, aspek) yang ikut tersimpan. */
 async function terapkanStatus(batch, aktor, tandaBaris = {}) {
   const pasangan = [
     ...new Map(batch.jejak.map((j) => [j.nim + '|' + j.aspek, { nim: j.nim, aspekId: j.aspek }])).values(),
@@ -95,7 +85,7 @@ async function terapkanStatus(batch, aktor, tandaBaris = {}) {
     else kelompok.ikuti.push(pas)
   }
 
-  /* R: aspek yang komponennya belum lengkap tidak boleh dikunci, walau diminta. */
+  /* Aspek yang komponennya belum lengkap tidak boleh dikunci, walau diminta. */
   const layak = kelompok.final.filter((p) => bolehTandaiFinal(getStudentByNim(p.nim), p.aspekId).boleh)
 
   if (layak.length) await setPenguncianBanyak(layak, { status: 'final', aktor })
@@ -115,28 +105,15 @@ async function terapkanStatus(batch, aktor, tandaBaris = {}) {
 
 export default function Nilai() {
   const t = useTeks()
-  const versi = useStore() // ikut menghitung ulang setiap ada nilai yang tersimpan
+  const versi = useStore()
 
   const { admin } = useAuth()
   const aktor = admin.officer
 
-  /* --------------------------------------------------------------------------
-     Sasaran boleh datang dari alamat URL.
-
-     Lonceng di bilah atas menautkan ke sini lengkap dengan semester, unit
-     penilai, angkatan, program studi, aspek, dan kadang NIM — sehingga sekali
-     klik dari pemberitahuan, daftar mahasiswa yang perlu dinilai sudah terbuka
-     tanpa satu pun dropdown disentuh.
-
-     Tiap nilai DIPERIKSA dulu, tidak langsung dipakai: alamat bisa diketik
-     tangan atau ketinggalan zaman, dan pilihan yang tidak dikenal harus jatuh
-     ke bawaan, bukan membuat halaman kosong.
-     -------------------------------------------------------------------------- */
+  /* Sasaran boleh datang dari URL; nilai yang tidak dikenal jatuh ke bawaan; lihat README.md › Input nilai. */
   const params = useSearchParams()
   const awal = (kunci) => params?.get(kunci) ?? null
 
-  /* Langkah 1 — semester WAJIB dipilih lebih dulu. Selama masih kosong,
-     seluruh area kerja tidak ditampilkan. */
   const [semesterPilihan, setSemesterPilihan] = useState(() => {
     const n = Number(awal('semester'))
     return n >= 1 && n <= CONFIG.TOTAL_SEMESTER_PROGRAM ? 'Semester ' + n : SEMESTER_KOSONG
@@ -179,7 +156,6 @@ export default function Nilai() {
     [angkatanId, faculty, program, versi],
   )
 
-  /* Angkatan kini dibaca dari basis data, dan daftarnya bisa saja kosong. */
   if (!angkatan) {
     return (
       <Card>
@@ -196,13 +172,6 @@ export default function Nilai() {
 
   return (
     <div className="space-y-6">
-      {/* <div>
-        <h1 className="text-[22px] font-extrabold tracking-tight text-ink">Input &amp; Import Nilai</h1>
-        <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-2">
-          Nilai hanya boleh dimasukkan oleh unit penilai. Tentukan dulu semester yang akan diisi — komponen
-          asesmen yang tersedia berbeda di tiap semester.
-        </p>
-      </div> */}
 
       {/* ---------------------- langkah 1: pilih semester ---------------------- */}
       <Card>
@@ -284,9 +253,6 @@ export default function Nilai() {
               value={program}
               onChange={(v) => {
                 setProgram(v)
-                /* Satu prodi hanya milik satu fakultas. Begitu prodi dipilih,
-                   fakultasnya ikut sendiri — kedua kotak ini tidak boleh bisa
-                   saling bertentangan. */
                 if (v !== 'Semua') setFaculty(FAKULTAS_OF[v] ?? faculty)
               }}
               options={['Semua', ...programStudi(faculty)]}
@@ -456,16 +422,11 @@ export default function Nilai() {
 
 /* ------------------------------ hasil simpan ------------------------------ */
 
-/* Setelah nilai masuk, admin perlu tahu siapa saja yang terdampak — dan bahwa
-   transkrip serta dashboard mahasiswanya sudah ikut terhitung ulang sendiri. */
 function HasilSimpan({ hasil }) {
   const t = useTeks()
   const { batch, status } = hasil
   const mahasiswa = [...new Map(batch.jejak.map((j) => [j.nim, j])).values()]
 
-  /* Satu penyimpanan kini bisa bercampur: sebagian dikunci, sebagian ditahan,
-     sisanya mengikuti aturan sistem — karena tiap baris boleh bertanda sendiri.
-     Karena itu keterangannya disusun dari hitungan, bukan dari satu pilihan. */
   const bagian = []
   if (status.dikunci) bagian.push(t('{n} aspek dikunci sebagai final', { n: status.dikunci }))
   if (status.ditahan) bagian.push(t('{n} ditahan sebagai sementara', { n: status.ditahan }))
@@ -516,8 +477,6 @@ function HasilSimpan({ hasil }) {
   )
 }
 
-/* Galat penyimpanan dari server — misalnya basis data mati atau satu baris
-   ditolak aturan — tampil di halaman, bukan lewat window.alert. */
 function PesanGalat({ pesan }) {
   return (
     <p
@@ -530,25 +489,9 @@ function PesanGalat({ pesan }) {
   )
 }
 
-/* ============================== input manual ============================== */
+/* ------------------------------ input manual ------------------------------ */
 
-/* Tanda status satu baris.
-
-   Berupa tombol pensil, bukan kotak pilihan yang selalu terbuka: sepuluh
-   dropdown menganggur di satu tabel lebih ramai daripada informatif, dan
-   menandai status bukan pekerjaan yang dilakukan pada setiap baris.
-
-   Menunya MELAYANG di atas tabel memakai position: fixed, bukan dibentangkan di
-   dalam sel. Dua alasannya: membentangkan di dalam sel menambah tinggi baris
-   dan mendorong baris lain ke bawah, dan `position: absolute` akan terpotong
-   oleh badan tabel yang bisa digulir mendatar. Elemen fixed tidak ikut
-   terpotong overflow leluhurnya, jadi ia aman melewati tepi tabel.
-
-   Koordinatnya dihitung dari posisi tombol dan diperbarui saat halaman atau
-   tabel digulir, supaya menunya tidak pernah tertinggal di tempat lain.
-
-   Hanya hidup bila barisnya memang diisi: menandai baris yang tidak ikut
-   tersimpan tidak berpengaruh apa pun dan hanya menipu. */
+/* Menu tanda memakai position: fixed supaya tidak terpotong tabel yang bisa digulir mendatar. */
 function TandaBaris({ nama, nilai, aktif, buka, onBuka, onPilih }) {
   const teks = useTeks()
   const terpilih = TANDA_BARIS.find((t) => t.id === nilai)
@@ -566,13 +509,11 @@ function TandaBaris({ nama, nilai, aktif, buka, onBuka, onPilih }) {
       const lebar = 170
       setPosisi({
         atas: r.bottom + 6,
-        // Dijaga agar tidak meluber keluar tepi kanan layar sempit.
         kiri: Math.max(8, Math.min(r.left, window.innerWidth - lebar - 8)),
       })
     }
     hitung()
     window.addEventListener('resize', hitung)
-    // true: ikut mendengar gulir pada wadah di dalam halaman, bukan hanya jendela.
     window.addEventListener('scroll', hitung, true)
     return () => {
       window.removeEventListener('resize', hitung)
@@ -640,9 +581,6 @@ function InputManual({
   awalCari = '',
 }) {
   const teks = useTeks()
-  /* Aspek dan kotak pencarian ikut sasaran dari alamat URL bila ada. Aspek yang
-     tidak ada pada kombinasi semester+sumber ini diabaikan, jangan sampai
-     daftar komponennya kosong tanpa penjelasan. */
   const [aspekId, setAspekId] = useState(() =>
     aspekList.some((a) => a.id === awalAspek) ? awalAspek : (aspekList[0]?.id ?? null),
   )
@@ -718,8 +656,7 @@ function InputManual({
       setSibuk(false)
       return
     }
-    /* Nilainya sudah tersimpan. Isian dikosongkan sekarang juga, supaya menekan
-       Simpan lagi tidak membuat batch kembar walau penandaan statusnya gagal. */
+    /* Isian dikosongkan sekarang juga supaya Simpan ulang tidak membuat batch kembar. */
     const tandaBaris = tanda
     setDraf({})
     setTanda({})
@@ -804,8 +741,6 @@ function InputManual({
           </thead>
           <tbody>
             {tampil.map((s) => {
-              /* Baris dianggap "diisi" bila ada sel yang sedang diketik pada
-                 baris itu — itulah yang menentukan apakah ia ikut tersimpan. */
               const barisDiisi = kolom.some((k) => {
                 const v = draf[kunci(s.nim, k.id)]
                 return v !== undefined && String(v).trim() !== ''
@@ -817,8 +752,6 @@ function InputManual({
                     {s.name}
                   </Link>
                   <span className="block text-[12px] tabular-nums text-ink-3">{s.nim}</span>
-                  {/* Tanpa ini, nama pada daftar "Semua fakultas" tidak bisa
-                      dikenali asal program studinya. */}
                   <span className="block max-w-[210px] text-[12px] leading-snug text-ink-3">
                     {s.program} · {s.faculty}
                   </span>
@@ -859,9 +792,6 @@ function InputManual({
                   )
                 })}
 
-                {/* Tanda per baris. Hanya menyala bila baris ini memang diisi —
-                    menandai baris yang tidak ikut tersimpan tidak ada gunanya
-                    dan hanya menipu. */}
                 <td className="px-3 py-2.5 align-middle">
                   <TandaBaris
                     nama={s.name}
@@ -925,7 +855,7 @@ function InputManual({
   )
 }
 
-/* =============================== import cerdas ============================ */
+/* ----------------------------- import cerdas ------------------------------ */
 
 const ABAIKAN = '— Abaikan kolom ini —'
 const labelKomponen = (k) => k.id + ' · ' + k.label
@@ -969,13 +899,11 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
     fr.onload = () => {
       const isi = String(fr.result ?? '')
       setTeks(isi)
-      analisaSekarang(isi) // langsung dianalisa begitu diunggah
+      analisaSekarang(isi)
     }
     fr.readAsText(f)
   }
 
-  /* Mahasiswa di luar angkatan atau program studi yang sedang dipilih ditolak
-     dengan alasan yang menyebut apa yang tidak cocok. */
   const batasSasaran = (m) => {
     if (m.angkatanId !== angkatan.id)
       return tr('Mahasiswa bukan angkatan {label}', { label: angkatan.label })
@@ -1040,8 +968,6 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
     setPeta({})
     setTeks('')
     if (berkasRef.current) berkasRef.current.value = ''
-    /* Import massal tidak punya tanda per baris — seluruhnya mengikuti
-       aturan sistem. Penandaan final dilakukan lewat input manual. */
     try {
       setPesan({ batch, status: await terapkanStatus(batch, aktor) })
     } catch (e) {
@@ -1062,16 +988,11 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
     )
   }
 
-  /* Contoh rekap mentah: nama kolom seadanya dan skala 0–10, persis seperti
-     berkas yang biasanya keluar dari rekap dosen. */
+  /* Kolom nilai sengaja kosong: NIM dan namanya milik mahasiswa sungguhan. */
   function unduhContohMentah() {
     const kolom = komponenSumber.slice(0, 4)
     const kepala = ['NIM', 'Nama Mahasiswa', ...kolom.map(namaKolomMentah)]
-    const baris = mahasiswa.slice(0, 8).map((s, i) => [
-      s.nim,
-      s.name,
-      ...kolom.map((_, j) => (7.2 + ((i + j) % 5) * 0.4).toFixed(1)),
-    ])
+    const baris = mahasiswa.slice(0, 8).map((s) => [s.nim, s.name, ...kolom.map(() => '')])
     unduhBerkas('contoh-rekap-mentah-sem' + semester + '.csv', susunCSV(kepala, baris))
   }
 
@@ -1122,7 +1043,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
             }}
             rows={5}
             spellCheck={false}
-            placeholder={'NIM,Nama Mahasiswa,Tugas 1,UTS,Nilai Sikap\n' + (mahasiswa[0]?.nim ?? '') + ',Contoh Nama,8.4,7.9,8.8'}
+            placeholder="NIM,Nama Mahasiswa,Tugas 1,UTS,Nilai Sikap"
             className="w-full rounded-xl border border-line bg-surface-2 px-4 py-3 font-mono text-[12.5px] leading-relaxed text-ink placeholder:text-ink-3 focus:border-brand-ink focus:bg-surface"
           />
         </label>
@@ -1171,7 +1092,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
             </p>
           ) : null}
 
-          {/* pemetaan kolom */}
+          {/* ----------------------- pemetaan kolom ----------------------- */}
           <div className="overflow-hidden rounded-xl border border-line">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface-2 px-4 py-3">
               <p className="text-[12px] font-bold uppercase tracking-[.07em] text-ink-3">
@@ -1284,7 +1205,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
             </div>
           </div>
 
-          {/* pratinjau hasil hitung */}
+          {/* ------------------- pratinjau hasil hitung ------------------- */}
           {hasilMentah ? (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-3">
@@ -1425,7 +1346,6 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
   )
 }
 
-/** Nama kolom "seadanya" untuk contoh rekap mentah — sengaja tidak rapi. */
 function namaKolomMentah(k) {
   if (k.jenis === 'UTS') return 'UTS'
   if (k.jenis === 'UAS') return 'UAS'
@@ -1436,15 +1356,13 @@ function namaKolomMentah(k) {
   return 'Kehadiran Mentoring'
 }
 
-/* ============================ pengajuan koreksi =========================== */
+/* --------------------------- pengajuan koreksi ---------------------------- */
 
 function Koreksi({ aktor }) {
   const t = useTeks()
   const [catatan, setCatatan] = useState({})
   const [galat, setGalat] = useState('')
 
-  /* putuskanKoreksi asinkron (keputusannya disimpan ke basis data) dan
-     mengembalikan boolean: false bila sudah diputuskan di jendela lain. */
   const putuskan = async (id, keputusan) => {
     try {
       const berhasil = await putuskanKoreksi(id, keputusan, {
@@ -1546,7 +1464,7 @@ function Koreksi({ aktor }) {
   )
 }
 
-/* ============================== riwayat batch ============================= */
+/* ----------------------------- riwayat batch ------------------------------ */
 
 function RiwayatBatch() {
   const t = useTeks()
@@ -1558,8 +1476,7 @@ function RiwayatBatch() {
         subtitle={t('Batch yang Anda buat bisa dibatalkan; batch periode lalu hanya tercatat')}
         icon={IconUndo}
         action={
-          /* Hanya untuk mode lokal. Di basis data, menghapus seluruh nilai sekali
-             tekan terlalu berbahaya — batch dibatalkan satu per satu. */
+          /* Hanya mode lokal: di basis data batch dibatalkan satu per satu. */
           BATCH_SESI.length && modeLokal() ? (
             <button
               type="button"
@@ -1614,8 +1531,6 @@ function RiwayatBatch() {
                 <button
                   type="button"
                   onClick={async () => {
-                    /* Sama seperti putuskanKoreksi: false bila batch ini sudah
-                       dibatalkan, misalnya dari jendela lain. */
                     try {
                       if (!(await rollbackBatch(b.id))) {
                         setGalat(t('Batch ini sudah dibatalkan sebelumnya.'))

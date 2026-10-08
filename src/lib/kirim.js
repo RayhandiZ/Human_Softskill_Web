@@ -1,10 +1,5 @@
-// Satu pintu untuk setiap permintaan ke API. Galat dari server dikembalikan sebagai Error berisi
-// kalimat yang bisa langsung ditampilkan; jawaban 401 memberi tahu kerangka aplikasi bahwa sesinya
-// sudah berakhir.
-
 let saatSesiHabis = null
 
-/** Dipasang sekali oleh kerangka aplikasi (components/PemuatData.jsx). */
 export const aturSaatSesiHabis = (fn) => {
   saatSesiHabis = fn
 }

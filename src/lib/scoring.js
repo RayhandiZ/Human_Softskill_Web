@@ -9,13 +9,7 @@ import {
   getKomponen,
 } from './curriculum.js'
 
-/* --------------------------------------------------------------------------
-   Seluruh rumus penilaian tinggal di sini. Tidak ada perhitungan yang boleh
-   diulang di komponen halaman.
-
-   Modul ini tidak mengimpor rules.js — arah ketergantungannya satu arah:
-   curriculum → scoring → rules → UI.
-   -------------------------------------------------------------------------- */
+/* Seluruh rumus penilaian di sini; arah ketergantungan curriculum → scoring → rules → UI. */
 
 /* ------------------------------ rubrik huruf ------------------------------ */
 
@@ -54,7 +48,6 @@ export const RUBRIK = [
   },
 ]
 
-/* Di bawah 60 bukan huruf mutu resmi — ia sebuah status, bukan nilai. */
 export const BELUM_MEMENUHI = {
   huruf: null,
   min: 0,
@@ -75,12 +68,7 @@ const jumlah = (arr) => arr.reduce((a, b) => a + b, 0)
 const rerata = (arr) => (arr.length ? jumlah(arr) / arr.length : null)
 const bulat = (n) => (n == null ? null : Math.round(n))
 
-/**
- * Membagi `total` ke sekumpulan komponen.
- * Bila SELURUH komponen punya `bobot` eksplisit, angka itu dipakai sebagai
- * porsi relatif; selain itu dibagi rata. Campuran sengaja tidak didukung
- * supaya hasilnya selalu bisa ditebak.
- */
+/** Bobot eksplisit dipakai hanya bila seluruh komponen punya bobot; selain itu dibagi rata. */
 function bagi(komponen, total) {
   const hasil = {}
   if (!komponen.length) return hasil
@@ -94,13 +82,6 @@ function bagi(komponen, total) {
   return hasil
 }
 
-/**
- * Bobot tiap komponen sebuah aspek, dinormalisasi hingga berjumlah 100.
- *
- * Sumber atau jenis MK yang tidak hadir pada suatu aspek TIDAK dihitung nol —
- * porsinya dinormalisasi ulang ke sumber/jenis yang ada. Contoh: B.4 hanya
- * punya komponen MK, jadi MK memikul 100% meski CONFIG memberinya 50.
- */
 export function bobotKomponen(aspekId) {
   const komponen = getKomponen(aspekId)
   if (!komponen.length) return {}
@@ -121,8 +102,6 @@ export function bobotKomponen(aspekId) {
       continue
     }
 
-    // MK dimodulasi per jenis (TUGAS / SIKAP / UTS / UAS), lalu dibagi rata
-    // di dalam tiap jenis. Jenis yang tidak hadir dinormalisasi ulang.
     const perJenis = {}
     for (const x of daftar) (perJenis[x.jenis ?? 'TUGAS'] ??= []).push(x)
     const jenisHadir = Object.keys(perJenis)
@@ -138,7 +117,6 @@ export function bobotKomponen(aspekId) {
 
 /* ------------------------------- nilai aspek ------------------------------ */
 
-/** Membaca nilai satu komponen dari data mahasiswa. */
 function bacaNilai(entri) {
   if (entri == null) return null
   const v = typeof entri === 'object' ? entri.nilai : entri
@@ -151,29 +129,11 @@ export function semesterDitutup(student, semester) {
   return semester < student.semesterAktif
 }
 
-/**
- * Status sebuah aspek bagi seorang mahasiswa.
- *   terkunci  semesternya belum tiba
- *   menunggu  semester berjalan, belum ada satu pun nilai masuk
- *   berjalan  sebagian komponen terisi, atau lengkap tapi semester belum ditutup
- *   final     seluruh komponen terisi, semester sudah ditutup, dan lolos R4
- */
 export function statusAspek(student, aspekId) {
   return telaahAspek(student, aspekId).status
 }
 
-/**
- * Menimbang status sebuah aspek sekaligus alasannya bila belum final.
- *
- * Urutan pertimbangan:
- *   1. semester belum tiba              → terkunci
- *   2. belum ada nilai sama sekali      → menunggu
- *   3. komponen belum lengkap           → berjalan (tidak pernah bisa final)
- *   4. ditahan Kemahasiswaan            → berjalan
- *   5. skema komponen masih draft (R4)  → berjalan
- *   6. ditandai final Kemahasiswaan     → final
- *   7. selebihnya mengikuti CONFIG.PENGUNCIAN_ASPEK
- */
+/** Urutan: terkunci, menunggu, belum lengkap, ditahan, draft (R4), ditandai final, lalu CONFIG.PENGUNCIAN_ASPEK. */
 export function telaahAspek(student, aspekId) {
   const aspek = getAspek(aspekId)
   if (!aspek) return { status: 'terkunci', alasan: null, siapDikunci: false }
@@ -198,7 +158,6 @@ export function telaahAspek(student, aspekId) {
     }
   }
 
-  // Lengkap. Penandaan manual selalu menang atas mode otomatis.
   if (tanda?.status === 'sementara') {
     return {
       status: 'berjalan',
@@ -208,7 +167,6 @@ export function telaahAspek(student, aspekId) {
     }
   }
 
-  // R4 — aspek berkomponen draft tidak boleh final, kecuali saklar demo dibuka.
   if (aspekPunyaDraft(aspekId) && !CONFIG.IZINKAN_FINAL_DRAFT) {
     return { status: 'berjalan', alasan: 'Skema penilaian aspek ini belum diresmikan', siapDikunci: false, tanda }
   }
@@ -230,7 +188,6 @@ export function telaahAspek(student, aspekId) {
     }
   }
 
-  // mode 'manual'
   return {
     status: 'berjalan',
     alasan: 'Seluruh komponen sudah dinilai, menunggu penguncian oleh Kemahasiswaan',
@@ -239,10 +196,7 @@ export function telaahAspek(student, aspekId) {
   }
 }
 
-/**
- * Hitung satu aspek. Komponen kosong dikeluarkan dari pembagi — tidak pernah
- * dianggap nol (larangan keras nomor 2).
- */
+/** Komponen kosong dikeluarkan dari pembagi, tidak pernah dianggap nol. */
 export function hitungAspek(student, aspekId) {
   const aspek = getAspek(aspekId)
   const komponen = getKomponen(aspekId)
@@ -273,8 +227,6 @@ export function hitungAspek(student, aspekId) {
     aspekId,
     aspek,
     status,
-    // Kenapa belum final — dipakai transkrip dan panel admin supaya statusnya
-    // tidak sekadar label tanpa penjelasan.
     alasanSementara: telaah.alasan,
     siapDikunci: telaah.siapDikunci,
     penguncian: telaah.tanda ?? null,
@@ -328,8 +280,7 @@ function nilaiAkhirPerSemester(semua) {
   return perSemester.length ? rerata(perSemester) : null
 }
 
-/** Nilai akhir bila hanya aspek sampai Semester `sampai` yang dihitung, dengan mode agregasi yang sama.
-    Pada semester terakhir yang bernilai, hasilnya sama persis dengan transkrip.akhir.nilai. */
+/** Nilai akhir bila hanya aspek sampai Semester `sampai` yang dihitung. */
 export function nilaiKumulatif(transkrip, sampai) {
   const semua = transkrip.aspek.filter((a) => (a.aspek?.semester ?? Infinity) <= sampai)
   return bulat(CONFIG.MODE_AGREGASI === 'per-semester' ? nilaiAkhirPerSemester(semua) : nilaiAkhirPerAspek(semua))
@@ -337,10 +288,6 @@ export function nilaiKumulatif(transkrip, sampai) {
 
 /* ------------------------------ transkrip utuh ---------------------------- */
 
-/**
- * Satu panggilan menghasilkan seluruh angka yang dibutuhkan transkrip, ringkasan,
- * sertifikat, dan agregasi admin. Komponen halaman cukup membaca hasilnya.
- */
 export function hitungTranskrip(student) {
   const semua = getAspekList().map((a) => hitungAspek(student, a.id))
   const perId = Object.fromEntries(semua.map((a) => [a.aspekId, a]))
@@ -371,7 +318,7 @@ export function hitungTranskrip(student) {
   const aspekDinilai = semua.filter((a) => a.nilai != null).length
   const aspekFinal = semua.filter((a) => a.status === 'final').length
 
-  // R3 — nilai akhir tidak pernah final sebelum seluruh aspek final.
+  // R3: nilai akhir tidak pernah final sebelum seluruh aspek final.
   const status = aspekFinal === semua.length && semua.length > 0 ? 'final' : 'sementara'
 
   return {
@@ -399,7 +346,6 @@ export function hitungTranskrip(student) {
 
 /* --------------------------- pembantu untuk admin ------------------------- */
 
-/** Persentase komponen asesmen yang sudah terisi — bahan panel kelengkapan. */
 export function kelengkapan(student) {
   const t = hitungTranskrip(student)
   const terbuka = t.aspek.filter((a) => !a.terkunci)

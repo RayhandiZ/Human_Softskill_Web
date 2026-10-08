@@ -1,19 +1,6 @@
 import { CONFIG } from './config.js'
 
-/* --------------------------------------------------------------------------
-   Struktur kurikulum enam lapis — sumber kebenaran statis.
-
-     Fase (2) → Area (3) → Cluster (6) → Aspek CPMK (10)
-              → Komponen Asesmen → Indikator Perilaku
-
-   Aspek CPMK adalah unit penilaian atom. Fase, area, dan cluster tidak pernah
-   diinput; nilainya selalu diagregasi naik dari aspek.
-
-   Warna: identitas visual hanya dibawa oleh AREA (tiga slot kategorikal yang
-   sudah tervalidasi di index.css). Cluster dan aspek tidak punya warna sendiri
-   — keduanya dikenali lewat kode dan label, bukan hue. Ini menjaga agar grafik
-   satu seri (radar 6 sumbu, bar 10 aspek) tidak berubah jadi pelangi.
-   -------------------------------------------------------------------------- */
+/* Struktur enam lapis; lihat README.md › Struktur kurikulum enam lapis. */
 
 export const SUMBER = {
   PDP: { id: 'PDP', label: 'PDP', nama: 'Personal Development Program' },
@@ -88,8 +75,7 @@ export const CLUSTER = [
 
 /* ------------------------------- aspek CPMK ------------------------------- */
 
-/* Semester A.3 dan C.1 sengaja tidak ditulis di sini — keduanya masih menunggu
-   konfirmasi unit pengelola dan dibaca dari config.js (lihat resolveSemester). */
+/* Semester A.3 dan C.1 dibaca dari config.js (masih menunggu konfirmasi). */
 
 const ASPEK_DASAR = [
   {
@@ -234,7 +220,6 @@ const ASPEK_DASAR = [
   },
 ]
 
-/** Aspek yang penempatan semesternya masih menunggu keputusan unit pengelola. */
 export const ASPEK_SEMESTER_SEMENTARA = {
   A3: 'ASPEK_A3_SEMESTER',
   C1: 'ASPEK_C1_SEMESTER',
@@ -245,7 +230,6 @@ function resolveSemester(aspek) {
   return kunci ? CONFIG[kunci] : aspek.semester
 }
 
-/** Daftar aspek dengan semester yang sudah diselesaikan dari config. */
 export function getAspekList() {
   return ASPEK_DASAR.map((a) => ({
     ...a,
@@ -262,7 +246,6 @@ export function getAspekSemester(semester) {
   return getAspekList().filter((a) => a.semester === semester)
 }
 
-/** { 1: 3, 2: 4, 3: 3 } — dipakai untuk memeriksa distribusi 3/4/3. */
 export function distribusiSemester() {
   const hasil = {}
   for (let s = 1; s <= CONFIG.TOTAL_SEMESTER_PROGRAM; s++) hasil[s] = getAspekSemester(s).length
@@ -271,9 +254,7 @@ export function distribusiSemester() {
 
 /* --------------------------- komponen asesmen ----------------------------- */
 
-/* bobot: null berarti diturunkan dari CONFIG (lihat scoring.js). Angka eksplisit
-   hanya dipakai bila unit pengelola ingin menimpa pembagian bawaan.
-   jenis: wajib untuk sumber MK, dipakai memetakan CONFIG.BOBOT_KOMPONEN_MK. */
+/* bobot null = diturunkan dari CONFIG; jenis wajib untuk sumber MK. */
 
 const k = (id, aspekId, sumber, label, ranah, status, jenis = null) => ({
   id,
@@ -287,14 +268,14 @@ const k = (id, aspekId, sumber, label, ranah, status, jenis = null) => ({
 })
 
 export const KOMPONEN = [
-  /* ---- A.1 — resmi ---- */
+  /* ---- A.1: resmi ---- */
   k('A1-PDP-T2', 'A1', 'PDP', 'Tugas 2: Video "Saya & Kebiasaan"', 'kognitif', 'resmi'),
   k('A1-MK-T1', 'A1', 'MK', 'Tugas 1: Nilai Refleksi Proposal SLH', 'kognitif', 'resmi', 'TUGAS'),
   k('A1-MK-SIKAP', 'A1', 'MK', 'Sikap: nilai dosen + peer review 2 aspek', 'afektif', 'resmi', 'SIKAP'),
   k('A1-MK-UAS', 'A1', 'MK', 'UAS: Nilai laporan SLH', 'kognitif', 'resmi', 'UAS'),
   k('A1-ENG-HADIR', 'A1', 'ENGAGEMENT', 'Mentoring 5C: Kehadiran', 'afektif', 'resmi'),
 
-  /* ---- A.2 — resmi ---- */
+  /* ---- A.2: resmi ---- */
   k('A2-PDP-T1', 'A2', 'PDP', 'Tugas 1: Refleksi Diri', 'kognitif', 'resmi'),
   k('A2-PDP-T3', 'A2', 'PDP', 'Tugas 3: Video "Be Proactive"', 'kognitif', 'resmi'),
   k('A2-MK-T2', 'A2', 'MK', 'Tugas 2: Pelaksanaan Proyek SLH', 'kognitif', 'resmi', 'TUGAS'),
@@ -303,52 +284,52 @@ export const KOMPONEN = [
   k('A2-MK-UAS', 'A2', 'MK', 'UAS: Refleksi Pribadi', 'kognitif', 'resmi', 'UAS'),
   k('A2-ENG-REFLEKSI', 'A2', 'ENGAGEMENT', 'Mentoring 5C: Refleksi Pribadi 5C', 'afektif', 'resmi'),
 
-  /* ---- A.3 — draft (belum ada komponen resmi di dokumen sumber) ---- */
+  /* ---- A.3: draft (belum ada komponen resmi di dokumen sumber) ---- */
   k('A3-PDP-T', 'A3', 'PDP', 'Tugas: Rencana pengembangan diri', 'kognitif', 'draft'),
   k('A3-MK-T', 'A3', 'MK', 'Tugas: Peer-assessment PBL', 'afektif', 'draft', 'TUGAS'),
   k('A3-MK-SIKAP', 'A3', 'MK', 'Sikap: Kedisiplinan & kemandirian', 'afektif', 'draft', 'SIKAP'),
   k('A3-MK-UAS', 'A3', 'MK', 'UAS: Refleksi kemandirian', 'kognitif', 'draft', 'UAS'),
   k('A3-ENG-PARTISIPASI', 'A3', 'ENGAGEMENT', 'Mentoring 5C: Partisipasi', 'afektif', 'draft'),
 
-  /* ---- A.4 — draft ---- */
+  /* ---- A.4: draft ---- */
   k('A4-PDP-T', 'A4', 'PDP', 'Tugas: Studi kasus pengambilan keputusan', 'kognitif', 'draft'),
   k('A4-MK-T', 'A4', 'MK', 'Tugas: Analisis kasus kebangsaan', 'kognitif', 'draft', 'TUGAS'),
   k('A4-MK-SIKAP', 'A4', 'MK', 'Sikap: Ketelitian & penalaran', 'afektif', 'draft', 'SIKAP'),
   k('A4-MK-UTS', 'A4', 'MK', 'UTS: Ujian analisis', 'kognitif', 'draft', 'UTS'),
   k('A4-ENG-FASILITATOR', 'A4', 'ENGAGEMENT', 'Teamwork & Leadership: Penilaian fasilitator', 'afektif', 'draft'),
 
-  /* ---- B.1 — draft ---- */
+  /* ---- B.1: draft ---- */
   k('B1-PDP-T', 'B1', 'PDP', 'Tugas: Kontribusi dalam kelompok', 'kognitif', 'draft'),
   k('B1-MK-T', 'B1', 'MK', 'Tugas: Proyek kelompok kebangsaan', 'kognitif', 'draft', 'TUGAS'),
   k('B1-MK-SIKAP', 'B1', 'MK', 'Sikap: Peer-assessment kelompok', 'afektif', 'draft', 'SIKAP'),
   k('B1-MK-UAS', 'B1', 'MK', 'UAS: Laporan kerja kelompok', 'kognitif', 'draft', 'UAS'),
   k('B1-ENG-FASILITATOR', 'B1', 'ENGAGEMENT', 'Teamwork & Leadership: Penilaian fasilitator', 'afektif', 'draft'),
 
-  /* ---- B.2 — draft ---- */
+  /* ---- B.2: draft ---- */
   k('B2-PDP-T', 'B2', 'PDP', 'Tugas: Komitmen & kesepakatan tim', 'kognitif', 'draft'),
   k('B2-MK-T', 'B2', 'MK', 'Tugas: Studi keberagaman', 'kognitif', 'draft', 'TUGAS'),
   k('B2-MK-SIKAP', 'B2', 'MK', 'Sikap: Peer review rasa hormat & komitmen', 'afektif', 'draft', 'SIKAP'),
   k('B2-MK-UAS', 'B2', 'MK', 'UAS: Refleksi relasi kerja', 'kognitif', 'draft', 'UAS'),
   k('B2-ENG-FASILITATOR', 'B2', 'ENGAGEMENT', 'Teamwork & Leadership: Penilaian fasilitator', 'afektif', 'draft'),
 
-  /* ---- B.3 — resmi ---- */
+  /* ---- B.3: resmi ---- */
   k('B3-PDP-T2', 'B3', 'PDP', 'Tugas 2: Dilema Win-Win', 'kognitif', 'resmi'),
   k('B3-PDP-T3', 'B3', 'PDP', 'Tugas 3: Best Practice Win-Win', 'kognitif', 'resmi'),
   k('B3-MK-T1', 'B3', 'MK', 'Tugas 1: Peer-Assessment Group (UAS)', 'afektif', 'resmi', 'TUGAS'),
   k('B3-MK-UAS', 'B3', 'MK', 'UAS: Refleksi Pribadi (UAS-1)', 'kognitif', 'resmi', 'UAS'),
 
-  /* ---- B.4 — resmi ---- */
+  /* ---- B.4: resmi ---- */
   k('B4-MK-T1', 'B4', 'MK', 'Tugas 1: Peer-Assessment Group (UAS)', 'afektif', 'resmi', 'TUGAS'),
   k('B4-MK-UAS', 'B4', 'MK', 'UAS: Refleksi Pribadi (UAS-1)', 'kognitif', 'resmi', 'UAS'),
 
-  /* ---- C.1 — draft ---- */
+  /* ---- C.1: draft ---- */
   k('C1-PDP-T', 'C1', 'PDP', 'Tugas: Peran kepemimpinan dalam tim', 'kognitif', 'draft'),
   k('C1-MK-T', 'C1', 'MK', 'Tugas: Kepemimpinan pada proyek kelompok', 'kognitif', 'draft', 'TUGAS'),
   k('C1-MK-SIKAP', 'C1', 'MK', 'Sikap: Peer review kepemimpinan', 'afektif', 'draft', 'SIKAP'),
   k('C1-MK-UAS', 'C1', 'MK', 'UAS: Refleksi kepemimpinan', 'kognitif', 'draft', 'UAS'),
   k('C1-ENG-FASILITATOR', 'C1', 'ENGAGEMENT', 'Teamwork & Leadership: Penilaian fasilitator', 'afektif', 'draft'),
 
-  /* ---- C.2 — resmi ---- */
+  /* ---- C.2: resmi ---- */
   k('C2-PDP-T1', 'C2', 'PDP', 'Tugas 1: Paradigma Interdependensi', 'kognitif', 'resmi'),
   k('C2-MK-T1', 'C2', 'MK', 'Tugas 1: Peer-Assessment Group (UAS)', 'afektif', 'resmi', 'TUGAS'),
   k('C2-MK-UAS', 'C2', 'MK', 'UAS: Refleksi Pribadi (UAS-1)', 'kognitif', 'resmi', 'UAS'),
@@ -368,9 +349,7 @@ export function aspekPunyaDraft(aspekId) {
 
 /* --------------------------- indikator perilaku --------------------------- */
 
-/* Dokumen sumber baru merinci indikator untuk semester 1. Aspek lain sengaja
-   dibiarkan kosong supaya UI menampilkan keadaan kosong yang jujur, bukan
-   indikator karangan. */
+/* Baru semester 1 yang punya indikator resmi; sisanya sengaja kosong. */
 
 export const INDIKATOR = [
   {
@@ -432,6 +411,5 @@ export const getCluster = (id) => CLUSTER.find((c) => c.id === id) ?? null
 export const getArea = (id) => AREA.find((a) => a.id === id) ?? null
 export const getFase = (id) => FASE.find((f) => f.id === id) ?? null
 
-/** Warna identitas sebuah aspek diwarisi dari areanya — bukan hue tersendiri. */
 export const warnaAspek = (aspekId) => getArea(getAspek(aspekId)?.area)?.warna ?? 'var(--brand-ink)'
 export const warnaCluster = (clusterId) => getArea(getCluster(clusterId)?.area)?.warna ?? 'var(--brand-ink)'

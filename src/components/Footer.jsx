@@ -4,24 +4,6 @@ import { KONTAK_UMN } from '../lib/layanan'
 import { IconLogo, IconMail, IconPhone } from './Icons'
 import LogoPdp from './LogoPdp'
 
-/* --------------------------------------------------------------------------
-   Footer mengikuti susunan E-Learning UMN: pintasan berikon di kiri, alamat
-   helpdesk di tengah, kontak di sebelahnya, identitas unit di kanan, lalu satu
-   baris hak cipta di bawah garis.
-
-   Dua hal sengaja berbeda dari rujukannya:
-
-   1. Pintasan menunjuk ke halaman yang BENAR-BENAR ada di aplikasi ini, dan
-      berbeda antara panel mahasiswa dan panel Kemahasiswaan. Versi footer
-      sebelumnya memuat empat tombol yang tidak menuju ke mana pun, dan kendali
-      mati lebih membingungkan daripada tidak ada sama sekali.
-   2. Alamat dan kontaknya milik Biro Kemahasiswaan & Humaniora, bukan menyalin
-      helpdesk E-Learning — menyalinnya akan menyesatkan orang yang menghubungi.
-   -------------------------------------------------------------------------- */
-
-/* Nomor dan alamatnya datang dari lib/layanan.js, tempat yang sama yang
-   dipakai tombol layanan mengambang. Dua salinan nomor telepon adalah cara
-   paling pasti untuk suatu hari punya dua nomor yang berbeda. */
 const KONTAK = [
   { icon: IconPhone, teks: KONTAK_UMN.telepon.tampil, href: KONTAK_UMN.telepon.tautan },
   { icon: IconMail, teks: KONTAK_UMN.surel.tampil, href: KONTAK_UMN.surel.tautan },
@@ -87,8 +69,6 @@ export default function Footer({ pintasan = [] }) {
         </section>
 
         <section className="lg:pt-4">
-          {/* Logo PDP dan logo UMN berdampingan, nama sistem di bawahnya. Ketiganya dalam
-              satu baris melebarkan kolom ini dan mendesak alamat helpdesk sampai patah baris. */}
           <div className="flex items-center gap-3.5">
             <LogoPdp keterangan={false} className="h-10 w-auto shrink-0 text-white" />
             <span aria-hidden="true" className="h-8 w-px shrink-0 bg-white/30" />
