@@ -19,6 +19,8 @@ import * as keputusanKoreksi from '../app/api/koreksi/keputusan/route.js'
 import * as usulan from '../app/api/usulan/route.js'
 import * as keputusanUsulan from '../app/api/usulan/keputusan/route.js'
 import * as profil from '../app/api/profil/route.js'
+import * as angkatanPratinjau from '../app/api/angkatan/pratinjau/route.js'
+import * as angkatanKunci from '../app/api/angkatan/kunci/route.js'
 
 const PINTU = {
   '/api/masuk': masuk,
@@ -33,6 +35,8 @@ const PINTU = {
   '/api/usulan': usulan,
   '/api/usulan/keputusan': keputusanUsulan,
   '/api/profil': profil,
+  '/api/angkatan/pratinjau': angkatanPratinjau,
+  '/api/angkatan/kunci': angkatanKunci,
 }
 
 let gagal = 0
@@ -63,8 +67,18 @@ const NIM = 'UJI' + Date.now().toString().slice(-7)
 const EMAIL = 'uji.' + NIM.toLowerCase() + '@student.umn.ac.id'
 let mahasiswaId = null
 
-async function bersihkan() {
-  const p = await db.pengguna.findUnique({ where: { email: EMAIL }, include: { mahasiswa: true } })
+/* Bagian "kunci angkatan" memakai dua angkatan sementara dan satu mahasiswa sementara tambahan, supaya
+   angkatan asli di basis data tidak ikut terkunci. Semuanya dihapus di bersihkan(). */
+const SUF = Date.now().toString().slice(-6)
+const NIM2 = NIM + 'K'
+const EMAIL2 = 'uji.' + NIM2.toLowerCase() + '@student.umn.ac.id'
+const ANG_A = 'UJIA' + SUF
+const ANG_B = 'UJIB' + SUF
+/** Target baris LogAktivitas yang dibuat uji ini; ditambah id batch begitu diketahui. */
+const targetLog = ['angkatan ' + ANG_A, 'angkatan ' + ANG_B, 'mahasiswa ' + NIM, 'mahasiswa ' + NIM2]
+
+async function bersihkanMahasiswa(email) {
+  const p = await db.pengguna.findUnique({ where: { email }, include: { mahasiswa: true } })
   const m = p?.mahasiswa
   if (m) {
     const batch = (await db.auditLog.findMany({ where: { mahasiswaId: m.id }, select: { batchId: true } }))
@@ -83,6 +97,13 @@ async function bersihkan() {
     await db.profil.deleteMany({ where: { penggunaId: p.id } })
     await db.pengguna.delete({ where: { id: p.id } })
   }
+}
+
+async function bersihkan() {
+  await bersihkanMahasiswa(EMAIL)
+  await bersihkanMahasiswa(EMAIL2)
+  await db.logAktivitas.deleteMany({ where: { target: { in: targetLog } } })
+  await db.angkatan.deleteMany({ where: { id: { in: [ANG_A, ANG_B] } } })
 }
 
 try {
@@ -223,8 +244,112 @@ try {
   cek('alamat 400 karakter tersimpan', simpanPanjang.status === 200, JSON.stringify(simpanPanjang.isi))
   cek('alamat panjang terbaca utuh', (await mhs('/api/data')).isi.profil?.alamat?.length === 400)
 
+  /* ------------------------- kunci angkatan & data terkunci ------------------------- */
+  garis('8. KUNCI ANGKATAN DAN PERUBAHAN DATA TERKUNCI')
+  // A masuk Ganjil 2024/2025: semester kalendernya sudah lewat 3, jadi boleh dikunci.
+  // B masuk Ganjil 2025/2026: masih di semester 3, belum boleh.
+  await db.angkatan.createMany({
+    data: [
+      { id: ANG_A, tahun: 2024, label: 'Uji A ' + SUF, periodeTahun: '2024/2025', periodeSemester: 'GANJIL' },
+      { id: ANG_B, tahun: 2025, label: 'Uji B ' + SUF, periodeTahun: '2025/2026', periodeSemester: 'GANJIL' },
+    ],
+  })
+  const akunUji2 = await db.pengguna.create({
+    data: {
+      email: EMAIL2,
+      passwordHash: 'tidak-dipakai',
+      peran: 'MAHASISWA',
+      mahasiswa: { create: { nim: NIM2, nama: 'Mahasiswa Uji Terkunci', prodiId: prodi.id, angkatanId: ANG_A } },
+    },
+    include: { mahasiswa: true },
+  })
+  const mahasiswaId2 = akunUji2.mahasiswa.id
+  const adminId = (await db.pengguna.findUnique({ where: { email: 'admin@umn.ac.id' } })).id
+  const nilaiMhs2 = () => db.nilai.count({ where: { mahasiswaId: mahasiswaId2 } })
+  const logAda = (aksi, target) => db.logAktivitas.findFirst({ where: { aksi, target } })
+
+  // --- pratinjau dan kunci ---
+  const pratA = await admin('/api/angkatan/pratinjau', { metode: 'POST', isi: { angkatanId: ANG_A } })
+  cek(
+    'pratinjau: ringkasan benar, nilai bolong tidak menghalangi',
+    pratA.status === 200 && pratA.isi.total === 1 && pratA.isi.tidakBerhak === 1 && pratA.isi.komponenKosong === 1 && pratA.isi.bolehDikunci === true,
+    JSON.stringify(pratA.isi),
+  )
+  cek('mahasiswa tidak boleh pratinjau (403)', (await mhs('/api/angkatan/pratinjau', { metode: 'POST', isi: { angkatanId: ANG_A } })).status === 403)
+  cek('dosen tidak boleh mengunci (403)', (await dosen('/api/angkatan/kunci', { metode: 'POST', isi: { angkatanId: ANG_A } })).status === 403)
+  const pratB = await admin('/api/angkatan/pratinjau', { metode: 'POST', isi: { angkatanId: ANG_B } })
+  cek('angkatan yang masih semester 3 belum boleh dikunci', pratB.status === 200 && pratB.isi.bolehDikunci === false, JSON.stringify(pratB.isi))
+  cek(
+    'kunci ditolak bila semester 3 belum berakhir',
+    (await admin('/api/angkatan/kunci', { metode: 'POST', isi: { angkatanId: ANG_B, konfirmasi: 'Uji B ' + SUF } })).status === 400,
+  )
+  cek(
+    'kunci ditolak bila konfirmasi ketik salah',
+    (await admin('/api/angkatan/kunci', { metode: 'POST', isi: { angkatanId: ANG_A, konfirmasi: 'salah' } })).status === 400,
+  )
+  cek('angkatan tidak dikenal 404', (await admin('/api/angkatan/pratinjau', { metode: 'POST', isi: { angkatanId: 'TIDAK-ADA' } })).status === 404)
+
+  const kunciA = await admin('/api/angkatan/kunci', { metode: 'POST', isi: { angkatanId: ANG_A, konfirmasi: 'Uji A ' + SUF } })
+  const barisA = await db.angkatan.findUnique({ where: { id: ANG_A } })
+  cek(
+    'angkatan terkunci beserta pencatat dan waktunya',
+    kunciA.status === 200 && kunciA.isi.ok === true && barisA.status === 'TERKUNCI' && barisA.dikunciOleh === adminId && barisA.dikunciPada != null,
+    JSON.stringify(kunciA.isi),
+  )
+  cek('penguncian angkatan tercatat di log', Boolean(await logAda('KUNCI_ANGKATAN', 'angkatan ' + ANG_A)))
+  cek('mengunci dua kali ditolak (ok false)', (await admin('/api/angkatan/kunci', { metode: 'POST', isi: { angkatanId: ANG_A, konfirmasi: 'Uji A ' + SUF } })).isi.ok === false)
+  const dataAdmin = (await admin('/api/data')).isi
+  cek('data admin menunjukkan status angkatan terkunci', dataAdmin.mahasiswa.find((m) => m.nim === NIM2)?.statusAngkatan === 'terkunci')
+
+  // --- admin mengubah / melengkapi data terkunci, wajib beralasan ---
+  const isiTerkunci = (komponenId, nilaiBaru, alasan) =>
+    admin('/api/nilai', {
+      metode: 'POST',
+      isi: { sumber: 'MK', semester: 1, angkatanId: ANG_A, cara: 'manual', entri: [{ nim: NIM2, komponenId, nilai: nilaiBaru }], alasan },
+    })
+  const tanpaAlasan = await isiTerkunci('A1-MK-T1', 80)
+  cek('angkatan terkunci: isi sel bolong tanpa alasan ditolak', tanpaAlasan.status === 400 && /alasan/i.test(tanpaAlasan.isi.galat ?? ''), JSON.stringify(tanpaAlasan.isi))
+  cek('alasan terlalu pendek ditolak', (await isiTerkunci('A1-MK-T1', 80, 'singkat')).status === 400)
+  cek('penolakan tidak menulis nilai', (await nilaiMhs2()) === 0)
+  const denganAlasan = await isiTerkunci('A1-MK-T1', 80, 'Melengkapi nilai susulan sesudah semester 3.')
+  cek('dengan alasan diterima (admin boleh mengisi sel bolong sesudah semester 3)', denganAlasan.status === 200 && (await nilaiMhs2()) === 1, JSON.stringify(denganAlasan.isi))
+  targetLog.push('batch ' + denganAlasan.isi.id)
+  const logUbah = await logAda('UBAH_DATA_TERKUNCI', 'batch ' + denganAlasan.isi.id)
+  cek('perubahan data terkunci tercatat beserta alasannya', logUbah?.rincian?.alasan === 'Melengkapi nilai susulan sesudah semester 3.', JSON.stringify(logUbah?.rincian))
+
+  cek('rollback data terkunci tanpa alasan ditolak', (await admin('/api/nilai/rollback', { metode: 'POST', isi: { id: denganAlasan.isi.id } })).status === 400 && (await nilaiMhs2()) === 1)
+  const rbTerkunci = await admin('/api/nilai/rollback', { metode: 'POST', isi: { id: denganAlasan.isi.id, alasan: 'Salah memasukkan nilai, dibatalkan.' } })
+  cek('rollback dengan alasan berhasil dan tercatat', rbTerkunci.isi.ok === true && (await nilaiMhs2()) === 0 && Boolean(await logAda('ROLLBACK_DATA_TERKUNCI', 'batch ' + denganAlasan.isi.id)), JSON.stringify(rbTerkunci.isi))
+
+  // --- dosen tetap boleh mengusulkan; admin yang memutuskan, dengan catatan ---
+  const usulTerkunci = await dosen('/api/usulan', { metode: 'POST', isi: { cara: 'manual', entri: [{ nim: NIM2, komponenId: 'A1-MK-UAS', nilai: 70 }] } })
+  cek('dosen tetap boleh mengusulkan untuk angkatan terkunci', usulTerkunci.status === 200, JSON.stringify(usulTerkunci.isi))
+  cek('menyetujui usulan data terkunci tanpa catatan ditolak', (await admin('/api/usulan/keputusan', { metode: 'POST', isi: { id: usulTerkunci.isi.id, keputusan: 'disetujui' } })).status === 400)
+  const setujuTerkunci = await admin('/api/usulan/keputusan', { metode: 'POST', isi: { id: usulTerkunci.isi.id, keputusan: 'disetujui', catatan: 'Disetujui setelah memeriksa berkas dosen.' } })
+  cek('menyetujui dengan catatan berhasil dan nilai masuk', setujuTerkunci.isi.ok === true && (await nilaiMhs2()) === 1, JSON.stringify(setujuTerkunci.isi))
+  const usulSetuju = (await admin('/api/data')).isi.usulan.find((x) => x.id === usulTerkunci.isi.id)
+  if (usulSetuju?.batchId) targetLog.push('batch ' + usulSetuju.batchId)
+  cek('persetujuan usulan data terkunci tercatat di log', Boolean(usulSetuju?.batchId && (await logAda('UBAH_DATA_TERKUNCI', 'batch ' + usulSetuju.batchId))))
+
+  // --- aspek final MANUAL pada angkatan yang belum terkunci ---
+  await db.penguncian.create({ data: { mahasiswaId, aspekId: 'A2', status: 'FINAL', olehId: adminId } })
+  const ubahA2 = (alasan) =>
+    admin('/api/nilai', {
+      metode: 'POST',
+      isi: { sumber: 'MK', semester: 1, angkatanId: angkatan.id, cara: 'manual', entri: [{ nim: NIM, komponenId: 'A2-MK-UTS', nilai: 77 }], alasan },
+    })
+  cek('aspek final manual: ubah tanpa alasan ditolak', (await ubahA2()).status === 400)
+  const a2 = await ubahA2('Koreksi nilai UTS atas permintaan dosen.')
+  cek('aspek final manual: dengan alasan diterima', a2.status === 200, JSON.stringify(a2.isi))
+  targetLog.push('batch ' + a2.isi.id)
+  cek('aspek tanpa tanda final manual tidak butuh alasan', (await kirimNilai(86)).status === 200)
+
+  // --- penguncian aspek tercatat ---
+  const logPenguncian = await db.logAktivitas.count({ where: { aksi: 'UBAH_PENGUNCIAN', target: 'mahasiswa ' + NIM } })
+  cek('perubahan tanda penguncian aspek tercatat di log', logPenguncian >= 2, String(logPenguncian))
+
   /* ------------------------------ keluar ------------------------------ */
-  garis('8. KELUAR')
+  garis('9. KELUAR')
   await mhs('/api/keluar', { metode: 'POST' })
   cek('setelah keluar, sesi tidak berlaku', (await mhs('/api/sesi')).status === 401)
 } catch (e) {

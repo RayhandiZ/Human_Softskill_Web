@@ -1,7 +1,8 @@
 import { db } from './db.js'
 import { GalatApi } from './api.js'
 import { angkaId, semesterDari } from './muat.js'
-import { petaMahasiswa, tulisBatch } from './nilai.js'
+import { petaMahasiswa, tulisBatch, wajibkanAlasan } from './nilai.js'
+import { catatLog } from './log.js'
 import { getAspek, getKomponenById } from '../lib/curriculum.js'
 import { komponenDosen } from '../lib/data.js'
 import { periksaUsulan } from '../lib/rules.js'
@@ -108,6 +109,15 @@ export async function putuskanUsulan(pengguna, { id, keputusan, catatan }) {
         throw new GalatApi('Tidak ada baris yang lolos pemeriksaan sistem: ' + (periksa.ditolak[0]?.alasan[0] ?? '-'))
       }
 
+      // Dosen boleh mengusulkan untuk data terkunci; yang menentukan tetap admin. Karena menyetujui berarti
+      // mengubah data terkunci, catatan keputusan wajib diisi dan berfungsi sebagai alasan.
+      const terkunci = await wajibkanAlasan(
+        tx,
+        periksa.diterima.map((x) => ({ mahasiswaId: peta.get(x.nim).id, aspekId: x.komponen.aspekId })),
+        teks,
+        'catatan keputusan',
+      )
+
       const angkatan = [...new Set(periksa.diterima.map((x) => peta.get(x.nim).angkatanId))]
       const batch = await tulisBatch(
         tx,
@@ -122,6 +132,14 @@ export async function putuskanUsulan(pengguna, { id, keputusan, catatan }) {
         dosen.penggunaId,
         peta,
       )
+      if (terkunci) {
+        await catatLog(tx, {
+          aktorId: pengguna.id,
+          aksi: 'UBAH_DATA_TERKUNCI',
+          target: 'batch ' + batch.id,
+          rincian: { ...terkunci, cara: 'persetujuan usulan', usulanId: u.id, jumlahNilai: batch.jumlah },
+        })
+      }
       await tx.usulan.update({
         where: { id: u.id },
         data: {

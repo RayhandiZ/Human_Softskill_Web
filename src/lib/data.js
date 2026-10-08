@@ -24,9 +24,11 @@ export const periodeAngkatan = (intake) => [0, 1, 2].map((n) => periodeSetelah(i
 
 const isiUlang = (larik, isi) => larik.splice(0, larik.length, ...(isi ?? []))
 
+/** Semester kalender sejak masuk, TANPA dibatasi: 4 atau lebih berarti program tiga semester sudah lewat. */
+export const semesterKalender = (intake, aktif = PERIODE_AKTIF) => ordinal(aktif) - ordinal(intake) + 1
+
 export function turunkanSemesterAktif(intake, aktif = PERIODE_AKTIF) {
-  const jarak = ordinal(aktif) - ordinal(intake) + 1
-  return Math.max(1, Math.min(CONFIG.TOTAL_SEMESTER_PROGRAM, jarak))
+  return Math.max(1, Math.min(CONFIG.TOTAL_SEMESTER_PROGRAM, semesterKalender(intake, aktif)))
 }
 
 /* Isi awal hanya dipakai bila basis data tak terhubung, dan menjadi sumber npm run db:seed. */

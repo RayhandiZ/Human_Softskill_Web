@@ -4,6 +4,7 @@ import { SERTA_MAHASISWA, semesterDari, susunMahasiswa, waktuWib } from './muat.
 import { getAspek, getKomponenById } from '../lib/curriculum.js'
 import { bolehTandaiFinal, validasiBatchImport } from '../lib/rules.js'
 import { CONFIG } from '../lib/config.js'
+import { catatLog } from './log.js'
 import { randomBytes } from 'node:crypto'
 
 // Penulisan nilai oleh Kemahasiswaan. Setiap penyimpanan menjadi satu batch: tercatat di
@@ -13,6 +14,53 @@ const TRANSAKSI = { timeout: 30000, maxWait: 10000 }
 
 const idBatch = () =>
   'B-' + waktuWib(new Date()).replace(/\D/g, '') + '-' + randomBytes(4).toString('hex').toUpperCase()
+
+/* ------------------------- data yang terkunci untuk diedit ----------------------- */
+
+/** Panjang minimum alasan saat admin mengubah data yang terkunci. */
+export const ALASAN_MIN = 10
+
+/**
+ * Dari pasangan { mahasiswaId, aspekId }, mana yang "terkunci untuk diedit": angkatannya TERKUNCI,
+ * atau aspeknya ditandai final MANUAL. Aspek yang final karena otomatis (nilainya lengkap) sengaja
+ * tidak dihitung: itu akibat nilainya lengkap, bukan keputusan mengunci.
+ */
+export async function cariTerkunci(tx, pasangan) {
+  const ids = [...new Set(pasangan.map((p) => p.mahasiswaId))]
+  if (!ids.length) return []
+  const mhs = await tx.mahasiswa.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, angkatan: { select: { status: true } } },
+  })
+  const final = await tx.penguncian.findMany({
+    where: { mahasiswaId: { in: ids }, status: 'FINAL' },
+    select: { mahasiswaId: true, aspekId: true },
+  })
+  const angkatanTerkunci = new Set(mhs.filter((m) => m.angkatan.status === 'TERKUNCI').map((m) => m.id))
+  const finalManual = new Set(final.map((f) => f.mahasiswaId + '|' + f.aspekId))
+  return pasangan.filter(
+    (p) => angkatanTerkunci.has(p.mahasiswaId) || finalManual.has(p.mahasiswaId + '|' + p.aspekId),
+  )
+}
+
+/**
+ * Admin boleh mengubah data terkunci, tetapi wajib menyebut alasannya. Mengembalikan null bila tidak ada
+ * yang terkunci (tanpa alasan pun boleh), atau ringkasan untuk dicatat ke log bila ada.
+ * `sebutan` = nama isian di layar pemanggil ('alasan', atau 'catatan keputusan' pada persetujuan usulan).
+ */
+export async function wajibkanAlasan(tx, pasangan, alasan, sebutan = 'alasan') {
+  const terkunci = await cariTerkunci(tx, pasangan)
+  if (!terkunci.length) return null
+  const teks = String(alasan ?? '').trim()
+  const mahasiswa = new Set(terkunci.map((p) => p.mahasiswaId)).size
+  if (teks.length < ALASAN_MIN) {
+    throw new GalatApi(
+      'Perubahan ini menyentuh ' + mahasiswa + ' mahasiswa pada angkatan terkunci atau aspek final manual. ' +
+        'Isi ' + sebutan + ' minimal ' + ALASAN_MIN + ' karakter.',
+    )
+  }
+  return { alasan: teks, mahasiswa, baris: terkunci.length }
+}
 
 /** Peta NIM → mahasiswa dengan semester berjalannya, bahan pemeriksaan aturan. */
 export async function petaMahasiswa(nims, tx = db) {
@@ -58,7 +106,7 @@ export async function tulisBatch(tx, { sumber, semester, angkatanId, cara, entri
   return { id, jumlah: jejak.length, jejak }
 }
 
-export async function simpanBatch(pengguna, { sumber, semester, angkatanId, cara, entri }) {
+export async function simpanBatch(pengguna, { sumber, semester, angkatanId, cara, entri, alasan }) {
   if (!['PDP', 'MK', 'ENGAGEMENT'].includes(sumber)) throw new GalatApi('Sumber penilaian tidak dikenal.')
   const sem = Number(semester)
   if (!Number.isInteger(sem) || sem < 1 || sem > CONFIG.TOTAL_SEMESTER_PROGRAM) throw new GalatApi('Semester tidak valid.')
@@ -77,22 +125,36 @@ export async function simpanBatch(pengguna, { sumber, semester, angkatanId, cara
     throw new GalatApi('Baris ' + (x.nim || '(tanpa NIM)') + ' ditolak: ' + x.alasan.join('; '))
   }
 
-  return db.$transaction(
-    (tx) =>
-      tulisBatch(
-        tx,
-        {
-          sumber,
-          semester: sem,
-          angkatanId: String(angkatanId ?? '-'),
-          cara: String(cara ?? 'manual'),
-          entri: periksa.diterima.map((x) => ({ nim: x.nim, komponenId: x.komponenId, nilai: x.nilai })),
-        },
-        pengguna.id,
-        peta,
-      ),
-    TRANSAKSI,
-  )
+  const pasangan = periksa.diterima.map((x) => ({ mahasiswaId: peta.get(x.nim).id, aspekId: x.komponen.aspekId }))
+
+  return db.$transaction(async (tx) => {
+    // Admin boleh mengubah angkatan terkunci atau aspek final manual, asal menyebut alasannya.
+    // Termasuk mengisi sel yang masih bolong sesudah semester 3.
+    const terkunci = await wajibkanAlasan(tx, pasangan, alasan)
+
+    const hasil = await tulisBatch(
+      tx,
+      {
+        sumber,
+        semester: sem,
+        angkatanId: String(angkatanId ?? '-'),
+        cara: String(cara ?? 'manual'),
+        entri: periksa.diterima.map((x) => ({ nim: x.nim, komponenId: x.komponenId, nilai: x.nilai })),
+      },
+      pengguna.id,
+      peta,
+    )
+
+    if (terkunci) {
+      await catatLog(tx, {
+        aktorId: pengguna.id,
+        aksi: 'UBAH_DATA_TERKUNCI',
+        target: 'batch ' + hasil.id,
+        rincian: { ...terkunci, cara: String(cara ?? 'manual'), jumlahNilai: hasil.jumlah },
+      })
+    }
+    return hasil
+  }, TRANSAKSI)
 }
 
 // Nilai satu sel diputar ulang dari riwayatnya: nilai sebelum perubahan pertama, lalu setiap batch
@@ -123,15 +185,32 @@ async function hitungUlangSel(tx, mahasiswaId, komponenId) {
   else await tx.nilai.create({ data: { mahasiswaId, komponenId, ...data } })
 }
 
-export async function rollbackBatch(pengguna, { id }) {
+export async function rollbackBatch(pengguna, { id, alasan }) {
   return db.$transaction(async (tx) => {
     const batch = await tx.batch.findUnique({ where: { id: String(id ?? '') } })
     if (!batch || batch.status !== 'DIPROSES') return { ok: false }
 
-    await tx.batch.update({ where: { id: batch.id }, data: { status: 'DIBATALKAN' } })
     const sel = await tx.auditLog.findMany({ where: { batchId: batch.id }, select: { mahasiswaId: true, komponenId: true } })
     const unik = [...new Map(sel.map((s) => [s.mahasiswaId + '|' + s.komponenId, s])).values()]
+
+    // Membatalkan batch juga mengubah nilai, jadi aturan data terkunci berlaku sama seperti saat menyimpan.
+    const pasangan = unik.flatMap((s) => {
+      const k = getKomponenById(s.komponenId)
+      return k ? [{ mahasiswaId: s.mahasiswaId, aspekId: k.aspekId }] : []
+    })
+    const terkunci = await wajibkanAlasan(tx, pasangan, alasan)
+
+    await tx.batch.update({ where: { id: batch.id }, data: { status: 'DIBATALKAN' } })
     for (const s of unik) await hitungUlangSel(tx, s.mahasiswaId, s.komponenId)
+
+    if (terkunci) {
+      await catatLog(tx, {
+        aktorId: pengguna.id,
+        aksi: 'ROLLBACK_DATA_TERKUNCI',
+        target: 'batch ' + batch.id,
+        rincian: terkunci,
+      })
+    }
     return { ok: true }
   }, TRANSAKSI)
 }
@@ -162,8 +241,19 @@ export async function setPenguncian(pengguna, { daftar, status }) {
   }
 
   await db.$transaction(async (tx) => {
+    // Status lama dibaca dulu supaya hanya perubahan yang sungguh terjadi yang dicatat.
+    // (Layar Input Nilai memanggil ini dengan status null setelah tiap simpan; yang tidak berubah tidak dicatat.)
+    const lama = await tx.penguncian.findMany({
+      where: { mahasiswaId: { in: [...new Set(pasangan.map((p) => dariNim.get(String(p.nim)).id))] } },
+      select: { mahasiswaId: true, aspekId: true, status: true },
+    })
+    const statusLama = new Map(lama.map((l) => [l.mahasiswaId + '|' + l.aspekId, l.status]))
+    const berubah = []
+
     for (const p of pasangan) {
       const m = dariNim.get(String(p.nim))
+      const sebelum = statusLama.get(m.id + '|' + p.aspekId) ?? null
+      if (sebelum !== tanda) berubah.push({ nim: m.nim, aspekId: p.aspekId, dari: sebelum, ke: tanda })
       if (tanda) {
         await tx.penguncian.upsert({
           where: { mahasiswaId_aspekId: { mahasiswaId: m.id, aspekId: p.aspekId } },
@@ -173,6 +263,20 @@ export async function setPenguncian(pengguna, { daftar, status }) {
       } else {
         await tx.penguncian.deleteMany({ where: { mahasiswaId: m.id, aspekId: p.aspekId } })
       }
+    }
+
+    if (berubah.length) {
+      const nimUnik = [...new Set(berubah.map((b) => b.nim))]
+      await catatLog(tx, {
+        aktorId: pengguna.id,
+        aksi: 'UBAH_PENGUNCIAN',
+        target: nimUnik.length === 1 ? 'mahasiswa ' + nimUnik[0] : 'penguncian (' + nimUnik.length + ' mahasiswa)',
+        rincian: {
+          jumlah: berubah.length,
+          dariFinal: berubah.filter((b) => b.dari === 'FINAL').length,
+          contoh: berubah.slice(0, 20),
+        },
+      })
     }
   }, TRANSAKSI)
   return { ok: true }

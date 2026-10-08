@@ -96,6 +96,8 @@ model Angkatan {
   periodeTahun    String                      // '2025/2026'
   periodeSemester SemesterAkad
   status          StatusAngkatan @default(AKTIF)
+  dikunciOleh     Int?                        // pengguna admin yang mengunci
+  dikunciPada     DateTime?
   mahasiswa       Mahasiswa[]
 }
 
@@ -177,6 +179,17 @@ model AuditLog {                // append-only, jangan pernah di-update/delete
   batchId     String?
   batch       Batch?   @relation(fields: [batchId], references: [id])
   @@index([mahasiswaId])
+}
+
+model LogAktivitas {            // catatan tindakan admin selain nilai (kunci angkatan, ubah data terkunci, penguncian)
+  id      Int      @id @default(autoincrement())
+  waktu   DateTime @default(now())
+  aktorId Int
+  aksi    String   @db.VarChar(60)    // KUNCI_ANGKATAN | UBAH_DATA_TERKUNCI | ROLLBACK_DATA_TERKUNCI | UBAH_PENGUNCIAN
+  target  String   @db.VarChar(120)   // 'angkatan 2024', 'batch B-...', 'mahasiswa 0000...'
+  rincian Json?
+  @@index([waktu])
+  @@index([aksi])
 }
 
 model Penguncian {              // keputusan final/sementara per aspek
