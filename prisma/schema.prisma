@@ -1,0 +1,246 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Peran          { 
+  MAHASISWA 
+  DOSEN 
+  ADMIN 
+  }
+
+enum Sumber         { 
+  PDP 
+  MK 
+  ENGAGEMENT 
+  }
+
+enum StatusBatch    { 
+  DIPROSES 
+  DIBATALKAN 
+  DIKUNCI 
+  }
+
+enum StatusKunci    { 
+  FINAL 
+  SEMENTARA 
+  }
+
+enum StatusPersetujuan {
+   MENUNGGU 
+   DISETUJUI 
+   DITOLAK 
+   }
+enum StatusAngkatan { 
+  AKTIF 
+  TERKUNCI 
+  }
+enum SemesterAkad   { 
+  GANJIL 
+  GENAP 
+  }
+
+model Pengguna {
+  id           Int        @id @default(autoincrement())
+  email        String     @unique
+  passwordHash String
+  peran        Peran
+  aktif        Boolean    @default(true)
+  dibuat       DateTime   @default(now())
+  mahasiswa    Mahasiswa?
+  dosen        Dosen?
+  profil       Profil?
+}
+
+model Profil {                 // data milik pengguna sendiri (profil.js)
+  penggunaId Int     @id
+  telepon    String?
+  ponsel     String?
+  alamat     String?
+  foto       String? @db.LongText
+  fotoSumber String? @db.LongText
+  pengguna   Pengguna @relation(fields: [penggunaId], references: [id])
+}
+
+model Fakultas {
+  id    Int            @id @default(autoincrement())
+  nama  String         @unique
+  prodi ProgramStudi[]
+}
+
+model ProgramStudi {
+  id          Int         @id @default(autoincrement())
+  nama        String      @unique
+  jenjang     String      @db.VarChar(2)   // S1 | D3
+  fakultasId  Int
+  fakultas    Fakultas    @relation(fields: [fakultasId], references: [id])
+  mahasiswa   Mahasiswa[]
+  dosen       Dosen[]
+}
+
+model Angkatan {
+  id              String         @id          // '2026', '2025B', '2025', '2024'
+  tahun           Int
+  label           String
+  periodeTahun    String                      // '2025/2026'
+  periodeSemester SemesterAkad
+  status          StatusAngkatan @default(AKTIF)
+  mahasiswa       Mahasiswa[]
+}
+
+model Mahasiswa {
+  id         Int          @id @default(autoincrement())
+  nim        String       @unique
+  nama       String
+  penggunaId Int          @unique
+  prodiId    Int
+  angkatanId String
+  pengguna   Pengguna     @relation(fields: [penggunaId], references: [id])
+  prodi      ProgramStudi @relation(fields: [prodiId], references: [id])
+  angkatan   Angkatan     @relation(fields: [angkatanId], references: [id])
+  nilai      Nilai[]
+  penguncian Penguncian[]
+  koreksi    PengajuanKoreksi[]
+  pengumpulan Pengumpulan[]
+  @@index([angkatanId, prodiId])
+}
+
+model Dosen {
+  id         Int          @id @default(autoincrement())
+  nip        String       @unique
+  nama       String
+  jabatan    String
+  sumber     Sumber
+  semester   Int
+  penggunaId Int          @unique
+  prodiId    Int
+  pengguna   Pengguna     @relation(fields: [penggunaId], references: [id])
+  prodi      ProgramStudi @relation(fields: [prodiId], references: [id])
+}
+
+model Komponen {                // di-seed dari curriculum.js
+  id      String  @id           // 'A1-MK-T1'
+  aspekId String                // 'A1' (tanpa FK, aspek hidup di kode)
+  sumber  Sumber
+  label   String
+  jenis   String?               // TUGAS | SIKAP | UTS | UAS
+  resmi   Boolean @default(true)
+  nilai   Nilai[]
+}
+
+model Batch {
+  id         String      @id          // 'B-2026-0001'
+  sumber     Sumber
+  semester   Int
+  angkatanId String
+  aktorId    Int
+  cara       String                   // manual | import | rekap
+  status     StatusBatch @default(DIPROSES)
+  waktu      DateTime    @default(now())
+  nilai      Nilai[]
+  audit      AuditLog[]
+}
+
+model Nilai {                   // nilai SAAT INI per (mahasiswa, komponen)
+  id          Int       @id @default(autoincrement())
+  mahasiswaId Int
+  komponenId  String
+  nilai       Float                   // 0–100
+  penilaiId   Int
+  batchId     String?
+  diperbarui  DateTime  @updatedAt
+  mahasiswa   Mahasiswa @relation(fields: [mahasiswaId], references: [id])
+  komponen    Komponen  @relation(fields: [komponenId], references: [id])
+  batch       Batch?    @relation(fields: [batchId], references: [id])
+  @@unique([mahasiswaId, komponenId])
+}
+
+model AuditLog {                // append-only, jangan pernah di-update/delete
+  id          Int      @id @default(autoincrement())
+  waktu       DateTime @default(now())
+  aktorId     Int
+  mahasiswaId Int
+  komponenId  String
+  nilaiLama   Float?
+  nilaiBaru   Float?
+  batchId     String?
+  batch       Batch?   @relation(fields: [batchId], references: [id])
+  @@index([mahasiswaId])
+}
+
+model Penguncian {              // keputusan final/sementara per aspek
+  mahasiswaId Int
+  aspekId     String
+  status      StatusKunci
+  olehId      Int
+  waktu       DateTime  @default(now())
+  mahasiswa   Mahasiswa @relation(fields: [mahasiswaId], references: [id])
+  @@id([mahasiswaId, aspekId])
+}
+
+model PengajuanKoreksi {
+  id              Int               @id @default(autoincrement())
+  mahasiswaId     Int
+  komponenId      String
+  alasan          String            @db.Text
+  nilaiDiharapkan Float?
+  status          StatusPersetujuan @default(MENUNGGU)
+  diajukan        DateTime          @default(now())
+  diputuskanOleh  Int?
+  diputuskanPada  DateTime?
+  catatan         String?           @db.Text
+  mahasiswa       Mahasiswa         @relation(fields: [mahasiswaId], references: [id])
+}
+
+model Pengumpulan {             // berkas yang dikirim mahasiswa ke dosen
+  id          Int       @id @default(autoincrement())
+  mahasiswaId Int
+  komponenId  String
+  dosenId     Int
+  bentuk      String                  // PDF | DOCX | Tautan Drive
+  berkas      String                  // path file atau URL
+  waktu       DateTime  @default(now())
+  terlambat   Boolean   @default(false)
+  mahasiswa   Mahasiswa @relation(fields: [mahasiswaId], references: [id])
+  @@unique([mahasiswaId, komponenId])
+}
+
+model Usulan {                  // dosen mengusulkan, admin menyetujui (R8)
+  id               Int               @id @default(autoincrement())
+  dosenId          Int
+  cara             String
+  catatan          String?           @db.Text
+  status           StatusPersetujuan @default(MENUNGGU)
+  waktu            DateTime          @default(now())
+  batchId          String?                  // terisi setelah disetujui
+  diputuskanOleh   Int?
+  diputuskanPada   DateTime?
+  catatanKeputusan String?           @db.Text
+  ditolakSistem    Json?                    // baris yang tidak lolos pemeriksaan saat disetujui
+  entri            UsulanEntri[]
+}
+
+model UsulanEntri {
+  id         Int    @id @default(autoincrement())
+  usulanId   Int
+  nim        String
+  komponenId String
+  nilai      Float
+  usulan     Usulan @relation(fields: [usulanId], references: [id], onDelete: Cascade)
+}
+
+model Konfigurasi {             // pengganti CONFIG di config.js
+  kunci String @id              // 'BOBOT_SUMBER'
+  nilai Json
+}

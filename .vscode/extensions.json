@@ -1,0 +1,4 @@
+{
+  "//": "Tailwind CSS IntelliSense memberi pelengkapan nama kelas dan pratinjau nilainya saat menulis className — sangat membantu di proyek ini karena nilainya sering ditulis sebagai kelas arbitrer, misalnya text-[13.5px].",
+  "recommendations": ["bradlc.vscode-tailwindcss"]
+}

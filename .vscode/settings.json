@@ -1,0 +1,6 @@
+{
+  "//": "Validator CSS bawaan VS Code tidak mengenal at-rule milik Tailwind (@tailwind, @apply, @layer, @screen, @variants) sehingga menandainya sebagai 'Unknown at rule'. Semuanya sah dan diproses PostCSS saat build, jadi peringatannya dimatikan — bukan aturannya yang dihapus.",
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore"
+}
