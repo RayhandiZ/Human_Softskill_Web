@@ -151,6 +151,16 @@ try {
     isi: { sumber: 'MK', semester: 3, angkatanId: angkatan.id, cara: 'manual', entri: [{ nim: NIM, komponenId: 'B3-MK-T1', nilai: 70 }] },
   })
   cek('R1: aspek semester 3 ditolak untuk mahasiswa semester 2', ditolak.status === 400, JSON.stringify(ditolak.isi))
+  const semSalah = await admin('/api/nilai', {
+    metode: 'POST',
+    isi: { sumber: 'MK', semester: 2, angkatanId: angkatan.id, cara: 'manual', entri: [{ nim: NIM, komponenId: 'A1-MK-T1', nilai: 70 }] },
+  })
+  cek('komponen semester 1 ditolak bila batch berlabel semester 2', semSalah.status === 400, JSON.stringify(semSalah.isi))
+  const semLuar = await admin('/api/nilai', {
+    metode: 'POST',
+    isi: { sumber: 'MK', semester: 99, angkatanId: angkatan.id, cara: 'manual', entri: [{ nim: NIM, komponenId: 'A1-MK-T1', nilai: 70 }] },
+  })
+  cek('semester di luar program ditolak', semLuar.status === 400, JSON.stringify(semLuar.isi))
 
   await admin('/api/nilai/rollback', { metode: 'POST', isi: { id: b1.isi.id } })
   cek('rollback batch lama tidak menghapus nilai batch sesudahnya', (await sel())?.nilai === 90)
@@ -208,6 +218,10 @@ try {
   await mhs('/api/profil', { metode: 'PUT', isi: { telepon: '021 5422 0808', ponsel: '', alamat: 'Gading Serpong', foto: null, fotoSumber: null } })
   const pr = (await mhs('/api/data')).isi.profil
   cek('profil tersimpan di basis data', pr?.telepon === '021 5422 0808' && pr.alamat === 'Gading Serpong', JSON.stringify(pr))
+  const panjang = 'a'.repeat(400)
+  const simpanPanjang = await mhs('/api/profil', { metode: 'PUT', isi: { alamat: panjang } })
+  cek('alamat 400 karakter tersimpan', simpanPanjang.status === 200, JSON.stringify(simpanPanjang.isi))
+  cek('alamat panjang terbaca utuh', (await mhs('/api/data')).isi.profil?.alamat?.length === 400)
 
   /* ------------------------------ keluar ------------------------------ */
   garis('8. KELUAR')

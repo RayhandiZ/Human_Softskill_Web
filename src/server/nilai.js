@@ -3,6 +3,8 @@ import { GalatApi } from './api.js'
 import { SERTA_MAHASISWA, semesterDari, susunMahasiswa, waktuWib } from './muat.js'
 import { getAspek, getKomponenById } from '../lib/curriculum.js'
 import { bolehTandaiFinal, validasiBatchImport } from '../lib/rules.js'
+import { CONFIG } from '../lib/config.js'
+import { randomBytes } from 'node:crypto'
 
 // Penulisan nilai oleh Kemahasiswaan. Setiap penyimpanan menjadi satu batch: tercatat di
 // AuditLog dan bisa dibatalkan utuh. Transaksi panjang diberi waktu lebih dari bawaan 5 detik
@@ -10,7 +12,7 @@ import { bolehTandaiFinal, validasiBatchImport } from '../lib/rules.js'
 const TRANSAKSI = { timeout: 30000, maxWait: 10000 }
 
 const idBatch = () =>
-  'B-' + waktuWib(new Date()).replace(/\D/g, '') + '-' + Math.random().toString(36).slice(2, 5).toUpperCase()
+  'B-' + waktuWib(new Date()).replace(/\D/g, '') + '-' + randomBytes(4).toString('hex').toUpperCase()
 
 /** Peta NIM → mahasiswa dengan semester berjalannya, bahan pemeriksaan aturan. */
 export async function petaMahasiswa(nims, tx = db) {
@@ -59,7 +61,7 @@ export async function tulisBatch(tx, { sumber, semester, angkatanId, cara, entri
 export async function simpanBatch(pengguna, { sumber, semester, angkatanId, cara, entri }) {
   if (!['PDP', 'MK', 'ENGAGEMENT'].includes(sumber)) throw new GalatApi('Sumber penilaian tidak dikenal.')
   const sem = Number(semester)
-  if (!Number.isInteger(sem) || sem < 1) throw new GalatApi('Semester tidak valid.')
+  if (!Number.isInteger(sem) || sem < 1 || sem > CONFIG.TOTAL_SEMESTER_PROGRAM) throw new GalatApi('Semester tidak valid.')
   const daftar = Array.isArray(entri) ? entri : []
   if (!daftar.length) throw new GalatApi('Tidak ada nilai yang dikirim.')
 
@@ -68,7 +70,7 @@ export async function simpanBatch(pengguna, { sumber, semester, angkatanId, cara
   const peta = await petaMahasiswa(daftar.map((e) => e.nim))
   const periksa = validasiBatchImport(
     daftar.map((e) => ({ nim: e.nim, komponen: e.komponenId, nilai: e.nilai })),
-    { cariMahasiswa: (nim) => peta.get(nim) ?? null, sumber },
+    { cariMahasiswa: (nim) => peta.get(nim) ?? null, sumber, semester: sem },
   )
   if (periksa.ditolak.length) {
     const x = periksa.ditolak[0]

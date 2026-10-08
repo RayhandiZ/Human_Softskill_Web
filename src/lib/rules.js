@@ -167,7 +167,7 @@ export function komponenUntukSumber(sumber) {
 }
 
 /** Penjaga utama R1: aspek dari semester yang belum tiba ditolak; semester lampau tetap diterima. */
-export function validasiBarisImport(baris, { cariMahasiswa, sumber, nimTerlihat = new Set() }) {
+export function validasiBarisImport(baris, { cariMahasiswa, sumber, semester = null, nimTerlihat = new Set() }) {
   const alasan = []
   const nim = String(baris.nim ?? '').trim()
   const komponenId = String(baris.komponen ?? '').trim()
@@ -195,6 +195,14 @@ export function validasiBarisImport(baris, { cariMahasiswa, sumber, nimTerlihat 
     }
   }
 
+  /* Hanya bila pemanggil menyebut semester batch (server, saat menyimpan): komponen harus milik semester itu. */
+  if (semester != null && komponen) {
+    const semKomponen = getAspek(komponen.aspekId).semester
+    if (semKomponen !== semester) {
+      alasan.push('Komponen ' + komponenId + ' milik Semester ' + semKomponen + ', bukan Semester ' + semester)
+    }
+  }
+
   if (mentah === '') alasan.push('Nilai kosong')
   else if (Number.isNaN(nilai)) alasan.push('Nilai "' + baris.nilai + '" bukan angka')
   else if (nilai < 0 || nilai > 100) alasan.push('Nilai ' + nilai + ' di luar rentang 0–100')
@@ -206,13 +214,14 @@ export function validasiBarisImport(baris, { cariMahasiswa, sumber, nimTerlihat 
   return { ok: alasan.length === 0, alasan, nim, komponenId, nilai, mahasiswa, komponen }
 }
 
-export function validasiBatchImport(baris, { cariMahasiswa, sumber }) {
+export function validasiBatchImport(baris, { cariMahasiswa, sumber, semester = null }) {
   const nimTerlihat = new Set()
   const hasil = baris.map((b, i) => ({
-    nomor: i + 2, // baris 1 adalah kepala kolom
+    nomor: i + 2,
     asal: b,
-    ...validasiBarisImport(b, { cariMahasiswa, sumber, nimTerlihat }),
+    ...validasiBarisImport(b, { cariMahasiswa, sumber, semester, nimTerlihat }),
   }))
+
   const diterima = hasil.filter((x) => x.ok)
   const ditolak = hasil.filter((x) => !x.ok)
   return {

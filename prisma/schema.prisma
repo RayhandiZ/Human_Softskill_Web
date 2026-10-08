@@ -65,9 +65,9 @@ model Pengguna {
 
 model Profil {                 // data milik pengguna sendiri (profil.js)
   penggunaId Int     @id
-  telepon    String?
+  telepon    String? 
   ponsel     String?
-  alamat     String?
+  alamat     String? @db.VarChar(500)
   foto       String? @db.LongText
   fotoSumber String? @db.LongText
   pengguna   Pengguna @relation(fields: [penggunaId], references: [id])
