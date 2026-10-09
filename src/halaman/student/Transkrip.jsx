@@ -61,10 +61,10 @@ export default function Transkrip({ student }) {
               Universitas Multimedia Nusantara
             </p>
             <h1 className="mt-1.5 text-[24px] font-extrabold tracking-tight text-ink">
-              {teks('Transkrip Capaian Softskill')}
+              {teks('Transkrip Capaian human skill')}
             </h1>
             <p className="mt-1 text-[13px] text-ink-2">
-              {teks('Program pembinaan softskill terintegrasi, Semester 1 sampai {total}', {
+              {teks('Program pembinaan human skill terintegrasi, Semester 1 sampai {total}', {
                 total: CONFIG.TOTAL_SEMESTER_PROGRAM,
               })}
             </p>

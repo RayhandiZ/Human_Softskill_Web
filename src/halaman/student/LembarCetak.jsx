@@ -49,10 +49,10 @@ export default function LembarCetak({ student, transkrip: t }) {
       </header>
 
       <h1 className="mt-2 text-center font-sans text-[22px] font-bold uppercase tracking-tight underline underline-offset-4">
-        {teks(final ? 'Transkrip Softskill' : 'Transkrip Sementara')}
+        {teks(final ? 'Transkrip' : 'Transkrip Sementara')}
       </h1>
       <p className="mt-1 text-center font-sans text-[11px]">
-        {teks('Program Pembinaan Softskill 5C, Semester 1 sampai {total}', { total: CONFIG.TOTAL_SEMESTER_PROGRAM })}
+        {teks('Program Pembinaan human skill 5C, Semester 1 sampai {total}', { total: CONFIG.TOTAL_SEMESTER_PROGRAM })}
       </p>
 
       <div className="mt-5 grid grid-cols-2 gap-x-10">

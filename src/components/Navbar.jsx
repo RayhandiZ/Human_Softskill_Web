@@ -37,7 +37,7 @@ export default function Navbar({ links = [], kelompok = null, aksi = null, foto 
           <LogoPdp keterangan={false} className="h-7 w-auto shrink-0" />
           <span aria-hidden="true" className="hidden h-6 w-px shrink-0 bg-white/30 sm:block" />
           <span className="hidden whitespace-nowrap text-[15px] font-extrabold tracking-tight sm:block">
-            HUMAN <span className="text-[var(--accent)]">SOFTSKILL</span>
+            HUMAN <span className="text-[var(--accent)]">SKILL</span>
           </span>
         </Link>
 

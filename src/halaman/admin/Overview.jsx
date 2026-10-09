@@ -168,7 +168,7 @@ export default function Overview() {
           className={(bukaAngka ? 'grid ' : 'hidden ') + 'gap-5 sm:contents'}
         >
         <Angka
-          judul="Rata-rata nilai softskill"
+          judul="Rata-rata nilai"
           nilai={angka.rata ?? '—'}
           satuan="dari 100"
           persen={bagi(angka.diAtasAmbang)}

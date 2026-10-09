@@ -492,9 +492,69 @@ export const EN = {
   'Kembali ke data mahasiswa': 'Back to student data',
   'Kelayakan sertifikat': 'Certificate eligibility',
   'Lima syarat yang diperiksa sistem': 'The five requirements the system checks',
-  'Cetak di sini bila mahasiswa tidak bisa mencetak sendiri, atau pilih Simpan sebagai PDF untuk mengirimkannya.':
-    'Print it here when the student cannot print it themselves, or choose Save as PDF to send it to them.',
+  'Buka di Cetak Sertifikat': 'Open in Print Certificates',
   'Riwayat perubahan nilai': 'Score change history',
+
+  /* ---------------------------- cetak sertifikat --------------------------- */
+  'Cetak Sertifikat': 'Print Certificates',
+  'Bantu mahasiswa yang kesulitan mencetak sertifikatnya sendiri. Lembarnya sama persis dengan yang dicetak mahasiswa.':
+    'Help students who cannot print their own certificate. The sheet is exactly the one students print themselves.',
+  '{n} dari {total} mahasiswa sudah berhak atas sertifikat': '{n} of {total} students are eligible for a certificate',
+  'Belum berhak': 'Not yet eligible',
+  Kelayakan: 'Eligibility',
+  Aksi: 'Action',
+  '+{n} syarat lain': '+{n} more',
+  Cetak: 'Print',
+  'Cetak sertifikat {nama}': 'Print certificate for {nama}',
+  'Ubah kata kunci, angkatan, atau pilihan kelayakan.': 'Change the keyword, cohort, or eligibility filter.',
+  'Tombol cetak hanya aktif bila kelima syarat terpenuhi, sama seperti di panel mahasiswa. Pilih Simpan sebagai PDF di dialog cetak untuk mengirimkannya ke mahasiswa.':
+    'The print button only turns on when all five requirements are met, just like in the student panel. Choose Save as PDF in the print dialog to send it to the student.',
+
+  /* -------------------------------- angkatan ------------------------------- */
+  'Pantau kelengkapan nilai tiap angkatan, temukan mahasiswa yang perlu ditindaklanjuti, lalu kunci angkatan yang programnya sudah selesai.':
+    'Monitor score completeness for each cohort, find the students who need follow-up, then lock cohorts whose programme has finished.',
+  'Angkatan yang ditambahkan di basis data akan tampil di sini.': 'Cohorts added to the database will appear here.',
+  Aktif: 'Active',
+  'Masuk {periode}': 'Intake {periode}',
+  'Program selesai': 'Programme finished',
+  'Nilai terisi': 'Scores in',
+  'Perlu tindak lanjut': 'Needs follow-up',
+  'Nilai yang belum masuk': 'Scores not yet in',
+  'Per semester dan unit penilai, hanya semester yang sudah dibuka': 'By semester and assessing unit, opened semesters only',
+  '{n} nilai kosong pada {m} mahasiswa': '{n} empty scores across {m} students',
+  'Masukkan nilai': 'Enter scores',
+  'Semua nilai sudah masuk': 'All scores are in',
+  'Angkatan ini belum punya mahasiswa': 'This cohort has no students yet',
+  'Angkatan ini belum punya mahasiswa.': 'This cohort has no students yet.',
+  'Tidak ada komponen kosong pada semester yang sudah dibuka.': 'No component is empty in the semesters already opened.',
+  'Mahasiswa yang perlu ditindaklanjuti': 'Students who need follow-up',
+  '{n} dari {total} mahasiswa': '{n} of {total} students',
+  'Nilai belum lengkap': 'Incomplete scores',
+  'Di bawah rata-rata minimal': 'Below the minimum average',
+  'Masih sementara': 'Still provisional',
+  'Yang perlu ditindaklanjuti': 'What needs follow-up',
+  'Nilai akhir {nilai}, di bawah rata-rata minimal {n}': 'Final score {nilai}, below the minimum average of {n}',
+  'Aspek {daftar} masih sementara': 'Aspects {daftar} are still provisional',
+  'Lihat transkrip': 'View transcript',
+  'Tidak ada yang perlu ditindaklanjuti': 'Nothing needs follow-up',
+  'Belum ada nilai yang kosong, di bawah rata-rata minimal, atau tertahan sementara di angkatan ini.':
+    'No score in this cohort is empty, below the minimum average, or held as provisional.',
+  'Penguncian angkatan': 'Cohort locking',
+  'Angkatan yang sudah dikunci memenuhi syarat sertifikat.': 'A locked cohort meets the certificate requirement.',
+  'Angkatan {label} sudah dikunci.': 'Cohort {label} is locked.',
+  'Nilainya masih bisa diubah atau dilengkapi Kemahasiswaan, asal disertai alasan yang tercatat.':
+    'Student Affairs can still change or complete its scores, as long as a recorded reason is given.',
+  'Cetak sertifikat angkatan ini': 'Print certificates for this cohort',
+  'Belum bisa dikunci': 'Cannot be locked yet',
+  'Angkatan ini baru di Semester {n} dari {total}. Penguncian bisa dilakukan setelah Semester {total} berakhir.':
+    'This cohort is only in Semester {n} of {total}. It can be locked once Semester {total} has ended.',
+  'Bila dikunci sekarang, {b} dari {n} mahasiswa berhak atas sertifikat.':
+    'If locked now, {b} of {n} students will be eligible for a certificate.',
+  '{n} belum berhak, {k} di antaranya karena nilainya belum lengkap. Nilai masih bisa dilengkapi sesudah dikunci, asal disertai alasan yang tercatat.':
+    '{n} are not yet eligible, {k} of them because their scores are incomplete. Scores can still be completed after locking, as long as a recorded reason is given.',
+  'Ketik {label} untuk mengonfirmasi': 'Type {label} to confirm',
+  'Kunci angkatan': 'Lock cohort',
+  'Penguncian tidak bisa dibatalkan dari halaman ini.': 'Locking cannot be undone from this page.',
   'Setiap perubahan tercatat beserta aktornya': 'Every change is recorded with who made it',
   'Belum ada perubahan tercatat': 'No change recorded yet',
   'Nilai mahasiswa ini masuk sekali lewat batch import dan belum pernah diperbaiki.':

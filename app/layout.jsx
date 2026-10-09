@@ -24,9 +24,9 @@ async function bacaMaster() {
 }
 
 export const metadata = {
-  title: 'Dashboard Monitoring Softskill 5C — UMN',
+  title: 'Dashboard Monitoring Human Skill',
   description:
-    'Pemantauan capaian softskill mahasiswa Universitas Multimedia Nusantara berbasis CPMK terintegrasi.',
+    'Pemantauan capaian human skill mahasiswa Universitas Multimedia Nusantara berbasis CPMK terintegrasi.',
 }
 
 export const viewport = {

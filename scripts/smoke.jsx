@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { act } from 'react'
 import Penyedia from '../app/penyedia'
 import { RequireRole } from '../src/lib/auth'
-import { MASTER_AWAL, STUDENTS, getStudentByNim, isiData, isiMaster, pengumpulanDosen } from '../src/lib/data'
+import { COHORTS, MASTER_AWAL, STUDENTS, getStudent, getStudentByNim, isiData, isiMaster, pengumpulanDosen } from '../src/lib/data'
 import { DATA_CONTOH, DOSEN, PERSONA_SEMESTER, getDosenByEmail, getStudentByEmail } from './dataContoh'
 import { bersihkanPerubahan } from '../src/lib/store'
 import { aturJalur } from './palsu-next-navigation'
@@ -25,6 +25,8 @@ import StudentDetail from '../src/halaman/admin/StudentDetail'
 import Programs from '../src/halaman/admin/Programs'
 import Nilai from '../src/halaman/admin/Nilai'
 import UsulanAdmin from '../src/halaman/admin/Usulan'
+import CetakSertifikat from '../src/halaman/admin/CetakSertifikat'
+import Angkatan from '../src/halaman/admin/Angkatan'
 import DosenLayout from '../src/halaman/dosen/DosenLayout'
 import Masuk from '../src/halaman/dosen/Masuk'
 import NilaiDosen from '../src/halaman/dosen/Nilai'
@@ -136,8 +138,8 @@ const RUTE = {
   '/admin': { pohon: () => admin(<Overview />) },
   '/admin/mahasiswa': { pohon: () => admin(<Students />) },
   '/admin/mahasiswa/DEMO-3': { pohon: () => admin(<StudentDetail />), params: { id: 'DEMO-3' } },
-  '/admin/mahasiswa/DEMO-LAYAK': { pohon: () => admin(<StudentDetail />), params: { id: 'DEMO-LAYAK' } },
-  '/admin/mahasiswa/DEMO-KOSONG': { pohon: () => admin(<StudentDetail />), params: { id: 'DEMO-KOSONG' } },
+  '/admin/sertifikat': { pohon: () => admin(<CetakSertifikat />) },
+  '/admin/angkatan': { pohon: () => admin(<Angkatan />) },
   '/admin/program-studi': { pohon: () => admin(<Programs />) },
   '/admin/nilai': { pohon: () => admin(<Nilai />) },
   '/admin/profil': { pohon: () => admin(<Profil />) },
@@ -665,7 +667,7 @@ export async function ujiLaciAdmin() {
   hasil.adaJudulKelompok = /Workspace/.test(teks) && /Rujukan/.test(teks)
 
   const tujuan = panel ? [...panel.querySelectorAll('a')].map((a) => a.getAttribute('href')) : []
-  hasil.adaHalamanTersembunyi = ['/admin/kurikulum', '/admin/program-studi', '/admin/log'].every((h) =>
+  hasil.adaHalamanTersembunyi = ['/admin/kurikulum', '/admin/program-studi', '/admin/log', '/admin/sertifikat'].every((h) =>
     tujuan.includes(h),
   )
   hasil.adaPenandaAktif = !!panel?.querySelector('[aria-current="page"]')
@@ -1373,12 +1375,16 @@ export async function ujiSertifikat(studentId) {
   return hasil
 }
 
-// Cetak sertifikat atas nama mahasiswa dari halaman detail di panel admin.
+// Halaman Cetak Sertifikat di panel admin, dibuka lewat ?cari= seperti dari halaman detail mahasiswa.
 export async function ujiSertifikatAdmin(studentId) {
   const lama = window.localStorage.getItem('sk5c.session')
   window.localStorage.setItem('sk5c.session', JSON.stringify({ role: 'admin', email: 'a@umn.ac.id', name: 'Y', initials: 'KH' }))
-  const { el, lepas } = await pasang('/admin/mahasiswa/' + studentId)
-  const tombol = [...el.querySelectorAll('button')].find((b) => /Cetak sertifikat/.test(b.textContent))
+  const m = getStudent(studentId)
+  const { el, lepas } = await pasang('/admin/sertifikat?cari=' + encodeURIComponent(m.nim))
+  const baris = [...el.querySelectorAll('tbody tr')]
+  const tombol = el.querySelector('button[aria-label="Cetak sertifikat ' + m.name + '"]')
+  const sel = tombol?.closest('tr')?.children[5]
+  const kotakCari = el.querySelector('input[type="search"]')
   const lembarDiBody = () => [...document.body.children].find((n) => n.classList.contains('lembar-sertifikat'))
   const sebelumKlik = Boolean(document.querySelector('.lembar-sertifikat'))
 
@@ -1397,6 +1403,10 @@ export async function ujiSertifikatAdmin(studentId) {
   })
 
   const hasil = {
+    cariTerisi: kotakCari?.value === m.nim,
+    satuBaris: baris.length === 1,
+    status: sel?.textContent ?? '',
+    alasanTerkait: Boolean(tombol?.getAttribute('aria-describedby') && el.querySelector('#' + tombol.getAttribute('aria-describedby'))),
     adaTombol: Boolean(tombol),
     mati: Boolean(tombol?.disabled),
     sebelumKlik,
@@ -1407,6 +1417,66 @@ export async function ujiSertifikatAdmin(studentId) {
     dilepasSesudahAfterprint: !document.querySelector('.lembar-sertifikat'),
   }
   lepas()
+  if (lama) window.localStorage.setItem('sk5c.session', lama)
+  else window.localStorage.removeItem('sk5c.session')
+  return hasil
+}
+
+// Halaman Angkatan: kartu per angkatan, rincian yang perlu ditindaklanjuti, dan alur penguncian.
+export async function ujiAngkatan() {
+  const lama = window.localStorage.getItem('sk5c.session')
+  window.localStorage.setItem('sk5c.session', JSON.stringify({ role: 'admin', email: 'a@umn.ac.id', name: 'Y', initials: 'KH' }))
+  const hasil = {}
+  const kartu = (el) => [...el.querySelectorAll('main li > button[aria-pressed]')]
+  const labelKartu = (b) => b.querySelector('span > span')?.textContent
+  const kartuDari = (el, id) => kartu(el).find((b) => labelKartu(b) === COHORTS.find((c) => c.id === id).label)
+
+  let { el, lepas } = await pasang('/admin/angkatan')
+  hasil.kartuSesuaiBasisData =
+    kartu(el).length === COHORTS.length && COHORTS.every((c, i) => labelKartu(kartu(el)[i]) === c.label)
+  hasil.bawaanTerbaru = kartu(el)[0]?.getAttribute('aria-pressed') === 'true'
+  hasil.terkunciTertulis = /Terkunci/.test(kartuDari(el, '2024')?.textContent ?? '')
+
+  await klik(kartuDari(el, '2025'))
+  const k2025 = kartuDari(el, '2025')
+  const rincian = el.querySelector('section[aria-labelledby="judul-rincian-angkatan"]')
+  hasil.pilihBerpindah = k2025?.getAttribute('aria-pressed') === 'true' && /^Angkatan 2025$/.test(el.querySelector('#judul-rincian-angkatan')?.textContent ?? '')
+  hasil.belumBisaDikunci = /Belum bisa dikunci/.test(rincian?.textContent ?? '') && /baru di Semester 3 dari 3/.test(rincian?.textContent ?? '')
+  const diKartu = Number((k2025?.textContent.match(/Perlu tindak lanjut(\d+)/) ?? [])[1])
+  const diDaftar = Number((rincian?.textContent.match(/(\d+) dari \d+ mahasiswa/) ?? [])[1])
+  hasil.jumlahCocok = diKartu > 0 && diKartu === diDaftar
+  const tautan = [...(rincian?.querySelectorAll('table a') ?? [])].map((a) => a.getAttribute('href')).filter((h) => h.startsWith('/admin/nilai?'))
+  hasil.tautanInputLengkap = tautan.length > 0 && tautan.every((h) => h.includes('angkatan=2025') && h.includes('cari='))
+  lepas()
+
+  // Angkatan 2025 dimundurkan setahun supaya programnya selesai dan boleh dikunci.
+  isiMaster({
+    angkatan: MASTER_AWAL.angkatan.map((a) => (a.id === '2025' ? { ...a, intake: { tahun: '2024/2025', semester: 'Ganjil' } } : a)),
+  })
+  ;({ el, lepas } = await pasang('/admin/angkatan?angkatan=2025'))
+  const tombolKunci = () => [...el.querySelectorAll('button[type="submit"]')].find((b) => /Kunci angkatan/.test(b.textContent))
+  const isian = el.querySelector('form input')
+  hasil.pratinjauTampil = /Bila dikunci sekarang, \d+ dari \d+ mahasiswa berhak atas sertifikat/.test(el.textContent)
+  hasil.matiSebelumDiketik = Boolean(tombolKunci()?.disabled)
+  await ketik(isian, '2024')
+  hasil.matiBilaSalahKetik = Boolean(tombolKunci()?.disabled)
+  await ketik(isian, '2025')
+  hasil.hidupBilaCocok = Boolean(tombolKunci()) && !tombolKunci().disabled
+  await act(async () => {
+    tombolKunci().click()
+    await new Promise((r) => setTimeout(r, 0))
+  })
+  hasil.terkunciSesudahnya =
+    /Angkatan 2025 sudah dikunci/.test(el.textContent) && COHORTS.find((c) => c.id === '2025')?.status === 'terkunci'
+  hasil.tautanSertifikat = Boolean(el.querySelector('a[href="/admin/sertifikat?angkatan=2025"]'))
+  lepas()
+  for (const s of STUDENTS) if (s.angkatanId === '2025') s.statusAngkatan = 'aktif'
+  isiMaster(MASTER_AWAL)
+
+  ;({ el, lepas } = await pasang('/admin/sertifikat?angkatan=2024'))
+  hasil.sertifikatTersaring = el.querySelector('select')?.value === '2024'
+  lepas()
+
   if (lama) window.localStorage.setItem('sk5c.session', lama)
   else window.localStorage.removeItem('sk5c.session')
   return hasil

@@ -138,7 +138,7 @@ export default function StudentLayout({ children }) {
             <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
             <span aria-hidden="true" className="h-6 w-px shrink-0 bg-line" />
             <span className="whitespace-nowrap text-[15px] font-extrabold tracking-tight text-ink">
-              HUMAN <span className="text-[var(--accent)]">SOFTSKILL</span>
+              HUMAN <span className="text-[var(--accent)]">SKILL</span>
             </span>
           </Link>
 
@@ -166,7 +166,7 @@ export default function StudentLayout({ children }) {
               <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
               <span aria-hidden="true" className="hidden h-6 w-px shrink-0 bg-line sm:block" />
               <span className="hidden text-[14px] font-extrabold tracking-tight text-ink sm:block">
-                HUMAN <span className="text-[var(--accent)]">SOFTSKILL</span>
+                HUMAN <span className="text-[var(--accent)]">SKILL</span>
               </span>
             </Link>
 

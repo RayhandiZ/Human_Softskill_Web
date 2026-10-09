@@ -23,7 +23,7 @@ export default function Sertifikat() {
         <section className="kartu px-6 py-6 sm:px-7">
           <p className="text-[13px] font-semibold text-ink-2">{teks('Sertifikat')}</p>
           <h1 className="mt-1 text-[24px] font-extrabold tracking-tight text-ink">
-            {teks('Sertifikat Pembinaan Softskill 5C')}
+            {teks('Sertifikat Pembinaan human skill 5C')}
           </h1>
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-5">

@@ -29,7 +29,7 @@ export default function LembarSertifikat({ student, transkrip: t }) {
         </div>
 
         <h1 className="mt-8 text-[40px] font-extrabold uppercase tracking-[.2em]">{teks('Sertifikat')}</h1>
-        <p className="mt-1 text-[14px]">{teks('Program Pembinaan Softskill 5C')}</p>
+        <p className="mt-1 text-[14px]">{teks('Program Pembinaan human skill 5C')}</p>
 
         <p className="mt-8 text-[13px]">{teks('diberikan kepada')}</p>
         <p className="mt-2 text-[30px] font-bold">{student.name}</p>

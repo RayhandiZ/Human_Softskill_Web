@@ -346,6 +346,33 @@ didemokan**.
 ditampilkan; gunanya memutuskan apakah Semester 3 sebuah angkatan sudah berakhir, yang menjadi
 syarat untuk menguncinya (lihat Penguncian angkatan dan data terkunci).
 
+## Halaman Angkatan
+
+`/admin/angkatan` memantau setiap angkatan yang tercatat di basis data (terbaru lebih dulu):
+semester yang sedang berjalan, persentase nilai yang sudah terisi, dan berapa mahasiswa yang
+perlu ditindaklanjuti. Satu angkatan dipilih lewat kartunya atau `?angkatan=<id>`, lalu tampil:
+
+- **Nilai yang belum masuk** per semester dan unit penilai (sama dengan lonceng), masing-masing
+  bertaut ke Input Nilai dengan sasaran terisi;
+- **Mahasiswa yang perlu ditindaklanjuti**, yaitu yang punya komponen kosong pada semester yang
+  sudah dibuka, nilai akhirnya di bawah rata-rata minimal setelah sampai Semester 3, atau
+  aspeknya masih sementara padahal programnya sudah selesai;
+- **Penguncian angkatan**: baru bisa setelah Semester 3 berakhir, dengan pratinjau berapa yang
+  akan berhak sertifikat dan konfirmasi berupa mengetik nama angkatan. Angkatan yang terkunci
+  bertaut ke Cetak Sertifikat yang sudah tersaring ke angkatan itu.
+
+API angkatan dari back-end **belum final**, jadi halaman ini sengaja dibuat sedikit bergantung
+padanya:
+
+- Pemantauan dan pratinjau dihitung di front-end dari data yang sudah dimuat (`COHORTS`,
+  `STUDENTS`, transkrip), memakai aturan yang sama dengan server: `semesterKalender`,
+  `pekerjaanPenilaian`, dan `pratinjauPenguncian`. `GET /api/angkatan` dan
+  `POST /api/angkatan/pratinjau` belum dipakai.
+- Satu-satunya pemanggil API adalah `kunciAngkatan()` di `src/lib/store.js`
+  (`POST /api/angkatan/kunci` dengan `{ angkatanId, konfirmasi }`). Bila bentuk API berubah,
+  cukup fungsi itu yang disesuaikan. Sesudah berhasil, status angkatan di data master ikut
+  disamakan di peramban, karena data master baru dimuat ulang saat halaman dibuka lagi.
+
 ## Yang masih menunggu keputusan unit pengelola
 
 Semuanya ada di `src/lib/config.js` bertanda `// MENUNGGU KONFIRMASI`:
@@ -835,12 +862,13 @@ panah kiri/kanan). Bagian yang mudah rusak:
   bukan `<footer>`, karena aturan cetak global menyembunyikan semua `<footer>`.
 - Sertifikat dicetak A4 lanskap dan tidak dirender sama sekali selama belum layak, jadi Ctrl+P
   tidak pernah menghasilkan sertifikat.
-- Kemahasiswaan bisa mencetak sertifikat atas nama mahasiswa dari halaman detailnya
-  (`/admin/mahasiswa/:id`), untuk mahasiswa yang kesulitan mencetak sendiri. Syaratnya sama
-  persis dan lembarnya sama (`LembarSertifikat.jsx`). Lembar itu baru dipasang langsung di
-  `<body>` saat tombol ditekan dan dilepas lagi pada `afterprint`. Selama terpasang, aturan
-  cetak di `index.css` menyembunyikan seluruh aplikasi, sehingga transkrip dan baris periode
-  admin tidak ikut tercetak. Ctrl+P biasa di halaman itu tetap mencetak transkrip.
+- Kemahasiswaan mencetak sertifikat atas nama mahasiswa di halaman **Cetak Sertifikat**
+  (`/admin/sertifikat`), untuk mahasiswa yang kesulitan mencetak sendiri. Halaman ini bisa dicari
+  per nama atau NIM, disaring per angkatan dan kelayakan, dan menerima `?cari=` (dipakai tautan
+  dari halaman detail mahasiswa). Syaratnya sama persis dan lembarnya sama
+  (`LembarSertifikat.jsx`). Lembar itu baru dipasang langsung di `<body>` saat tombol ditekan dan
+  dilepas lagi pada `afterprint`. Selama terpasang, aturan cetak di `index.css` menyembunyikan
+  seluruh aplikasi, sehingga hanya sertifikat yang tercetak.
 - Nilai yang belum ada ditulis "...", bukan 0 (R2).
 
 ### Halaman profil

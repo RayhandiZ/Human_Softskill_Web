@@ -42,7 +42,7 @@ const ISI = {
        sama dengan daftar "Belum dinilai" di sana. */
     [/Requires Review/, 'kartu Requires Review sudah tidak ada di Ringkasan', false],
     [/(Lihat selengkapnya[\s\S]*){6}/, 'enam tautan Lihat selengkapnya ke halaman lain'],
-    [/Mahasiswa terpantau[\s\S]{0,400}Rata-rata nilai softskill[\s\S]{0,400}Nilai sudah final/, 'hanya tiga angka utama'],
+    [/Mahasiswa terpantau[\s\S]{0,400}Rata-rata nilai[\s\S]{0,400}Nilai sudah final/, 'hanya tiga angka utama'],
     /* Catatan "bobot sementara" DIHAPUS dari halaman oleh pemilik proyek, jadi
        pemeriksaannya ikut dilepas — bukan karena tidak penting. Kalimat itu yang
        dulu memberi tahu bahwa rata-rata masih memakai bobot MENUNGGU_KONFIRMASI
@@ -138,6 +138,20 @@ const ISI = {
     [/Tidak satu pun sudah masuk transkrip/, 'ditegaskan nilainya masih tertahan'],
     [/Sudah diputuskan/, 'ada tab riwayat keputusan'],
   ],
+  '/admin/angkatan': [
+    [/Pantau kelengkapan nilai tiap angkatan/, 'judul dan penjelasan halaman angkatan'],
+    [/2026[\s\S]{0,400}2025 Genap[\s\S]{0,400}2024/, 'kartu angkatan, terbaru lebih dulu'],
+    [/Nilai yang belum masuk/, 'ringkasan nilai yang belum masuk'],
+    [/Mahasiswa yang perlu ditindaklanjuti/, 'daftar mahasiswa yang perlu ditindaklanjuti'],
+    [/Penguncian angkatan/, 'bagian penguncian angkatan'],
+  ],
+  '/admin/sertifikat': [
+    [/Cetak sertifikat/, 'judul halaman cetak sertifikat'],
+    [/[0-9]+ dari [0-9]+ mahasiswa sudah berhak atas sertifikat/, 'jumlah yang berhak tertulis'],
+    [/Semua [0-9]+[\s\S]{0,40}Berhak [0-9]+[\s\S]{0,40}Belum berhak [0-9]+/, 'tab kelayakan lengkap dengan jumlahnya'],
+    [/Simpan sebagai PDF/, 'petunjuk simpan PDF untuk dikirim ke mahasiswa'],
+    [/aria-label="Cetak sertifikat [^"]+"/, 'tiap baris punya tombol cetak berlabel nama mahasiswa', true, true],
+  ],
 }
 
 const RUTE = [
@@ -154,6 +168,8 @@ const RUTE = [
   ['admin', '/admin/nilai', 'Input nilai'],
   ['admin', '/admin/profil', 'Profil admin'],
   ['admin', '/admin/usulan', 'Persetujuan nilai dosen'],
+  ['admin', '/admin/sertifikat', 'Cetak sertifikat'],
+  ['admin', '/admin/angkatan', 'Angkatan'],
   ['dosen', '/dosen', 'Data masuk'],
   ['dosen', '/dosen/nilai', 'Input nilai dosen'],
   ['dosen', '/dosen/usulan', 'Status usulan dosen'],
@@ -163,7 +179,7 @@ const RUTE = [
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -187,6 +203,8 @@ const RUTE = [
     '/admin/program-studi': [[/Belum ada data mahasiswa/, 'perbandingan prodi kosong']],
     '/admin/nilai?semester=1&sumber=MK': [[/Belum ada data mahasiswa/, 'input nilai menunggu data mahasiswa']],
     '/admin/usulan': [[/Belum ada usulan dari dosen/, 'antrean usulan kosong']],
+    '/admin/sertifikat': [[/Belum ada data mahasiswa/, 'halaman cetak sertifikat kosong'], [/0 dari 0 mahasiswa/, 'jumlahnya nol, bukan angka contoh']],
+    '/admin/angkatan': [[/Angkatan ini belum punya mahasiswa/, 'angkatan tanpa mahasiswa disebut apa adanya'], [/2025 Genap/, 'angkatan tetap dari data master']],
     '/dosen': [[/Belum ada pengumpulan/, 'pengumpulan kosong'], [/MK Humaniora Semester 1, Sistem Informasi/, 'kelas dosen tetap dari sesi login']],
     '/dosen/nilai': [[/Belum ada yang mengumpulkan tugas ini/, 'input nilai dosen kosong']],
     '/dosen/usulan': [[/Belum ada usulan terkirim/, 'status usulan kosong']],
@@ -321,7 +339,7 @@ const RUTE = [
 
   /* ------------------------------ menu di ponsel --------------------------- */
   console.log('')
-  for (const [peran, rute, harapTautan] of [['student', '/mahasiswa', 6], ['admin', '/admin', 9], ['dosen', '/dosen', 4]]) {
+  for (const [peran, rute, harapTautan] of [['student', '/mahasiswa', 6], ['admin', '/admin', 10], ['dosen', '/dosen', 4]]) {
     w.localStorage.setItem('sk5c.session', SESI[peran])
     const h = await ujiMenuHp(rute)
 
@@ -896,9 +914,12 @@ const RUTE = [
   const saLayak = await ujiSertifikatAdmin('DEMO-LAYAK')
   const saKosong = await ujiSertifikatAdmin('DEMO-KOSONG')
   const cekSa = [
+    ['?cari= mengisi kotak cari dan menyaring ke satu mahasiswa', saLayak.cariTerisi && saLayak.satuBaris && saKosong.satuBaris],
+    ['layak: tertulis Berhak', /^Berhak/.test(saLayak.status)],
+    ['belum layak: tertulis Belum berhak beserta alasannya', /^Belum berhak./.test(saKosong.status) && saKosong.alasanTerkait],
     ['belum layak: tombol cetak ada tapi mati', saKosong.adaTombol && saKosong.mati],
     ['belum layak: klik tidak mencetak apa pun', saKosong.dicetak === 0 && !saKosong.langsungDiBody],
-    ['layak: sebelum diklik tidak ada lembar sertifikat (Ctrl+P tetap mencetak transkrip)', !saLayak.sebelumKlik],
+    ['sebelum diklik tidak ada lembar sertifikat di halaman', !saLayak.sebelumKlik],
     ['layak: tombol hidup dan klik mencetak sekali', !saLayak.mati && saLayak.dicetak === 1],
     ['layak: saat print() dipanggil lembarnya sudah langsung di <body>', saLayak.langsungDiBody],
     ['layak: lembarnya sama persis dengan yang dicetak mahasiswa', saLayak.isiLembar === srLayak.isiLembar],
@@ -906,8 +927,28 @@ const RUTE = [
   ]
   const rusakSa = cekSa.filter(([, ok]) => !ok)
   gagal += rusakSa.length
-  console.log((rusakSa.length ? 'GAGAL  ' : 'OK     ') + 'Cetak sertifikat dari panel admin')
+  console.log((rusakSa.length ? 'GAGAL  ' : 'OK     ') + 'Halaman Cetak Sertifikat (admin)')
   for (const [ket, ok] of cekSa) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
+
+  const ak = await ujiAngkatan()
+  const cekAk = [
+    ['satu kartu per angkatan di data master, terbaru lebih dulu', ak.kartuSesuaiBasisData],
+    ['angkatan terbaru terpilih lebih dulu', ak.bawaanTerbaru],
+    ['angkatan terkunci tertulis Terkunci', ak.terkunciTertulis],
+    ['memilih kartu memindahkan rincian', ak.pilihBerpindah],
+    ['angkatan yang belum selesai belum bisa dikunci, beserta alasannya', ak.belumBisaDikunci],
+    ['jumlah di kartu sama dengan daftar yang perlu ditindaklanjuti', ak.jumlahCocok],
+    ['tautan Masukkan nilai membawa angkatan dan NIM', ak.tautanInputLengkap],
+    ['angkatan yang selesai: pratinjau berhak sertifikat tampil', ak.pratinjauTampil],
+    ['tombol kunci mati sebelum nama angkatan diketik persis', ak.matiSebelumDiketik && ak.matiBilaSalahKetik],
+    ['tombol kunci hidup setelah diketik persis', ak.hidupBilaCocok],
+    ['sesudah dikunci, statusnya dan tautan cetak sertifikat tampil', ak.terkunciSesudahnya && ak.tautanSertifikat],
+    ['Cetak Sertifikat menerima ?angkatan=', ak.sertifikatTersaring],
+  ]
+  const rusakAk = cekAk.filter(([, ok]) => !ok)
+  gagal += rusakAk.length
+  console.log((rusakAk.length ? 'GAGAL  ' : 'OK     ') + 'Halaman Angkatan (admin)')
+  for (const [ket, ok] of cekAk) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
   const pm = await ujiPenandaMenu()
   const cekPm = [

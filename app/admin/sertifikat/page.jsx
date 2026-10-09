@@ -1,13 +1,13 @@
 'use client'
 
 import { Suspense } from 'react'
-import Angkatan from '../../../src/halaman/admin/Angkatan'
+import CetakSertifikat from '../../../src/halaman/admin/CetakSertifikat'
 
 /* Suspense wajib: halaman membaca useSearchParams. */
-export default function HalamanAngkatan() {
+export default function HalamanSertifikat() {
   return (
     <Suspense fallback={null}>
-      <Angkatan />
+      <CetakSertifikat />
     </Suspense>
   )
 }

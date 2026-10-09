@@ -3,7 +3,9 @@ import { getKomponenById } from './curriculum.js'
 import { periksaUsulan } from './rules.js'
 import {
   AUDIT_LOG,
+  COHORTS,
   PENGAJUAN_KOREKSI,
+  STUDENTS,
   USULAN_AWAL,
   getStudentByNim,
   isiData,
@@ -573,6 +575,33 @@ export async function ajukanKoreksi(isi) {
     nilaiDiharapkan: isi.nilaiDiharapkan ?? null,
   })
   return PENGAJUAN_KOREKSI.find((k) => k.id === id) ?? { id }
+}
+
+/* ---------------------------- penguncian angkatan ------------------------- */
+
+function tandaiAngkatanTerkunci(angkatanId) {
+  const c = COHORTS.find((x) => x.id === angkatanId)
+  if (c) c.status = 'terkunci'
+  for (const s of STUDENTS) if (s.angkatanId === angkatanId) s.statusAngkatan = 'terkunci'
+  berubah()
+}
+
+function kunciAngkatanLokal({ angkatanId, konfirmasi }) {
+  const c = COHORTS.find((x) => x.id === angkatanId)
+  if (!c) throw new Error('Angkatan tidak dikenal.')
+  if (c.status === 'terkunci') return false
+  if (String(konfirmasi ?? '').trim() !== c.label) throw new Error('Konfirmasi tidak cocok. Ketik persis: ' + c.label)
+  tandaiAngkatanTerkunci(angkatanId)
+  return true
+}
+
+/** Satu-satunya pemanggil API penguncian angkatan (API-nya belum final); false bila sudah terkunci. */
+export async function kunciAngkatan({ angkatanId, konfirmasi }) {
+  if (modeLokal()) return kunciAngkatanLokal({ angkatanId, konfirmasi })
+  const hasil = await tulis('/api/angkatan/kunci', { angkatanId, konfirmasi })
+  // Status angkatan di data master baru ikut berubah saat halaman dimuat ulang, jadi disamakan di sini.
+  if (hasil.ok) tandaiAngkatanTerkunci(angkatanId)
+  return Boolean(hasil.ok)
 }
 
 /* ------------------------------- saat dimuat ------------------------------ */

@@ -57,18 +57,18 @@ export default function Login() {
           <div className="flex h-[54px] items-center gap-4">
             <span aria-hidden="true" className="h-10 w-px bg-white/30" />
             <span className="text-[22px] font-extrabold tracking-tight">
-              HUMAN <span className="text-[var(--accent)]">SOFTSKILL</span>
+              HUMAN <span className="text-[var(--accent)]">SKILL</span>
             </span>
           </div>
         </div>
 
         <div className="my-auto max-w-lg">
           <h1 className="mt-4 text-[35px] font-extrabold leading-[1.1] tracking-tight">
-            {t('Apa sih HUMAN Softskill itu?')}
+            {t('Apa sih Human Skill itu?')}
           </h1>
           <p className="mt-5 text-[15px] leading-relaxed text-white/70">
             {t(
-              'HUMAN Softskill merupakan sistem penilaian softskill yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:'
+              'Human Skill merupakan sistem penilaian yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:'
             )}
           </p>
 
@@ -105,7 +105,7 @@ export default function Login() {
           <div className="mb-8 flex items-center justify-center gap-3 text-ink lg:hidden">
             <LogoPdp keterangan={false} className="h-7 w-auto" />
             <span aria-hidden="true" className="h-6 w-px bg-line" />
-            <span className="text-[15px] font-extrabold tracking-tight">HUMAN SOFTSKILL</span>
+            <span className="text-[15px] font-extrabold tracking-tight">HUMAN SKILL</span>
           </div>
 
           <h2 className="text-[26px] font-extrabold tracking-tight text-ink">

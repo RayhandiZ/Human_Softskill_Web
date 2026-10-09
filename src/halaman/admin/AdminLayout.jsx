@@ -3,11 +3,13 @@ import Footer from '../../components/Footer'
 import { useAuth } from '../../lib/auth'
 import {
   IconBuilding,
+  IconCalendar,
   IconCertificate,
   IconDocument,
   IconCheckShield,
   IconGauge,
   IconList,
+  IconPrint,
   IconUpload,
   IconUsers,
 } from '../../components/Icons'
@@ -22,7 +24,7 @@ const PINTASAN = [
   { ke: '/admin/mahasiswa', label: 'Data Mahasiswa', icon: IconUsers },
   { ke: '/admin/nilai', label: 'Input Nilai', icon: IconUpload },
   { ke: '/admin/program-studi', label: 'Program Studi', icon: IconBuilding },
-  { ke: '/admin/angkatan', label: 'Sertifikat', icon: IconCertificate },
+  { ke: '/admin/sertifikat', label: 'Sertifikat', icon: IconCertificate },
 ]
 
 const NAV = [
@@ -41,7 +43,8 @@ const KELOMPOK_LACI = (koreksi, usulan) => [
       { to: '/admin/mahasiswa', label: 'Data Mahasiswa', icon: IconUsers },
       { to: '/admin/nilai', label: 'Input & Import Nilai', icon: IconUpload, lencana: koreksi || null },
       { to: '/admin/usulan', label: 'Persetujuan Nilai Dosen', icon: IconCheckShield, lencana: usulan || null },
-      { to: '/admin/angkatan', label: 'Angkatan & Sertifikat', icon: IconCertificate },
+      { to: '/admin/sertifikat', label: 'Cetak Sertifikat', icon: IconPrint },
+      { to: '/admin/angkatan', label: 'Angkatan', icon: IconCalendar },
     ],
   },
   {

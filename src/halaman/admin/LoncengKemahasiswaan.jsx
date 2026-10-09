@@ -25,7 +25,7 @@ import { useTeks } from '../../lib/bahasa'
 
 /* Tiap baris membuka Input Nilai dengan sasaran terisi; lihat README.md › Input nilai. */
 
-function tautanInput({ semester, sumber, angkatanId, prodi, aspekId, nim, tab }) {
+export function tautanInput({ semester, sumber, angkatanId, prodi, aspekId, nim, tab }) {
   const q = new URLSearchParams()
   if (semester) q.set('semester', String(semester))
   if (sumber) q.set('sumber', sumber)

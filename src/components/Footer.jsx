@@ -75,7 +75,7 @@ export default function Footer({ pintasan = [] }) {
             <IconLogo size={40} />
           </div>
           <p className="mt-3 text-[16px] font-extrabold tracking-tight">
-            HUMAN <span className="text-[var(--accent)]">SOFTSKILL</span>
+            HUMAN <span className="text-[var(--accent)]">SKILL</span>
           </p>
           <p className="mt-1.5 max-w-[220px] text-[13px] leading-relaxed text-white/70">
             {t('Biro Kemahasiswaan & Humaniora')}
