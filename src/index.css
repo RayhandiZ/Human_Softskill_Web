@@ -157,6 +157,12 @@ body {
   page: sertifikat;
   height: calc(210mm - 24mm);
 }
+/* Sertifikat yang dicetak dari panel admin dipasang langsung di <body>: selama itu hanya ia yang tercetak. */
+@media print {
+  body:has(> .lembar-sertifikat) > :not(.lembar-sertifikat) {
+    display: none !important;
+  }
+}
 
 /* ------------------------------- panel kaca ------------------------------- */
 .kaca {

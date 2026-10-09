@@ -136,6 +136,8 @@ const RUTE = {
   '/admin': { pohon: () => admin(<Overview />) },
   '/admin/mahasiswa': { pohon: () => admin(<Students />) },
   '/admin/mahasiswa/DEMO-3': { pohon: () => admin(<StudentDetail />), params: { id: 'DEMO-3' } },
+  '/admin/mahasiswa/DEMO-LAYAK': { pohon: () => admin(<StudentDetail />), params: { id: 'DEMO-LAYAK' } },
+  '/admin/mahasiswa/DEMO-KOSONG': { pohon: () => admin(<StudentDetail />), params: { id: 'DEMO-KOSONG' } },
   '/admin/program-studi': { pohon: () => admin(<Programs />) },
   '/admin/nilai': { pohon: () => admin(<Nilai />) },
   '/admin/profil': { pohon: () => admin(<Profil />) },
@@ -1368,6 +1370,45 @@ export async function ujiSertifikat(studentId) {
   }
   lepas()
   if (lama) window.localStorage.setItem('sk5c.session', lama)
+  return hasil
+}
+
+// Cetak sertifikat atas nama mahasiswa dari halaman detail di panel admin.
+export async function ujiSertifikatAdmin(studentId) {
+  const lama = window.localStorage.getItem('sk5c.session')
+  window.localStorage.setItem('sk5c.session', JSON.stringify({ role: 'admin', email: 'a@umn.ac.id', name: 'Y', initials: 'KH' }))
+  const { el, lepas } = await pasang('/admin/mahasiswa/' + studentId)
+  const tombol = [...el.querySelectorAll('button')].find((b) => /Cetak sertifikat/.test(b.textContent))
+  const lembarDiBody = () => [...document.body.children].find((n) => n.classList.contains('lembar-sertifikat'))
+  const sebelumKlik = Boolean(document.querySelector('.lembar-sertifikat'))
+
+  let dicetak = 0
+  let isiSaatCetak = null
+  const cetakAsli = window.print
+  window.print = () => {
+    dicetak++
+    isiSaatCetak = lembarDiBody()?.textContent ?? null
+  }
+  if (tombol) await klik(tombol, 1)
+  window.print = cetakAsli
+  const bertahan = Boolean(lembarDiBody())
+  await act(async () => {
+    window.dispatchEvent(new window.Event('afterprint'))
+  })
+
+  const hasil = {
+    adaTombol: Boolean(tombol),
+    mati: Boolean(tombol?.disabled),
+    sebelumKlik,
+    dicetak,
+    langsungDiBody: isiSaatCetak != null,
+    isiLembar: isiSaatCetak ?? '',
+    bertahanSampaiAfterprint: bertahan,
+    dilepasSesudahAfterprint: !document.querySelector('.lembar-sertifikat'),
+  }
+  lepas()
+  if (lama) window.localStorage.setItem('sk5c.session', lama)
+  else window.localStorage.removeItem('sk5c.session')
   return hasil
 }
 

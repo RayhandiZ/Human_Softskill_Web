@@ -163,7 +163,7 @@ const RUTE = [
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -892,6 +892,22 @@ const RUTE = [
   gagal += rusakSr.length
   console.log((rusakSr.length ? 'GAGAL  ' : 'OK     ') + 'Tombol cetak sertifikat')
   for (const [ket, ok] of cekSr) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
+
+  const saLayak = await ujiSertifikatAdmin('DEMO-LAYAK')
+  const saKosong = await ujiSertifikatAdmin('DEMO-KOSONG')
+  const cekSa = [
+    ['belum layak: tombol cetak ada tapi mati', saKosong.adaTombol && saKosong.mati],
+    ['belum layak: klik tidak mencetak apa pun', saKosong.dicetak === 0 && !saKosong.langsungDiBody],
+    ['layak: sebelum diklik tidak ada lembar sertifikat (Ctrl+P tetap mencetak transkrip)', !saLayak.sebelumKlik],
+    ['layak: tombol hidup dan klik mencetak sekali', !saLayak.mati && saLayak.dicetak === 1],
+    ['layak: saat print() dipanggil lembarnya sudah langsung di <body>', saLayak.langsungDiBody],
+    ['layak: lembarnya sama persis dengan yang dicetak mahasiswa', saLayak.isiLembar === srLayak.isiLembar],
+    ['layak: lembar bertahan sampai afterprint, lalu dilepas', saLayak.bertahanSampaiAfterprint && saLayak.dilepasSesudahAfterprint],
+  ]
+  const rusakSa = cekSa.filter(([, ok]) => !ok)
+  gagal += rusakSa.length
+  console.log((rusakSa.length ? 'GAGAL  ' : 'OK     ') + 'Cetak sertifikat dari panel admin')
+  for (const [ket, ok] of cekSa) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
   const pm = await ujiPenandaMenu()
   const cekPm = [

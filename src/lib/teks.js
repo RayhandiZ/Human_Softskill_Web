@@ -492,6 +492,8 @@ export const EN = {
   'Kembali ke data mahasiswa': 'Back to student data',
   'Kelayakan sertifikat': 'Certificate eligibility',
   'Lima syarat yang diperiksa sistem': 'The five requirements the system checks',
+  'Cetak di sini bila mahasiswa tidak bisa mencetak sendiri, atau pilih Simpan sebagai PDF untuk mengirimkannya.':
+    'Print it here when the student cannot print it themselves, or choose Save as PDF to send it to them.',
   'Riwayat perubahan nilai': 'Score change history',
   'Setiap perubahan tercatat beserta aktornya': 'Every change is recorded with who made it',
   'Belum ada perubahan tercatat': 'No change recorded yet',

@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { createPortal, flushSync } from 'react-dom'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import Transkrip from '../student/Transkrip'
+import LembarSertifikat from '../student/LembarSertifikat'
 import { Badge, Card, CardHeader, CatatanKaki, EmptyState } from '../../components/Ui'
-import { IconAlert, IconArrowLeft, IconCheck, IconList, IconLock, IconUndo } from '../../components/Icons'
+import { IconAlert, IconArrowLeft, IconCheck, IconList, IconLock, IconPrint, IconUndo } from '../../components/Icons'
 import { bolehTandaiFinal, kelayakanSertifikat } from '../../lib/rules'
 import { auditUntuk, getStudent, transkripOf } from '../../lib/data'
 import { setPenguncian } from '../../lib/store'
@@ -31,7 +33,6 @@ export default function StudentDetail() {
     )
   }
 
-  const kelayakan = kelayakanSertifikat(student)
   const log = auditUntuk(student.nim)
 
   return (
@@ -46,25 +47,7 @@ export default function StudentDetail() {
 
       <Transkrip student={student} />
 
-      <Card className="print:hidden">
-        <CardHeader
-          title={teks('Kelayakan sertifikat')}
-          subtitle={teks('Lima syarat yang diperiksa sistem')}
-        />
-        <ul className="divide-y divide-line">
-          {kelayakan.syarat.map((s) => (
-            <li key={s.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5 sm:px-6">
-              <Badge tone={s.lolos ? 'good' : 'critical'}>
-                {teks(s.lolos ? 'Terpenuhi' : 'Belum')}
-              </Badge>
-              <span className="min-w-[220px] flex-1 text-[13.5px] font-semibold text-ink">
-                {teks(s.label)}
-              </span>
-              {s.lolos ? null : <span className="text-[12.5px] text-ink-2">{teks(s.alasan)}</span>}
-            </li>
-          ))}
-        </ul>
-      </Card>
+      <KartuSertifikat student={student} />
 
       <Card className="print:hidden">
         <CardHeader
@@ -113,6 +96,77 @@ export default function StudentDetail() {
 
       <PanelStatusAspek student={student} />
     </div>
+  )
+}
+
+/* ---------------------------- cetak sertifikat ---------------------------- */
+
+function KartuSertifikat({ student }) {
+  const teks = useTeks()
+  const k = kelayakanSertifikat(student)
+  const [cetak, setCetak] = useState(false)
+
+  const cetakSertifikat = () => {
+    flushSync(() => setCetak(true))
+    const selesai = () => {
+      window.removeEventListener('afterprint', selesai)
+      setCetak(false)
+    }
+    window.addEventListener('afterprint', selesai)
+    window.print()
+  }
+
+  return (
+    <Card className="print:hidden">
+      <CardHeader
+        title={teks('Kelayakan sertifikat')}
+        subtitle={teks('Lima syarat yang diperiksa sistem')}
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line px-5 py-4 sm:px-6">
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] font-bold text-ink">
+            {k.layak
+              ? teks('Semua syarat terpenuhi. Sertifikat siap dicetak.')
+              : teks('{n} dari {total} syarat belum terpenuhi.', { n: k.gagal.length, total: k.syarat.length })}
+          </p>
+          <p id="alasan-cetak-sertifikat" className="mt-1 text-[13px] leading-snug text-ink-2">
+            {k.layak
+              ? teks('Cetak di sini bila mahasiswa tidak bisa mencetak sendiri, atau pilih Simpan sebagai PDF untuk mengirimkannya.')
+              : teks('Tombol cetak aktif setelah seluruh syarat di bawah terpenuhi, tanpa terlewat satu pun.')}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={cetakSertifikat}
+          disabled={!k.layak}
+          aria-describedby="alasan-cetak-sertifikat"
+          className="btn-primary inline-flex min-h-[44px] items-center gap-2 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-2 disabled:text-ink-2 disabled:shadow-none"
+        >
+          <IconPrint size={17} />
+          {teks('Cetak sertifikat')}
+        </button>
+      </div>
+
+      <ul className="divide-y divide-line">
+        {k.syarat.map((s) => (
+          <li key={s.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5 sm:px-6">
+            <Badge tone={s.lolos ? 'good' : 'critical'}>
+              {teks(s.lolos ? 'Terpenuhi' : 'Belum')}
+            </Badge>
+            <span className="min-w-[220px] flex-1 text-[13.5px] font-semibold text-ink">
+              {teks(s.label)}
+            </span>
+            {s.lolos ? null : <span className="text-[12.5px] text-ink-2">{teks(s.alasan)}</span>}
+          </li>
+        ))}
+      </ul>
+
+      {/* Dipasang di <body> hanya selama mencetak; lihat README.md › Cetak. */}
+      {cetak && k.layak
+        ? createPortal(<LembarSertifikat student={student} transkrip={k.transkrip} />, document.body)
+        : null}
+    </Card>
   )
 }
 

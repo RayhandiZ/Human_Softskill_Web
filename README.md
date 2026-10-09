@@ -640,6 +640,12 @@ panah kiri/kanan). Bagian yang mudah rusak:
   bukan `<footer>`, karena aturan cetak global menyembunyikan semua `<footer>`.
 - Sertifikat dicetak A4 lanskap dan tidak dirender sama sekali selama belum layak, jadi Ctrl+P
   tidak pernah menghasilkan sertifikat.
+- Kemahasiswaan bisa mencetak sertifikat atas nama mahasiswa dari halaman detailnya
+  (`/admin/mahasiswa/:id`), untuk mahasiswa yang kesulitan mencetak sendiri. Syaratnya sama
+  persis dan lembarnya sama (`LembarSertifikat.jsx`). Lembar itu baru dipasang langsung di
+  `<body>` saat tombol ditekan dan dilepas lagi pada `afterprint`. Selama terpasang, aturan
+  cetak di `index.css` menyembunyikan seluruh aplikasi, sehingga transkrip dan baris periode
+  admin tidak ikut tercetak. Ctrl+P biasa di halaman itu tetap mencetak transkrip.
 - Nilai yang belum ada ditulis "...", bukan 0 (R2).
 
 ### Halaman profil
