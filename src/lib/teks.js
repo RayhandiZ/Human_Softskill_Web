@@ -633,6 +633,10 @@ export const EN = {
     'Every save, whether by manual entry or import, is recorded as one batch that can be rolled back in full, and survives a page reload.',
   'Batch periode sebelumnya': 'Batches from earlier periods',
   '{n} ditolak': '{n} rejected',
+  'Alasan perubahan': 'Reason for change',
+  'Alasan rollback': 'Reason for rollback',
+  'Wajib, minimal 10 karakter, bila angkatan atau aspek sudah terkunci':
+    'Required, at least 10 characters, if the cohort or aspect is locked',
 
   /* -------------------------- pengajuan koreksi -------------------------- */
   'Belum ada pengajuan koreksi dari mahasiswa.':

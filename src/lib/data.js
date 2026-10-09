@@ -1,5 +1,5 @@
 import { CONFIG, subscribeConfig } from './config.js'
-import { AREA, CLUSTER, getAspekList, getKomponen } from './curriculum.js'
+import { AREA, CLUSTER, getAspekList, getKomponen, isiKurikulum } from './curriculum.js'
 import { hitungTranskrip, hurufMutu } from './scoring.js'
 
 /* Data master dari basis data, data isian mulai kosong; lihat README.md › Data dan store. */
@@ -129,9 +129,11 @@ export function programStudi(faculty = 'Semua') {
 
 export const MASTER_AWAL = { angkatan: ANGKATAN_AWAL, fakultas: FAKULTAS_AWAL }
 
-export function isiMaster({ angkatan, fakultas } = {}) {
+export function isiMaster({ angkatan, fakultas, kurikulum } = {}) {
   if (angkatan) pasangAngkatan(angkatan)
   if (fakultas) pasangFakultas(fakultas)
+  // null = basis data belum di-seed: kurikulum dan CONFIG kembali ke isi dari kode.
+  if (kurikulum !== undefined) isiKurikulum(kurikulum ?? {})
   resetTranskripCache()
 }
 

@@ -85,6 +85,8 @@ function bagi(komponen, total) {
 export function bobotKomponen(aspekId) {
   const komponen = getKomponen(aspekId)
   if (!komponen.length) return {}
+  // 100 dibagi rata ke seluruh komponen aspek, tanpa melihat sumber atau jenisnya.
+  if (CONFIG.MODE_BOBOT_KOMPONEN === 'merata') return bagi(komponen, 100)
 
   const perSumber = {}
   for (const x of komponen) (perSumber[x.sumber] ??= []).push(x)

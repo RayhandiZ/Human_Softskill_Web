@@ -17,7 +17,7 @@ npm install
 # basis data: nyalakan MySQL di XAMPP lebih dulu. .env berisi DATABASE_URL dan AUTH_SECRET
 # (kunci acak untuk menandatangani cookie sesi).
 npx prisma migrate dev   # membuat/menyesuaikan tabel — hentikan `npm run dev` dulu di Windows
-npm run db:seed          # data master (hanya bila tabelnya kosong) + akun awal; aman diulang
+npm run db:seed          # data master dan kurikulum (hanya bila belum ada) + akun awal; aman diulang
 npm run db:seed:contoh   # opsional: 290 mahasiswa contoh — MENGHAPUS seluruh isi basis data
 
 npm run dev       # http://localhost:3000
@@ -29,11 +29,19 @@ npm run smoke       # render tiap rute di DOM sungguhan, tanpa data lalu dengan 
 npm run assert      # periksa transkrip mematuhi R2, R3, R4, R8
 npm run test:nilai  # simpan batch, rollback, dan validasi import
 npm run test:profil # penyimpanan profil: kunci akun, simpan-muat, foto
-npm run test:db     # setiap pintu API terhadap MySQL; data uji (NIM berawalan UJI) dihapus lagi
+npm run test:db     # setiap pintu API terhadap MySQL, termasuk kunci angkatan, data terkunci, log, kurikulum;
+                    # data uji (NIM dan angkatan berawalan UJI) dihapus lagi
 ```
 
 Uji selain `test:db` berjalan tanpa server dan tanpa basis data (mode lokal, lihat
 `src/lib/modeData.js`): sesi dan perubahan hidup di memori, dan halaman diisi data contoh.
+
+`test:db` masuk memakai akun admin dan dosen dari `npm run db:seed`, jadi jalankan seed lebih dulu
+bila basis data baru dikosongkan. `smoke` dan `assert` memakai jsdom 29, yang butuh Node
+`^20.19`, `^22.13`, atau `>=24`. Di Node 22.11 keduanya berhenti dengan galat `ERR_REQUIRE_ESM`,
+kecuali `require(esm)` dinyalakan lewat flag: `NODE_OPTIONS=--experimental-require-module npm run
+smoke` (Git Bash) atau `$env:NODE_OPTIONS='--experimental-require-module'; npm run smoke`
+(PowerShell).
 
 ## Kerangka: Next.js App Router
 
@@ -49,15 +57,19 @@ halaman (peramban) → app/api/... → src/server/... → Prisma (src/server/db.
   dimuat, `/api/sesi` membaca ulang akunnya dari basis data.
 - **Data master** (angkatan, fakultas, prodi): dibaca `app/layout.jsx` di server setiap halaman
   dimuat, lalu dipasang ke `src/lib/data.js` lewat `isiMaster()`.
+- **Kurikulum** (komponen, indikator, timpaan `CONFIG`): ikut dibaca bersama data master dan
+  dipasang lewat `isiKurikulum()`; pintu API memuatnya ulang bila versinya naik. Lihat Kurikulum
+  dari basis data.
 - **Data isian** (mahasiswa, nilai, penguncian, pengumpulan, usulan, koreksi, riwayat batch,
   profil): `components/PemuatData.jsx` memanggil `/api/data` begitu ada yang masuk, lalu
   `isiData()`. Isinya disaring per peran di `src/server/muat.js`: admin melihat semuanya, dosen
   hanya kelasnya, mahasiswa hanya dirinya.
 - **Penulisan**: fungsi di `src/lib/store.js` (simpan nilai, rollback, penguncian, koreksi,
   usulan) dan `simpanProfil` mengirim ke API, lalu data dimuat ulang dari basis data. Aturan
-  penilaian (R1, kunci final, wewenang tiap peran) diperiksa ulang di server.
+  penilaian (R1, semester komponen, kunci final, data terkunci, wewenang tiap peran) diperiksa
+  ulang di server.
 
-Kurikulum (aspek dan komponen) dan periode aktif masih dibaca dari kode. Data contoh ada di
+Struktur kurikulum (fase, area, cluster, 10 aspek) dan periode aktif masih dibaca dari kode. Data contoh ada di
 `scripts/dataContoh.js` dan hanya dipakai skrip uji serta `db:seed:contoh` — website tidak
 memakainya.
 
@@ -93,6 +105,35 @@ semester 2 + C.2 di semester 3); satu aspek selalu milik tepat satu semester.
 
 Distribusi aspek per semester: **3 / 4 / 3**.
 
+## Kurikulum dari basis data
+
+Sejak `npm run db:seed`, daftar komponen (tabel `Komponen`), indikator perilaku (tabel `Indikator`),
+dan pengaturan kebijakan yang ditimpa (tabel `Konfigurasi`) dibaca dari basis data. Isinya di
+`curriculum.js` dan `config.js` menjadi **bawaan**: ditanam sekali oleh seed, lalu dipakai lagi
+hanya bila basis data belum di-seed atau tidak bisa dibaca. Ini persiapan halaman Kurikulum CPMK,
+tempat Kemahasiswaan nanti mengubahnya sendiri.
+
+- **Penanda versi.** Baris `VERSI_KURIKULUM` di tabel `Konfigurasi` menandai bahwa kurikulum sudah
+  dikelola di basis data. Seed hanya menanam kurikulum selama penanda itu belum ada, jadi isi yang
+  sudah diubah admin tidak pernah ditimpa. Setiap perubahan kurikulum menaikkan angkanya.
+- **Halaman.** `src/server/master.js` membawa kurikulum bersama data master; `isiMaster()`
+  memasangnya lewat `isiKurikulum()` sebelum halaman dirender.
+- **Pintu API.** `tangani()` memanggil `siapkanKurikulum()` (`src/server/kurikulum.js`) sebelum
+  bekerja; kurikulum dibaca ulang hanya bila versinya berubah.
+- **Diisi di tempat.** `KOMPONEN` dan `INDIKATOR` diganti isinya, bukan diganti lariknya, karena
+  modul lain memegang rujukannya sejak dimuat — sama dengan larik di `data.js`.
+- **Diarsipkan** (`aktif = false`): komponen tidak ikut dimuat, jadi tidak tampil dan tidak
+  dihitung, tetapi nilainya tetap tersimpan. ID komponen tidak pernah diganti, karena dipakai nilai,
+  riwayat, usulan, dan koreksi.
+- **Pengaturan.** Hanya kunci di `KUNCI_DAPAT_DIUBAH` (`config.js`) yang boleh ditimpa; kunci yang
+  tidak ada di tabel kembali ke bawaannya. `TOTAL_SEMESTER_PROGRAM` sengaja tidak bisa ditimpa.
+- **Gagal baca tidak menghentikan apa pun.** Bila tabelnya tidak bisa dibaca, halaman dan pintu API
+  tetap jalan dengan isi terakhir (atau bawaan kode) dan menulis peringatan di konsol server.
+
+Setelah menarik perubahan skema, hentikan `npm run dev` lebih dulu: di Windows `prisma generate`
+gagal (`EPERM`) selama server masih memegang berkas mesin Prisma, dan server yang sudah jalan tetap
+memakai Prisma Client lama sampai dinyalakan ulang.
+
 ## Empat keadaan sebuah aspek
 
 Membedakan keempatnya adalah aturan bisnis, bukan urusan tampilan.
@@ -115,22 +156,34 @@ menyebutnya "disetujui" akan menyesatkan.
 ```
 src/lib/
   config.js       CONFIG — satu-satunya tempat angka kebijakan; ada pub/sub agar
-                  perubahan menyebar ke seluruh perhitungan tanpa reload
-  curriculum.js   struktur statis: fase, area, cluster, 10 aspek, komponen, indikator
+                  perubahan menyebar ke seluruh perhitungan tanpa reload. Bisa ditimpa tabel
+                  Konfigurasi lewat terapkanKonfigurasi()
+  curriculum.js   struktur: fase, area, cluster, 10 aspek; komponen dan indikator bawaan yang
+                  diisi ulang dari basis data lewat isiKurikulum()
   scoring.js      seluruh rumus: bobot, nilai aspek/cluster/area/fase, nilai akhir, rubrik
   rules.js        R1–R9 sebagai fungsi murni + validasi import
-  data.js         sumber data halaman: periode akademik; angkatan, fakultas, prodi (diisi dari
-                  basis data lewat isiMaster); data isian (mahasiswa, nilai, pengumpulan,
-                  usulan) yang dimulai kosong
+  data.js         sumber data halaman: periode akademik (semesterAktif dibatasi 3,
+                  semesterKalender tidak); angkatan, fakultas, prodi (diisi dari basis data
+                  lewat isiMaster); data isian (mahasiswa, nilai, pengumpulan, usulan) yang
+                  dimulai kosong
   store.js        penulisan: kirim ke API lalu muat ulang dari basis data (mode lokal untuk uji:
                   diputar ulang di memori)
   kirim.js        satu pintu fetch ke API; jawaban 401 mengakhiri sesi
   modeData.js     website = server; skrip uji menyalakan mode lokal
   profil.js       telepon, alamat, foto milik pengguna — tabel Profil lewat /api/profil
   csv.js          urai/susun CSV dan pemicu unduhan, tanpa pustaka tambahan
+  ingest.js       pengenalan berkas rekap mentah — lihat Pengenalan berkas mentah
   values5c.js     5C sebagai materi Mentoring — tidak dipakai untuk menghitung apa pun
   auth.jsx        masuk lewat /api/masuk, sesi dari cookie lewat /api/sesi, penjaga rute per peran
   theme.jsx       mode terang/gelap
+  bahasa.jsx      pilihan bahasa dan useTeks()
+  teks.js         kamus Indonesia → Inggris — lihat Kamus dan terjemahan
+  terjemahOtomatis.js  penerjemah bawaan peramban untuk kalimat yang belum ada di kamus
+  nav.jsx         TautanNav, padanan <NavLink> untuk Next
+  kurva.js        kurva monoton untuk grafik tren — lihat Grafik
+  tunjuk.js       tooltip (WCAG 1.4.13)
+  penandaGeser.js sorotan menu sidebar
+  layanan.js      tautan lupa sandi SSO dan kontak layanan UMN
 
 src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   db.js           satu PrismaClient untuk seluruh aplikasi
@@ -139,23 +192,36 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   masuk.js        pemeriksaan email + kata sandi (bcrypt) terhadap tabel Pengguna
   master.js       angkatan, fakultas, prodi dari basis data — dibaca app/layout.jsx
   muat.js         data halaman per peran (GET /api/data)
-  nilai.js        simpan batch, rollback (diputar ulang dari AuditLog), penguncian aspek
+  nilai.js        simpan batch, rollback (diputar ulang dari AuditLog), penguncian aspek, dan
+                  aturan data terkunci (cariTerkunci, wajibkanAlasan)
   pengajuan.js    koreksi mahasiswa dan usulan dosen, beserta keputusannya
+  angkatan.js     ringkasan, pratinjau, dan penguncian angkatan
+  log.js          catatLog(): catatan tindakan Kemahasiswaan ke tabel LogAktivitas; bacaLog():
+                  membaca log nilai dan log aktivitas (POST /api/log)
   profil.js       isian profil milik pemilik sesi
+  kurikulum.js    kurikulum dan timpaan CONFIG dari basis data; siapkanKurikulum() untuk pintu API
 
 app/api/          masuk, keluar, sesi, data, nilai, nilai/rollback, penguncian, koreksi,
-                  koreksi/keputusan, usulan, usulan/keputusan, profil
+                  koreksi/keputusan, usulan, usulan/keputusan, profil, angkatan,
+                  angkatan/pratinjau, angkatan/kunci, log
 src/components/PemuatData.jsx  memuat /api/data begitu ada yang masuk dan menahan panel
                   sampai datanya tiba
-prisma/           skema, migrasi, seed.js (isi dasar), seed-contoh.js (data contoh)
+prisma/           skema, migrasi, seed.js (isi dasar), seed-contoh.js (data contoh),
+                  tanam-kurikulum.js (kurikulum bawaan, dipakai kedua seed)
 scripts/          skrip uji; dataContoh.js berisi data contoh (290 mahasiswa, 5 dosen,
                   audit log) yang dimuat uji lewat isiData() — website tidak memakainya
 
-src/components/   Ui, Icons, Navbar, SideMenu, Footer, FilterBar, ErrorBoundary
-src/components/charts/  ChartFrame, RadarCluster (6 sumbu), AspectBars (10 aspek)
-src/pages/student/  StudentLayout, Dashboard, Transkrip, Peta, Riwayat, Sertifikat
-src/pages/admin/    AdminLayout, Overview, Students, StudentDetail, Programs,
-                    Nilai, Kurikulum, Angkatan, Log
+src/components/   Ui, Icons, Navbar, Laci, MenuAkun, Footer, FilterBar, ErrorBoundary,
+                  TombolBahasa, PilihanMengambang, PenyuntingFoto, LayananTambahan, LogoPdp
+src/components/charts/  ChartFrame, RadarCluster (6 sumbu), AspectBars (10 aspek), MutuDonut,
+                  PerkembanganAngkatan
+src/halaman/      Login, Profil (satu halaman profil untuk tiga peran)
+src/halaman/student/  StudentLayout, Dashboard, Transkrip, Peta, Riwayat, Sertifikat,
+                    LembarCetak, LembarSertifikat, LoncengBelumDinilai
+src/halaman/dosen/    DosenLayout, Masuk (Data Masuk), Nilai, Usulan, status
+src/halaman/admin/    AdminLayout, Overview, Students, StudentDetail, Programs, Nilai, Usulan,
+                    LoncengKemahasiswaan, StatusData, Kurikulum, Angkatan, Log
+                    (tiga terakhir masih "Segera Hadir")
 ```
 
 Arah ketergantungan satu arah: `curriculum → scoring → rules → UI`.
@@ -181,7 +247,7 @@ yang dinonaktifkan atau berganti peran langsung berlaku. Perubahan nama, prodi, 
 basis data terlihat setelah halaman dimuat ulang — tidak perlu masuk ulang.
 
 Kasus sertifikat ada di data contoh angkatan 2024 yang sudah dikunci, dan kini hanya dipakai
-skrip uji: `DEMO-LAYAK` (berhak), `DEMO-KOSONG` (satu komponen kosong), `DEMO-RENDAH` (nilai 64).
+skrip uji: `DEMO-LAYAK` (berhak), `DEMO-KOSONG` (satu komponen kosong), `DEMO-RENDAH` (nilai 63).
 
 ## Bahasa visual: rata, bukan bertumpuk
 
@@ -275,6 +341,11 @@ Angkatan penerimaan Genap sengaja disertakan. Tanpanya, pada periode aktif Ganji
 angkatan berada di semester ganjil (1 dan 3) dan **semester 2 tidak akan pernah bisa
 didemokan**.
 
+`semesterKalender()` di `src/lib/data.js` menghitung jarak yang sama **tanpa** batas 3. Angkatan
+2024 pada periode Ganjil 2026/2027, misalnya, berada di semester kalender 5. Angka ini tidak
+ditampilkan; gunanya memutuskan apakah Semester 3 sebuah angkatan sudah berakhir, yang menjadi
+syarat untuk menguncinya (lihat Penguncian angkatan dan data terkunci).
+
 ## Yang masih menunggu keputusan unit pengelola
 
 Semuanya ada di `src/lib/config.js` bertanda `// MENUNGGU KONFIRMASI`:
@@ -283,11 +354,15 @@ Semuanya ada di `src/lib/config.js` bertanda `// MENUNGGU KONFIRMASI`:
 |---|---|---|
 | `ASPEK_A3_SEMESTER` | `1` | Sheet GENERAL menaruh A.3 di semester 1, sheet DETAIL KOMPONEN di blok PDP-2 |
 | `ASPEK_C1_SEMESTER` | `2` | Excel menaruh C.1 di semester 2, peta jalan visual menyatukannya dengan C.2 |
-| `BOBOT_SUMBER` | 30/50/20 | Tidak ada satu pun angka bobot di dokumen sumber |
+| `MODE_BOBOT_KOMPONEN` | `merata` | Usulan tim: 100 poin tiap aspek dibagi rata ke semua komponennya (lihat Aturan bobot) |
+| `BOBOT_SUMBER` | 30/50/20 | Hanya dipakai mode `per-sumber`; tidak ada satu pun angka bobot di dokumen sumber |
 | `BOBOT_KOMPONEN_MK` | 30/20/20/30 | Idem |
 | `MODE_AGREGASI` | `per-aspek` | Hasilnya berbeda dari `per-semester` karena distribusi 3/4/3 |
 | `PENGUNCIAN_ASPEK` | `otomatis` | Belum diputuskan apakah nilai boleh final sebelum semester ditutup |
 | `IZINKAN_FINAL_DRAFT` | `true` | Lihat di bawah |
+
+Di luar `config.js`, aturan penguncian angkatan dan perubahan data terkunci juga masih keputusan
+sementara tim dan belum dikonfirmasi unit pengelola (lihat Penguncian angkatan dan data terkunci).
 
 ### Kenapa `IZINKAN_FINAL_DRAFT` ada
 
@@ -301,14 +376,37 @@ komponen resmi.
 
 ## Aturan bobot
 
+Bobot komponen di dalam satu aspek diatur `CONFIG.MODE_BOBOT_KOMPONEN`. Bawaannya `merata`:
+**setiap aspek bernilai 100 yang dibagi rata ke seluruh komponennya**, apa pun sumbernya (PDP, MK,
+Kemahasiswaan) dan jenisnya. Nilai tiap komponen tetap diisi 0–100; bobot hanya menentukan
+porsinya, jadi nilai aspek sama dengan rata-rata komponen yang sudah terisi.
+
+| Aspek | Komponen | Porsi per komponen |
+|---|---|---|
+| A.1, A.3, A.4, B.1, B.2, C.1 | 5 | 20 |
+| A.2 | 7 | 14,29 |
+| B.3 | 4 | 25 |
+| B.4 | 2 | 50 |
+| C.2 | 3 | 33,33 |
+
+Contoh: tugas A.1 bernilai 80 menyumbang 16 dari 20 poin. Aturan ini usulan tim dan belum
+dikonfirmasi unit pengelola. Komponen A.3, A.4, B.1, B.2, dan C.1 masih draft, jadi jumlah dan
+porsinya bisa berubah.
+
+Mode `per-sumber` adalah aturan sebelumnya dan tetap bisa dipilih:
+
 ```
-bobot sumber   dinormalisasi ulang ke sumber yang HADIR pada aspek itu
+bobot sumber   BOBOT_SUMBER, dinormalisasi ulang ke sumber yang HADIR pada aspek itu
 bobot MK       dimodulasi per jenis (TUGAS/SIKAP/UTS/UAS), jenis absen dinormalisasi ulang
-di dalam grup  dibagi rata, kecuali seluruh komponen punya `bobot` eksplisit
+di dalam grup  dibagi rata
 ```
 
-Contoh: B.4 hanya punya komponen MK, jadi MK memikul 100% meski `BOBOT_SUMBER.MK = 50`.
-A.1 tidak punya UTS, jadi porsi UTS dibagi ke TUGAS/SIKAP/UAS.
+Contoh mode `per-sumber`: B.4 hanya punya komponen MK, jadi MK memikul 100% meski
+`BOBOT_SUMBER.MK = 50`. A.1 tidak punya UTS, jadi porsi UTS dibagi ke TUGAS/SIKAP/UAS.
+
+Di kedua mode, bila seluruh komponen yang dibagi (satu aspek pada `merata`, satu grup pada
+`per-sumber`) diberi `bobot` eksplisit di `curriculum.js`, angka itu yang dipakai sebagai
+perbandingan. Saat ini belum ada komponen yang diberi `bobot` eksplisit.
 
 ## Input nilai
 
@@ -337,6 +435,10 @@ bagian Penyimpanan perubahan di bawah. Tombol **Hapus semua perubahan** menghapu
 Import menolak: NIM tak dikenal, kode komponen asing, komponen dari sumber atau semester
 lain, mahasiswa di luar angkatan sasaran, nilai di luar 0–100, baris duplikat, dan **aspek
 yang semesternya belum ditempuh mahasiswa** — penjaga utama R1.
+
+Pemeriksaan yang sama diulang di server saat menyimpan (`src/server/nilai.js`), ditambah dua hal:
+semester batch harus 1–3, dan setiap komponen harus milik semester batch itu. Satu baris yang gagal
+menolak seluruh batch.
 
 ### Pengenalan berkas mentah
 
@@ -387,14 +489,104 @@ Di sisi mahasiswa, badge status selalu disertai **alasan** bila belum final — 
 “Baru 2 dari 5 komponen asesmen yang dinilai” atau “Ditahan sebagai sementara oleh …”. Aspek
 yang sudah final menampilkan siapa yang mengunci dan kapan.
 
+Tanda final yang dipasang **manual** juga membuat aspek itu terkunci untuk diedit: mengubah
+nilainya sesudah itu wajib beralasan (lihat bagian berikut). Setiap perubahan tanda dicatat di
+`LogAktivitas` sebagai `UBAH_PENGUNCIAN`; tanda yang tidak berubah tidak dicatat.
+
+## Penguncian angkatan dan data terkunci
+
+Mengunci angkatan menandai bahwa program tiga semesternya sudah selesai, dengan dua akibat:
+angkatan memenuhi syarat sertifikat *Angkatan sudah dikunci oleh Kemahasiswaan* (R5), dan setiap
+perubahan nilai sesudahnya wajib beralasan dan tercatat. Penguncian **tidak** menutup pintu bagi
+Kemahasiswaan untuk memperbaiki atau melengkapi nilai.
+
+Ketiga pintu di bawah hanya untuk Kemahasiswaan (`src/server/angkatan.js`). Daftar angkatan untuk layar
+dibaca lewat `GET /api/angkatan`: satu baris per angkatan berisi jumlah mahasiswa, kelengkapan nilai
+(hanya aspek yang semesternya sudah tiba; persentasenya tidak pernah 100 selama masih ada komponen
+kosong), semester kalender, boleh dikunci atau belum beserta alasannya, serta siapa yang mengunci dan
+kapan. Tanda `siapKunciOtomatis` (boleh dikunci **dan** semua nilai lengkap) hanya penanda; belum ada
+yang mengunci angkatan secara otomatis.
+
+Menguncinya dua langkah:
+
+1. `POST /api/angkatan/pratinjau` dengan `{ angkatanId }` — ringkasan yang dihitung seolah
+   angkatan sudah dikunci: jumlah mahasiswa, berapa yang berhak dan tidak berhak sertifikat, sampai 50 mahasiswa
+   yang tidak berhak beserta alasannya, berapa yang terganjal komponen kosong, dan apakah angkatan
+   boleh dikunci (beserta alasannya bila belum).
+2. `POST /api/angkatan/kunci` dengan `{ angkatanId, konfirmasi }` — `konfirmasi` harus sama
+   persis dengan label angkatan, misalnya `2025 Genap`. Status berubah menjadi `TERKUNCI`,
+   pengunci dan waktunya disimpan di kolom `dikunciOleh` dan `dikunciPada`, dan tindakannya
+   dicatat di `LogAktivitas`. Dua jendela yang mengunci bersamaan tidak saling timpa.
+
+Angkatan boleh dikunci bila semester kalendernya sudah lewat Semester 3 (`semesterKalender` ≥ 4)
+dan angkatan itu sudah punya mahasiswa. Nilai yang masih bolong **tidak** menghalangi; jumlahnya
+hanya tampil di pratinjau sebagai peringatan.
+
+Halaman `/admin/angkatan` belum dibuat, jadi ketiga pintu ini baru dipakai oleh `npm run test:db`.
+
+### Mengubah data yang terkunci
+
+Satu nilai dianggap **terkunci untuk diedit** bila angkatan mahasiswanya `TERKUNCI` **atau**
+aspeknya ditandai final **secara manual** (`cariTerkunci()` di `src/server/nilai.js`). Aspek yang
+final secara otomatis tidak dihitung: itu akibat nilainya lengkap, bukan keputusan mengunci.
+
+- **Kemahasiswaan** tetap boleh mengubah atau melengkapi nilai terkunci, termasuk sel yang masih
+  bolong sesudah Semester 3, asal menyertakan `alasan` minimal 10 karakter. Aturan ini berlaku
+  untuk simpan nilai (`/api/nilai`) dan rollback (`/api/nilai/rollback`), karena membatalkan
+  batch juga mengubah nilai.
+- **Dosen** tetap boleh mengirim usulan untuk data terkunci; yang memutuskan tetap Kemahasiswaan.
+  Menyetujui usulan seperti itu berarti mengubah data terkunci, jadi catatan keputusannya wajib
+  minimal 10 karakter dan berfungsi sebagai alasan.
+- **Mahasiswa** tetap hanya bisa mengajukan koreksi (R8).
+
+Bila alasannya kurang, server menolak seluruh penyimpanan dan menyebut berapa mahasiswa yang
+tersentuh. Perubahan yang tidak menyentuh data terkunci tidak membutuhkan alasan. Aturan di bagian
+ini belum dikonfirmasi unit pengelola.
+
+Di layar Input Nilai, kolom **Alasan perubahan** ada di bawah tabel Input manual dan di atas tombol
+*Isi otomatis* pada Import CSV, sedangkan kolom **Alasan rollback** ada di atas daftar Riwayat batch.
+`simpanBatch()` dan `rollbackBatch()` di `src/lib/store.js` meneruskannya ke server. Kolom itu boleh
+dikosongkan; server baru menuntutnya bila penyimpanan atau rollback menyentuh data terkunci.
+
+### Log aktivitas
+
+Perubahan nilai sudah tercatat per sel di `AuditLog`. Tindakan Kemahasiswaan lainnya dicatat di
+tabel `LogAktivitas` lewat `catatLog()` (`src/server/log.js`), **di dalam transaksi yang sama**
+dengan perubahannya: tidak ada perubahan tanpa jejak, dan tidak ada jejak tanpa perubahan.
+
+| `aksi` | Kapan dicatat | Isi `rincian` |
+|---|---|---|
+| `KUNCI_ANGKATAN` | angkatan dikunci | ringkasan pratinjau saat dikunci |
+| `UBAH_DATA_TERKUNCI` | simpan nilai atau persetujuan usulan menyentuh data terkunci | alasan, jumlah mahasiswa dan nilai |
+| `ROLLBACK_DATA_TERKUNCI` | batch yang menyentuh data terkunci dibatalkan | alasan dan jumlah mahasiswa |
+| `UBAH_PENGUNCIAN` | tanda final/sementara aspek berubah | jumlah perubahan, berapa yang dicabut dari final, sampai 20 contoh |
+
+Kedua log dibaca lewat `POST /api/log` (`bacaLog()`, hanya Kemahasiswaan), satu halaman setiap kali:
+
+- `jenis`: `'nilai'` (AuditLog) atau `'aktivitas'` (LogAktivitas);
+- penyaring, semuanya opsional: `aktorId`, `dari`/`sampai` (tanggal `TTTT-BB-HH` menurut WIB;
+  `sampai` dihitung sampai akhir harinya), `nim` untuk jenis nilai, dan `aksi` untuk jenis aktivitas;
+- `halaman` dan `ukuran` (bawaan 25 baris, paling banyak 100). Jawabannya menyertakan `total`,
+  `jumlahHalaman`, dan daftar pelaku (serta daftar aksi) untuk pilihan penyaring di layar;
+- jejak batch yang sudah dibatalkan tetap tampil dengan tanda `dibatalkan`, karena log yang
+  menghapus jejaknya sendiri tidak berguna sebagai bukti.
+
+Pintunya memakai POST karena kerangka API (`tangani`) hanya membaca isi permintaan pada POST; log
+tidak diubah olehnya. Supaya pengurutan dan penyaringan tetap cepat, `AuditLog` diberi indeks pada
+`waktu` dan `aktorId` (migrasi `indeks_audit`). Halaman `/admin/log` yang memakai pintu ini belum
+dibuat.
+
 ## Penyimpanan perubahan
 
 Di website setiap perubahan disimpan di basis data: satu penyimpanan menjadi satu baris
-`Batch`, nilai terbaru di `Nilai`, dan setiap perubahan tercatat di `AuditLog`. Rollback
-menandai batch `DIBATALKAN` lalu memutar ulang tiap sel yang disentuhnya dari riwayat
+`Batch`, nilai terbaru di `Nilai`, dan setiap perubahan tercatat di `AuditLog`. ID batch
+berbentuk `B-<tanggal dan jam WIB>-<8 karakter acak>`, misalnya `B-202610091030-3F9A1C2B`;
+bagian acaknya mencegah ID bertabrakan bila dua penyimpanan terjadi pada menit yang sama.
+Rollback menandai batch `DIBATALKAN` lalu memutar ulang tiap sel yang disentuhnya dari riwayat
 `AuditLog` — nilai sebelum perubahan pertama, lalu setiap batch yang tidak dibatalkan menurut
 urutan waktu — sehingga membatalkan batch lama tidak pernah menghapus nilai dari batch
-sesudahnya. Tombol *Hapus semua perubahan* hanya ada dalam mode lokal; di basis data batch
+sesudahnya. Rollback batch yang menyentuh data terkunci wajib beralasan, sama seperti saat
+menyimpan. Tombol *Hapus semua perubahan* hanya ada dalam mode lokal; di basis data batch
 dibatalkan satu per satu.
 
 Dalam **mode lokal** (skrip uji, tanpa server) perubahan disimpan di peramban, dengan
@@ -535,6 +727,9 @@ di peramban harus menunggu komponen menempel:
   import, dan dijalankan ulang saat tombol ditekan; yang tampil di halaman hanya salinannya.
   Baris yang gagal tidak ikut ditulis.
 - Pelaku nilai tetap dosen pengusul; penyetujunya dicatat terpisah.
+- Usulan boleh menyasar data terkunci. Menyetujuinya berarti mengubah data terkunci, jadi catatan
+  keputusan wajib minimal 10 karakter dan tindakannya dicatat di `LogAktivitas` (lihat
+  Penguncian angkatan dan data terkunci).
 
 ### Kamus dan terjemahan
 
@@ -659,6 +854,9 @@ panah kiri/kanan). Bagian yang mudah rusak:
   kunci berbeda untuk orang yang sama.
 - Foto disimpan 256 px, ditambah gambar asal yang diperkecil supaya bisa disunting ulang tanpa
   pecah. Berkas sumber dibatasi 5 MB.
+- Isian diperiksa ulang di server (`src/server/profil.js`): telepon dan ponsel 6–25 karakter
+  berisi angka, spasi, atau `+ ( ) - .`; alamat paling panjang 500 karakter (kolom
+  `VARCHAR(500)`); foto harus berupa gambar.
 
 ## Status pengerjaan
 
@@ -667,10 +865,25 @@ panah kiri/kanan). Bagian yang mudah rusak:
 | 1 | Fondasi domain: config, curriculum, scoring, rules, mockData | selesai, terverifikasi |
 | 2 | Pembersihan model poin, rute & menu baru | selesai |
 | 3 | Transkrip mahasiswa dengan drill-down & gating | selesai |
-| 4 | Peta Perjalanan, Riwayat | belum |
-| 5 | Sertifikat | belum |
-| 6 | Admin: panel input nilai | belum |
+| 4 | Peta Perjalanan, Riwayat | selesai |
+| 5 | Sertifikat | selesai: halaman mahasiswa dan cetak dari panel Kemahasiswaan |
+| 6 | Admin: panel input nilai | selesai (lihat fase 7) |
 | 7 | Input & Import Nilai: gerbang semester, input manual, import CSV, rollback, koreksi | selesai |
-| 8 | Kurikulum, Angkatan & Sertifikat, Log | belum |
+| 8 | Kurikulum, Angkatan & Sertifikat, Log | sebagian: back-end ringkasan dan kunci angkatan, aturan data terkunci, pencatatan dan pembacaan log, serta kurikulum yang dibaca dari basis data sudah ada; ketiga halamannya masih "Segera Hadir" |
 | 9 | Poles cetak, responsif, aksesibilitas | sebagian (cetak & reduced-motion sudah) |
-| — | Basis data MySQL | belum |
+| — | Panel Kemahasiswaan lainnya: Overview, Data Mahasiswa beserta detailnya, Program Studi, Persetujuan Nilai Dosen | selesai |
+| — | Panel dosen: Data Masuk, Input & Import Nilai sebagai usulan, Status Usulan | selesai |
+| — | Basis data MySQL: 19 tabel, 7 migrasi, 16 pintu API, sesi cookie | selesai |
+
+Yang belum dikerjakan:
+
+- tampilan halaman `/admin/angkatan`, `/admin/kurikulum`, dan `/admin/log` (kini masih "Segera
+  Hadir"). Pintu API untuk Angkatan dan Log sudah ada; untuk mengubah kurikulum dan pengaturan
+  belum (kurikulum baru bisa dibaca dari basis data);
+- halaman bagi mahasiswa untuk mengumpulkan berkas (kini baris `Pengumpulan` diisi langsung di
+  basis data);
+- penerbitan sertifikat yang membekukan nomor, tanggal, dan nilai — kini kelayakan dihitung
+  langsung, jadi sertifikat ikut berubah bila nilai diubah sesudah angkatan dikunci;
+- ganti dan lupa kata sandi di aplikasi ini, masuk lewat SSO kampus, serta pembatasan percobaan
+  masuk;
+- kelola data master (angkatan, fakultas, prodi) dan akun dari panel Kemahasiswaan.

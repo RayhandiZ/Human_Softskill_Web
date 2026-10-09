@@ -131,14 +131,32 @@ model Dosen {
   prodi      ProgramStudi @relation(fields: [prodiId], references: [id])
 }
 
-model Komponen {                // di-seed dari curriculum.js
-  id      String  @id           // 'A1-MK-T1'
-  aspekId String                // 'A1' (tanpa FK, aspek hidup di kode)
-  sumber  Sumber
-  label   String
-  jenis   String?               // TUGAS | SIKAP | UTS | UAS
-  resmi   Boolean @default(true)
-  nilai   Nilai[]
+model Komponen {                // sumber daftar tugas tiap aspek; isi awalnya ditanam seed dari curriculum.js
+  id         String    @id                    // 'A1-MK-T1'; tidak pernah diganti, dipakai nilai dan riwayat
+  aspekId    String                           // 'A1' (tanpa FK, aspek hidup di kode)
+  sumber     Sumber
+  label      String
+  jenis      String?                          // TUGAS | SIKAP | UTS | UAS
+  ranah      String    @default("kognitif") @db.VarChar(10)   // kognitif | afektif
+  resmi      Boolean   @default(true)
+  bobot      Float?                           // kosong = ikut CONFIG.MODE_BOBOT_KOMPONEN
+  urutan     Int       @default(0)
+  aktif      Boolean   @default(true)         // false = diarsipkan: tidak tampil, tidak dihitung, nilainya tetap
+  diubahOleh Int?
+  diubahPada DateTime?
+  nilai      Nilai[]
+}
+
+model Indikator {               // indikator perilaku per aspek; tampil di transkrip, tidak ikut dihitung
+  id         String    @id @db.VarChar(40)    // 'A1-IND-1'
+  aspekId    String    @db.VarChar(10)
+  label      String
+  ranah      String    @db.VarChar(10)        // kognitif | afektif
+  sumber     Json                             // daftar bukti (larik teks), sama dengan INDIKATOR.sumber di kode
+  urutan     Int       @default(0)
+  diubahOleh Int?
+  diubahPada DateTime?
+  @@index([aspekId])
 }
 
 model Batch {
@@ -179,6 +197,8 @@ model AuditLog {                // append-only, jangan pernah di-update/delete
   batchId     String?
   batch       Batch?   @relation(fields: [batchId], references: [id])
   @@index([mahasiswaId])
+  @@index([waktu])                                       // halaman Log: urut dan saring menurut waktu
+  @@index([aktorId])                                     // halaman Log: saring menurut pelaku
 }
 
 model LogAktivitas {            // catatan tindakan admin selain nilai (kunci angkatan, ubah data terkunci, penguncian)
@@ -253,7 +273,7 @@ model UsulanEntri {
   usulan     Usulan @relation(fields: [usulanId], references: [id], onDelete: Cascade)
 }
 
-model Konfigurasi {             // pengganti CONFIG di config.js
-  kunci String @id              // 'BOBOT_SUMBER'
+model Konfigurasi {             // pengaturan yang menimpa bawaan CONFIG di config.js, plus penanda VERSI_KURIKULUM
+  kunci String @id              // 'AMBANG_SERTIFIKAT', 'VERSI_KURIKULUM'
   nilai Json
 }

@@ -2,7 +2,9 @@
 
    Membuat satu akun mahasiswa sementara (NIM berawalan UJI) dan menghapus seluruh jejaknya di
    akhir, berhasil maupun gagal. Butuh MySQL menyala dan `npm run db:seed` sudah pernah dijalankan
-   (memakai akun admin@umn.ac.id dan simon.petrus@lecturer.umn.ac.id dengan sandi umn12345). */
+   (memakai akun admin@umn.ac.id dan simon.petrus@lecturer.umn.ac.id dengan sandi umn12345).
+   Bagian kurikulum menambah satu indikator dan menimpa dua pengaturan sebentar, lalu mengembalikannya;
+   penanda VERSI_KURIKULUM ikut naik dan tidak diturunkan lagi. */
 
 import 'dotenv/config'
 import bcrypt from 'bcryptjs'
@@ -21,6 +23,12 @@ import * as keputusanUsulan from '../app/api/usulan/keputusan/route.js'
 import * as profil from '../app/api/profil/route.js'
 import * as angkatanPratinjau from '../app/api/angkatan/pratinjau/route.js'
 import * as angkatanKunci from '../app/api/angkatan/kunci/route.js'
+import * as log from '../app/api/log/route.js'
+import * as angkatanRingkasan from '../app/api/angkatan/route.js'
+import { KOMPONEN, KOMPONEN_BAWAAN, KUNCI_VERSI_KURIKULUM, getAspekList, getIndikator, isiKurikulum } from '../src/lib/curriculum.js'
+import { CONFIG } from '../src/lib/config.js'
+import { ambilKurikulum } from '../src/server/kurikulum.js'
+import { ambilMaster } from '../src/server/master.js'
 
 const PINTU = {
   '/api/masuk': masuk,
@@ -37,6 +45,8 @@ const PINTU = {
   '/api/profil': profil,
   '/api/angkatan/pratinjau': angkatanPratinjau,
   '/api/angkatan/kunci': angkatanKunci,
+  '/api/log': log,
+  '/api/angkatan': angkatanRingkasan,
 }
 
 let gagal = 0
@@ -74,6 +84,14 @@ const NIM2 = NIM + 'K'
 const EMAIL2 = 'uji.' + NIM2.toLowerCase() + '@student.umn.ac.id'
 const ANG_A = 'UJIA' + SUF
 const ANG_B = 'UJIB' + SUF
+const ANG_C = 'UJIC' + SUF
+const NIM3 = NIM + 'L'
+const EMAIL3 = 'uji.' + NIM3.toLowerCase() + '@student.umn.ac.id'
+/* Bagian "kurikulum" memakai satu indikator sementara dan menimpa dua baris Konfigurasi. */
+const IND_UJI = 'UJI-IND-' + SUF
+const KONFIGURASI_UJI = ['AMBANG_SERTIFIKAT', 'TOTAL_SEMESTER_PROGRAM']
+/** Baris Konfigurasi sebelum disentuh uji ({ kunci: baris | null }); undefined = belum disentuh. */
+let konfigurasiAsli
 /** Target baris LogAktivitas yang dibuat uji ini; ditambah id batch begitu diketahui. */
 const targetLog = ['angkatan ' + ANG_A, 'angkatan ' + ANG_B, 'mahasiswa ' + NIM, 'mahasiswa ' + NIM2]
 
@@ -99,11 +117,33 @@ async function bersihkanMahasiswa(email) {
   }
 }
 
+/** Menaikkan penanda versi kurikulum supaya pemuat membaca ulang. Versi tidak pernah diturunkan. */
+async function naikkanVersi() {
+  const v = await db.konfigurasi.findUnique({ where: { kunci: KUNCI_VERSI_KURIKULUM } })
+  if (v) await db.konfigurasi.update({ where: { kunci: KUNCI_VERSI_KURIKULUM }, data: { nilai: (Number(v.nilai) || 0) + 1 } })
+}
+
+async function pulihkanKurikulum() {
+  let berubah = (await db.indikator.deleteMany({ where: { id: IND_UJI } })).count > 0
+  if (konfigurasiAsli) {
+    for (const kunci of KONFIGURASI_UJI) {
+      const baris = konfigurasiAsli[kunci]
+      if (baris) await db.konfigurasi.upsert({ where: { kunci }, update: { nilai: baris.nilai }, create: baris })
+      else await db.konfigurasi.deleteMany({ where: { kunci } })
+    }
+    konfigurasiAsli = undefined
+    berubah = true
+  }
+  if (berubah) await naikkanVersi()
+}
+
 async function bersihkan() {
+  await pulihkanKurikulum()
   await bersihkanMahasiswa(EMAIL)
   await bersihkanMahasiswa(EMAIL2)
+  await bersihkanMahasiswa(EMAIL3)
   await db.logAktivitas.deleteMany({ where: { target: { in: targetLog } } })
-  await db.angkatan.deleteMany({ where: { id: { in: [ANG_A, ANG_B] } } })
+  await db.angkatan.deleteMany({ where: { id: { in: [ANG_A, ANG_B, ANG_C] } } })
 }
 
 try {
@@ -348,8 +388,190 @@ try {
   const logPenguncian = await db.logAktivitas.count({ where: { aksi: 'UBAH_PENGUNCIAN', target: 'mahasiswa ' + NIM } })
   cek('perubahan tanda penguncian aspek tercatat di log', logPenguncian >= 2, String(logPenguncian))
 
+  /* ------------------------------ log aktivitas ------------------------------ */
+  garis('9. LOG AKTIVITAS (BACA, FILTER, PAGINASI)')
+  const bacaLog = (isi) => admin('/api/log', { metode: 'POST', isi })
+  const tanggalWib = (d) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta' }).format(d)
+  const hariIni = tanggalWib(new Date())
+  const besok = tanggalWib(new Date(Date.now() + 24 * 60 * 60 * 1000))
+
+  // --- wewenang ---
+  cek('tanpa sesi: log ditolak 401', (await tamu('/api/log', { metode: 'POST', isi: {} })).status === 401)
+  cek('mahasiswa tidak boleh membaca log (403)', (await mhs('/api/log', { metode: 'POST', isi: {} })).status === 403)
+  cek('dosen tidak boleh membaca log (403)', (await dosen('/api/log', { metode: 'POST', isi: {} })).status === 403)
+
+  // --- masukan yang salah ditolak ---
+  cek('jenis log tidak dikenal ditolak', (await bacaLog({ jenis: 'lain' })).status === 400)
+  cek('aksi tidak dikenal ditolak', (await bacaLog({ jenis: 'aktivitas', aksi: 'HAPUS_SEMUA' })).status === 400)
+  cek('tanggal berbentuk salah ditolak', (await bacaLog({ dari: '09-10-2026' })).status === 400)
+  cek('tanggal yang tidak ada di kalender ditolak', (await bacaLog({ dari: '2026-02-31' })).status === 400)
+  cek('tanggal awal sesudah tanggal akhir ditolak', (await bacaLog({ dari: '2026-10-10', sampai: '2026-10-01' })).status === 400)
+  cek('halaman bukan bilangan bulat ditolak', (await bacaLog({ halaman: 'dua' })).status === 400)
+
+  // --- perubahan nilai (AuditLog) ---
+  const totalDb = await db.auditLog.count({ where: { mahasiswaId } })
+  const semua = await bacaLog({ jenis: 'nilai', nim: NIM, ukuran: 100 })
+  cek('jenis nilai: total sama dengan isi tabel AuditLog', semua.status === 200 && semua.isi.total === totalDb && semua.isi.baris.length === totalDb, JSON.stringify([totalDb, semua.isi.total]))
+  cek('baris nilai memuat nama, aspek, nilai lama dan baru', semua.isi.baris.every((b) => b.nim === NIM && b.nama === 'Mahasiswa Uji' && b.aspek && b.komponen && 'nilaiLama' in b && 'nilaiBaru' in b))
+  cek('urutan dari yang terbaru', semua.isi.baris.every((b, i, a) => i === 0 || a[i - 1].waktu >= b.waktu))
+  cek('NIM tidak dikenal memberi hasil kosong, bukan semua', (await bacaLog({ jenis: 'nilai', nim: 'TIDAKADA' })).isi.total === 0)
+
+  const jejakB1 = semua.isi.baris.find((b) => b.batchId === b1.isi.id)
+  cek('jejak batch yang dibatalkan tetap tampil dan bertanda dibatalkan', jejakB1?.dibatalkan === true, JSON.stringify(jejakB1))
+  cek('jejak batch yang masih berlaku tidak bertanda dibatalkan', semua.isi.baris.some((b) => b.dibatalkan === false))
+
+  // --- paginasi ---
+  const hal1 = await bacaLog({ jenis: 'nilai', nim: NIM, ukuran: 2, halaman: 1 })
+  const hal2 = await bacaLog({ jenis: 'nilai', nim: NIM, ukuran: 2, halaman: 2 })
+  cek('paginasi: ukuran 2 memberi 2 baris dan jumlah halaman benar', hal1.isi.baris.length === 2 && hal1.isi.jumlahHalaman === Math.ceil(totalDb / 2), JSON.stringify([hal1.isi.baris.length, hal1.isi.jumlahHalaman]))
+  cek('paginasi: halaman 2 berisi baris lain dan total tetap', hal2.isi.total === totalDb && hal2.isi.baris.every((b) => !hal1.isi.baris.some((x) => x.id === b.id)))
+  const lewat = await bacaLog({ jenis: 'nilai', nim: NIM, ukuran: 2, halaman: 999 })
+  cek('halaman di luar jangkauan kosong tanpa galat', lewat.status === 200 && lewat.isi.baris.length === 0 && lewat.isi.total === totalDb)
+  cek('ukuran halaman dibatasi 100', (await bacaLog({ jenis: 'nilai', nim: NIM, ukuran: 5000 })).isi.ukuran === 100)
+
+  // --- filter pelaku dan tanggal ---
+  const totalAdmin = await db.auditLog.count({ where: { mahasiswaId, aktorId: adminId } })
+  const olehAdmin = await bacaLog({ jenis: 'nilai', nim: NIM, aktorId: adminId, ukuran: 100 })
+  cek('filter pelaku: hanya perubahan oleh admin', olehAdmin.isi.total === totalAdmin && olehAdmin.isi.total < totalDb && olehAdmin.isi.baris.every((b) => b.aktor === 'Biro Kemahasiswaan'), JSON.stringify([totalAdmin, totalDb]))
+  cek('pilihan pelaku memuat admin', semua.isi.pilihanAktor.some((a) => a.id === adminId))
+  cek('filter tanggal hari ini (WIB) menemukan perubahan yang baru dibuat', (await bacaLog({ jenis: 'nilai', nim: NIM, dari: hariIni, sampai: hariIni })).isi.total === totalDb)
+  cek('filter tanggal besok kosong', (await bacaLog({ jenis: 'nilai', nim: NIM, dari: besok })).isi.total === 0)
+  cek('filter tanggal lampau kosong', (await bacaLog({ jenis: 'nilai', nim: NIM, dari: '2000-01-01', sampai: '2000-01-02' })).isi.total === 0)
+
+  // --- tindakan admin (LogAktivitas) ---
+  const akt = await bacaLog({ jenis: 'aktivitas', dari: hariIni, ukuran: 100 })
+  const barisKunci = akt.isi.baris.find((b) => b.aksi === 'KUNCI_ANGKATAN' && b.target === 'angkatan ' + ANG_A)
+  cek('aktivitas: penguncian angkatan terbaca beserta pelakunya', akt.status === 200 && barisKunci?.aktor === 'Biro Kemahasiswaan' && barisKunci.rincian?.label === 'Uji A ' + SUF, JSON.stringify(barisKunci))
+  const barisUbah = akt.isi.baris.find((b) => b.aksi === 'UBAH_DATA_TERKUNCI' && b.target === 'batch ' + denganAlasan.isi.id)
+  cek('aktivitas: alasan perubahan data terkunci terbaca', barisUbah?.rincian?.alasan === 'Melengkapi nilai susulan sesudah semester 3.', JSON.stringify(barisUbah))
+  const hanyaKunci = await bacaLog({ jenis: 'aktivitas', aksi: 'KUNCI_ANGKATAN', ukuran: 100 })
+  cek('filter aksi hanya mengembalikan aksi itu', hanyaKunci.isi.baris.length > 0 && hanyaKunci.isi.baris.every((b) => b.aksi === 'KUNCI_ANGKATAN'))
+  cek('daftar pilihan aksi tersedia untuk layar', akt.isi.pilihanAksi?.includes('UBAH_PENGUNCIAN'))
+  cek('membaca log tidak mengubah isi tabel', (await db.auditLog.count({ where: { mahasiswaId } })) === totalDb)
+
+  /* ------------------------------ ringkasan angkatan ------------------------------ */
+  garis('10. RINGKASAN ANGKATAN')
+  const ringkasan = async () => (await admin('/api/angkatan')).isi.angkatan ?? []
+  const dari = (daftar, id) => daftar.find((a) => a.angkatanId === id)
+
+  cek('tanpa sesi: ringkasan angkatan ditolak 401', (await tamu('/api/angkatan')).status === 401)
+  cek('mahasiswa tidak boleh melihat ringkasan (403)', (await mhs('/api/angkatan')).status === 403)
+  cek('dosen tidak boleh melihat ringkasan (403)', (await dosen('/api/angkatan')).status === 403)
+
+  // Angkatan C: lama (boleh dikunci) dan SELURUH komponennya terisi, jadi lengkap.
+  await db.angkatan.create({ data: { id: ANG_C, tahun: 2024, label: 'Uji C ' + SUF, periodeTahun: '2024/2025', periodeSemester: 'GANJIL' } })
+  const akunUji3 = await db.pengguna.create({
+    data: {
+      email: EMAIL3,
+      passwordHash: 'tidak-dipakai',
+      peran: 'MAHASISWA',
+      mahasiswa: { create: { nim: NIM3, nama: 'Mahasiswa Uji Lengkap', prodiId: prodi.id, angkatanId: ANG_C } },
+    },
+    include: { mahasiswa: true },
+  })
+  await db.nilai.createMany({
+    data: KOMPONEN.map((k) => ({ mahasiswaId: akunUji3.mahasiswa.id, komponenId: k.id, nilai: 80, penilaiId: adminId })),
+  })
+
+  const rg = await ringkasan()
+  const gA = dari(rg, ANG_A)
+  const gB = dari(rg, ANG_B)
+  const gC = dari(rg, ANG_C)
+  cek('ringkasan memuat semua angkatan uji', Boolean(gA && gB && gC), JSON.stringify(rg.map((a) => a.angkatanId)))
+  cek('angkatan yang sudah ada di basis data ikut tampil', rg.some((a) => a.angkatanId === angkatan.id))
+  cek('urutan: periode masuk terbaru lebih dulu', rg.findIndex((a) => a.angkatanId === ANG_B) < rg.findIndex((a) => a.angkatanId === ANG_A))
+
+  cek(
+    'angkatan terkunci: pencatat dan waktu kunci terbaca',
+    gA?.status === 'terkunci' && gA.dikunciOleh === 'Biro Kemahasiswaan' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(gA.dikunciPada ?? ''),
+    JSON.stringify(gA),
+  )
+  cek('angkatan aktif: belum ada pencatat kunci', gB?.status === 'aktif' && gB.dikunciOleh === null && gB.dikunciPada === null)
+  cek('angkatan masih semester 3: belum boleh dikunci beserta alasannya', gB?.bolehDikunci === false && /semester/i.test(gB.alasanTidakBoleh ?? ''), JSON.stringify(gB))
+  cek('angkatan kosong: tanpa persentase dan tidak dianggap lengkap', gB?.jumlahMahasiswa === 0 && gB.kelengkapan.persen === null && gB.semuaLengkap === false)
+
+  cek('jumlah mahasiswa benar', gA?.jumlahMahasiswa === 1 && gC?.jumlahMahasiswa === 1)
+  const terisiA = await db.nilai.count({ where: { mahasiswaId: mahasiswaId2 } })
+  cek(
+    'angkatan dengan sel bolong: tidak lengkap, hitungan komponen sesuai tabel Nilai',
+    gA?.semuaLengkap === false &&
+      gA.kelengkapan.mahasiswaBolong === 1 &&
+      gA.kelengkapan.komponenTerisi === terisiA &&
+      gA.kelengkapan.persen === Math.round((terisiA / gA.kelengkapan.komponenTotal) * 1000) / 10,
+    JSON.stringify(gA?.kelengkapan),
+  )
+  cek('angkatan bolong tidak ditandai siap kunci otomatis', gA?.siapKunciOtomatis === false)
+  cek('persentase tidak pernah 100 selama masih ada yang bolong', gA?.kelengkapan.persen < 100)
+  cek(
+    'angkatan lengkap dan boleh dikunci: ditandai siap kunci otomatis',
+    gC?.semuaLengkap === true && gC.kelengkapan.persen === 100 && gC.bolehDikunci === true && gC.siapKunciOtomatis === true,
+    JSON.stringify(gC),
+  )
+  cek('ringkasan hanya membaca: angkatan lengkap tetap AKTIF', (await db.angkatan.findUnique({ where: { id: ANG_C } })).status === 'AKTIF')
+  cek('dibaca ulang hasilnya sama', JSON.stringify(dari(await ringkasan(), ANG_C)) === JSON.stringify(gC))
+
+  /* ------------------------------ kurikulum ------------------------------ */
+  garis('11. KURIKULUM DARI BASIS DATA')
+  const kur = await ambilKurikulum()
+  cek('basis data sudah di-seed: penanda versi ada', kur?.versi >= 1, JSON.stringify(kur?.versi ?? null))
+  cek('setiap aspek punya minimal satu komponen aktif', getAspekList().every((a) => kur?.komponen.some((k) => k.aspekId === a.id)))
+  cek(
+    'bentuk tiap komponen sesuai yang dibaca kode',
+    Boolean(
+      kur?.komponen.every(
+        (k) =>
+          ['PDP', 'MK', 'ENGAGEMENT'].includes(k.sumber) &&
+          ['kognitif', 'afektif'].includes(k.ranah) &&
+          ['resmi', 'draft'].includes(k.status) &&
+          (k.sumber !== 'MK' || Boolean(k.jenis)),
+      ),
+    ),
+  )
+  cek(
+    'kurikulum yang terpasang di proses ini sama dengan isi basis data',
+    JSON.stringify(KOMPONEN.map((k) => k.id)) === JSON.stringify(kur?.komponen.map((k) => k.id)),
+  )
+
+  // Indikator sementara dan dua timpaan pengaturan; begitu versi naik, pintu API berikutnya harus memakainya.
+  const ambangAwal = CONFIG.AMBANG_SERTIFIKAT
+  konfigurasiAsli = Object.fromEntries(
+    await Promise.all(KONFIGURASI_UJI.map(async (kunci) => [kunci, await db.konfigurasi.findUnique({ where: { kunci } })])),
+  )
+  await db.indikator.create({
+    data: { id: IND_UJI, aspekId: 'A1', label: 'Indikator uji ' + SUF, ranah: 'afektif', sumber: ['bukti uji'], urutan: 999 },
+  })
+  for (const [kunci, nilai] of [['AMBANG_SERTIFIKAT', 75], ['TOTAL_SEMESTER_PROGRAM', 9]]) {
+    await db.konfigurasi.upsert({ where: { kunci }, update: { nilai }, create: { kunci, nilai } })
+  }
+  await naikkanVersi()
+  await admin('/api/data')
+  cek('pintu API memuat ulang kurikulum begitu versinya naik', getIndikator('A1').some((x) => x.id === IND_UJI && x.sumber[0] === 'bukti uji'))
+  cek('pengaturan dari tabel Konfigurasi menimpa CONFIG', CONFIG.AMBANG_SERTIFIKAT === 75, String(CONFIG.AMBANG_SERTIFIKAT))
+  cek('kunci di luar daftar yang boleh diubah diabaikan', CONFIG.TOTAL_SEMESTER_PROGRAM === 3, String(CONFIG.TOTAL_SEMESTER_PROGRAM))
+  const master = await ambilMaster()
+  cek(
+    'data master untuk halaman membawa kurikulum yang sama',
+    Boolean(master.kurikulum?.indikator.some((x) => x.id === IND_UJI)) && master.kurikulum.konfigurasi.AMBANG_SERTIFIKAT === 75,
+  )
+
+  await pulihkanKurikulum()
+  await admin('/api/data')
+  cek(
+    'setelah dikembalikan: indikator uji hilang, ambang kembali seperti semula',
+    !getIndikator('A1').some((x) => x.id === IND_UJI) && CONFIG.AMBANG_SERTIFIKAT === ambangAwal,
+    String(CONFIG.AMBANG_SERTIFIKAT),
+  )
+
+  // Tanpa isi (basis data belum di-seed atau gagal dibaca), kurikulum dan CONFIG kembali ke bawaan kode.
+  isiKurikulum({})
+  cek(
+    'tanpa isi dari basis data, bawaan kode yang dipakai',
+    JSON.stringify(KOMPONEN) === JSON.stringify(KOMPONEN_BAWAAN) && CONFIG.AMBANG_SERTIFIKAT === 70,
+  )
+  isiKurikulum(kur)
+
   /* ------------------------------ keluar ------------------------------ */
-  garis('9. KELUAR')
+  garis('12. KELUAR')
   await mhs('/api/keluar', { metode: 'POST' })
   cek('setelah keluar, sesi tidak berlaku', (await mhs('/api/sesi')).status === 401)
 } catch (e) {

@@ -522,14 +522,14 @@ async function tulis(alamat, isi) {
 
 export async function simpanBatch(isi) {
   if (modeLokal()) return simpanBatchLokal(isi)
-  const { sumber, semester, angkatanId, cara, entri } = isi
-  return tulis('/api/nilai', { sumber, semester, angkatanId, cara, entri })
+  const { sumber, semester, angkatanId, cara, entri, alasan } = isi
+  return tulis('/api/nilai', { sumber, semester, angkatanId, cara, entri, alasan })
 }
 
-/** false bila sudah dibatalkan. */
-export async function rollbackBatch(id) {
+/** false bila sudah dibatalkan. `alasan` hanya dituntut server bila batch menyentuh data terkunci. */
+export async function rollbackBatch(id, alasan) {
   if (modeLokal()) return rollbackBatchLokal(id)
-  return (await tulis('/api/nilai/rollback', { id })).ok
+  return (await tulis('/api/nilai/rollback', { id, alasan })).ok
 }
 
 /** status: 'final' | 'sementara' | null (ikuti CONFIG.PENGUNCIAN_ASPEK). */

@@ -11,7 +11,7 @@ import bcrypt from 'bcryptjs'
 import { PrismaClient } from '@prisma/client'
 import { MASTER_AWAL } from '../src/lib/data.js'
 import { STUDENTS, DOSEN } from '../scripts/dataContoh.js'
-import { KOMPONEN } from '../src/lib/curriculum.js'
+import { tanamKurikulum } from './tanam-kurikulum.js'
 
 const db = new PrismaClient()
 const SANDI_AWAL = 'umn12345' // hanya untuk pengembangan
@@ -42,6 +42,8 @@ async function main() {
   await db.fakultas.deleteMany()
   await db.angkatan.deleteMany()
   await db.komponen.deleteMany()
+  await db.indikator.deleteMany()
+  await db.konfigurasi.deleteMany()
 
   /* 1. Fakultas dan program studi. */
   for (const f of MASTER_AWAL.fakultas) {
@@ -66,17 +68,8 @@ async function main() {
     })),
   })
 
-  /* 3. Komponen asesmen, dari curriculum.js. */
-  await db.komponen.createMany({
-    data: KOMPONEN.map((k) => ({
-      id: k.id,
-      aspekId: k.aspekId,
-      sumber: k.sumber,
-      label: k.label,
-      jenis: k.jenis,
-      resmi: k.status === 'resmi',
-    })),
-  })
+  /* 3. Kurikulum (komponen dan indikator) dari curriculum.js, beserta penanda VERSI_KURIKULUM. */
+  await tanamKurikulum(db)
 
   /* 4. Akun: satu admin, semua dosen, semua mahasiswa. Satu hash dipakai ulang. */
   const passwordHash = await bcrypt.hash(SANDI_AWAL, 10)
@@ -136,6 +129,7 @@ async function main() {
     prodi: await db.programStudi.count(),
     angkatan: await db.angkatan.count(),
     komponen: await db.komponen.count(),
+    indikator: await db.indikator.count(),
     pengguna: await db.pengguna.count(),
     dosen: await db.dosen.count(),
     mahasiswa: await db.mahasiswa.count(),

@@ -4,7 +4,7 @@
    Jalankan:  node scripts/verify-scoring.mjs
 */
 
-import { CONFIG } from '../src/lib/config.js'
+import { CONFIG, withConfig } from '../src/lib/config.js'
 import { distribusiSemester, getAspekList, getKomponen } from '../src/lib/curriculum.js'
 import { bobotKomponen } from '../src/lib/scoring.js'
 import { kelayakanSertifikat } from '../src/lib/rules.js'
@@ -50,14 +50,18 @@ for (const c of COHORTS) {
 
 /* --------------------------------- bobot ---------------------------------- */
 
-console.log(garis('BOBOT KOMPONEN — normalisasi saat sumber/jenis tidak hadir'))
+console.log(garis('BOBOT KOMPONEN — mode ' + CONFIG.MODE_BOBOT_KOMPONEN))
 for (const id of ['A1', 'A2', 'B4']) {
   const b = bobotKomponen(id)
   const total = Object.values(b).reduce((a, x) => a + x, 0)
   console.log('\n' + id + '  (jumlah bobot = ' + total.toFixed(1) + ')')
   for (const [k, v] of Object.entries(b)) console.log('   ' + pad(k, 22) + kanan(v.toFixed(1), 6))
 }
-console.log('\nCatatan: B.4 hanya punya komponen MK, jadi MK memikul 100% meski CONFIG memberinya', CONFIG.BOBOT_SUMBER.MK)
+if (CONFIG.MODE_BOBOT_KOMPONEN === 'merata') {
+  console.log('\nCatatan: tiap aspek bernilai 100 dan dibagi rata ke seluruh komponennya, apa pun sumbernya.')
+} else {
+  console.log('\nCatatan: B.4 hanya punya komponen MK, jadi MK memikul 100% meski CONFIG memberinya', CONFIG.BOBOT_SUMBER.MK)
+}
 
 /* -------------------------------- persona --------------------------------- */
 
@@ -142,3 +146,8 @@ CONFIG.ASPEK_C1_SEMESTER = 3
 console.log('C.1 semester', CONFIG.ASPEK_C1_SEMESTER, '→ distribusi', JSON.stringify(distribusiSemester()))
 CONFIG.ASPEK_C1_SEMESTER = 2
 console.log('dikembalikan ke', CONFIG.ASPEK_C1_SEMESTER)
+
+const bobotA1 = () => Object.values(bobotKomponen('A1')).map((v) => v.toFixed(2)).join(' / ')
+console.log('\nBobot A.1 mode', CONFIG.MODE_BOBOT_KOMPONEN, '→', bobotA1())
+withConfig({ MODE_BOBOT_KOMPONEN: 'per-sumber' }, () => console.log('Bobot A.1 mode per-sumber →', bobotA1()))
+console.log('mode dikembalikan ke', CONFIG.MODE_BOBOT_KOMPONEN)

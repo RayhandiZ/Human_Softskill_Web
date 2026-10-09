@@ -1,4 +1,5 @@
 import { db } from './db.js'
+import { siapkanKurikulum } from './kurikulum.js'
 import { penggunaIdDari } from './sesi.js'
 
 const PERAN = { MAHASISWA: 'student', DOSEN: 'dosen', ADMIN: 'admin' }
@@ -44,6 +45,7 @@ export async function tangani(request, peran, kerja) {
     if (peran && !peran.includes(pengguna.peran)) {
       throw new GalatApi('Akun ini tidak berwenang melakukan tindakan tersebut.', 403)
     }
+    await siapkanKurikulum()
     const isi = request.method === 'GET' ? {} : await request.json().catch(() => ({}))
     return Response.json((await kerja(pengguna, isi)) ?? { ok: true })
   } catch (e) {

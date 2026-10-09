@@ -787,17 +787,17 @@ const RUTE = [
     ['nama semester ditulis lengkap, termasuk yang terkunci', tr3.labelSemuaSemester],
     ['label tidak diredupkan (kontras tetap terbaca)', tr3.tanpaRedup && tr2.tanpaRedup],
     ['belum ada kotak info sebelum titik dipilih', tr3.tanpaTipAwal],
-    ['fokus semester 3: kotak info seperti contoh', tr3.isiTip === 'Semester:3Nilai semester:84Nilai kumulatif:81'],
+    ['fokus semester 3: kotak info seperti contoh', tr3.isiTip === 'Semester:3Nilai semester:84Nilai kumulatif:82'],
     ['garis tegak penanda semester muncul', tr3.garisTegak === 1],
     ['titik terpilih jadi berongga, di kedua garis', tr3.titikBerongga === 2],
     ['nama semester terpilih ditebalkan', tr3.labelTerpilihTebal],
     ['kumulatif terakhir sama dengan angka besar di kartu', tr3.kumulatifSamaAngkaBesar],
     ['kotak info tidak dibaca dua kali oleh pembaca layar', tr3.tipTersembunyiDariSR],
-    ['pembaca layar mendapat kalimat lengkap per semester', tr3.kalimatKolom === 'Semester 3: Nilai semester 84, Nilai kumulatif 81'],
+    ['pembaca layar mendapat kalimat lengkap per semester', tr3.kalimatKolom === 'Semester 3: Nilai semester 84, Nilai kumulatif 82'],
     ['Escape menyembunyikan kotak info, fokus tetap', tr3.escapeMenyembunyikan],
     ['tunjuk dengan tetikus menampilkan, pergi menyembunyikan', tr3.tunjukMenampilkan && tr3.lepasMenyembunyikan],
 
-    /* DEMO-2: dua semester, 70 lalu 85. */
+    /* DEMO-2: dua semester, 71 lalu 85. */
     ['dua semester: kenaikannya dinyatakan', tr2.adaTren && tr2.ringkasNaik],
     ['dua titik ditarik satu ruas lurus, di tiap garis', tr2.jumlahRuas === 2],
     ['semester terkunci tidak ikut digambar (R2)', tr2.jumlahTitikSemester === 2 && tr2.jumlahTitikKumulatif === 2],

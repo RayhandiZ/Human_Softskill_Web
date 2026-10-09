@@ -1,10 +1,11 @@
 import { db } from './db.js'
 import { GalatApi } from './api.js'
 import { catatLog } from './log.js'
-import { SERTA_MAHASISWA, intakeDari, susunMahasiswa } from './muat.js'
+import { SERTA_MAHASISWA, intakeDari, petaNama, susunMahasiswa, waktuWib } from './muat.js'
 import { CONFIG } from '../lib/config.js'
 import { semesterKalender } from '../lib/data.js'
 import { pratinjauPenguncian } from '../lib/rules.js'
+import { hitungTranskrip } from '../lib/scoring.js'
 
 // Penguncian angkatan: pratinjau dulu, lalu kunci dengan konfirmasi ketik. Mengunci angkatan TIDAK
 // menutup pintu bagi admin: sesudah terkunci, nilai tetap bisa diubah atau dilengkapi (termasuk sel yang
@@ -31,6 +32,86 @@ function alasanBelumBoleh(a, kalender, jumlahMahasiswa) {
   }
   if (!jumlahMahasiswa) return 'Angkatan ini belum punya mahasiswa.'
   return null
+}
+
+/**
+ * Kelengkapan nilai satu angkatan. Hanya aspek yang semesternya sudah tiba yang dihitung: aspek semester
+ * depan belum boleh terisi, jadi bukan "bolong". Seorang mahasiswa dianggap lengkap bila tidak ada
+ * komponen kosong pada aspek yang sudah terbuka.
+ */
+function kelengkapan(daftar) {
+  let terisi = 0
+  let total = 0
+  let lengkap = 0
+  for (const m of daftar) {
+    let bolong = false
+    for (const a of hitungTranskrip(m).aspek) {
+      if (a.terkunci) continue
+      terisi += a.komponenTerisi
+      total += a.komponenTotal
+      if (a.komponenKosong.length) bolong = true
+    }
+    if (!bolong) lengkap++
+  }
+  return {
+    mahasiswaLengkap: lengkap,
+    mahasiswaBolong: daftar.length - lengkap,
+    komponenTerisi: terisi,
+    komponenTotal: total,
+    // Dibulatkan satu desimal, tetapi tidak pernah 100 selama masih ada komponen kosong (99,96 bukan 100).
+    persen: !total ? null : terisi === total ? 100 : Math.min(99.9, Math.round((terisi / total) * 1000) / 10),
+  }
+}
+
+/**
+ * Satu baris per angkatan untuk halaman Angkatan & Sertifikat: berapa mahasiswa, seberapa lengkap nilainya,
+ * sudah boleh dikunci atau belum, dan siapa yang mengunci serta kapan. Hanya membaca; mengunci tetap lewat
+ * `kunci`. Rincian berhak/tidak berhak sengaja tidak ikut (mahal dihitung untuk semua angkatan sekaligus):
+ * layar memintanya per angkatan lewat `pratinjau`.
+ *
+ * `siapKunciOtomatis` = boleh dikunci DAN nilai semua mahasiswa lengkap. Ini hanya tanda; belum ada yang
+ * mengunci sendiri. Angkatan yang terkunci tetap bisa diubah admin dengan alasan, dan dosen lewat usulan.
+ */
+export async function ringkasan() {
+  const [daftarAngkatan, mhs] = await Promise.all([
+    db.angkatan.findMany({ orderBy: [{ periodeTahun: 'desc' }, { periodeSemester: 'desc' }] }),
+    db.mahasiswa.findMany({ include: SERTA_MAHASISWA, orderBy: { nim: 'asc' } }),
+  ])
+  const nama = await petaNama(daftarAngkatan.map((a) => a.dikunciOleh))
+
+  const perAngkatan = new Map()
+  for (const m of mhs) {
+    if (!perAngkatan.has(m.angkatanId)) perAngkatan.set(m.angkatanId, [])
+    perAngkatan.get(m.angkatanId).push(susunMahasiswa(m))
+  }
+
+  return {
+    angkatan: daftarAngkatan.map((a) => {
+      const daftar = perAngkatan.get(a.id) ?? []
+      const kalender = semesterKalender(intakeDari(a))
+      const alasanTidakBoleh = alasanBelumBoleh(a, kalender, daftar.length)
+      const lengkap = kelengkapan(daftar)
+      const semuaLengkap = daftar.length > 0 && lengkap.mahasiswaBolong === 0
+      const terkunci = a.status === 'TERKUNCI'
+      return {
+        angkatanId: a.id,
+        label: a.label,
+        tahun: a.tahun,
+        periode: a.periodeTahun,
+        semesterMasuk: a.periodeSemester === 'GENAP' ? 'Genap' : 'Ganjil',
+        status: terkunci ? 'terkunci' : 'aktif',
+        semesterKalender: kalender,
+        jumlahMahasiswa: daftar.length,
+        kelengkapan: lengkap,
+        semuaLengkap,
+        bolehDikunci: alasanTidakBoleh == null,
+        alasanTidakBoleh,
+        siapKunciOtomatis: alasanTidakBoleh == null && semuaLengkap,
+        dikunciOleh: terkunci ? (nama.get(a.dikunciOleh) ?? null) : null,
+        dikunciPada: terkunci ? waktuWib(a.dikunciPada) : null,
+      }
+    }),
+  }
 }
 
 /**

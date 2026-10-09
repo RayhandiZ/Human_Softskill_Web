@@ -5,8 +5,9 @@
    - angkatan, fakultas, dan prodi hanya ditanam bila tabelnya masih kosong.
      Setelah itu basis datalah sumbernya (halaman membacanya dari sana), jadi
      perubahan di basis data tidak boleh dikembalikan ke isi kode;
-   - komponen asesmen disamakan dengan curriculum.js, karena kurikulum masih
-     dibaca halaman dari kode;
+   - kurikulum (komponen dan indikator) hanya ditanam dari curriculum.js
+     selama penanda VERSI_KURIKULUM belum ada. Sesudah itu basis datalah
+     sumbernya, jadi isi yang sudah diubah admin tidak ditimpa;
    - akun hanya dibuat bila emailnya belum ada.
 
    Jalankan:  npm run db:seed
@@ -17,7 +18,8 @@ import 'dotenv/config'
 import bcrypt from 'bcryptjs'
 import { PrismaClient } from '@prisma/client'
 import { MASTER_AWAL } from '../src/lib/data.js'
-import { KOMPONEN } from '../src/lib/curriculum.js'
+import { KUNCI_VERSI_KURIKULUM } from '../src/lib/curriculum.js'
+import { tanamKurikulum } from './tanam-kurikulum.js'
 
 const db = new PrismaClient()
 const SANDI_AWAL = 'umn12345' // hanya untuk pengembangan
@@ -79,10 +81,12 @@ async function main() {
   }
   const angkatanAda = new Set((await db.angkatan.findMany({ select: { id: true } })).map((a) => a.id))
 
-  /* 3. Komponen asesmen, dari curriculum.js. */
-  for (const k of KOMPONEN) {
-    const isi = { aspekId: k.aspekId, sumber: k.sumber, label: k.label, jenis: k.jenis, resmi: k.status === 'resmi' }
-    await db.komponen.upsert({ where: { id: k.id }, update: isi, create: { id: k.id, ...isi } })
+  /* 3. Kurikulum — hanya selama penanda VERSI_KURIKULUM belum ada. */
+  if (await db.konfigurasi.findUnique({ where: { kunci: KUNCI_VERSI_KURIKULUM } })) {
+    console.log('Kurikulum sudah dikelola di basis data, dilewati.')
+  } else {
+    await tanamKurikulum(db)
+    console.log('Kurikulum ditanam dari curriculum.js.')
   }
 
   /* 4. Akun awal. */
@@ -134,6 +138,7 @@ async function main() {
     prodi: await db.programStudi.count(),
     angkatan: await db.angkatan.count(),
     komponen: await db.komponen.count(),
+    indikator: await db.indikator.count(),
     pengguna: await db.pengguna.count(),
     mahasiswa: await db.mahasiswa.count(),
     dosen: await db.dosen.count(),

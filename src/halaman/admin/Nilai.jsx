@@ -570,6 +570,22 @@ function TandaBaris({ nama, nilai, aktif, buka, onBuka, onPilih }) {
   )
 }
 
+/* Alasan perubahan: server hanya menuntutnya bila yang disentuh angkatan terkunci atau aspek final manual. */
+function IsianAlasan({ nilai, onChange, label = 'Alasan perubahan', className = '' }) {
+  const t = useTeks()
+  return (
+    <label className={'block ' + className}>
+      <span className="mb-1.5 block label">{t(label)}</span>
+      <input
+        className="field !py-2.5"
+        value={nilai}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={t('Wajib, minimal 10 karakter, bila angkatan atau aspek sudah terkunci')}
+      />
+    </label>
+  )
+}
+
 function InputManual({
   semester,
   sumber,
@@ -589,6 +605,7 @@ function InputManual({
   const [draf, setDraf] = useState({})
   const [tanda, setTanda] = useState({})
   const [tandaBuka, setTandaBuka] = useState(null)
+  const [alasanUbah, setAlasanUbah] = useState('')
   const [pesan, setPesan] = useState(null)
   const [galat, setGalat] = useState('')
   const [sibuk, setSibuk] = useState(false)
@@ -650,6 +667,7 @@ function InputManual({
         aktor,
         cara: 'manual',
         entri: sah.map(({ nim, komponenId, nilai }) => ({ nim, komponenId, nilai })),
+        alasan: alasanUbah,
       })
     } catch (e) {
       setGalat(e.message)
@@ -661,6 +679,7 @@ function InputManual({
     setDraf({})
     setTanda({})
     setTandaBuka(null)
+    setAlasanUbah('')
     try {
       setPesan({ batch, status: await terapkanStatus(batch, aktor, tandaBaris) })
     } catch (e) {
@@ -812,6 +831,10 @@ function InputManual({
         </table>
       </div>
 
+      <div className="border-t border-line px-5 py-4 sm:px-6">
+        <IsianAlasan nilai={alasanUbah} onChange={setAlasanUbah} />
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-6">
         <div className="flex items-center gap-2">
           <button type="button" className="btn-ghost !px-3 !py-2 text-[13px]" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
@@ -866,6 +889,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
   const [analisa, setAnalisa] = useState(null)
   const [peta, setPeta] = useState({})
   const [agregasi, setAgregasi] = useState('rata')
+  const [alasanUbah, setAlasanUbah] = useState('')
   const [pesan, setPesan] = useState(null)
   const [galat, setGalat] = useState('')
   const [sibuk, setSibuk] = useState(false)
@@ -958,6 +982,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
         aktor,
         cara: analisa.format === 'baku' ? 'import' : 'import-mentah',
         entri: entriSiap,
+        alasan: alasanUbah,
       })
     } catch (e) {
       setGalat(e.message)
@@ -967,6 +992,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
     setAnalisa(null)
     setPeta({})
     setTeks('')
+    setAlasanUbah('')
     if (berkasRef.current) berkasRef.current.value = ''
     try {
       setPesan({ batch, status: await terapkanStatus(batch, aktor) })
@@ -1327,14 +1353,17 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
       ) : null}
 
       {adaAnalisa ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <button type="button" className="btn-primary" disabled={!entriSiap.length || sibuk} onClick={proses}>
-            <IconUpload size={17} />
-            {tr('Isi otomatis {n} nilai', { n: entriSiap.length })}
-          </button>
-          <span className="text-[12.5px] text-ink-2">
-            {analisa.format === 'mentah' ? hasilMentah?.ringkas : null}
-          </span>
+        <div className="space-y-3">
+          <IsianAlasan nilai={alasanUbah} onChange={setAlasanUbah} />
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" className="btn-primary" disabled={!entriSiap.length || sibuk} onClick={proses}>
+              <IconUpload size={17} />
+              {tr('Isi otomatis {n} nilai', { n: entriSiap.length })}
+            </button>
+            <span className="text-[12.5px] text-ink-2">
+              {analisa.format === 'mentah' ? hasilMentah?.ringkas : null}
+            </span>
+          </div>
         </div>
       ) : null}
 
@@ -1469,6 +1498,7 @@ function Koreksi({ aktor }) {
 function RiwayatBatch() {
   const t = useTeks()
   const [galat, setGalat] = useState('')
+  const [alasanRollback, setAlasanRollback] = useState('')
   return (
     <Card>
       <CardHeader
@@ -1513,6 +1543,12 @@ function RiwayatBatch() {
         </p>
       ) : null}
 
+      {BATCH_SESI.length && !modeLokal() ? (
+        <div className="border-b border-line px-5 py-4 sm:px-6">
+          <IsianAlasan label="Alasan rollback" nilai={alasanRollback} onChange={setAlasanRollback} />
+        </div>
+      ) : null}
+
       {BATCH_SESI.length ? (
         <ul className="divide-y divide-line">
           {BATCH_SESI.map((b) => (
@@ -1532,10 +1568,11 @@ function RiwayatBatch() {
                   type="button"
                   onClick={async () => {
                     try {
-                      if (!(await rollbackBatch(b.id))) {
+                      if (!(await rollbackBatch(b.id, alasanRollback))) {
                         setGalat(t('Batch ini sudah dibatalkan sebelumnya.'))
                         return
                       }
+                      setAlasanRollback('')
                       setGalat('')
                     } catch (e) {
                       setGalat(e.message)

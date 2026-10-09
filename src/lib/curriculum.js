@@ -1,4 +1,4 @@
-import { CONFIG } from './config.js'
+import { CONFIG, terapkanKonfigurasi } from './config.js'
 
 /* Struktur enam lapis; lihat README.md › Struktur kurikulum enam lapis. */
 
@@ -403,6 +403,29 @@ export const INDIKATOR = [
 
 export function getIndikator(aspekId) {
   return INDIKATOR.filter((x) => x.aspekId === aspekId)
+}
+
+/* -------------------------- isi dari basis data --------------------------- */
+
+/* Sejak seed, komponen, indikator, dan timpaan CONFIG dibaca dari basis data; isi di atas menjadi
+   bawaan bila basis data belum di-seed atau tidak bisa dibaca. Lihat README.md › Kurikulum dari basis data. */
+
+/** Penanda di tabel Konfigurasi; naik setiap kali kurikulum diubah, jadi pemuat tahu kapan membaca ulang. */
+export const KUNCI_VERSI_KURIKULUM = 'VERSI_KURIKULUM'
+
+export const KOMPONEN_BAWAAN = KOMPONEN.map((x) => ({ ...x }))
+export const INDIKATOR_BAWAAN = INDIKATOR.map((x) => ({ ...x, sumber: [...x.sumber] }))
+
+const isiUlang = (larik, isi) => larik.splice(0, larik.length, ...isi)
+
+/**
+ * Memasang kurikulum dari basis data (disusun src/server/kurikulum.js). Larik diisi ulang DI TEMPAT karena modul
+ * lain memegang rujukannya sejak dimuat. Tanpa isi, semuanya kembali ke bawaan dari kode.
+ */
+export function isiKurikulum({ komponen, indikator, konfigurasi } = {}) {
+  isiUlang(KOMPONEN, komponen?.length ? komponen : KOMPONEN_BAWAAN.map((x) => ({ ...x })))
+  isiUlang(INDIKATOR, indikator ?? INDIKATOR_BAWAAN.map((x) => ({ ...x, sumber: [...x.sumber] })))
+  terapkanKonfigurasi(konfigurasi ?? {})
 }
 
 /* ------------------------------- pencarian -------------------------------- */

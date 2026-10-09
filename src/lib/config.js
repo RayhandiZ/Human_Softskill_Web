@@ -9,6 +9,10 @@ export const CONFIG = {
 
   /* ---- bobot ------------------------------------------------------------- */
 
+  /* 'merata' | 'per-sumber'; lihat README.md › Aturan bobot. */
+  MODE_BOBOT_KOMPONEN: 'merata', // MENUNGGU KONFIRMASI
+
+  // Hanya dipakai bila MODE_BOBOT_KOMPONEN === 'per-sumber'.
   BOBOT_SUMBER: { PDP: 30, MK: 50, ENGAGEMENT: 20 }, // MENUNGGU KONFIRMASI
   BOBOT_KOMPONEN_MK: { TUGAS: 30, SIKAP: 20, UTS: 20, UAS: 30 }, // MENUNGGU KONFIRMASI
 
@@ -60,6 +64,7 @@ export function withConfig(patch, fn) {
 export const MENUNGGU_KONFIRMASI = [
   'ASPEK_A3_SEMESTER',
   'ASPEK_C1_SEMESTER',
+  'MODE_BOBOT_KOMPONEN',
   'BOBOT_SUMBER',
   'BOBOT_KOMPONEN_MK',
   'MODE_AGREGASI',
@@ -68,3 +73,34 @@ export const MENUNGGU_KONFIRMASI = [
 ]
 
 export const CATATAN_BOBOT_SEMENTARA = 'Bobot masih bersifat sementara dan dapat berubah.'
+
+/* ------------------------- timpaan dari basis data ------------------------ */
+
+// Bawaan dari kode, diambil sebelum ada yang menimpanya.
+const BAWAAN = structuredClone(CONFIG)
+
+/** Kunci yang boleh ditimpa dari tabel Konfigurasi. TOTAL_SEMESTER_PROGRAM sengaja tidak: itu struktur program. */
+export const KUNCI_DAPAT_DIUBAH = [
+  'ASPEK_A3_SEMESTER',
+  'ASPEK_C1_SEMESTER',
+  'MODE_BOBOT_KOMPONEN',
+  'BOBOT_SUMBER',
+  'BOBOT_KOMPONEN_MK',
+  'BOBOT_ASPEK',
+  'BOBOT_ASPEK_KUSTOM',
+  'MODE_AGREGASI',
+  'AMBANG_SERTIFIKAT',
+  'PENGUNCIAN_ASPEK',
+  'IZINKAN_FINAL_DRAFT',
+]
+
+/**
+ * CONFIG = bawaan dari kode, ditimpa `simpanan` (isi tabel Konfigurasi). Kunci di luar KUNCI_DAPAT_DIUBAH
+ * diabaikan, kunci yang tidak disebut kembali ke bawaannya, dan pelanggan hanya diberi tahu bila ada yang berubah.
+ */
+export function terapkanKonfigurasi(simpanan = {}) {
+  const baru = {}
+  for (const k of KUNCI_DAPAT_DIUBAH) baru[k] = structuredClone(simpanan[k] ?? BAWAAN[k])
+  const berubah = KUNCI_DAPAT_DIUBAH.some((k) => JSON.stringify(baru[k]) !== JSON.stringify(CONFIG[k]))
+  return berubah ? updateConfig(baru) : CONFIG
+}
