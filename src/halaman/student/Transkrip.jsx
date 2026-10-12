@@ -300,7 +300,12 @@ export default function Transkrip({ student }) {
               )}
             </p>
           </div>
-          <button type="button" className="btn-primary" onClick={() => setFormKoreksi((v) => !v)}>
+          <button
+            type="button"
+            className="btn-sorot"
+            aria-expanded={formKoreksi}
+            onClick={() => setFormKoreksi((v) => !v)}
+          >
             <IconPencil size={17} />
             {teks(formKoreksi ? 'Tutup formulir' : 'Ajukan koreksi nilai')}
           </button>

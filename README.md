@@ -198,7 +198,6 @@ src/lib/
   nav.jsx         TautanNav, padanan <NavLink> untuk Next
   kurva.js        kurva monoton untuk grafik tren — lihat Grafik
   tunjuk.js       tooltip (WCAG 1.4.13)
-  penandaGeser.js sorotan menu sidebar
   layanan.js      tautan lupa sandi SSO dan kontak layanan UMN
 
 src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
@@ -228,7 +227,8 @@ scripts/          skrip uji; dataContoh.js berisi data contoh (290 mahasiswa, 5 
                   audit log) yang dimuat uji lewat isiData() — website tidak memakainya
 
 src/components/   Ui, Icons, Navbar, Laci, MenuAkun, Footer, FilterBar, ErrorBoundary,
-                  TombolBahasa, PilihanMengambang, PenyuntingFoto, LayananTambahan, LogoPdp
+                  TombolBahasa, PilihanMengambang, PenyuntingFoto, LihatFoto, LayananTambahan,
+                  LogoPdp, Lipat
 src/components/charts/  ChartFrame, RadarCluster (6 sumbu), AspectBars (10 aspek), MutuDonut,
                   PerkembanganAngkatan
 src/halaman/      Login, Profil (satu halaman profil untuk tiga peran)
@@ -866,9 +866,21 @@ panah kiri/kanan). Bagian yang mudah rusak:
   `.animate-halaman` memakai `animation-fill-mode: backwards`, **bukan** `both`: dengan `both`,
   Chrome menahan `transform` sesudah animasi dan setiap elemen `fixed` di halaman ikut mengacu ke
   pembungkus itu, bukan ke layar.
-- Sorotan menu sidebar (`src/lib/penandaGeser.js`) diukur sebelum dilukis; penempatan pertama
-  dan perubahan ukuran langsung melompat tanpa meluncur.
+- Sorotan menu samping mahasiswa (`.menu-sorot`) digambar tiap butir sendiri dengan
+  `::before`/`::after` di bawah isinya (`isolation: isolate`). Butir aktif (`.menu-aktif`)
+  menampilkannya penuh; butir lain memunculkannya saat ditunjuk atau difokus: latarnya memudar
+  masuk sambil sedikit membesar, lalu garis kirinya tergambar dari tengah ke atas dan bawah
+  (`clip-path`). Efek tunjuk hanya untuk perangkat berkursor (`hover: hover`) supaya ketukan di
+  HP tidak meninggalkan sorotan.
+- Sorotan **tidak meluncur** antarbutir. Saat diklik, butir tujuan sudah tersorot karena
+  ditunjuk, jadi sorotan yang meluncur dari butir lama tampak dobel; kini sorotan lama memudar
+  dan yang baru tetap di tempat. Sorotan pindah seketika saat diklik (`tujuan`), sedangkan
+  `aria-current` tetap mengikuti halaman yang benar-benar terbuka.
 - Semua gerak dimatikan oleh blok `prefers-reduced-motion` di akhir `index.css`.
+- Semester di Peta Perjalanan membuka dan menutup lewat `Lipat.jsx`: tingginya meluncur dengan
+  baris grid `0fr` ↔ `1fr` (tanpa mengukur tinggi) dan isinya memudar. Isi baru dipasang saat
+  dibuka dan dilepas sesaat setelah animasi tutup selesai. Selama menutup, `id`-nya langsung
+  dilepas dan isinya `inert`, jadi bagi pembaca layar, Tab, dan uji, semester itu sudah tertutup.
 - Di halaman masuk, logo PDP ada di pita kertas yang kakinya tergulung ke luar (gulungan di depan
   kertas), dengan tongkat berkenop emas (`--accent`) di kedua ujung gulungan. Saat halaman dibuka, pita digelar sekali dari tepi atas panel kiri: gulungan turun dan
   kertas terbuka mengikutinya (`transform` dan `clip-path` dengan durasi dan kurva yang sama), lalu
@@ -910,6 +922,10 @@ panah kiri/kanan). Bagian yang mudah rusak:
   kunci berbeda untuk orang yang sama.
 - Foto disimpan 256 px, ditambah gambar asal yang diperkecil supaya bisa disunting ulang tanpa
   pecah. Berkas sumber dibatasi 5 MB.
+- Foto tersimpan bisa dilihat besar lewat `LihatFoto.jsx` (tekan fotonya atau tombol Lihat). Yang
+  ditampilkan potongan 256 px itu sendiri, paling lebar 320 px supaya tidak pecah. Penampilnya
+  dipasang di `<body>` lewat portal supaya tidak terpotong kartu, ditutup dengan Esc, tombol X,
+  atau klik latar, dan fokus kembali ke tombol pemicunya.
 - Isian diperiksa ulang di server (`src/server/profil.js`): telepon dan ponsel 6–25 karakter
   berisi angka, spasi, atau `+ ( ) - .`; alamat paling panjang 500 karakter (kolom
   `VARCHAR(500)`); foto harus berupa gambar.

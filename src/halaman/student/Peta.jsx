@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { StatusTeks, TandaDraft, Terkunci } from '../../components/Ui'
+import Lipat from '../../components/Lipat'
 import { IconCheck, IconChevronDown, IconChevronRight, IconClock, IconLock } from '../../components/Icons'
 import { CONFIG } from '../../lib/config'
 import { KOMPONEN, SUMBER_LIST, getCluster } from '../../lib/curriculum'
@@ -183,8 +184,8 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
           />
         </button>
 
-        {terbuka ? (
-          <div id={idIsi} className="space-y-5 border-t border-line px-5 py-5 sm:px-6">
+        <Lipat buka={terbuka} id={idIsi}>
+          <div className="space-y-5 border-t border-line px-5 py-5 sm:px-6">
             {terkunci ? (
               <p className="text-[14px] leading-relaxed text-ink-2">
                 {t(
@@ -246,7 +247,7 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
               </Link>
             ) : null}
           </div>
-        ) : null}
+        </Lipat>
       </div>
     </li>
   )
@@ -299,15 +300,6 @@ export default function Peta() {
           />
         ))}
       </ol>
-
-      <p className="max-w-4xl text-[13px] leading-relaxed text-ink-3">
-        {teks('Nilai datang dari jalur {daftar}.', {
-          daftar: SUMBER_LIST.filter((s) => KOMPONEN.some((k) => k.sumber === s.id))
-            .map((s) => s.nama)
-            .join(', '),
-        })}{' '}
-        {teks('Kode kecil di samping tiap kegiatan menunjukkan aspek mana yang menerima nilainya.')}
-      </p>
     </div>
   )
 }

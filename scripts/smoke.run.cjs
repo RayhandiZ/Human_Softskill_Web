@@ -181,7 +181,7 @@ const RUTE = [
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -636,6 +636,26 @@ const RUTE = [
   console.log((rusakFoto.length ? 'GAGAL  ' : 'OK     ') + 'penyunting foto profil')
   for (const [ket, ok] of cekFoto) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
+  /* -------------------------- penampil foto profil ------------------------ */
+  console.log('')
+  const hLihat = await ujiLihatFoto('/mahasiswa/profil')
+  const cekLihat = [
+    ['fotonya dan tombol Lihat sama-sama bisa membuka penampil', hLihat.duaPemicu],
+    ['penampil tertutup sebelum ditekan', hLihat.tertutupAwal],
+    ['penampil terbuka setelah tombol Lihat ditekan', hLihat.terbuka],
+    ['penampil dipasang langsung di body', hLihat.diBody],
+    ['yang ditampilkan foto yang tersimpan', hLihat.fotoTersimpan],
+    ['fokus pindah ke tombol tutup', hLihat.fokusDiTutup],
+    ['Esc menutup penampil', hLihat.tertutupEsc],
+    ['fokus kembali ke tombol Lihat', hLihat.fokusKembali],
+    ['menekan fotonya juga membuka penampil', hLihat.terbukaDariFoto],
+    ['tombol tutup menutup penampil', hLihat.tertutupTombol],
+  ]
+  const rusakLihat = cekLihat.filter(([, ok]) => !ok)
+  gagal += rusakLihat.length
+  console.log((rusakLihat.length ? 'GAGAL  ' : 'OK     ') + 'penampil foto profil')
+  for (const [ket, ok] of cekLihat) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
+
   /* ------------------------- segarkan data mahasiswa ---------------------- */
   console.log('')
   w.localStorage.setItem('sk5c.session', SESI.admin)
@@ -962,9 +982,10 @@ const RUTE = [
 
   const pm = await ujiPenandaMenu()
   const cekPm = [
-    ['lima butir menu bisa diukur', pm.jumlahButir === 5],
-    ['tanpa tata letak, latar statis tetap menandai halaman aktif', pm.cadanganAwal],
-    ['penanda tidak dipasang selama belum bisa diukur', pm.tanpaPenandaTakTerukur],
+    ['lima butir menu', pm.jumlahButir === 5],
+    ['sorotan awal ada di halaman aktif', pm.awalDiHalamanAktif],
+    ['semua butir bisa disorot saat ditunjuk', pm.semuaBisaDisorot],
+    ['tidak ada lagi sorotan yang meluncur antarbutir', pm.tanpaSorotanMeluncur],
     ['isi halaman dibungkus animasi masuk', pm.isiBeranimasi],
     ['Ctrl+klik tidak memindahkan penanda', pm.pengubahDiam],
     ['klik biasa memindahkan penanda seketika', pm.pindahSeketika],

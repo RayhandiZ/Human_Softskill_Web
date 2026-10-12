@@ -728,7 +728,7 @@ export default function Dashboard() {
             · {teks('Periode {periode}', { periode: labelPeriode(PERIODE_AKTIF) })}
           </p>
         </div>
-        <Link href="/mahasiswa/transkrip" className="btn-primary rounded-2xl px-5 py-3">
+        <Link href="/mahasiswa/transkrip" className="btn-sorot rounded-2xl px-5 py-3">
           <IconDocument size={18} />
           {teks('Buka Transkrip')}
         </Link>

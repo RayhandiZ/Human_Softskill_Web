@@ -139,6 +139,87 @@ body {
   }
   .btn-primary { @apply btn bg-brand text-white hover:brightness-110 active:brightness-95; }
   .btn-ghost   { @apply btn border border-line text-ink-2 hover:bg-surface-2; }
+  /* Rupa sorotan menu; saat ditunjuk, isian btn-primary tumbuh dari garis kirinya. Lebar isian
+     dalam persen, jadi tombol selebar apa pun terisi penuh tepat di akhir transisi. */
+  /* Warna latar sengaja dipisah: shorthand `background` dengan warna menambah lapis gambar kedua
+     (`none`) yang ukurannya `auto`, sehingga transisi background-size melompat. */
+  .btn-sorot {
+    @apply btn text-brand-ink;
+    background-color: var(--brand-soft);
+    background-image: linear-gradient(var(--brand), var(--brand));
+    background-position: left;
+    background-repeat: no-repeat;
+    background-size: 0% 100%;
+    box-shadow: inset 3px 0 0 var(--brand-ink);
+    transition:
+      background-size 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.15s ease;
+  }
+  /* aria-expanded: tombol pembuka formulir tetap terisi selama formulirnya terbuka. */
+  .btn-sorot:hover,
+  .btn-sorot:focus-visible,
+  .btn-sorot:active,
+  .btn-sorot[aria-expanded='true'] {
+    color: #ffffff;
+    background-size: 100% 100%;
+    box-shadow: inset 3px 0 0 var(--brand);
+  }
+  .btn-sorot:active {
+    transform: scale(0.98);
+  }
+  /* Sorotan butir menu samping: penuh pada butir aktif, muncul saat ditunjuk pada butir lain; lihat README.md › Gerak. */
+  .menu-sorot {
+    isolation: isolate;
+  }
+  .menu-sorot::before,
+  .menu-sorot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .menu-sorot::before {
+    background: var(--brand-soft);
+    opacity: 0;
+    transform: scale(0.94);
+    transition:
+      opacity 0.25s ease,
+      transform 0.3s cubic-bezier(0.22, 0.68, 0.35, 1);
+  }
+  .menu-sorot::after {
+    box-shadow: inset 3px 0 0 var(--brand-ink);
+    clip-path: inset(50% 0 50% 0);
+    transition: clip-path 0.3s cubic-bezier(0.22, 0.68, 0.35, 1) 0.05s;
+  }
+  .menu-sorot.menu-aktif,
+  .menu-sorot:focus-visible {
+    color: var(--brand-ink);
+  }
+  .menu-sorot.menu-aktif::before,
+  .menu-sorot:focus-visible::before {
+    opacity: 1;
+    transform: none;
+  }
+  .menu-sorot.menu-aktif::after,
+  .menu-sorot:focus-visible::after {
+    clip-path: inset(0);
+  }
+  @media (hover: hover) {
+    .menu-sorot:hover {
+      color: var(--brand-ink);
+    }
+    .menu-sorot:hover::before {
+      opacity: 1;
+      transform: none;
+    }
+    .menu-sorot:hover::after {
+      clip-path: inset(0);
+    }
+  }
   .field {
     @apply w-full rounded-xl border border-line bg-surface-2 px-4 py-3 text-sm text-ink
            placeholder:text-ink-3 transition focus:border-brand-ink focus:bg-surface;

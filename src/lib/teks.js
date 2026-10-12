@@ -309,6 +309,9 @@ export const EN = {
   Terpasang: 'Set',
   'Belum ada, inisial nama yang dipakai': 'None yet, initials are used instead',
   'Edit foto profil': 'Edit profile photo',
+  'Lihat foto profil': 'View profile photo',
+  'Tutup foto profil': 'Close profile photo',
+  Lihat: 'View',
   'Siap disimpan': 'Ready to save',
   'Foto akan dihapus': 'Photo will be removed',
   'JPG, PNG, WebP, atau GIF. Maksimal {mb} MB.': 'JPG, PNG, WebP, or GIF. Maximum {mb} MB.',
@@ -341,7 +344,6 @@ export const EN = {
   'Butuh bantuan?': 'Need help?',
   'Pilih saluran yang paling cocok dengan pertanyaan Anda.':
     'Pick the channel that best fits your question.',
-  'Datang langsung ke {tempat}': 'Visit us at {tempat}',
   'Kirim pesan, dibalas pada jam kerja': 'Send a message, answered during office hours',
   'Hubungi lewat telepon pada jam kerja': 'Call us during office hours',
   'Surel Softskill 5C': 'Soft Skill 5C email',

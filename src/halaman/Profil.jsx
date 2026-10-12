@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Avatar, Badge, Card } from '../components/Ui'
-import { IconAlert, IconCheck, IconChevronDown, IconPencil, IconUpload } from '../components/Icons'
+import { IconAlert, IconCheck, IconChevronDown, IconEye, IconPencil, IconUpload } from '../components/Icons'
 import { LABEL_PERAN, useAuth } from '../lib/auth'
 import { useTeks } from '../lib/bahasa'
 import { CONFIG } from '../lib/config'
@@ -9,6 +9,7 @@ import { PERIODE_AKTIF, dosenSesi, labelPeriode, mahasiswaSesi } from '../lib/da
 import { useStore } from '../lib/store'
 import { BATAS_FOTO_MB, bacaFoto, kunciSesi, simpanProfil, useProfil } from '../lib/profil'
 import PenyuntingFoto from '../components/PenyuntingFoto'
+import LihatFoto from '../components/LihatFoto'
 
 /* Kolom abu milik institusi, kolom putih milik pengguna; lihat README.md › Halaman profil. */
 
@@ -92,6 +93,7 @@ export default function Profil() {
   const [tersimpanPesan, setTersimpanPesan] = useState(false)
   const [seret, setSeret] = useState(false)
   const [sedangDiatur, setSedangDiatur] = useState(null)
+  const [lihatFoto, setLihatFoto] = useState(false)
   const berkasRef = useRef(null)
 
   /* Amati kunci akun, bukan objek `tersimpan`: objek itu berganti setiap kali disimpan. */
@@ -246,31 +248,52 @@ export default function Profil() {
       <Seksi judul={t('Foto profil')} terbuka={terbuka.has('foto')} onToggle={() => toggle('foto')}>
         <Baris label={t('Foto saat ini')}>
           <div className="flex items-center gap-4">
-            <Avatar
-              initials={inisial}
-              size={64}
-              src={tersimpan.foto}
-              alt={tersimpan.foto ? 'Foto profil yang tersimpan' : ''}
-            />
+            {tersimpan.foto ? (
+              <button
+                type="button"
+                onClick={() => setLihatFoto(true)}
+                aria-label={t('Lihat foto profil')}
+                className="shrink-0 cursor-zoom-in rounded-full transition hover:ring-4 hover:ring-brand-soft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-ink"
+              >
+                <Avatar initials={inisial} size={64} src={tersimpan.foto} />
+              </button>
+            ) : (
+              <Avatar initials={inisial} size={64} />
+            )}
             <span className="min-w-0 flex-1">
               <span className="block text-[14.5px] text-ink-2">
                 {t(tersimpan.foto ? 'Terpasang' : 'Belum ada, inisial nama yang dipakai')}
               </span>
-              {/* Sunting ulang memakai gambar asal, bukan potongan 256 px yang akan pecah. */}
               {tersimpan.foto ? (
-                <button
-                  type="button"
-                  onClick={() => setSedangDiatur(tersimpan.fotoSumber ?? tersimpan.foto)}
-                  aria-label={t('Edit foto profil')}
-                  className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold text-ink-2 transition hover:border-brand-ink hover:text-brand-ink"
-                >
-                  <IconPencil size={14} />
-                  Edit
-                </button>
+                <span className="mt-1.5 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setLihatFoto(true)}
+                    aria-label={t('Lihat foto profil')}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold text-ink-2 transition hover:border-brand-ink hover:text-brand-ink"
+                  >
+                    <IconEye size={14} />
+                    {t('Lihat')}
+                  </button>
+                  {/* Sunting ulang memakai gambar asal, bukan potongan 256 px yang akan pecah. */}
+                  <button
+                    type="button"
+                    onClick={() => setSedangDiatur(tersimpan.fotoSumber ?? tersimpan.foto)}
+                    aria-label={t('Edit foto profil')}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold text-ink-2 transition hover:border-brand-ink hover:text-brand-ink"
+                  >
+                    <IconPencil size={14} />
+                    Edit
+                  </button>
+                </span>
               ) : null}
             </span>
           </div>
         </Baris>
+
+        {lihatFoto && tersimpan.foto ? (
+          <LihatFoto src={tersimpan.foto} nama={nama} onTutup={() => setLihatFoto(false)} />
+        ) : null}
 
         <Baris
           label={t('Foto baru')}

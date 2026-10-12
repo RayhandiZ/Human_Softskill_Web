@@ -616,6 +616,40 @@ export async function ujiPenyuntingFoto(rute) {
   return hasil
 }
 
+// Penampil foto profil: dibuka dari fotonya atau tombol Lihat, ditutup dengan Esc atau tombol X.
+export async function ujiLihatFoto(rute) {
+  const { el, lepas } = await pasang(rute)
+  const hasil = {}
+
+  const pemicu = [...el.querySelectorAll('button[aria-label="Lihat foto profil"]')]
+  hasil.duaPemicu = pemicu.length === 2
+  const penampil = () => document.body.querySelector('[role="dialog"][aria-label="Foto profil"]')
+  hasil.tertutupAwal = !penampil()
+
+  /* Fokus dipasang dulu: klik buatan di jsdom tidak memindahkan fokus ke tombolnya. */
+  pemicu[1]?.focus()
+  await klik(pemicu[1])
+  const buka = penampil()
+  hasil.terbuka = !!buka
+  hasil.diBody = buka?.parentElement === document.body
+  hasil.fotoTersimpan = buka?.querySelector('img')?.getAttribute('src') === 'data:image/webp;base64,UJIFOTO'
+  hasil.fokusDiTutup = document.activeElement?.getAttribute('aria-label') === 'Tutup foto profil'
+
+  await act(async () => {
+    document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+  })
+  hasil.tertutupEsc = !penampil()
+  hasil.fokusKembali = document.activeElement === pemicu[1]
+
+  await klik(pemicu[0])
+  hasil.terbukaDariFoto = !!penampil()
+  await klik(penampil()?.querySelector('button[aria-label="Tutup foto profil"]'))
+  hasil.tertutupTombol = !penampil()
+
+  lepas()
+  return hasil
+}
+
 /**
  * Tombol "Segarkan data" di Data Mahasiswa.
  *
@@ -1144,16 +1178,17 @@ export async function ujiPenandaMenu() {
   el.addEventListener('click', (e) => e.preventDefault(), true)
 
   const nav = el.querySelector('aside nav')
-  const butir = () => [...nav.querySelectorAll('a[data-geser]')]
-  const bertanda = () => butir().filter((a) => a.className.includes('bg-brand-soft')).map((a) => a.dataset.geser)
-  const sekarang = () => butir().find((a) => a.getAttribute('aria-current') === 'page')?.dataset.geser
-  const cari = (href) => butir().find((a) => a.dataset.geser === href)
+  const butir = () => [...nav.querySelectorAll('a[href^="/mahasiswa"]')]
+  const bertanda = () => butir().filter((a) => a.classList.contains('menu-aktif')).map((a) => a.getAttribute('href'))
+  const sekarang = () => butir().find((a) => a.getAttribute('aria-current') === 'page')?.getAttribute('href')
+  const cari = (href) => butir().find((a) => a.getAttribute('href') === href)
 
   const hasil = {
     jumlahButir: butir().length,
-    // Tanpa tata letak penanda tidak bisa diukur, jadi latar statis harus tetap menandai halaman aktif.
-    cadanganAwal: bertanda().join() === '/mahasiswa',
-    tanpaPenandaTakTerukur: !nav.querySelector('div.relative > span[aria-hidden="true"]'),
+    awalDiHalamanAktif: bertanda().join() === '/mahasiswa',
+    semuaBisaDisorot: butir().every((a) => a.classList.contains('menu-sorot')),
+    // Sorotan digambar tiap butir sendiri; tidak boleh ada lagi lapisan sorotan yang meluncur.
+    tanpaSorotanMeluncur: !nav.querySelector('span[aria-hidden="true"].absolute'),
     isiBeranimasi: !!el.querySelector('main .animate-halaman'),
   }
 

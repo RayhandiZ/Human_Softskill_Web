@@ -10,8 +10,8 @@ export const KONTAK_UMN = {
     tautan: 'tel:+622154220808',
   },
   surel: {
-    tampil: 'softskill@umn.ac.id',
-    tautan: 'mailto:softskill@umn.ac.id',
+    tampil: 'humanskill@umn.ac.id',
+    tautan: 'mailto:humanskill@umn.ac.id',
   },
   whatsapp: {
     tampil: '+62 21 5422 0808',

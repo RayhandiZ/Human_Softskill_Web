@@ -47,7 +47,6 @@ export default function Footer({ pintasan = [] }) {
             <p>Jl. Scientia Boulevard, Gading Serpong,</p>
             <p>kel. Curug Sangereng, Kec. Kelapa Dua,</p>
             <p>Kab. Tangerang, Prop. Banten 15811, Indonesia</p>
-            <p className="pt-1">{t('Senin sampai Jumat, 08.00 hingga 17.00 WIB')}</p>
           </address>
         </section>
 

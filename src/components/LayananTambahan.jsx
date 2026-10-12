@@ -77,17 +77,6 @@ export default function LayananTambahan() {
               </li>
             ))}
           </ul>
-
-          <div className="border-t border-[color-mix(in_srgb,var(--border)_60%,transparent)] px-4 py-3">
-            <p className="flex items-start gap-1.5 text-[12px] leading-snug text-ink-3">
-              <IconClock size={13} className="mt-px shrink-0" />
-              {t(KONTAK_UMN.jam)}
-            </p>
-            <p className="mt-1.5 flex items-start gap-1.5 text-[12px] leading-snug text-ink-3">
-              <IconInfo size={13} className="mt-px shrink-0" />
-              {t('Datang langsung ke {tempat}', { tempat: KONTAK_UMN.helpdesk })}
-            </p>
-          </div>
         </div>
       ) : null}
 

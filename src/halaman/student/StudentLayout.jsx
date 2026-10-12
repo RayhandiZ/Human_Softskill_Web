@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { TautanNav } from '../../lib/nav'
-import { usePenandaGeser } from '../../lib/penandaGeser'
 import Footer from '../../components/Footer'
 import Laci from '../../components/Laci'
 import LogoPdp from '../../components/LogoPdp'
@@ -60,44 +59,32 @@ function DaftarMenu({ onPilih, besar = false }) {
 
   const cocok = (m) => (m.end ? jalur === m.to : jalur === m.to || jalur.startsWith(m.to + '/'))
   const aktif = tujuan ?? MENU.find(cocok)?.to ?? null
-  const { wadah, siap, gaya } = usePenandaGeser(aktif)
 
+  // Tiap butir menggambar sorotannya sendiri, jadi saat pindah menu tidak ada yang meluncur; lihat README.md › Gerak.
   return (
-    <div ref={wadah} className="relative">
-      {siap ? (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 rounded-2xl bg-brand-soft"
-          style={gaya}
-        />
-      ) : null}
-      <ul className="space-y-1">
-        {MENU.map(({ to, label, icon: Icon, end }) => (
-          <li key={to}>
-            <TautanNav
-              href={to}
-              end={end}
-              data-geser={to}
-              onClick={(e) => {
-                if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)) setTujuan(to)
-                onPilih?.(e)
-              }}
-              // aria-current tetap mengikuti halaman yang benar-benar terbuka; warna mengikuti penanda.
-              className={() =>
-                'relative flex items-center gap-3 rounded-2xl px-3.5 font-bold transition-colors duration-200 ease-[cubic-bezier(.22,.68,.35,1)] ' +
-                (besar ? 'py-3.5 text-[16px] ' : 'py-3 text-[14.5px] ') +
-                (to === aktif
-                  ? (siap ? '' : 'bg-brand-soft ') + 'text-brand-ink'
-                  : 'text-ink-2 hover:bg-surface-2 hover:text-ink')
-              }
-            >
-              <Icon size={20} className="shrink-0" />
-              <span className="truncate">{t(label)}</span>
-            </TautanNav>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul className="space-y-1">
+      {MENU.map(({ to, label, icon: Icon, end }) => (
+        <li key={to}>
+          <TautanNav
+            href={to}
+            end={end}
+            onClick={(e) => {
+              if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)) setTujuan(to)
+              onPilih?.(e)
+            }}
+            // aria-current tetap mengikuti halaman yang benar-benar terbuka; sorotan mengikuti tujuan klik.
+            className={() =>
+              'menu-sorot relative flex items-center gap-3 rounded-2xl px-3.5 font-bold transition-colors duration-200 ease-[cubic-bezier(.22,.68,.35,1)] ' +
+              (besar ? 'py-3.5 text-[16px] ' : 'py-3 text-[14.5px] ') +
+              (to === aktif ? 'menu-aktif text-brand-ink' : 'text-ink-2')
+            }
+          >
+            <Icon size={20} className="shrink-0" />
+            <span className="truncate">{t(label)}</span>
+          </TautanNav>
+        </li>
+      ))}
+    </ul>
   )
 }
 
