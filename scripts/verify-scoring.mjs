@@ -39,7 +39,7 @@ console.log(
   getAspekList()
     .filter((a) => getKomponen(a.id).some((k) => k.status === 'draft'))
     .map((a) => a.kode)
-    .join(', '),
+    .join(', ') || 'tidak ada',
 )
 
 console.log(garis('ANGKATAN — semesterAktif DITURUNKAN, bukan diinput'))

@@ -43,6 +43,7 @@ export const EN = {
   'Masuk ke dashboard': 'Sign in to the dashboard',
   'Masuk menggunakan akun SSO kampus.':
     'Sign in using your UMN SSO account.',
+  'Ayo semangat mencari human skill kamu.': 'Come on, let’s discover your human skills.',
   'Kata sandi': 'Password',
   'Lupa kata sandi?': 'Forgot password?',
   Sembunyikan: 'Hide',
@@ -169,8 +170,7 @@ export const EN = {
   'Program ini dijalani, tetapi tidak menghasilkan komponen nilai.':
     'This programme runs, but produces no graded component.',
   'Lihat rincian bobot di transkrip': 'See the weighting detail in the transcript',
-  'Tiap semester dijalani lewat tiga jalur: modul {pdp}, {mk}, dan program {eng}.':
-    'Each semester runs through three tracks: the {pdp} module, {mk}, and the {eng} programme.',
+  'Nilai datang dari jalur {daftar}.': 'Scores come from these tracks: {daftar}.',
   'Kode kecil di samping tiap kegiatan menunjukkan aspek mana yang menerima nilainya.':
     'The small code beside each activity shows which aspect receives its score.',
 

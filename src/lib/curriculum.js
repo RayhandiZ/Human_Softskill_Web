@@ -86,9 +86,9 @@ const ASPEK_DASAR = [
     area: 'A',
     cluster: 'CL1',
     semester: 1,
-    pdp: 'PDP-1',
+    pdp: 'PDP-1: Character & Mentoring 5C',
     mk: 'Religiositas',
-    engagement: 'Mentoring 5C',
+    engagement: null,
     deskripsi:
       'Menerapkan prinsip integritas, kejujuran, tanggung jawab, dan etika profesional dalam pengambilan keputusan serta pelaksanaan tanggung jawab akademik dan profesional.',
   },
@@ -100,9 +100,9 @@ const ASPEK_DASAR = [
     area: 'A',
     cluster: 'CL2',
     semester: 1,
-    pdp: 'PDP-1',
+    pdp: 'PDP-1: Character & Mentoring 5C',
     mk: 'Religiositas',
-    engagement: 'Mentoring 5C',
+    engagement: null,
     deskripsi:
       'Mengelola emosi, stres, dan tekanan secara adaptif serta menunjukkan ketangguhan dan pengendalian diri dalam menghadapi perubahan dan tantangan.',
   },
@@ -114,9 +114,9 @@ const ASPEK_DASAR = [
     area: 'A',
     cluster: 'CL1',
     semester: null, // dari CONFIG.ASPEK_A3_SEMESTER
-    pdp: 'PDP-1',
+    pdp: 'PDP-1: Character & Mentoring 5C',
     mk: 'Religiositas',
-    engagement: 'Mentoring 5C',
+    engagement: null,
     deskripsi:
       'Menunjukkan profesionalisme melalui tanggung jawab, komunikasi efektif, dan integritas, serta mampu bekerja sama, memimpin, mengelola diri, dan menghadapi tantangan kerja secara mandiri.',
   },
@@ -128,9 +128,9 @@ const ASPEK_DASAR = [
     area: 'A',
     cluster: 'CL3',
     semester: 2,
-    pdp: 'PDP-2',
+    pdp: 'PDP-2: Teamwork & Leadership',
     mk: 'Pancasila',
-    engagement: 'Teamwork & Leadership',
+    engagement: null,
     deskripsi:
       'Menunjukkan kemampuan berpikir analitis, pemecahan masalah, dan pengambilan keputusan yang logis dan sistematis berdasarkan data serta konteks situasional.',
   },
@@ -142,9 +142,9 @@ const ASPEK_DASAR = [
     area: 'B',
     cluster: 'CL4',
     semester: 2,
-    pdp: 'PDP-2',
+    pdp: 'PDP-2: Teamwork & Leadership',
     mk: 'Pancasila',
-    engagement: 'Teamwork & Leadership',
+    engagement: null,
     deskripsi:
       'Menunjukkan kerja tim yang efektif, beradaptasi dengan dinamika kelompok, berkontribusi pada tujuan bersama, dan luwes dalam mengambil peran.',
   },
@@ -156,9 +156,9 @@ const ASPEK_DASAR = [
     area: 'B',
     cluster: 'CL4',
     semester: 2,
-    pdp: 'PDP-2',
+    pdp: 'PDP-2: Teamwork & Leadership',
     mk: 'Pancasila',
-    engagement: 'Teamwork & Leadership',
+    engagement: null,
     deskripsi:
       'Membangun kepercayaan, menghargai perbedaan, menepati komitmen, dan menunjukkan rasa hormat kepada rekan dan atasan.',
   },
@@ -170,9 +170,9 @@ const ASPEK_DASAR = [
     area: 'B',
     cluster: 'CL5',
     semester: 3,
-    pdp: 'PDP-3',
+    pdp: 'PDP-3: Effective Communication',
     mk: 'Civics',
-    engagement: 'Effective Communication',
+    engagement: null,
     deskripsi:
       'Mendengarkan secara aktif, memahami perspektif orang lain, menyampaikan pesan dengan jelas, dan membangun komunikasi dua arah yang efektif.',
   },
@@ -184,9 +184,9 @@ const ASPEK_DASAR = [
     area: 'B',
     cluster: 'CL5',
     semester: 3,
-    pdp: 'PDP-3',
+    pdp: 'PDP-3: Effective Communication',
     mk: 'Civics',
-    engagement: 'Effective Communication',
+    engagement: null,
     deskripsi:
       'Menyelesaikan konflik secara konstruktif, menegosiasikan solusi menang-menang, menengahi perbedaan, dan menjaga profesionalisme saat terjadi ketegangan.',
   },
@@ -198,9 +198,9 @@ const ASPEK_DASAR = [
     area: 'C',
     cluster: 'CL6',
     semester: null, // dari CONFIG.ASPEK_C1_SEMESTER
-    pdp: 'PDP-2',
+    pdp: 'PDP-2: Teamwork & Leadership',
     mk: 'Pancasila',
-    engagement: 'Teamwork & Leadership',
+    engagement: null,
     deskripsi:
       'Menunjukkan kepemimpinan awal dengan memimpin tim, mendelegasikan, memotivasi rekan, menyelaraskan upaya tim dengan visi, dan mengambil keputusan yang bertanggung jawab.',
   },
@@ -212,9 +212,9 @@ const ASPEK_DASAR = [
     area: 'C',
     cluster: 'CL6',
     semester: 3,
-    pdp: 'PDP-3',
+    pdp: 'PDP-3: Effective Communication',
     mk: 'Civics',
-    engagement: 'Effective Communication',
+    engagement: null,
     deskripsi:
       'Menjunjung perilaku kerja profesional, menaati budaya organisasi, menunjukkan tanggung jawab sosial di tempat kerja, dan mematuhi etika institusi.',
   },
@@ -273,7 +273,8 @@ export const KOMPONEN = [
   k('A1-MK-T1', 'A1', 'MK', 'Tugas 1: Nilai Refleksi Proposal SLH', 'kognitif', 'resmi', 'TUGAS'),
   k('A1-MK-SIKAP', 'A1', 'MK', 'Sikap: nilai dosen + peer review 2 aspek', 'afektif', 'resmi', 'SIKAP'),
   k('A1-MK-UAS', 'A1', 'MK', 'UAS: Nilai laporan SLH', 'kognitif', 'resmi', 'UAS'),
-  k('A1-ENG-HADIR', 'A1', 'ENGAGEMENT', 'Mentoring 5C: Kehadiran', 'afektif', 'resmi'),
+  // Mentoring 5C dan Teamwork & Leadership termasuk PDP. ID lama (-ENG-) dipertahankan karena nilai dan riwayat merujuk ke ID ini.
+  k('A1-ENG-HADIR', 'A1', 'PDP', 'Mentoring 5C: Kehadiran', 'afektif', 'resmi'),
 
   /* ---- A.2: resmi ---- */
   k('A2-PDP-T1', 'A2', 'PDP', 'Tugas 1: Refleksi Diri', 'kognitif', 'resmi'),
@@ -282,35 +283,35 @@ export const KOMPONEN = [
   k('A2-MK-SIKAP', 'A2', 'MK', 'Sikap: nilai dosen + peer review 2 aspek', 'afektif', 'resmi', 'SIKAP'),
   k('A2-MK-UTS', 'A2', 'MK', 'UTS: Refleksi Pribadi', 'kognitif', 'resmi', 'UTS'),
   k('A2-MK-UAS', 'A2', 'MK', 'UAS: Refleksi Pribadi', 'kognitif', 'resmi', 'UAS'),
-  k('A2-ENG-REFLEKSI', 'A2', 'ENGAGEMENT', 'Mentoring 5C: Refleksi Pribadi 5C', 'afektif', 'resmi'),
+  k('A2-ENG-REFLEKSI', 'A2', 'PDP', 'Mentoring 5C: Refleksi Pribadi 5C', 'afektif', 'resmi'),
 
-  /* ---- A.3: draft (belum ada komponen resmi di dokumen sumber) ---- */
-  k('A3-PDP-T', 'A3', 'PDP', 'Tugas: Rencana pengembangan diri', 'kognitif', 'draft'),
-  k('A3-MK-T', 'A3', 'MK', 'Tugas: Peer-assessment PBL', 'afektif', 'draft', 'TUGAS'),
-  k('A3-MK-SIKAP', 'A3', 'MK', 'Sikap: Kedisiplinan & kemandirian', 'afektif', 'draft', 'SIKAP'),
-  k('A3-MK-UAS', 'A3', 'MK', 'UAS: Refleksi kemandirian', 'kognitif', 'draft', 'UAS'),
-  k('A3-ENG-PARTISIPASI', 'A3', 'ENGAGEMENT', 'Mentoring 5C: Partisipasi', 'afektif', 'draft'),
+  /* ---- A.3: resmi ---- */
+  k('A3-PDP-T', 'A3', 'PDP', 'Tugas: Rencana pengembangan diri', 'kognitif', 'resmi'),
+  k('A3-MK-T', 'A3', 'MK', 'Tugas: Peer-assessment PBL', 'afektif', 'resmi', 'TUGAS'),
+  k('A3-MK-SIKAP', 'A3', 'MK', 'Sikap: Kedisiplinan & kemandirian', 'afektif', 'resmi', 'SIKAP'),
+  k('A3-MK-UAS', 'A3', 'MK', 'UAS: Refleksi kemandirian', 'kognitif', 'resmi', 'UAS'),
+  k('A3-ENG-PARTISIPASI', 'A3', 'PDP', 'Mentoring 5C: Partisipasi', 'afektif', 'resmi'),
 
-  /* ---- A.4: draft ---- */
-  k('A4-PDP-T', 'A4', 'PDP', 'Tugas: Studi kasus pengambilan keputusan', 'kognitif', 'draft'),
-  k('A4-MK-T', 'A4', 'MK', 'Tugas: Analisis kasus kebangsaan', 'kognitif', 'draft', 'TUGAS'),
-  k('A4-MK-SIKAP', 'A4', 'MK', 'Sikap: Ketelitian & penalaran', 'afektif', 'draft', 'SIKAP'),
-  k('A4-MK-UTS', 'A4', 'MK', 'UTS: Ujian analisis', 'kognitif', 'draft', 'UTS'),
-  k('A4-ENG-FASILITATOR', 'A4', 'ENGAGEMENT', 'Teamwork & Leadership: Penilaian fasilitator', 'afektif', 'draft'),
+  /* ---- A.4: resmi ---- */
+  k('A4-PDP-T', 'A4', 'PDP', 'Tugas: Studi kasus pengambilan keputusan', 'kognitif', 'resmi'),
+  k('A4-MK-T', 'A4', 'MK', 'Tugas: Analisis kasus kebangsaan', 'kognitif', 'resmi', 'TUGAS'),
+  k('A4-MK-SIKAP', 'A4', 'MK', 'Sikap: Ketelitian & penalaran', 'afektif', 'resmi', 'SIKAP'),
+  k('A4-MK-UTS', 'A4', 'MK', 'UTS: Ujian analisis', 'kognitif', 'resmi', 'UTS'),
+  k('A4-ENG-FASILITATOR', 'A4', 'PDP', 'Teamwork & Leadership: Penilaian fasilitator', 'afektif', 'resmi'),
 
-  /* ---- B.1: draft ---- */
-  k('B1-PDP-T', 'B1', 'PDP', 'Tugas: Kontribusi dalam kelompok', 'kognitif', 'draft'),
-  k('B1-MK-T', 'B1', 'MK', 'Tugas: Proyek kelompok kebangsaan', 'kognitif', 'draft', 'TUGAS'),
-  k('B1-MK-SIKAP', 'B1', 'MK', 'Sikap: Peer-assessment kelompok', 'afektif', 'draft', 'SIKAP'),
-  k('B1-MK-UAS', 'B1', 'MK', 'UAS: Laporan kerja kelompok', 'kognitif', 'draft', 'UAS'),
-  k('B1-ENG-FASILITATOR', 'B1', 'ENGAGEMENT', 'Teamwork & Leadership: Penilaian fasilitator', 'afektif', 'draft'),
+  /* ---- B.1: resmi ---- */
+  k('B1-PDP-T', 'B1', 'PDP', 'Tugas: Kontribusi dalam kelompok', 'kognitif', 'resmi'),
+  k('B1-MK-T', 'B1', 'MK', 'Tugas: Proyek kelompok kebangsaan', 'kognitif', 'resmi', 'TUGAS'),
+  k('B1-MK-SIKAP', 'B1', 'MK', 'Sikap: Peer-assessment kelompok', 'afektif', 'resmi', 'SIKAP'),
+  k('B1-MK-UAS', 'B1', 'MK', 'UAS: Laporan kerja kelompok', 'kognitif', 'resmi', 'UAS'),
+  k('B1-ENG-FASILITATOR', 'B1', 'PDP', 'Teamwork & Leadership: Penilaian fasilitator', 'afektif', 'resmi'),
 
-  /* ---- B.2: draft ---- */
-  k('B2-PDP-T', 'B2', 'PDP', 'Tugas: Komitmen & kesepakatan tim', 'kognitif', 'draft'),
-  k('B2-MK-T', 'B2', 'MK', 'Tugas: Studi keberagaman', 'kognitif', 'draft', 'TUGAS'),
-  k('B2-MK-SIKAP', 'B2', 'MK', 'Sikap: Peer review rasa hormat & komitmen', 'afektif', 'draft', 'SIKAP'),
-  k('B2-MK-UAS', 'B2', 'MK', 'UAS: Refleksi relasi kerja', 'kognitif', 'draft', 'UAS'),
-  k('B2-ENG-FASILITATOR', 'B2', 'ENGAGEMENT', 'Teamwork & Leadership: Penilaian fasilitator', 'afektif', 'draft'),
+  /* ---- B.2: resmi ---- */
+  k('B2-PDP-T', 'B2', 'PDP', 'Tugas: Komitmen & kesepakatan tim', 'kognitif', 'resmi'),
+  k('B2-MK-T', 'B2', 'MK', 'Tugas: Studi keberagaman', 'kognitif', 'resmi', 'TUGAS'),
+  k('B2-MK-SIKAP', 'B2', 'MK', 'Sikap: Peer review rasa hormat & komitmen', 'afektif', 'resmi', 'SIKAP'),
+  k('B2-MK-UAS', 'B2', 'MK', 'UAS: Refleksi relasi kerja', 'kognitif', 'resmi', 'UAS'),
+  k('B2-ENG-FASILITATOR', 'B2', 'PDP', 'Teamwork & Leadership: Penilaian fasilitator', 'afektif', 'resmi'),
 
   /* ---- B.3: resmi ---- */
   k('B3-PDP-T2', 'B3', 'PDP', 'Tugas 2: Dilema Win-Win', 'kognitif', 'resmi'),
@@ -322,12 +323,12 @@ export const KOMPONEN = [
   k('B4-MK-T1', 'B4', 'MK', 'Tugas 1: Peer-Assessment Group (UAS)', 'afektif', 'resmi', 'TUGAS'),
   k('B4-MK-UAS', 'B4', 'MK', 'UAS: Refleksi Pribadi (UAS-1)', 'kognitif', 'resmi', 'UAS'),
 
-  /* ---- C.1: draft ---- */
-  k('C1-PDP-T', 'C1', 'PDP', 'Tugas: Peran kepemimpinan dalam tim', 'kognitif', 'draft'),
-  k('C1-MK-T', 'C1', 'MK', 'Tugas: Kepemimpinan pada proyek kelompok', 'kognitif', 'draft', 'TUGAS'),
-  k('C1-MK-SIKAP', 'C1', 'MK', 'Sikap: Peer review kepemimpinan', 'afektif', 'draft', 'SIKAP'),
-  k('C1-MK-UAS', 'C1', 'MK', 'UAS: Refleksi kepemimpinan', 'kognitif', 'draft', 'UAS'),
-  k('C1-ENG-FASILITATOR', 'C1', 'ENGAGEMENT', 'Teamwork & Leadership: Penilaian fasilitator', 'afektif', 'draft'),
+  /* ---- C.1: resmi ---- */
+  k('C1-PDP-T', 'C1', 'PDP', 'Tugas: Peran kepemimpinan dalam tim', 'kognitif', 'resmi'),
+  k('C1-MK-T', 'C1', 'MK', 'Tugas: Kepemimpinan pada proyek kelompok', 'kognitif', 'resmi', 'TUGAS'),
+  k('C1-MK-SIKAP', 'C1', 'MK', 'Sikap: Peer review kepemimpinan', 'afektif', 'resmi', 'SIKAP'),
+  k('C1-MK-UAS', 'C1', 'MK', 'UAS: Refleksi kepemimpinan', 'kognitif', 'resmi', 'UAS'),
+  k('C1-ENG-FASILITATOR', 'C1', 'PDP', 'Teamwork & Leadership: Penilaian fasilitator', 'afektif', 'resmi'),
 
   /* ---- C.2: resmi ---- */
   k('C2-PDP-T1', 'C2', 'PDP', 'Tugas 1: Paradigma Interdependensi', 'kognitif', 'resmi'),

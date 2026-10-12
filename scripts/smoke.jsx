@@ -4,7 +4,8 @@ import { createRoot } from 'react-dom/client'
 import { act } from 'react'
 import Penyedia from '../app/penyedia'
 import { RequireRole } from '../src/lib/auth'
-import { COHORTS, MASTER_AWAL, STUDENTS, getStudent, getStudentByNim, isiData, isiMaster, pengumpulanDosen } from '../src/lib/data'
+import { COHORTS, MASTER_AWAL, STUDENTS, getStudent, getStudentByNim, isiData, isiMaster, pengumpulanDosen, resetTranskripCache } from '../src/lib/data'
+import { getKomponenById } from '../src/lib/curriculum'
 import { DATA_CONTOH, DOSEN, PERSONA_SEMESTER, getDosenByEmail, getStudentByEmail } from './dataContoh'
 import { bersihkanPerubahan } from '../src/lib/store'
 import { aturJalur } from './palsu-next-navigation'
@@ -1324,26 +1325,39 @@ export async function ujiStatusPolos(rute) {
    boleh berwarna. Yang dijaga: warnanya dipakai pada TULISANNYA, bukan sebagai
    isian pil, dan warnanya merah — bukan kuning yang hanya 1,83:1 di atas kartu
    putih.
+
+   Kini semua komponen resmi, jadi gayanya diuji dengan menjadikan satu
+   komponen draft untuk sementara (komponenDraft).
    -------------------------------------------------------------------------- */
-export async function ujiTandaDraft(rute) {
-  const { el, lepas } = await pasang(rute)
+export async function ujiTandaDraft(rute, komponenDraft = null) {
+  const komponen = komponenDraft ? getKomponenById(komponenDraft) : null
+  const statusAsli = komponen?.status
+  if (komponen) komponen.status = 'draft'
+  resetTranskripCache()
 
-  const tanda = [...el.querySelectorAll('span')].filter((n) =>
-    /^\((Draft|Skema belum final)\)$/.test(n.textContent.trim()),
-  )
+  try {
+    const { el, lepas } = await pasang(rute)
 
-  const hasil = {
-    ada: tanda.length > 0,
-    berkurung: tanda.every((n) => n.textContent.trim().startsWith('(')),
-    merah: tanda.every((n) => n.className.includes('--critical')),
-    /* Tidak boleh ada isian pil: kelas latar berwarna apa pun. */
-    tanpaPil: tanda.every((n) => !/bg-\[|bg-brand-soft|bg-surface-2/.test(n.className)),
-    /* Kuning yang gagal ambang tidak boleh kembali. */
-    tanpaKuningTakTerbaca: !/text-\[var\(--warning\)\]/.test(el.innerHTML),
+    const tanda = [...el.querySelectorAll('span')].filter((n) =>
+      /^\((Draft|Skema belum final)\)$/.test(n.textContent.trim()),
+    )
+
+    const hasil = {
+      ada: tanda.length > 0,
+      berkurung: tanda.every((n) => n.textContent.trim().startsWith('(')),
+      merah: tanda.every((n) => n.className.includes('--critical')),
+      /* Tidak boleh ada isian pil: kelas latar berwarna apa pun. */
+      tanpaPil: tanda.every((n) => !/bg-\[|bg-brand-soft|bg-surface-2/.test(n.className)),
+      /* Kuning yang gagal ambang tidak boleh kembali. */
+      tanpaKuningTakTerbaca: !/text-\[var\(--warning\)\]/.test(el.innerHTML),
+    }
+
+    lepas()
+    return hasil
+  } finally {
+    if (komponen) komponen.status = statusAsli
+    resetTranskripCache()
   }
-
-  lepas()
-  return hasil
 }
 
 // Tombol cetak sertifikat: mati selama ada satu syarat pun yang belum terpenuhi.

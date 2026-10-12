@@ -25,7 +25,7 @@ import {
   IconX,
 } from '../../components/Icons'
 import { CONFIG } from '../../lib/config'
-import { SUMBER, SUMBER_LIST, getAspekSemester, getKomponen, getKomponenById } from '../../lib/curriculum'
+import { KOMPONEN, SUMBER, SUMBER_LIST, getAspekSemester, getKomponen, getKomponenById } from '../../lib/curriculum'
 import { bolehTandaiFinal, validasiBatchImport } from '../../lib/rules'
 import { susunCSV, unduhBerkas } from '../../lib/csv'
 import {
@@ -64,6 +64,9 @@ import { useTeks } from '../../lib/bahasa'
 
 const PAGE_SIZE = 10
 const SEMESTER_KOSONG = '— Pilih semester —'
+
+// Sumber tanpa satu pun komponen (kini Kemahasiswaan) tidak ditawarkan di pilihan.
+const sumberAktif = () => SUMBER_LIST.filter((s) => KOMPONEN.some((k) => k.sumber === s.id))
 
 
 const TANDA_BARIS = [
@@ -119,7 +122,7 @@ export default function Nilai() {
     return n >= 1 && n <= CONFIG.TOTAL_SEMESTER_PROGRAM ? 'Semester ' + n : SEMESTER_KOSONG
   })
   const [sumber, setSumber] = useState(() =>
-    ['PDP', 'MK', 'ENGAGEMENT'].includes(awal('sumber')) ? awal('sumber') : 'MK',
+    sumberAktif().some((s) => s.id === awal('sumber')) ? awal('sumber') : 'MK',
   )
   const [angkatanId, setAngkatanId] = useState(() =>
     COHORTS.some((c) => c.id === awal('angkatan')) ? awal('angkatan') : (COHORTS[0]?.id ?? null),
@@ -204,7 +207,7 @@ export default function Nilai() {
               label={t('Sumber penilaian')}
               value={SUMBER[sumber].label}
               onChange={(v) => setSumber(SUMBER_LIST.find((s) => s.label === v).id)}
-              options={SUMBER_LIST.map((s) => s.label)}
+              options={sumberAktif().map((s) => s.label)}
             />
             <p className="mt-1.5 text-[12px] text-ink-3">{SUMBER[sumber].nama}</p>
           </div>
@@ -1381,8 +1384,10 @@ function namaKolomMentah(k) {
   if (k.jenis === 'SIKAP') return 'Nilai Sikap'
   const angka = k.label.match(/\b(\d)\b/)
   if (k.jenis === 'TUGAS') return 'Tugas ' + (angka ? angka[1] : '1')
+  if (/mentoring/i.test(k.label)) return (k.label.split(':')[1]?.trim().split(' ')[0] ?? 'Nilai') + ' Mentoring'
+  if (/fasilitator/i.test(k.label)) return 'Nilai Fasilitator'
   if (k.sumber === 'PDP') return 'PDP Tugas ' + (angka ? angka[1] : '1')
-  return 'Kehadiran Mentoring'
+  return 'Nilai'
 }
 
 /* --------------------------- pengajuan koreksi ---------------------------- */

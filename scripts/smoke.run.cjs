@@ -71,7 +71,7 @@ const ISI = {
     [/Anda sedang menjalani Semester 2 dari 3/, 'posisi mahasiswa disebut di kepala halaman'],
     [/Anda di sini/, 'penanda posisi ada'],
     [/Anda di sini[\s\S]*Anda di sini/, 'penanda posisi hanya satu', false],
-    [/Pancasila[\s\S]{0,4000}Teamwork/, 'semester berjalan terbuka lebih dulu'],
+    [/PDP-2: Teamwork[\s\S]{0,4000}Pancasila/, 'semester berjalan terbuka lebih dulu'],
     [/Religiositas|Civics/, 'semester lain tertutup saat halaman dibuka', false],
   ],
   '/mahasiswa/profil': [
@@ -101,6 +101,8 @@ const ISI = {
     [/Pilih semester terlebih dahulu/, 'gerbang semester menutup area kerja'],
     [/Semester wajib dipilih sebelum data bisa dimasukkan/, 'dropdown semester ditandai wajib'],
     [/Semester 1 .*3 aspek/, 'tiap pilihan semester menyebut jumlah aspeknya'],
+    [/<option[^>]*>PDP<\/option>/, 'pilihan sumber penilaian tampil', true, true],
+    [/<option[^>]*>Kemahasiswaan<\/option>/, 'Kemahasiswaan tanpa komponen tidak ditawarkan sebagai sumber', false, true],
   ],
 
   '/dosen': [
@@ -425,6 +427,9 @@ const RUTE = [
     ['semester berjalan (2) terbuka lebih dulu', sama(hp.awal, [2]), JSON.stringify(hp.awal)],
     ['membuka Semester 1 menutup Semester 2', sama(hp.setelahSem1, [1]), JSON.stringify(hp.setelahSem1)],
     ['Semester 1 memuat kegiatan yang sudah dijalani', /Kegiatan yang sudah dijalani/.test(hp.sem1) && /Religiositas/.test(hp.sem1)],
+    ['Semester 1: Mentoring 5C ada di jalur PDP', /PDP-1: Character & Mentoring 5C[\s\S]*Mentoring 5C: Kehadiran[\s\S]*Religiositas/.test(hp.sem1)],
+    ['Semester 1: tanpa jalur Kemahasiswaan', !/Student Service & Engagement/.test(hp.sem1)],
+    ['Semester 3: Effective Communication di jalur PDP, tanpa jalur Kemahasiswaan', /PDP-3: Effective Communication/.test(hp.sem3) && !/Student Service & Engagement/.test(hp.sem3)],
     ['Semester 3 (terkunci) tetap bisa dibuka', sama(hp.setelahSem3, [3]), JSON.stringify(hp.setelahSem3)],
     ['Semester 3 memperlihatkan kegiatan yang akan datang', /Kegiatan yang akan dijalani/.test(hp.sem3) && /Civics/.test(hp.sem3)],
     /* R2: aspek yang belum dibuka tidak pernah punya angka, dan kegiatannya
@@ -771,9 +776,14 @@ const RUTE = [
     ['cetak: alamat kampus di kaki halaman', ct.alamat],
     ['cetak: tanpa grafik di kertas, hanya logo', ct.tanpaGrafik],
   ]
-  const dp = await ujiTandaDraft('/mahasiswa/peta')
-  const dt = await ujiTandaDraft('/mahasiswa/transkrip')
+  const dpResmi = await ujiTandaDraft('/mahasiswa/peta')
+  const dtResmi = await ujiTandaDraft('/mahasiswa/transkrip')
+  // A4-PDP-T ada di Semester 2, semester yang terbuka untuk DEMO-2.
+  const dp = await ujiTandaDraft('/mahasiswa/peta', 'A4-PDP-T')
+  const dt = await ujiTandaDraft('/mahasiswa/transkrip', 'A4-PDP-T')
   cekPolos.push(
+    ['peta: semua komponen resmi, tanpa penanda draft', !dpResmi.ada],
+    ['transkrip: semua komponen resmi, tanpa penanda draft', !dtResmi.ada],
     ['peta: ada penanda draft', dp.ada],
     ['peta: berkurung, bukan pil', dp.berkurung && dp.tanpaPil],
     ['peta: merah, bukan kuning', dp.merah],

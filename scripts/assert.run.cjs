@@ -17,20 +17,20 @@ w.localStorage.setItem('sk5c.session', JSON.stringify({ role:'student', studentI
   const html = await render('/mahasiswa/transkrip')
   const teks = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
   const cek = [
-    ['Kop transkrip',              /Transkrip Capaian Softskill/],
+    ['Kop transkrip',              /Transkrip Capaian/],
     ['Badge SEMENTARA',            /SEMENTARA/],
     ['Basis perhitungan (R3)',     /berdasarkan 7 dari 10 aspek/],
     ['Aspek terkunci (R2)',        /Dibuka pada Semester 3/],
     ['Grup semester',              /Semester 1 .*Semester 2 .*Semester 3/],
-    /* Penandanya kini teks merah berkurung, bukan lagi pil kuning. */
-    ['Penanda skema draft (R4)',   /\(Skema belum final\)/],
+    /* Semua komponen resmi, jadi penanda skema draft (R4) tidak boleh muncul. */
+    ['Tanpa penanda skema draft',  /Skema belum final/, false],
     ['Cluster lintas semester',    /CL6 baru dinilai sebagian|1\/2 aspek/],
     ['Catatan bukan nol (R2)',     /bukan bernilai nol/],
     ['Larangan tulis (R8)',        /tidak bisa mengubah nilai sendiri/],
   ]
   let gagal = 0
-  for (const [nama, re] of cek) {
-    const ok = re.test(teks)
+  for (const [nama, re, harusAda = true] of cek) {
+    const ok = re.test(teks) === harusAda
     if (!ok) gagal++
     console.log((ok ? 'LULUS ' : 'GAGAL ') + nama)
   }

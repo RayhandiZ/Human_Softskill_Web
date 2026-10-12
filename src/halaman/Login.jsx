@@ -5,8 +5,24 @@ import { IconAlert, IconTabBaru } from '../components/Icons'
 import LogoPdp from '../components/LogoPdp'
 import { useTeks } from '../lib/bahasa'
 import { SSO_LUPA_SANDI } from '../lib/layanan'
-import TombolBahasa from '../components/TombolBahasa'
 import { AREA } from '../lib/curriculum'
+
+/* Dipasang dua kali: di atas formulir untuk layar lebar, di dalam kolom formulir untuk layar sempit. */
+function JudulAplikasi({ className = '' }) {
+  const t = useTeks()
+  return (
+    <div className={'text-center ' + className}>
+      <p className="text-[30px] font-extrabold leading-none tracking-tight text-ink">
+        HUMAN <span className="text-[var(--accent-ink)]">SKILL</span>
+      </p>
+      <p className="mt-3 text-[15px] font-medium leading-relaxed text-ink-2">
+        <span aria-hidden="true" className="text-[var(--accent-ink)]">“</span>
+        {t('Ayo semangat mencari human skill kamu.')}
+        <span aria-hidden="true" className="text-[var(--accent-ink)]">”</span>
+      </p>
+    </div>
+  )
+}
 
 export default function Login() {
   const { user, login } = useAuth()
@@ -52,13 +68,14 @@ export default function Login() {
           <circle cx="100" cy="100" r="20" fill="white" />
         </svg>
 
-        <div className="flex items-start gap-4 self-start">
-          <LogoPdp className="h-[92px] w-auto text-white" />
-          <div className="flex h-[54px] items-center gap-4">
-            <span aria-hidden="true" className="h-10 w-px bg-white/30" />
-            <span className="text-[22px] font-extrabold tracking-tight">
-              HUMAN <span className="text-[var(--accent)]">SKILL</span>
-            </span>
+        {/* Pita kertas menggantung dari tepi atas panel, kakinya tergulung ke luar; lihat README.md › Gerak. */}
+        <div className="-mt-12 mb-8 self-start">
+          <div className="pita-logo">
+            <div className="pita-kertas">
+              <LogoPdp className="h-[84px] w-auto text-brand-deep" />
+            </div>
+            <span aria-hidden="true" className="pita-tongkat" />
+            <span aria-hidden="true" className="pita-gulungan" />
           </div>
         </div>
 
@@ -96,17 +113,13 @@ export default function Login() {
       </aside>
 
       {/* -------------------------- panel kanan --------------------------- */}
-      <main className="flex items-center justify-center bg-bg px-5 py-12 sm:px-10">
-        <div className="w-full max-w-[400px] animate-rise">
-          <div className="mb-6 flex justify-end">
-            <TombolBahasa nada="terang" />
-          </div>
-
-          <div className="mb-8 flex items-center justify-center gap-3 text-ink lg:hidden">
-            <LogoPdp keterangan={false} className="h-7 w-auto" />
-            <span aria-hidden="true" className="h-6 w-px bg-line" />
-            <span className="text-[15px] font-extrabold tracking-tight">HUMAN SKILL</span>
-          </div>
+      <main className="flex flex-col bg-bg px-5 pb-12 pt-6 sm:px-10 lg:pt-12">
+        <JudulAplikasi className="mx-auto mt-8 hidden w-full max-w-[400px] lg:block" />
+        {/* Di layar sempit kolom ini menempel ke atas; di layar lebar ia di tengah. */}
+        <div className="mx-auto w-full max-w-[400px] animate-rise lg:my-auto">
+          {/* Di layar lebar logo PDP ada di pita panel kiri. */}
+          <LogoPdp keterangan={false} className="block h-7 w-auto text-ink lg:hidden" />
+          <JudulAplikasi className="mb-8 mt-20 lg:hidden" />
 
           <h2 className="text-[26px] font-extrabold tracking-tight text-ink">
             {t('Masuk')}

@@ -35,6 +35,9 @@
   /* Amber untuk teks: --warning hanya 1,83:1 di kartu putih. */
   --warning-ink: #96640a;
 
+  /* Emas untuk teks besar: --accent hanya 2,04:1 di --bg, ini 3,52:1. */
+  --accent-ink: #a87a2c;
+
   /* Huruf mutu: satu hue bertingkat (skala berurutan). */
   --mutu-a: #1c5cab;
   --mutu-b: #2a78d6;
@@ -72,6 +75,9 @@
 
   /* Latar gelap: amber aslinya sudah 9,32:1. */
   --warning-ink: #fab219;
+
+  /* Latar gelap: emas aslinya sudah 9,82:1. */
+  --accent-ink: #e8b455;
 
   /* Slot kategorikal area (gelap). */
   --c1: #3987e5;
@@ -293,6 +299,115 @@ body {
 @keyframes geser { from { transform: translateX(-100%); } to { transform: none; } }
 
 .animate-pudar { animation: pudar .24s ease both; }
+
+/* ---------------------------- pita logo masuk ----------------------------- */
+/* Kertas berkaki gulungan yang menjorok 24px ke balik tepi atas panel; lihat README.md › Gerak. */
+.pita-logo {
+  --tinggi-kertas: 194px; /* 76 + logo 84 + 34 */
+  position: relative;
+  margin-top: -24px;
+  animation: pita-mantul 0.4s ease-out 0.85s backwards;
+}
+.pita-kertas {
+  height: var(--tinggi-kertas);
+  padding: 76px 24px 34px;
+  background: linear-gradient(rgb(8 42 82 / 0.1) 24px, transparent 38px), #ffffff;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+  animation: pita-buka 0.8s cubic-bezier(0.4, 0.1, 0.3, 1) 0.1s backwards;
+}
+/* Gulungan di depan kertas; menutup 8px terbawah kertas dan bergerak seiring tepi kertas yang terbuka. */
+.pita-gulungan {
+  position: absolute;
+  inset: auto -3px -8px;
+  height: 16px;
+  border-radius: 8px;
+  /* Lapis pertama: tepi ujung kertas yang melilit gulungan. */
+  background:
+    linear-gradient(transparent 66%, rgb(8 42 82 / 0.16) 66% 72%, transparent 72%),
+    linear-gradient(#c6cfdb, #ffffff 30%, #eef1f6 55%, #c0c9d6 85%, #95a1b3);
+  box-shadow:
+    inset 4px 0 3px -3px rgb(8 42 82 / 0.3),
+    inset -4px 0 3px -3px rgb(8 42 82 / 0.3),
+    0 10px 14px -8px rgb(0 0 0 / 0.6);
+  animation: pita-gulung 0.8s cubic-bezier(0.4, 0.1, 0.3, 1) 0.1s backwards;
+}
+/* Kertas meredup tepat sebelum melengkung masuk ke gulungan. */
+.pita-gulungan::before {
+  content: '';
+  position: absolute;
+  inset: auto 3px 100%;
+  height: 10px;
+  background: linear-gradient(transparent, rgb(8 42 82 / 0.1));
+}
+/* Tongkat berkenop emas menembus sumbu gulungan; dipasang sebelum gulungan, jadi bagian tengahnya tertutup. */
+.pita-tongkat {
+  --emas: linear-gradient(
+    color-mix(in srgb, var(--accent) 40%, white),
+    var(--accent) 50%,
+    color-mix(in srgb, var(--accent) 60%, black)
+  );
+  position: absolute;
+  inset: auto -16px -4.5px;
+  height: 9px;
+  /* Dua cincin dekat kenop, lalu batang 5px di sepanjang tongkat. */
+  background:
+    var(--emas) left 8px center / 3px 9px no-repeat,
+    var(--emas) right 8px center / 3px 9px no-repeat,
+    var(--emas) center / 100% 5px no-repeat;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.45));
+  animation: pita-gulung 0.8s cubic-bezier(0.4, 0.1, 0.3, 1) 0.1s backwards;
+}
+.pita-tongkat::before,
+.pita-tongkat::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 32%,
+    color-mix(in srgb, var(--accent) 35%, white),
+    var(--accent) 50%,
+    color-mix(in srgb, var(--accent) 55%, black)
+  );
+}
+.pita-tongkat::before {
+  left: -5px;
+}
+.pita-tongkat::after {
+  right: -5px;
+}
+/* Kiri dan kanan dilebihkan 20px supaya bayangan kertas tidak ikut terpotong. */
+@keyframes pita-buka {
+  from {
+    clip-path: inset(0 -20px calc(100% - 32px) -20px);
+  }
+  to {
+    clip-path: inset(0 -20px 0 -20px);
+  }
+}
+@keyframes pita-gulung {
+  from {
+    transform: translateY(calc(32px - var(--tinggi-kertas)));
+  }
+}
+@keyframes pita-mantul {
+  40% {
+    transform: translateY(5px);
+  }
+  75% {
+    transform: translateY(-1px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pita-logo,
+  .pita-kertas,
+  .pita-gulungan,
+  .pita-tongkat {
+    animation: none;
+  }
+}
 
 /* ---------------------------- layanan tambahan ---------------------------- */
 .layanan-panel {

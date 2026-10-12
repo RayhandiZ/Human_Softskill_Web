@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { StatusTeks, TandaDraft, Terkunci } from '../../components/Ui'
 import { IconCheck, IconChevronDown, IconChevronRight, IconClock, IconLock } from '../../components/Icons'
 import { CONFIG } from '../../lib/config'
-import { SUMBER, SUMBER_LIST, getCluster } from '../../lib/curriculum'
+import { KOMPONEN, SUMBER_LIST, getCluster } from '../../lib/curriculum'
 import { transkripOf } from '../../lib/data'
 import { useStore } from '../../lib/store'
 import { useStudent } from './StudentLayout'
@@ -89,14 +89,15 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
   const terkunci = keadaan === 'terkunci'
   const idIsi = 'semester-' + s.semester
 
+  // Jalur tanpa program dan tanpa kegiatan tidak ditampilkan, misalnya Kemahasiswaan di Semester 1.
   const jalur = SUMBER_LIST.map((sumber) => {
     const kunciNama = sumber.id === 'PDP' ? 'pdp' : sumber.id === 'MK' ? 'mk' : 'engagement'
     const nama = [...new Set(aspek.map((a) => a.aspek[kunciNama]).filter(Boolean))].join(', ')
     const kegiatan = aspek.flatMap((a) =>
       a.komponen.filter((k) => k.sumber === sumber.id).map((k) => ({ k, aspek: a.aspek })),
     )
-    return { sumber, nama: nama || sumber.label, kegiatan }
-  })
+    return { sumber, nama: nama || sumber.label, kegiatan, adaProgram: Boolean(nama) }
+  }).filter((j) => j.adaProgram || j.kegiatan.length)
 
   const semuaFinal = aspek.length > 0 && aspek.every((a) => a.status === 'final')
   const keterangan =
@@ -300,10 +301,10 @@ export default function Peta() {
       </ol>
 
       <p className="max-w-4xl text-[13px] leading-relaxed text-ink-3">
-        {teks('Tiap semester dijalani lewat tiga jalur: modul {pdp}, {mk}, dan program {eng}.', {
-          pdp: SUMBER.PDP.nama,
-          mk: SUMBER.MK.nama,
-          eng: SUMBER.ENGAGEMENT.label,
+        {teks('Nilai datang dari jalur {daftar}.', {
+          daftar: SUMBER_LIST.filter((s) => KOMPONEN.some((k) => k.sumber === s.id))
+            .map((s) => s.nama)
+            .join(', '),
         })}{' '}
         {teks('Kode kecil di samping tiap kegiatan menunjukkan aspek mana yang menerima nilainya.')}
       </p>

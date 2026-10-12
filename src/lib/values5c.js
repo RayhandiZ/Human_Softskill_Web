@@ -11,21 +11,27 @@ export const NILAI_5C = [
 export const MENTORING = {
   nama: 'Mentoring 5C',
   semester: 1,
+  sumber: 'PDP',
   ringkas:
-    'Program pendampingan semester 1 yang mengenalkan lima nilai inti UMN. Kehadiran dan refleksi pribadi peserta menjadi komponen asesmen pada aspek A.1 dan A.2.',
+    'Program pendampingan semester 1, bagian dari PDP, yang mengenalkan lima nilai inti UMN. Kehadiran, refleksi pribadi, dan partisipasi peserta menjadi komponen asesmen PDP pada aspek A.1 sampai A.3.',
   aspekTerkait: ['A1', 'A2', 'A3'],
 }
 
-export const PROGRAM_ENGAGEMENT = [
-  { semester: 1, nama: 'Mentoring 5C', ringkas: MENTORING.ringkas },
+// Program PDP per semester beserta pasangan MK Humaniora-nya.
+export const PROGRAM_PDP = [
+  { semester: 1, modul: 'PDP-1', nama: 'Character & Mentoring 5C', mk: 'Religiositas', ringkas: MENTORING.ringkas },
   {
     semester: 2,
+    modul: 'PDP-2',
     nama: 'Teamwork & Leadership',
-    ringkas: 'Pelatihan kerja tim dan kepemimpinan awal; penilaian fasilitator menyumbang ke aspek Area B dan C.',
+    mk: 'Pancasila',
+    ringkas: 'Pelatihan kerja tim dan kepemimpinan awal; penilaian fasilitator menyumbang ke aspek A.4, B.1, B.2, dan C.1.',
   },
   {
     semester: 3,
+    modul: 'PDP-3',
     nama: 'Effective Communication',
+    mk: 'Civics',
     ringkas: 'Pelatihan komunikasi efektif dan penanganan konflik untuk aspek B.3, B.4, dan C.2.',
   },
 ]

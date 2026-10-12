@@ -31,9 +31,12 @@ const KATA_JENIS = {
 }
 
 const KATA_SUMBER = {
-  PDP: ['pdp', 'personal development'],
+  PDP: [
+    'pdp', 'personal development', 'mentoring', 'kehadiran', 'presensi', 'absensi', 'hadir', 'partisipasi',
+    'fasilitator', 'teamwork', 'leadership',
+  ],
   MK: ['mk', 'kelas', 'dosen', 'kuliah'],
-  ENGAGEMENT: ['mentoring', 'kehadiran', 'presensi', 'absensi', 'hadir', 'partisipasi', 'fasilitator'],
+  ENGAGEMENT: ['kemahasiswaan', 'engagement'],
 }
 
 /* --------------------------- kemiripan kolom ------------------------------ */

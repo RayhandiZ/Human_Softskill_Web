@@ -8,7 +8,23 @@ berjalan paralel pada Semester 1–3: **PDP**, **Mata Kuliah Humaniora/Kebangsaa
 
 Nama produk tetap menyebut 5C karena itu istilah unit pengelola, tetapi **5C bukan sumbu
 penilaian** — ia materi Mentoring 5C di semester 1 yang menyumbang komponen asesmen ke aspek
-A.1 dan A.2. Sumbu penilaian adalah 10 aspek CPMK.
+A.1 sampai A.3. Sumbu penilaian adalah 10 aspek CPMK.
+
+Pembagian sumber penilaian:
+
+| Semester | PDP | MK Humaniora |
+|---|---|---|
+| 1 | PDP-1: Character & Mentoring 5C | Religiositas |
+| 2 | PDP-2: Teamwork & Leadership | Pancasila |
+| 3 | PDP-3: Effective Communication | Civics |
+
+- Komponen **Mentoring 5C** (kehadiran, refleksi pribadi, partisipasi) dan **penilaian fasilitator
+  Teamwork & Leadership** termasuk nilai **PDP**. ID komponennya tetap memakai `-ENG-`
+  (misalnya `A1-ENG-HADIR`, `A4-ENG-FASILITATOR`) karena nilai dan riwayat merujuk ke ID itu.
+- **Nilai sikap** termasuk **MK Humaniora** (komponen ber-`jenis` SIKAP).
+- **Kemahasiswaan** tidak lagi punya komponen nilai. Sumbernya masih ada di kode dan basis data,
+  tetapi disembunyikan di tempat yang mendaftar sumber: jalur Peta Perjalanan dan pilihan sumber
+  di Input Nilai. Bobotnya di `CONFIG.BOBOT_SUMBER` tidak berpengaruh selama tidak ada komponennya.
 
 ## Menjalankan
 
@@ -393,13 +409,17 @@ sementara tim dan belum dikonfirmasi unit pengelola (lihat Penguncian angkatan d
 
 ### Kenapa `IZINKAN_FINAL_DRAFT` ada
 
-Lima aspek (A.3, A.4, B.1, B.2, C.1) belum punya komponen asesmen resmi, jadi komponennya
-berstatus `draft`. Aturan R4 melarang aspek berkomponen draft menjadi `final`, sementara R5
-menuntut kesepuluh aspek final untuk menerbitkan sertifikat. Dua aturan itu bersama-sama
-membuat **tidak ada mahasiswa yang bisa disertifikasi** selama skema penilaian belum
-diresmikan. Saklar ini melonggarkan R4 supaya alur sertifikat tetap bisa diuji; aspek draft
-yang di-final tetap diberi penanda “skema belum final” di UI. Setel `false` begitu seluruh
-komponen resmi.
+Komponen berstatus `draft` menandai skema penilaian yang belum diresmikan. Aturan R4 melarang
+aspek berkomponen draft menjadi `final`, sementara R5 menuntut kesepuluh aspek final untuk
+menerbitkan sertifikat. Selama masih ada komponen draft, dua aturan itu bersama-sama membuat
+**tidak ada mahasiswa yang bisa disertifikasi**. Saklar ini melonggarkan R4 supaya alur
+sertifikat tetap bisa diuji; aspek draft yang di-final tetap diberi penanda “skema belum final”
+di UI.
+
+Kini seluruh komponen di `curriculum.js` berstatus `resmi`, termasuk A.3, A.4, B.1, B.2, dan
+C.1 yang dulu draft. Penanda (Draft) dan “skema belum final” tidak muncul lagi, dan saklar ini
+tidak berpengaruh. Saklar sengaja dibiarkan `true` sampai kolom `Komponen.resmi` di basis data
+yang memakai kurikulum dari basis data juga diperbarui; setelah itu setel `false`.
 
 ## Aturan bobot
 
@@ -417,8 +437,7 @@ porsinya, jadi nilai aspek sama dengan rata-rata komponen yang sudah terisi.
 | C.2 | 3 | 33,33 |
 
 Contoh: tugas A.1 bernilai 80 menyumbang 16 dari 20 poin. Aturan ini usulan tim dan belum
-dikonfirmasi unit pengelola. Komponen A.3, A.4, B.1, B.2, dan C.1 masih draft, jadi jumlah dan
-porsinya bisa berubah.
+dikonfirmasi unit pengelola.
 
 Mode `per-sumber` adalah aturan sebelumnya dan tetap bisa dipilih:
 
@@ -796,7 +815,6 @@ panah kiri/kanan). Bagian yang mudah rusak:
   jari turun. Klik itu diabaikan supaya tidak membalikkan pilihan yang baru diseret.
 - Selama diseret, transisi pil dimatikan, dan `touch-none` wajib supaya seretan di ponsel tidak
   ikut menggulir halaman.
-
 ### Grafik
 
 - **Kartu nilai akhir mahasiswa**: tren dua garis (nilai semester dan kumulatif) baru tampil bila
@@ -833,6 +851,8 @@ panah kiri/kanan). Bagian yang mudah rusak:
   sebagai teks di kartu putih, sedangkan `--critical` 4,80:1 (terang) dan 6,18:1 (gelap). Yang
   jarang boleh berwarna.
 - Teks amber memakai `--warning-ink` (5,09:1), bukan `--warning`.
+- Emas untuk teks di latar terang, seperti SKILL di atas formulir masuk, memakai `--accent-ink`
+  (3,52:1, cukup untuk teks besar), bukan `--accent` (2,04:1). Di latar gelap keduanya sama.
 - Lencana lonceng mahasiswa biru, bukan merah: komponen yang belum dinilai bukan galat.
 - Warna identitas hanya milik **area** (tiga slot kategorikal di `index.css`); cluster dan aspek
   dikenali lewat kode dan label. `--brand-ink` sengaja jauh lebih gelap dari `--c1` (ΔE 19,5)
@@ -849,6 +869,14 @@ panah kiri/kanan). Bagian yang mudah rusak:
 - Sorotan menu sidebar (`src/lib/penandaGeser.js`) diukur sebelum dilukis; penempatan pertama
   dan perubahan ukuran langsung melompat tanpa meluncur.
 - Semua gerak dimatikan oleh blok `prefers-reduced-motion` di akhir `index.css`.
+- Di halaman masuk, logo PDP ada di pita kertas yang kakinya tergulung ke luar (gulungan di depan
+  kertas), dengan tongkat berkenop emas (`--accent`) di kedua ujung gulungan. Saat halaman dibuka, pita digelar sekali dari tepi atas panel kiri: gulungan turun dan
+  kertas terbuka mengikutinya (`transform` dan `clip-path` dengan durasi dan kurva yang sama), lalu
+  pita memantul kecil. Jarak tempuh gulungan diambil dari
+  `--tinggi-kertas` (194px: ruang atas 76 + logo 84 + ruang bawah 34), jadi ubah bersama bila
+  ukuran logo atau ruangnya diganti. Pita menjorok 24px ke balik tepi atas supaya tetap menempel
+  saat memantul. Saat kurangi gerak aktif, animasinya dilepas sama sekali (`animation: none`),
+  karena blok global hanya memendekkan durasi dan jeda awalnya tetap berjalan.
 
 ### Cetak
 
