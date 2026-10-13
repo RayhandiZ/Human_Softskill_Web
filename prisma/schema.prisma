@@ -42,6 +42,13 @@ enum StatusPersetujuan {
    DISETUJUI 
    DITOLAK 
    }
+enum StatusPermintaan {         // permintaan admin kepada super admin
+  MENUNGGU
+  DISETUJUI
+  DITOLAK
+  DIBATALKAN                    // ditarik admin sebelum diputuskan
+  GAGAL                         // disetujui, tetapi tidak bisa dijalankan (mis. datanya sudah berubah)
+  }
 enum StatusAngkatan { 
   AKTIF 
   TERKUNCI 
@@ -56,6 +63,7 @@ model Pengguna {
   email        String     @unique
   passwordHash String
   peran        Peran
+  superAdmin   Boolean    @default(false)   // wewenang tertinggi; hanya bermakna bila peran = ADMIN, diisi lewat seed/basis data
   aktif        Boolean    @default(true)
   dibuat       DateTime   @default(now())
   mahasiswa    Mahasiswa?
@@ -145,6 +153,17 @@ model Komponen {                // sumber daftar tugas tiap aspek; isi awalnya d
   diubahOleh Int?
   diubahPada DateTime?
   nilai      Nilai[]
+}
+
+model Aspek {                   // teks aspek CPMK yang diubah dari layar; aspek tanpa baris memakai teks di curriculum.js
+  id         String    @id @db.VarChar(10)   // 'A1' ... 'C2'; struktur (kode, fase, area, cluster, semester) tetap di kode
+  nama       String
+  deskripsi  String    @db.Text
+  pdp        String?
+  mk         String?
+  engagement String?
+  diubahOleh Int?
+  diubahPada DateTime?
 }
 
 model Indikator {               // indikator perilaku per aspek; tampil di transkrip, tidak ikut dihitung
@@ -271,6 +290,23 @@ model UsulanEntri {
   komponenId String
   nilai      Float
   usulan     Usulan @relation(fields: [usulanId], references: [id], onDelete: Cascade)
+}
+
+model PermintaanAdmin {         // admin meminta, super admin menyetujui; pola yang sama dengan Usulan dosen
+  id               Int              @id @default(autoincrement())
+  aksi             String           @db.VarChar(60)   // 'UBAH_BOBOT', 'KUNCI_ANGKATAN', ...
+  isi              Json                               // isi permintaan persis seperti dikirim ke pintu API
+  ringkasan        Json?                              // bahan bacaan super admin, mis. dampak perubahan
+  alasan           String?          @db.Text
+  status           StatusPermintaan @default(MENUNGGU)
+  diajukanOleh     Int
+  diajukanPada     DateTime         @default(now())
+  diputuskanOleh   Int?
+  diputuskanPada   DateTime?
+  catatanKeputusan String?          @db.Text
+  hasil            Json?                              // hasil saat dijalankan, atau pesan galat bila GAGAL
+  @@index([status])
+  @@index([diajukanPada])
 }
 
 model Konfigurasi {             // pengaturan yang menimpa bawaan CONFIG di config.js, plus penanda VERSI_KURIKULUM

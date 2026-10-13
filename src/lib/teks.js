@@ -23,6 +23,7 @@ export const EN = {
   'Senin sampai Jumat, 08.00 hingga 17.00 WIB': 'Monday to Friday, 08.00 to 17.00 WIB',
 
   /* -------------------------------- peran -------------------------------- */
+  'Super Admin': 'Super Admin',
   Kemahasiswaan: 'Student Affairs',
   Dosen: 'Lecturer',
   Mahasiswa: 'Student',
@@ -326,8 +327,8 @@ export const EN = {
   'Cakupan program': 'Programme scope',
   'Semester 1 sampai {total}': 'Semester 1 to {total}',
   'Rata-rata minimal sertifikat': 'Certificate minimum average',
-  'Bobot dan rata-rata minimal diubah lewat berkas konfigurasi oleh pengelola sistem.':
-    'Weightings and the minimum average are changed in the configuration file by the system administrator.',
+  'Rata-rata minimal diubah lewat berkas konfigurasi oleh pengelola sistem. Bobot diubah di halaman Kurikulum CPMK.':
+    'The minimum average is changed in the configuration file by the system administrator. Weightings are changed on the CPMK Curriculum page.',
   Telepon: 'Phone',
   Ponsel: 'Mobile',
   Alamat: 'Address',
@@ -966,4 +967,155 @@ export const EN = {
   'Sertifikat Pembinaan Softskill 5C': '5C Softskill Development Certificate',
   'Syarat kelayakan': 'Eligibility requirements',
   'Tombol cetak aktif setelah seluruh syarat di bawah terpenuhi, tanpa terlewat satu pun.': 'The print button turns on once every requirement below is met, with none missing.',
+
+  /* ----------------------------- kurikulum: bobot ----------------------------- */
+  'Atur bobot komponen asesmen di setiap aspek. Bobot berlaku untuk semua angkatan, dan nilai yang sudah masuk langsung dihitung ulang dengannya.':
+    'Set the weights of the assessment components in each aspect. Weights apply to every cohort, and scores already entered are recalculated with them straight away.',
+  'Perlu diperbaiki': 'Needs fixing',
+  'Semester {n} · {k} komponen asesmen': 'Semester {n} · {k} assessment components',
+  'Cara menentukan bobot aspek ini': 'How this aspect is weighted',
+  'Dibagi otomatis': 'Split automatically',
+  'Atur manual': 'Set manually',
+  'Isi porsi setiap komponen dalam persen. Jumlahnya harus 100.': "Enter each component's share as a percentage. They must add up to 100.",
+  'Porsi dibagi rata ke semua komponen aspek ini.': 'The share is split evenly across every component of this aspect.',
+  'Porsi diturunkan dari bobot per sumber dan per jenis penilaian MK di bawah.':
+    'Shares follow the weights per source and per Humanities course assessment type below.',
+  'Porsi berlaku': 'Current share',
+  'Porsi baru': 'New share',
+  'Porsi baru {label}': 'New share for {label}',
+  Jumlah: 'Total',
+  Sikap: 'Attitude',
+  'Jumlah porsi harus 100%, sekarang {n}. Setiap isian berupa angka 0–100 dengan paling banyak dua desimal.':
+    'The shares must add up to 100%; they are now {n}. Each entry is a number from 0 to 100 with at most two decimals.',
+  'Setiap komponen harus diisi angka 0–100 dengan paling banyak dua desimal.':
+    'Every component needs a number from 0 to 100 with at most two decimals.',
+  'Cara membagi bobot otomatis': 'How automatic weights are split',
+  'Dipakai semua aspek yang bobotnya tidak diatur manual.': 'Used by every aspect whose weights are not set manually.',
+  'Rata ke semua komponen': 'Evenly across all components',
+  'Setiap komponen dalam satu aspek mendapat porsi yang sama, apa pun sumber dan jenisnya.':
+    'Every component in an aspect gets the same share, whatever its source and type.',
+  'Menurut sumber dan jenis penilaian': 'By source and assessment type',
+  'Porsi dibagi dulu per sumber penilaian, lalu porsi MK Humaniora dibagi lagi per jenis penilaian.':
+    'Shares are split by assessment source first, then the Humanities course share is split again by assessment type.',
+  'Bobot per sumber': 'Weight per source',
+  'Bobot per jenis penilaian MK Humaniora': 'Weight per Humanities course assessment type',
+  'Harus berjumlah 100%.': 'Must add up to 100%.',
+  'Sumber atau jenis yang tidak ada di sebuah aspek dilewati, lalu sisanya dibagi ulang supaya aspek itu tetap berjumlah 100.':
+    'Sources or types an aspect does not have are skipped, and the rest are re-split so the aspect still adds up to 100.',
+  'Tinjau dan simpan': 'Review and save',
+  '{n} bagian diubah dan belum disimpan': '{n} sections changed and not yet saved',
+  'Ubah bobot salah satu aspek di atas untuk melihat dampaknya pada nilai mahasiswa di sini.':
+    'Change the weights of an aspect above to see the effect on student scores here.',
+  'Perbaiki isian yang ditandai lebih dulu: porsi setiap kelompok harus berjumlah 100.':
+    'Fix the marked entries first: the shares in each group must add up to 100.',
+  'Menghitung dampak…': 'Calculating the impact…',
+  'Alasan perubahan (wajib)': 'Reason for change (required)',
+  'Alasan perubahan (opsional)': 'Reason for change (optional)',
+  'Simpan bobot': 'Save weights',
+  'Batalkan perubahan': 'Discard changes',
+  'Bobot tersimpan.': 'Weights saved.',
+  'Bobot tersimpan. Nilai {n} mahasiswa dihitung ulang dengan bobot baru.':
+    'Weights saved. The scores of {n} students were recalculated with the new weights.',
+  'Setiap penyimpanan tercatat di log aktivitas beserta bobot sebelum dan sesudahnya. Nilai yang diinput tidak berubah; yang berubah hanya porsinya dalam nilai aspek.':
+    'Every save is recorded in the activity log with the weights before and after. Entered scores do not change; only their share of the aspect score does.',
+  'Tidak ada nilai mahasiswa yang berubah, karena aspek yang diubah belum punya nilai yang masuk. Bobot baru berlaku untuk nilai yang masuk berikutnya.':
+    'No student scores change, because the changed aspects have no scores entered yet. The new weights apply to scores entered from now on.',
+  '{n} naik huruf mutu': '{n} move up a grade',
+  '{n} turun huruf mutu': '{n} move down a grade',
+  '{n} menjadi berhak atas sertifikat': '{n} become eligible for a certificate',
+  '{n} tidak lagi berhak atas sertifikat': '{n} are no longer eligible for a certificate',
+  'Bila disimpan, nilai {n} dari {total} mahasiswa berubah.': 'If saved, the scores of {n} of {total} students change.',
+  'Huruf mutu dan kelayakan sertifikat tidak ada yang berubah.': 'No grades or certificate eligibility change.',
+  '{n} di antaranya ada di angkatan terkunci atau aspek yang sudah ditandai final. Alasan wajib diisi dan ikut tercatat.':
+    '{n} of them are in a locked cohort or an aspect already marked final. A reason is required and will be recorded.',
+  'Angkatan: {daftar}.': 'Cohorts: {daftar}.',
+  'Aspek yang berubah': 'Changed aspects',
+  'menjadi berhak sertifikat': 'becomes eligible for a certificate',
+  'tidak lagi berhak sertifikat': 'no longer eligible for a certificate',
+  'Ditampilkan {n} dari {total} mahasiswa yang berubah.': 'Showing {n} of {total} changed students.',
+
+  /* --------------------- persetujuan super admin ---------------------- */
+  'Persetujuan Admin': 'Admin Approvals',
+  'Permintaan Saya': 'My Requests',
+  Persetujuan: 'Approvals',
+  'Permintaan admin untuk mengubah data mahasiswa yang sudah lewat Semester 3. Setujui untuk menjalankannya persis seperti yang diajukan, atau tolak dengan catatan.':
+    'Admin requests to change the data of students who are past Semester 3. Approve to carry one out exactly as requested, or reject it with a note.',
+  'Perubahan pada mahasiswa yang sudah lewat Semester 3 menunggu persetujuan Super Admin sebelum berlaku. Selama masih menunggu, permintaan bisa Anda tarik.':
+    'Changes to students who are past Semester 3 wait for Super Admin approval before they take effect. While a request is pending, you can withdraw it.',
+  'Tidak ada permintaan yang menunggu': 'No pending requests',
+  'Belum ada riwayat permintaan': 'No request history yet',
+  'Permintaan yang disetujui dijalankan dengan isi yang sama seperti saat diajukan, atas nama admin pengaju, dan diperiksa ulang lebih dulu. Bila datanya sudah berubah, statusnya gagal dan perlu diajukan ulang. Setiap pengajuan dan keputusan tercatat di log aktivitas.':
+    'An approved request is carried out with exactly what was submitted, on behalf of the requesting admin, and is checked again first. If the data has changed in the meantime, it fails and must be submitted again. Every request and decision is recorded in the activity log.',
+  'Catatan penolakan wajib diisi. Admin perlu tahu alasannya.': 'A rejection note is required. The admin needs to know why.',
+  'Permintaan ini sudah diputuskan sebelumnya.': 'This request has already been decided.',
+  'Diajukan {oleh} pada {waktu}': 'Submitted by {oleh} on {waktu}',
+  'Diputuskan {oleh} pada {waktu}': 'Decided by {oleh} on {waktu}',
+  'Ditarik {oleh} pada {waktu}': 'Withdrawn by {oleh} on {waktu}',
+  '{n} mahasiswa yang sudah lewat Semester 3 tersentuh': '{n} students past Semester 3 affected',
+  Catatan: 'Note',
+  'Tersimpan sebagai batch {id}.': 'Saved as batch {id}.',
+  'Catatan keputusan (wajib bila ditolak)': 'Decision note (required when rejecting)',
+  'Setujui dan jalankan': 'Approve and carry out',
+  'Tarik permintaan': 'Withdraw request',
+  'Batalkan batch nilai': 'Roll back a score batch',
+  'Ubah tanda final/sementara': 'Change final/provisional flag',
+  'Setujui usulan nilai dosen': 'Approve lecturer score proposal',
+  'Ubah bobot': 'Change weights',
+  Ditarik: 'Withdrawn',
+  'Gagal dijalankan': 'Could not be carried out',
+  'Angkatan ini sudah lewat Semester 3. Perubahan yang Anda simpan dikirim ke Super Admin sebagai permintaan dan baru berlaku setelah disetujui. Alasan wajib diisi.':
+    'This cohort is past Semester 3. Changes you save are sent to the Super Admin as a request and take effect only once approved. A reason is required.',
+  'Permintaan {id} dikirim ke Super Admin.': 'Request {id} sent to the Super Admin.',
+  'Perubahan ini menyentuh mahasiswa yang sudah lewat Semester 3, jadi baru berlaku setelah Super Admin menyetujuinya.':
+    'This change affects students who are past Semester 3, so it takes effect only once the Super Admin approves it.',
+  'Lihat permintaan': 'View request',
+  'Ajukan penguncian': 'Request locking',
+  'Ajukan ke Super Admin': 'Send to Super Admin',
+
+  /* ------------------ penilaian aspek (Input Manual) ------------------ */
+  'Atur penilaian {kode}': 'Edit assessment for {kode}',
+  'Tutup pengaturan penilaian': 'Close assessment settings',
+  'Penilaian {kode}': 'Assessment for {kode}',
+  'Ubah teks aspek, komponen asesmen, dan bobotnya. Perubahan langsung berlaku untuk semua angkatan; nilai yang sudah diinput tidak berubah.':
+    'Edit the aspect text, its assessment components, and their weights. Changes apply to every cohort straight away; scores already entered do not change.',
+  'Ubah teks aspek, komponen asesmen, dan bobotnya. Perubahan dikirim ke Super Admin dan baru berlaku setelah disetujui.':
+    'Edit the aspect text, its assessment components, and their weights. Changes are sent to the Super Admin and take effect only once approved.',
+  Aspek: 'Aspect',
+  'Nama aspek': 'Aspect name',
+  'Kegiatan PDP': 'PDP activity',
+  'Mata kuliah': 'Course',
+  'Kegiatan Kemahasiswaan': 'Student Affairs activity',
+  Deskripsi: 'Description',
+  Urutan: 'Order',
+  Jenis: 'Type',
+  'Bagi rata': 'Split evenly',
+  'Naikkan {label}': 'Move {label} up',
+  'Turunkan {label}': 'Move {label} down',
+  'komponen baru': 'new component',
+  'Nama komponen': 'Component name',
+  'Misalnya: Tugas 3: Refleksi akhir': 'For example: Assignment 3: Final reflection',
+  'baru, ID dibuat saat disimpan': 'new, ID assigned on save',
+  'Sudah punya nilai: sumbernya tidak bisa diganti.': 'Already scored: its source cannot be changed.',
+  'sudah dinilai': 'already scored',
+  Resmi: 'Official',
+  'Bobot {label}': 'Weight of {label}',
+  Hapus: 'Remove',
+  'Tambah komponen': 'Add component',
+  'Jumlah {n}': 'Total {n}',
+  'Hapus memindahkan komponen ke arsip: tidak tampil dan tidak dihitung, tetapi nilainya tetap tersimpan dan bisa dipulihkan. Komponen yang sudah punya nilai tidak bisa diganti sumbernya.':
+    'Remove moves a component to the archive: it is hidden and not counted, but its scores are kept and it can be restored. A component that already has scores cannot change its source.',
+  'Arsip komponen ({n})': 'Archived components ({n})',
+  Pulihkan: 'Restore',
+  'Bila disimpan, hasil {n} dari {total} mahasiswa berubah.': 'If saved, the results of {n} of {total} students change.',
+  'Tidak ada hasil mahasiswa yang berubah.': 'No student results change.',
+  '{n} menjadi belum lengkap karena ada komponen baru': '{n} become incomplete because of the new component',
+  '{n} di angkatan terkunci atau aspek final': '{n} in a locked cohort or final aspect',
+  'Nilai lama komponen yang dipulihkan ikut dihitung lagi; pratinjau di layar belum memasukkannya, server yang menghitungnya.':
+    'Earlier scores of restored components count again; the on-screen preview does not include them yet, the server does.',
+  'Perubahan penilaian oleh admin baru berlaku setelah Super Admin menyetujuinya.':
+    'Assessment changes by an admin take effect only once the Super Admin approves them.',
+  'Penilaian {kode} tersimpan dan langsung berlaku untuk semua angkatan.': 'Assessment for {kode} saved and in effect for every cohort.',
+  'Simpan penilaian': 'Save assessment',
+  'Ubah penilaian aspek': 'Change aspect assessment',
+  '{n} mahasiswa terdampak': '{n} students affected',
 }

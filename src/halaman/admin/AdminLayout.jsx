@@ -8,13 +8,14 @@ import {
   IconDocument,
   IconCheckShield,
   IconGauge,
+  IconInbox,
   IconList,
   IconPrint,
   IconUpload,
   IconUsers,
 } from '../../components/Icons'
 import { PENGAJUAN_KOREKSI, PERIODE_AKTIF, labelPeriode } from '../../lib/data'
-import { useStore, usulanMenunggu } from '../../lib/store'
+import { permintaanMenunggu, useStore, usulanMenunggu } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
 import { kunciSesi, useProfil } from '../../lib/profil'
 import LoncengKemahasiswaan from './LoncengKemahasiswaan'
@@ -35,7 +36,14 @@ const NAV = [
   { to: '/admin/angkatan', label: 'Angkatan' },
 ]
 
-const KELOMPOK_LACI = (koreksi, usulan) => [
+/* Super admin menyetujui permintaan admin; admin biasa melihat permintaannya sendiri. */
+const MENU_PERSETUJUAN = (superAdmin) => ({
+  to: '/admin/persetujuan',
+  label: superAdmin ? 'Persetujuan Admin' : 'Permintaan Saya',
+  icon: IconInbox,
+})
+
+const KELOMPOK_LACI = (koreksi, usulan, permintaan, superAdmin) => [
   {
     judul: 'Workspace',
     item: [
@@ -43,6 +51,7 @@ const KELOMPOK_LACI = (koreksi, usulan) => [
       { to: '/admin/mahasiswa', label: 'Data Mahasiswa', icon: IconUsers },
       { to: '/admin/nilai', label: 'Input & Import Nilai', icon: IconUpload, lencana: koreksi || null },
       { to: '/admin/usulan', label: 'Persetujuan Nilai Dosen', icon: IconCheckShield, lencana: usulan || null },
+      { ...MENU_PERSETUJUAN(superAdmin), lencana: permintaan || null },
       { to: '/admin/sertifikat', label: 'Cetak Sertifikat', icon: IconPrint },
       { to: '/admin/angkatan', label: 'Angkatan', icon: IconCalendar },
     ],
@@ -67,10 +76,12 @@ export default function AdminLayout({ children }) {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar
-        links={NAV}
+        links={user?.superAdmin ? [...NAV, { to: '/admin/persetujuan', label: 'Persetujuan' }] : NAV}
         kelompok={KELOMPOK_LACI(
           PENGAJUAN_KOREKSI.filter((k) => k.status === 'menunggu').length,
           usulanMenunggu().length,
+          permintaanMenunggu().length,
+          Boolean(user?.superAdmin),
         )}
         aksi={<LoncengKemahasiswaan />}
         foto={foto}

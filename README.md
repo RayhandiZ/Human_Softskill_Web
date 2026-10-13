@@ -45,7 +45,7 @@ npm run smoke       # render tiap rute di DOM sungguhan, tanpa data lalu dengan 
 npm run assert      # periksa transkrip mematuhi R2, R3, R4, R8
 npm run test:nilai  # simpan batch, rollback, dan validasi import
 npm run test:profil # penyimpanan profil: kunci akun, simpan-muat, foto
-npm run test:db     # setiap pintu API terhadap MySQL, termasuk kunci angkatan, data terkunci, log, kurikulum;
+npm run test:db     # setiap pintu API terhadap MySQL, termasuk kunci angkatan, data terkunci, log, kurikulum, bobot;
                     # data uji (NIM dan angkatan berawalan UJI) dihapus lagi
 ```
 
@@ -126,8 +126,11 @@ Distribusi aspek per semester: **3 / 4 / 3**.
 Sejak `npm run db:seed`, daftar komponen (tabel `Komponen`), indikator perilaku (tabel `Indikator`),
 dan pengaturan kebijakan yang ditimpa (tabel `Konfigurasi`) dibaca dari basis data. Isinya di
 `curriculum.js` dan `config.js` menjadi **bawaan**: ditanam sekali oleh seed, lalu dipakai lagi
-hanya bila basis data belum di-seed atau tidak bisa dibaca. Ini persiapan halaman Kurikulum CPMK,
-tempat Kemahasiswaan nanti mengubahnya sendiri.
+hanya bila basis data belum di-seed atau tidak bisa dibaca. Dari halaman Kurikulum CPMK,
+Kemahasiswaan kini bisa mengubah bobotnya sendiri (lihat Mengubah bobot dari halaman Kurikulum), dan
+dari Input Manual teks aspek, komponen asesmen, serta bobotnya (lihat Mengubah penilaian dari Input
+Manual). Teks aspek yang diubah disimpan di tabel `Aspek`; aspek yang belum pernah diubah tetap
+memakai teks di `curriculum.js`. Indikator dan pengaturan lain belum bisa diubah dari layar.
 
 - **Penanda versi.** Baris `VERSI_KURIKULUM` di tabel `Konfigurasi` menandai bahwa kurikulum sudah
   dikelola di basis data. Seed hanya menanam kurikulum selama penanda itu belum ada, jadi isi yang
@@ -177,6 +180,10 @@ src/lib/
   curriculum.js   struktur: fase, area, cluster, 10 aspek; komponen dan indikator bawaan yang
                   diisi ulang dari basis data lewat isiKurikulum()
   scoring.js      seluruh rumus: bobot, nilai aspek/cluster/area/fase, nilai akhir, rubrik
+  bobot.js        susunan bobot yang diubah dari halaman Kurikulum: pemeriksaan, pratinjau
+                  dampak (dampakDari, juga dipakai penilaian.js), porsi per komponen
+  penilaian.js    penilaian satu aspek yang diubah dari Input Manual: pemeriksaan, perbedaan,
+                  denganAspek() untuk pratinjau; dipakai layar dan server
   rules.js        R1–R9 sebagai fungsi murni + validasi import
   data.js         sumber data halaman: periode akademik (semesterAktif dibatasi 3,
                   semesterKalender tidak); angkatan, fakultas, prodi (diisi dari basis data
@@ -215,14 +222,20 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
                   membaca log nilai dan log aktivitas (POST /api/log)
   profil.js       isian profil milik pemilik sesi
   kurikulum.js    kurikulum dan timpaan CONFIG dari basis data; siapkanKurikulum() untuk pintu API
+  bobot.js        menyimpan bobot dari halaman Kurikulum (POST /api/kurikulum/bobot)
+  persetujuan.js  permintaan admin kepada super admin: gerbang denganPersetujuan(), keputusan,
+                  penarikan (lihat Persetujuan super admin)
+  penilaian.js    menyimpan penilaian satu aspek (POST /api/kurikulum/penilaian)
 
 app/api/          masuk, keluar, sesi, data, nilai, nilai/rollback, penguncian, koreksi,
                   koreksi/keputusan, usulan, usulan/keputusan, profil, angkatan,
-                  angkatan/pratinjau, angkatan/kunci, log
+                  angkatan/pratinjau, angkatan/kunci, log, kurikulum/bobot, kurikulum/penilaian,
+                  persetujuan/keputusan, persetujuan/batal
 src/components/PemuatData.jsx  memuat /api/data begitu ada yang masuk dan menahan panel
                   sampai datanya tiba
 prisma/           skema, migrasi, seed.js (isi dasar), seed-contoh.js (data contoh),
-                  tanam-kurikulum.js (kurikulum bawaan, dipakai kedua seed)
+                  tanam-kurikulum.js (kurikulum bawaan, dipakai kedua seed dan simpanan bobot
+                  pertama)
 scripts/          skrip uji; dataContoh.js berisi data contoh (290 mahasiswa, 5 dosen,
                   audit log) yang dimuat uji lewat isiData() — website tidak memakainya
 
@@ -236,8 +249,10 @@ src/halaman/student/  StudentLayout, Dashboard, Transkrip, Peta, Riwayat, Sertif
                     LembarCetak, LembarSertifikat, LoncengBelumDinilai
 src/halaman/dosen/    DosenLayout, Masuk (Data Masuk), Nilai, Usulan, status
 src/halaman/admin/    AdminLayout, Overview, Students, StudentDetail, Programs, Nilai, Usulan,
-                    LoncengKemahasiswaan, StatusData, Kurikulum, Angkatan, Log
-                    (tiga terakhir masih "Segera Hadir")
+                    LoncengKemahasiswaan, StatusData, Kurikulum (bobot), Angkatan,
+                    PersetujuanAdmin, PermintaanTerkirim (bagian layar bersama),
+                    EditorPenilaian (di Input Manual), Log
+                    (Log masih "Segera Hadir")
 ```
 
 Arah ketergantungan satu arah: `curriculum → scoring → rules → UI`.
@@ -256,6 +271,72 @@ Akun awal dari `npm run db:seed` (kata sandi pengembangan, ganti sebelum dipakai
 | Mahasiswa | `rayhandi.zulmi@student.umn.ac.id` (NIM 00000103940, angkatan 2025 Genap) | `umn12345` |
 | Dosen | `simon.petrus@lecturer.umn.ac.id` (MK Humaniora Semester 1, Sistem Informasi) | `umn12345` |
 | Kemahasiswaan | `admin@umn.ac.id` | `umn12345` |
+| Super Admin | `super.admin@umn.ac.id` | `umn12345` |
+
+### Super admin
+
+Super admin adalah **wewenang tertinggi**: akun berperan `ADMIN` yang diberi tanda
+`Pengguna.superAdmin = true`. Karena perannya tetap admin, seluruh panel dan pintu API admin
+terbuka untuknya tanpa diubah satu per satu. Rantai pengawasannya: super admin → admin, dosen,
+mahasiswa; admin → dosen, mahasiswa; dosen → mahasiswa. Rancangan lengkapnya (persetujuan
+tindakan admin, halaman pengawasan) dikerjakan bertahap; Tahap 1 berisi fondasinya:
+
+- **Basis data** (migrasi `super_admin`): kolom `Pengguna.superAdmin` dan tabel
+  `PermintaanAdmin` (antrean permintaan admin kepada super admin, dipakai tahap berikutnya).
+- **Tanda hanya dari basis data**: diisi lewat seed atau langsung di tabel; tidak ada tombol di
+  website untuk mengangkat diri sendiri. Tanda pada akun dosen atau mahasiswa diabaikan.
+- **Server**: `penggunaDari()` dan `susunAkun()` membawa `superAdmin`; `tangani()` menerima
+  syarat `'superadmin'` untuk pintu yang hanya boleh dibuka super admin (`['admin']` tetap
+  meloloskan super admin). Jejak tindakannya tertulis "Super Admin", bukan "Biro Kemahasiswaan".
+- **Layar**: menu akun dan halaman profil menulis peran "Super Admin".
+
+Setelah menarik migrasi ini, hentikan `npm run dev`, jalankan `npx prisma generate`, lalu
+nyalakan lagi; server yang sudah jalan belum mengenal kolom `superAdmin`.
+
+### Persetujuan super admin (mahasiswa yang sudah lewat Semester 3)
+
+Begitu program sebuah angkatan lewat Semester 3 (`programSelesai()` di `src/lib/data.js`:
+`semesterKalender > TOTAL_SEMESTER_PROGRAM`), mahasiswanya **diurus Kemahasiswaan, bukan dosen**:
+
+- **Dosen lepas tangan.** Mahasiswa itu tidak lagi termuat di data dosen (`muatData()`), begitu
+  pula pengumpulannya, dan usulan nilai untuknya ditolak server (`usulkanNilai()`). Pengajuan
+  koreksi dari mahasiswa itu tetap masuk ke Kemahasiswaan seperti biasa.
+- **Admin biasa meminta, super admin menyetujui.** Tindakan admin biasa yang mengubah data
+  mahasiswa itu tidak langsung disimpan, tetapi menjadi `PermintaanAdmin` berstatus `MENUNGGU`;
+  datanya belum berubah sampai super admin menyetujuinya. Super admin sendiri tidak pernah tertahan.
+
+| Tindakan (`aksi`) | Pintu API | Ditahan bila |
+|---|---|---|
+| `SIMPAN_NILAI` | `/api/nilai` | ada baris untuk mahasiswa yang sudah lewat Semester 3 |
+| `ROLLBACK_NILAI` | `/api/nilai/rollback` | batch-nya menyentuh mahasiswa itu |
+| `UBAH_PENGUNCIAN` | `/api/penguncian` | tanda final/sementara mahasiswa itu **sungguh berubah** (Input Nilai memanggil pintu ini setelah setiap simpan; yang tidak berubah tidak diantre) |
+| `PUTUSKAN_USULAN` | `/api/usulan/keputusan` | menyetujui usulan untuk mahasiswa itu (menolak tidak ditahan) |
+| `KUNCI_ANGKATAN` | `/api/angkatan/kunci` | selalu, karena angkatan baru boleh dikunci sesudah Semester 3 |
+| `UBAH_BOBOT` | `/api/kurikulum/bobot` | nilai mahasiswa itu ikut berubah menurut pratinjau dampak |
+| `UBAH_PENILAIAN` | `/api/kurikulum/penilaian` | **selalu** untuk admin biasa, apa pun mahasiswanya (lihat Mengubah penilaian dari Input Manual) |
+
+Gerbangnya `denganPersetujuan(aksi)` di `src/server/persetujuan.js`, dipasang di pintu API
+(`tangani(request, ['admin'], denganPersetujuan('SIMPAN_NILAI'))`), jadi tidak bisa dilewati dengan
+memanggil API langsung. Alurnya:
+
+1. **Mengajukan.** Isi yang pasti gagal (baris nilai tidak sah, konfirmasi kunci salah, versi
+   kurikulum basi) ditolak saat itu juga. Alasan minimal 10 karakter wajib. Yang lolos disimpan
+   apa adanya di `PermintaanAdmin.isi`, beserta `ringkasan` untuk dibaca super admin (nilai lama →
+   baru, dampak, mahasiswa yang tersentuh). Jawabannya `{ menunggu: true, permintaan }`.
+2. **Memutuskan** (`POST /api/persetujuan/keputusan`, hanya super admin). *Disetujui*: tindakan
+   aslinya dijalankan dengan isi tersimpan **atas nama admin pengaju**, dan semua aturannya
+   diperiksa ulang (data terkunci, versi, validasi). Bila datanya sudah berubah sehingga tidak bisa
+   dijalankan (batch sudah dibatalkan, usulan sudah diputuskan), statusnya `GAGAL` beserta
+   pesannya. *Ditolak*: catatan wajib, tidak ada yang berubah.
+3. **Menarik** (`POST /api/persetujuan/batal`): admin pengaju menarik permintaannya selama masih
+   menunggu (status `DIBATALKAN`).
+
+Halaman `/admin/persetujuan`: super admin melihat semua permintaan (menu **Persetujuan Admin**,
+juga di bilah atas, dengan lencana jumlah yang menunggu) beserta tombol Setujui/Tolak; admin biasa
+melihat miliknya (menu **Permintaan Saya**). Di Input Nilai, Detail Mahasiswa, Persetujuan Nilai
+Dosen, Angkatan, dan Kurikulum, admin biasa diberi tahu sebelum menyimpan bahwa angkatannya sudah
+lewat Semester 3, dan sesudahnya melihat "Permintaan P-.. dikirim ke Super Admin". Pelaku
+ditulis dengan email, karena semua akun admin bernama "Biro Kemahasiswaan".
 
 Setelah masuk, server memasang cookie httpOnly bertanda tangan (berlaku 8 jam, diperpanjang
 setiap halaman dimuat). Setiap pintu API membaca ulang pemilik cookie dari basis data, jadi akun
@@ -450,9 +531,70 @@ di dalam grup  dibagi rata
 Contoh mode `per-sumber`: B.4 hanya punya komponen MK, jadi MK memikul 100% meski
 `BOBOT_SUMBER.MK = 50`. A.1 tidak punya UTS, jadi porsi UTS dibagi ke TUGAS/SIKAP/UAS.
 
-Di kedua mode, bila seluruh komponen yang dibagi (satu aspek pada `merata`, satu grup pada
-`per-sumber`) diberi `bobot` eksplisit di `curriculum.js`, angka itu yang dipakai sebagai
-perbandingan. Saat ini belum ada komponen yang diberi `bobot` eksplisit.
+Bila **seluruh** komponen sebuah aspek punya `bobot` (kolom `Komponen.bobot`, diisi lewat halaman
+Kurikulum CPMK), angka itu yang dipakai, **di mode apa pun**: aspek itu "diatur manual". Aspek
+yang komponennya tidak berbobot (bawaannya `null`) "dibagi otomatis" menurut mode di atas.
+
+### Mengubah penilaian dari Input Manual
+
+Di Input Manual, tombol **Atur penilaian A.x** membuka penyunting untuk aspek yang sedang dipilih
+(`src/halaman/admin/EditorPenilaian.jsx`). Yang bisa diubah:
+
+- **Teks aspek**: nama, deskripsi, kegiatan PDP, mata kuliah, kegiatan Kemahasiswaan. Disimpan di
+  tabel `Aspek` (migrasi `aspek_dari_layar`) dan menimpa teks di `curriculum.js`. Struktur aspek
+  (kode, fase, area, cluster, semester) tetap di kode, dan aspek tidak bisa ditambah.
+- **Komponen asesmen**: tambah (ID baru `<aspek>-<sumber>-B<n>`, mis. `A1-MK-B1`, tidak pernah
+  diganti), ubah nama, sumber, jenis MK, ranah, status resmi/draft, dan urutan. Komponen yang
+  **sudah dinilai** (punya nilai atau pernah tercatat di riwayat) tidak bisa diganti sumbernya;
+  arsipkan lalu buat yang baru.
+- **Hapus = arsip** (`Komponen.aktif = false`): tidak tampil dan tidak dihitung, nilainya tetap, dan
+  bisa **dipulihkan** dari bagian *Arsip komponen*. Komponen tidak pernah dihapus dari basis data;
+  setiap aspek wajib punya minimal satu komponen aktif.
+- **Bobot**: dibagi otomatis, atau diatur manual dengan jumlah 100 (tombol *Bagi rata* membantu).
+
+Sebelum menyimpan, layar menghitung **dampak**: hasil mahasiswa yang berubah, termasuk yang aspeknya
+**menjadi belum lengkap** karena ada komponen baru (angkanya tidak berubah, tetapi status final dan
+kelayakan sertifikat bisa gugur). Server menghitung ulang dari seluruh mahasiswa, termasuk nilai lama
+komponen yang dipulihkan. Bila hasil angkatan terkunci atau aspek final manual ikut berubah, alasan
+wajib.
+
+**Siapa:** super admin menyimpan langsung (`POST /api/kurikulum/penilaian`). Admin biasa **selalu**
+mengajukan (`UBAH_PENILAIAN`, lihat Persetujuan super admin), apa pun mahasiswanya; dosen ditolak 403.
+Semua ditulis dalam satu transaksi: teks aspek, komponen, versi kurikulum baru, dan log
+`UBAH_PENILAIAN` (sebelum/sesudah, alasan, dampak). `src/lib/penilaian.js` dipakai layar dan server
+(`src/server/penilaian.js`), dan `ambilKurikulum()` kini juga membawa komponen arsip dan teks aspek.
+
+Setelah menarik migrasi `aspek_dari_layar`, hentikan `npm run dev`, jalankan `npx prisma generate`,
+lalu nyalakan lagi.
+
+### Mengubah bobot dari halaman Kurikulum
+
+`/admin/kurikulum` (hanya Kemahasiswaan) mengubah dua hal:
+
+- **Bobot per aspek.** Setiap aspek bisa *dibagi otomatis* atau *diatur manual*. Pada mode manual,
+  porsi tiap komponen diisi dalam persen (0–100, paling banyak dua desimal) dan jumlahnya harus
+  tepat 100. Beralih ke manual mengisi porsi yang sedang berlaku sebagai titik awal.
+- **Cara membagi bobot otomatis**: `merata` atau `per-sumber`, beserta `BOBOT_SUMBER` dan
+  `BOBOT_KOMPONEN_MK` (masing-masing berjumlah 100). Disimpan sebagai timpaan di tabel `Konfigurasi`.
+
+Nilai yang diinput tidak pernah berubah; yang berubah porsinya, jadi nilai aspek, nilai akhir,
+huruf mutu, dan kelayakan sertifikat **semua angkatan** ikut dihitung ulang. Karena itu:
+
+- **Pratinjau dampak** dihitung langsung di layar sebelum menyimpan: berapa mahasiswa yang nilainya
+  berubah (yang dibandingkan nilai bulat, seperti yang tampil), berapa yang naik atau turun huruf,
+  dan berapa yang berubah kelayakan sertifikatnya, beserta contoh per mahasiswa.
+- **Alasan wajib** (minimal 10 karakter) bila hasil mahasiswa di angkatan terkunci atau pada aspek
+  yang ditandai final manual ikut berubah, sama dengan aturan data terkunci.
+- **Versi.** Layar mengirim `VERSI_KURIKULUM` yang ia buka. Bila kurikulum sudah diubah orang lain
+  sejak itu, penyimpanan ditolak (409) dan halaman harus dimuat ulang. Versinya dibaca dengan
+  `SELECT … FOR UPDATE`, jadi dua penyimpanan bersamaan tidak saling timpa.
+- **Satu transaksi**: bobot komponen (beserta `diubahOleh`/`diubahPada`), pengaturan, versi baru,
+  dan catatan `UBAH_BOBOT` di log aktivitas. Bila basis data belum di-seed, isi kurikulum dari kode
+  ditanam dulu di transaksi yang sama.
+
+Pemeriksaan dan pratinjau ditulis sekali di `src/lib/bobot.js` dan dipakai layar maupun server
+(`src/server/bobot.js`, `POST /api/kurikulum/bobot`); server menghitung ulang dampaknya dari seluruh
+mahasiswa dan tidak memercayai hitungan layar.
 
 ## Input nilai
 
@@ -580,9 +722,12 @@ final secara otomatis tidak dihitung: itu akibat nilainya lengkap, bukan keputus
   bolong sesudah Semester 3, asal menyertakan `alasan` minimal 10 karakter. Aturan ini berlaku
   untuk simpan nilai (`/api/nilai`) dan rollback (`/api/nilai/rollback`), karena membatalkan
   batch juga mengubah nilai.
-- **Dosen** tetap boleh mengirim usulan untuk data terkunci; yang memutuskan tetap Kemahasiswaan.
-  Menyetujui usulan seperti itu berarti mengubah data terkunci, jadi catatan keputusannya wajib
-  minimal 10 karakter dan berfungsi sebagai alasan.
+- **Dosen** tetap boleh mengirim usulan untuk data terkunci selama mahasiswanya belum lewat
+  Semester 3 (aspek final manual); yang memutuskan tetap Kemahasiswaan. Menyetujui usulan seperti
+  itu berarti mengubah data terkunci, jadi catatan keputusannya wajib minimal 10 karakter dan
+  berfungsi sebagai alasan. Angkatan yang dikunci selalu sudah lewat Semester 3, jadi untuk
+  angkatan terkunci dosen tidak lagi bisa mengusulkan, dan perubahan oleh admin biasa menunggu
+  persetujuan super admin (lihat Persetujuan super admin).
 - **Mahasiswa** tetap hanya bisa mengajukan koreksi (R8).
 
 Bila alasannya kurang, server menolak seluruh penyimpanan dan menyebut berapa mahasiswa yang
@@ -606,6 +751,11 @@ dengan perubahannya: tidak ada perubahan tanpa jejak, dan tidak ada jejak tanpa 
 | `UBAH_DATA_TERKUNCI` | simpan nilai atau persetujuan usulan menyentuh data terkunci | alasan, jumlah mahasiswa dan nilai |
 | `ROLLBACK_DATA_TERKUNCI` | batch yang menyentuh data terkunci dibatalkan | alasan dan jumlah mahasiswa |
 | `UBAH_PENGUNCIAN` | tanda final/sementara aspek berubah | jumlah perubahan, berapa yang dicabut dari final, sampai 20 contoh |
+| `UBAH_BOBOT` | bobot disimpan dari halaman Kurikulum | alasan, bobot tiap aspek dan pengaturan sebelum/sesudah, ringkasan dampak, sampai 20 contoh |
+| `AJUKAN_PERSETUJUAN` | admin biasa mengajukan permintaan kepada super admin | aksi, judul, alasan, jumlah mahasiswa yang tersentuh |
+| `PUTUSKAN_PERSETUJUAN` | super admin menyetujui atau menolak (pelakunya super admin) | aksi, keputusan (disetujui/ditolak/gagal), catatan, pesan galat, id pengaju |
+| `TARIK_PERMINTAAN` | admin menarik permintaannya sendiri | — |
+| `UBAH_PENILAIAN` | penilaian satu aspek disimpan dari Input Manual | alasan, teks aspek sebelum/sesudah, komponen ditambah/diubah/diarsipkan/dipulihkan, bobot sebelum/sesudah, ringkasan dampak |
 
 Kedua log dibaca lewat `POST /api/log` (`bacaLog()`, hanya Kemahasiswaan), satu halaman setiap kali:
 
@@ -941,17 +1091,20 @@ panah kiri/kanan). Bagian yang mudah rusak:
 | 5 | Sertifikat | selesai: halaman mahasiswa dan cetak dari panel Kemahasiswaan |
 | 6 | Admin: panel input nilai | selesai (lihat fase 7) |
 | 7 | Input & Import Nilai: gerbang semester, input manual, import CSV, rollback, koreksi | selesai |
-| 8 | Kurikulum, Angkatan & Sertifikat, Log | sebagian: back-end ringkasan dan kunci angkatan, aturan data terkunci, pencatatan dan pembacaan log, serta kurikulum yang dibaca dari basis data sudah ada; ketiga halamannya masih "Segera Hadir" |
+| 8 | Kurikulum, Angkatan & Sertifikat, Log | sebagian: halaman Angkatan, ubah bobot di halaman Kurikulum, aturan data terkunci, pencatatan dan pembacaan log, serta kurikulum yang dibaca dari basis data sudah ada; halaman Log masih "Segera Hadir" |
 | 9 | Poles cetak, responsif, aksesibilitas | sebagian (cetak & reduced-motion sudah) |
 | — | Panel Kemahasiswaan lainnya: Overview, Data Mahasiswa beserta detailnya, Program Studi, Persetujuan Nilai Dosen | selesai |
 | — | Panel dosen: Data Masuk, Input & Import Nilai sebagai usulan, Status Usulan | selesai |
-| — | Basis data MySQL: 19 tabel, 7 migrasi, 16 pintu API, sesi cookie | selesai |
+| — | Basis data MySQL: 21 tabel, 9 migrasi, 20 pintu API, sesi cookie | selesai |
+| — | Penilaian per aspek dari Input Manual (teks aspek, komponen, arsip, bobot) | selesai; super admin langsung, admin biasa lewat persetujuan |
+| — | Super admin | sebagian: Tahap 1 (akun, tanda `superAdmin`, penjaga `'superadmin'`) dan Tahap 2 (persetujuan perubahan data mahasiswa yang sudah lewat Semester 3, halaman Persetujuan Admin, dosen lepas tangan) selesai; halaman pengawasan (Log Aktivitas) belum |
 
 Yang belum dikerjakan:
 
-- tampilan halaman `/admin/angkatan`, `/admin/kurikulum`, dan `/admin/log` (kini masih "Segera
-  Hadir"). Pintu API untuk Angkatan dan Log sudah ada; untuk mengubah kurikulum dan pengaturan
-  belum (kurikulum baru bisa dibaca dari basis data);
+- tampilan halaman `/admin/log` (kini masih "Segera Hadir"; pintu API-nya sudah ada);
+- mengubah indikator perilaku dan pengaturan selain bobot (ambang sertifikat, mode penguncian,
+  mode agregasi, dan lain-lain) dari layar; menambah aspek baru atau mengubah struktur aspek
+  (semester, cluster). Teks aspek, komponen, dan bobot sudah bisa diubah;
 - halaman bagi mahasiswa untuk mengumpulkan berkas (kini baris `Pengumpulan` diisi langsung di
   basis data);
 - penerbitan sertifikat yang membekukan nomor, tanggal, dan nilai — kini kelayakan dihitung

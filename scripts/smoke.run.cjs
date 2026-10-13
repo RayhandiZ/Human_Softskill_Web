@@ -147,6 +147,21 @@ const ISI = {
     [/Mahasiswa yang perlu ditindaklanjuti/, 'daftar mahasiswa yang perlu ditindaklanjuti'],
     [/Penguncian angkatan/, 'bagian penguncian angkatan'],
   ],
+  '/admin/kurikulum': [
+    [/Fase 8|Segera hadir/i, 'bukan lagi halaman segera hadir', false],
+    [/Atur bobot komponen asesmen di setiap aspek/, 'judul dan penjelasan halaman kurikulum'],
+    [/A\.1\.[\s\S]{0,3000}C\.2\./, 'kartu kesepuluh aspek'],
+    [/Porsi berlaku[\s\S]{0,40}Porsi baru/, 'tabel porsi per komponen'],
+    [/Dibagi otomatis[\s\S]{0,200}Atur manual/, 'pilihan otomatis atau manual'],
+    [/Cara membagi bobot otomatis/, 'pengaturan pembagian otomatis'],
+    [/Tinjau dan simpan/, 'bagian tinjau dan simpan'],
+  ],
+  '/admin/persetujuan': [
+    [/Permintaan Saya/, 'admin biasa melihat judul Permintaan Saya'],
+    [/menunggu persetujuan Super Admin sebelum berlaku/, 'penjelasan alur persetujuan'],
+    [/Menunggu[\s\S]{0,40}Riwayat/, 'tab menunggu dan riwayat'],
+    [/Setujui dan jalankan/, 'admin biasa tidak melihat tombol menyetujui', false],
+  ],
   '/admin/sertifikat': [
     [/Cetak sertifikat/, 'judul halaman cetak sertifikat'],
     [/[0-9]+ dari [0-9]+ mahasiswa sudah berhak atas sertifikat/, 'jumlah yang berhak tertulis'],
@@ -172,6 +187,8 @@ const RUTE = [
   ['admin', '/admin/usulan', 'Persetujuan nilai dosen'],
   ['admin', '/admin/sertifikat', 'Cetak sertifikat'],
   ['admin', '/admin/angkatan', 'Angkatan'],
+  ['admin', '/admin/kurikulum', 'Kurikulum CPMK'],
+  ['admin', '/admin/persetujuan', 'Permintaan Saya'],
   ['dosen', '/dosen', 'Data masuk'],
   ['dosen', '/dosen/nilai', 'Input nilai dosen'],
   ['dosen', '/dosen/usulan', 'Status usulan dosen'],
@@ -181,7 +198,7 @@ const RUTE = [
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -341,7 +358,7 @@ const RUTE = [
 
   /* ------------------------------ menu di ponsel --------------------------- */
   console.log('')
-  for (const [peran, rute, harapTautan] of [['student', '/mahasiswa', 6], ['admin', '/admin', 10], ['dosen', '/dosen', 4]]) {
+  for (const [peran, rute, harapTautan] of [['student', '/mahasiswa', 6], ['admin', '/admin', 11], ['dosen', '/dosen', 4]]) {
     w.localStorage.setItem('sk5c.session', SESI[peran])
     const h = await ujiMenuHp(rute)
 
@@ -970,6 +987,7 @@ const RUTE = [
     ['jumlah di kartu sama dengan daftar yang perlu ditindaklanjuti', ak.jumlahCocok],
     ['tautan Masukkan nilai membawa angkatan dan NIM', ak.tautanInputLengkap],
     ['angkatan yang selesai: pratinjau berhak sertifikat tampil', ak.pratinjauTampil],
+    ['admin biasa: tombolnya "Ajukan penguncian" beserta catatan persetujuan', ak.ajukanUntukAdminBiasa],
     ['tombol kunci mati sebelum nama angkatan diketik persis', ak.matiSebelumDiketik && ak.matiBilaSalahKetik],
     ['tombol kunci hidup setelah diketik persis', ak.hidupBilaCocok],
     ['sesudah dikunci, statusnya dan tautan cetak sertifikat tampil', ak.terkunciSesudahnya && ak.tautanSertifikat],
@@ -979,6 +997,51 @@ const RUTE = [
   gagal += rusakAk.length
   console.log((rusakAk.length ? 'GAGAL  ' : 'OK     ') + 'Halaman Angkatan (admin)')
   for (const [ket, ok] of cekAk) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
+
+  const pn = await ujiPenilaian()
+  const cekPn = [
+    ['Input Manual punya tombol "Atur penilaian A.1"', pn.adaTombol],
+    ['penyunting terbuka: teks aspek, deskripsi, tambah komponen', pn.editorTerbuka],
+    ['tombol simpan baru muncul bila ada perubahan', pn.belumAdaSimpan],
+    ['komponen baru tanpa nama ditandai', pn.barisBaruDiperiksa],
+    ['pratinjau: mahasiswa menjadi belum lengkap karena komponen baru', pn.pratinjauBelumLengkap],
+    ['super admin: tombol "Simpan penilaian"', pn.simpanUntukSuperAdmin],
+    ['admin biasa: tombol "Ajukan ke Super Admin"', pn.ajukanUntukAdminBiasa],
+  ]
+  const rusakPn = cekPn.filter(([, ok]) => !ok)
+  gagal += rusakPn.length
+  console.log((rusakPn.length ? 'GAGAL  ' : 'OK     ') + 'Penyunting penilaian di Input Manual')
+  for (const [ket, ok] of cekPn) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
+
+  const supa = await ujiSuperAdmin()
+  const cekSupa = [
+    ['super admin membuka panel admin tanpa galat', supa.panelAdminTerbuka],
+    ['profil super admin berlencana Super Admin', supa.lencanaSuperAdmin],
+    ['menu akun super admin menulis Super Admin', supa.menuAkunSuperAdmin],
+    ['admin biasa tetap berlabel Kemahasiswaan', supa.adminBiasaTetap],
+  ]
+  const rusakSupa = cekSupa.filter(([, ok]) => !ok)
+  gagal += rusakSupa.length
+  console.log((rusakSupa.length ? 'GAGAL  ' : 'OK     ') + 'Super admin (label peran)')
+  for (const [ket, ok] of cekSupa) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
+
+  const kr = await ujiKurikulum()
+  const cekKr = [
+    ['sepuluh aspek bisa dipilih', kr.sepuluhAspek],
+    ['bawaan: dibagi otomatis, belum ada perubahan', kr.bawaanOtomatis],
+    ['beralih ke manual mengisi porsi yang berlaku', kr.manualDiisiPorsiBerlaku],
+    ['jumlah bukan 100 ditandai dan tombol simpan tidak muncul', kr.jumlahSalahDitandai],
+    ['pratinjau dampak tampil', kr.dampakTampil],
+    ['menyentuh angkatan terkunci: alasan wajib, tombol mati', kr.alasanWajib],
+    ['admin biasa: menyentuh angkatan lewat Semester 3 → tombol "Ajukan ke Super Admin" beserta catatannya', kr.ajukanUntukAdminBiasa],
+    ['tombol simpan hidup sesudah alasan diisi', kr.hidupSesudahAlasan],
+    ['tersimpan dan langsung dipakai menghitung', kr.tersimpan],
+    ['kartu aspek tertulis Manual', kr.kartuManual],
+  ]
+  const rusakKr = cekKr.filter(([, ok]) => !ok)
+  gagal += rusakKr.length
+  console.log((rusakKr.length ? 'GAGAL  ' : 'OK     ') + 'Halaman Kurikulum: bobot (admin)')
+  for (const [ket, ok] of cekKr) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
   const pm = await ujiPenandaMenu()
   const cekPm = [

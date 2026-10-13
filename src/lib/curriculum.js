@@ -230,13 +230,23 @@ function resolveSemester(aspek) {
   return kunci ? CONFIG[kunci] : aspek.semester
 }
 
+/** Teks aspek yang boleh diubah dari layar (tabel Aspek); struktur aspek tetap di kode. */
+export const BIDANG_ASPEK = ['nama', 'deskripsi', 'pdp', 'mk', 'engagement']
+
+/* Timpaan teks per aspek dari basis data ({ A1: { nama, deskripsi, ... } }), diisi isiKurikulum(). */
+const ASPEK_TIMPA = {}
+
 export function getAspekList() {
   return ASPEK_DASAR.map((a) => ({
     ...a,
+    ...ASPEK_TIMPA[a.id],
     semester: resolveSemester(a),
     semesterSementara: Boolean(ASPEK_SEMESTER_SEMENTARA[a.id]),
   }))
 }
+
+/** Teks aspek bawaan dari kode, sebelum ditimpa basis data. */
+export const aspekBawaan = (id) => ASPEK_DASAR.find((a) => a.id === id) ?? null
 
 export function getAspek(id) {
   return getAspekList().find((a) => a.id === id) ?? null
@@ -344,6 +354,12 @@ export function getKomponenById(id) {
   return KOMPONEN.find((x) => x.id === id) ?? null
 }
 
+/* Komponen yang diarsipkan (aktif = false): tidak dihitung dan tidak bisa diberi nilai, tetapi nilainya tetap
+   tersimpan dan bisa dipulihkan dari layar. Sengaja tidak dicari getKomponenById supaya tidak bisa dinilai. */
+export const KOMPONEN_ARSIP = []
+
+export const getKomponenArsip = (aspekId) => KOMPONEN_ARSIP.filter((x) => x.aspekId === aspekId)
+
 export function aspekPunyaDraft(aspekId) {
   return getKomponen(aspekId).some((x) => x.status === 'draft')
 }
@@ -419,12 +435,19 @@ export const INDIKATOR_BAWAAN = INDIKATOR.map((x) => ({ ...x, sumber: [...x.sumb
 
 const isiUlang = (larik, isi) => larik.splice(0, larik.length, ...isi)
 
+/** Versi kurikulum yang sedang terpasang (null = isi dari kode); dikirim halaman Kurikulum saat menyimpan. */
+export const KURIKULUM_TERPASANG = { versi: null }
+
 /**
  * Memasang kurikulum dari basis data (disusun src/server/kurikulum.js). Larik diisi ulang DI TEMPAT karena modul
  * lain memegang rujukannya sejak dimuat. Tanpa isi, semuanya kembali ke bawaan dari kode.
  */
-export function isiKurikulum({ komponen, indikator, konfigurasi } = {}) {
+export function isiKurikulum({ versi, komponen, arsip, aspek, indikator, konfigurasi } = {}) {
+  KURIKULUM_TERPASANG.versi = versi ?? null
   isiUlang(KOMPONEN, komponen?.length ? komponen : KOMPONEN_BAWAAN.map((x) => ({ ...x })))
+  isiUlang(KOMPONEN_ARSIP, arsip ?? [])
+  for (const id of Object.keys(ASPEK_TIMPA)) delete ASPEK_TIMPA[id]
+  Object.assign(ASPEK_TIMPA, aspek ?? {})
   isiUlang(INDIKATOR, indikator ?? INDIKATOR_BAWAAN.map((x) => ({ ...x, sumber: [...x.sumber] })))
   terapkanKonfigurasi(konfigurasi ?? {})
 }

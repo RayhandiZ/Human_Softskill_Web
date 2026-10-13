@@ -15,7 +15,8 @@ import {
 import { SUMBER } from '../../lib/curriculum'
 import { getStudentByNim } from '../../lib/data'
 import { periksaUsulan } from '../../lib/rules'
-import { USULAN_NILAI, putuskanUsulan, useStore } from '../../lib/store'
+import { USULAN_NILAI, menungguPersetujuan, putuskanUsulan, useStore } from '../../lib/store'
+import { PesanMenunggu } from './PermintaanTerkirim'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 
@@ -138,6 +139,7 @@ function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
   const t = useTeks()
   const [catatan, setCatatan] = useState('')
   const [galat, setGalat] = useState('')
+  const [menunggu, setMenunggu] = useState(null)
   const r = RUPA[u.status] ?? RUPA.menunggu
 
   const periksa = useMemo(
@@ -153,10 +155,13 @@ function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
       return
     }
     try {
-      if (!(await putuskanUsulan(u.id, keputusan, { aktor, catatan }))) {
+      const hasil = await putuskanUsulan(u.id, keputusan, { aktor, catatan })
+      if (!hasil) {
         setGalat(t('Usulan ini sudah diputuskan sebelumnya.'))
         return
       }
+      // Usulan untuk mahasiswa yang sudah lewat Semester 3: persetujuannya menunggu super admin.
+      setMenunggu(menungguPersetujuan(hasil) ? hasil : null)
       setCatatan('')
     } catch (e) {
       setGalat(e.message)
@@ -309,6 +314,11 @@ function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
             {galat}
           </p>
         ) : null}
+              {menunggu ? (
+                <div className="mb-3">
+                  <PesanMenunggu hasil={menunggu} />
+                </div>
+              ) : null}
               <div className="mt-3 flex flex-wrap gap-2.5">
                 <button
                   type="button"

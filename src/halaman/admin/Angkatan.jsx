@@ -7,9 +7,10 @@ import { CONFIG } from '../../lib/config'
 import { SUMBER } from '../../lib/curriculum'
 import { COHORTS, STUDENTS, labelPeriode, pekerjaanPenilaian, semesterKalender, transkripOf } from '../../lib/data'
 import { pratinjauPenguncian } from '../../lib/rules'
-import { kunciAngkatan, useStore } from '../../lib/store'
+import { kunciAngkatan, menungguPersetujuan, useStore } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
 import { tautanInput } from './LoncengKemahasiswaan'
+import { CatatanPersetujuan, PesanMenunggu, usePerluPersetujuan } from './PermintaanTerkirim'
 
 const PAGE_SIZE = 12
 
@@ -385,9 +386,13 @@ function PanelKunci({ x }) {
   const t = useTeks()
   const { c, mhs, kalender, kunci } = x
   const [ketik, setKetik] = useState('')
+  const [alasan, setAlasan] = useState('')
   const [galat, setGalat] = useState('')
   const [sibuk, setSibuk] = useState(false)
   const [baruDikunci, setBaruDikunci] = useState(false)
+  const [menunggu, setMenunggu] = useState(null)
+  // Angkatan baru boleh dikunci sesudah Semester 3, jadi kunci oleh admin biasa selalu menunggu super admin.
+  const perluPersetujuan = usePerluPersetujuan(c.intake)
   const pratinjau = useMemo(() => (kunci === 'boleh' ? pratinjauPenguncian(mhs) : null), [kunci, mhs])
   const cocok = ketik.trim() === c.label
 
@@ -397,8 +402,14 @@ function PanelKunci({ x }) {
     setGalat('')
     setSibuk(true)
     try {
-      await kunciAngkatan({ angkatanId: c.id, konfirmasi: ketik.trim() })
-      setBaruDikunci(true)
+      const hasil = await kunciAngkatan({ angkatanId: c.id, konfirmasi: ketik.trim(), alasan: alasan.trim() })
+      if (menungguPersetujuan(hasil)) {
+        setMenunggu(hasil)
+        setKetik('')
+        setAlasan('')
+      } else {
+        setBaruDikunci(true)
+      }
     } catch (err) {
       setGalat(err.message)
     } finally {
@@ -458,6 +469,19 @@ function PanelKunci({ x }) {
                 })}
               </p>
             ) : null}
+            {menunggu ? <PesanMenunggu hasil={menunggu} /> : null}
+            {perluPersetujuan ? <CatatanPersetujuan /> : null}
+            {perluPersetujuan ? (
+              <label className="block max-w-xl">
+                <span className="mb-1.5 block label">{t('Alasan perubahan')}</span>
+                <input
+                  value={alasan}
+                  onChange={(e) => setAlasan(e.target.value)}
+                  placeholder={t('Wajib, minimal 10 karakter, bila angkatan atau aspek sudah terkunci')}
+                  className="field !py-2.5"
+                />
+              </label>
+            ) : null}
             <form onSubmit={kirimKunci} className="flex flex-wrap items-end gap-3 pt-1">
               <label className="block min-w-[200px] flex-1 sm:max-w-xs">
                 <span className="mb-1.5 block label">{t('Ketik {label} untuk mengonfirmasi', { label: c.label })}</span>
@@ -475,7 +499,7 @@ function PanelKunci({ x }) {
                 className="btn-primary inline-flex min-h-[44px] items-center gap-2 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-2 disabled:text-ink-2 disabled:shadow-none"
               >
                 <IconLock size={16} />
-                {t('Kunci angkatan')}
+                {t(perluPersetujuan ? 'Ajukan penguncian' : 'Kunci angkatan')}
               </button>
             </form>
           </>

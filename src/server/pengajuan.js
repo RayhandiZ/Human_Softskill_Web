@@ -1,6 +1,6 @@
 import { db } from './db.js'
 import { GalatApi } from './api.js'
-import { angkaId, semesterDari } from './muat.js'
+import { angkaId, selesaiProgram, semesterDari } from './muat.js'
 import { petaMahasiswa, tulisBatch, wajibkanAlasan } from './nilai.js'
 import { catatLog } from './log.js'
 import { getAspek, getKomponenById } from '../lib/curriculum.js'
@@ -60,10 +60,19 @@ export async function usulkanNilai(pengguna, { cara, catatan, entri }) {
   const luar = bersih.find((e) => !komponenKelas.has(e.komponenId))
   if (luar) throw new GalatApi('Komponen ' + luar.komponenId + ' bukan bagian kelas Anda.')
 
-  const mhs = await db.mahasiswa.findMany({ where: { nim: { in: [...new Set(bersih.map((e) => e.nim))] } } })
+  const mhs = await db.mahasiswa.findMany({
+    where: { nim: { in: [...new Set(bersih.map((e) => e.nim))] } },
+    include: { angkatan: true },
+  })
   const kelas = new Set(mhs.filter((m) => m.prodiId === dosen.prodiId).map((m) => m.nim))
   const asing = bersih.find((e) => !kelas.has(e.nim))
   if (asing) throw new GalatApi('NIM ' + asing.nim + ' tidak terdaftar di kelas Anda.')
+  // Sesudah Semester 3 dosen tidak lagi bertanggung jawab: mahasiswanya diurus Kemahasiswaan.
+  const selesai = new Set(mhs.filter((m) => selesaiProgram(m.angkatan)).map((m) => m.nim))
+  const lewat = bersih.find((e) => selesai.has(e.nim))
+  if (lewat) {
+    throw new GalatApi('NIM ' + lewat.nim + ' sudah lewat Semester 3. Nilainya kini diurus Kemahasiswaan, bukan dosen.')
+  }
 
   const u = await db.usulan.create({
     data: {

@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from 'react'
-import { getKomponenById } from './curriculum.js'
+import { KOMPONEN, KURIKULUM_TERPASANG, getKomponenById, isiKurikulum } from './curriculum.js'
+import { updateConfig } from './config.js'
+import { periksaBobot } from './bobot.js'
 import { periksaUsulan } from './rules.js'
 import {
   AUDIT_LOG,
@@ -496,6 +498,7 @@ export async function muatDariServer() {
     })
     USULAN_NILAI.splice(0, USULAN_NILAI.length, ...isi.usulan)
     BATCH_SESI.splice(0, BATCH_SESI.length, ...isi.batch)
+    PERMINTAAN.splice(0, PERMINTAAN.length, ...(isi.permintaan ?? []))
     pasangProfil(kunciAkun({ role: isi.peran, nim: isi.nim, nip: isi.nip }), isi.profil)
     waktuSegar = new Date()
     muat = { keadaan: 'siap', pesan: null }
@@ -512,6 +515,7 @@ export function kosongkanDataServer() {
   isiData()
   USULAN_NILAI.length = 0
   BATCH_SESI.length = 0
+  PERMINTAAN.length = 0
   muat = { keadaan: 'belum', pesan: null }
   berubah()
 }
@@ -522,29 +526,73 @@ async function tulis(alamat, isi) {
   return hasil
 }
 
+/* --------------------- permintaan admin kepada super admin ------------------ */
+
+/* Admin biasa yang mengubah data mahasiswa yang sudah lewat Semester 3 tidak langsung menyimpan: server
+   menjawab { menunggu: true, permintaan } dan perubahannya menunggu super admin (src/server/persetujuan.js).
+   Super admin melihat semua permintaan, admin biasa hanya miliknya. */
+export const PERMINTAAN = []
+
+export const permintaanMenunggu = () => PERMINTAAN.filter((p) => p.status === 'menunggu')
+
+/** Jawaban server untuk tindakan yang ditahan menunggu persetujuan super admin. */
+export const menungguPersetujuan = (hasil) => Boolean(hasil?.menunggu)
+
+const TANPA_SERVER = 'Persetujuan Super Admin hanya tersedia saat terhubung ke basis data.'
+
+/** Super admin memutuskan; false bila sudah diputuskan. Jawaban berisi status 'disetujui' | 'ditolak' | 'gagal'. */
+export async function putuskanPermintaan(id, keputusan, catatan) {
+  if (modeLokal()) throw new Error(TANPA_SERVER)
+  const hasil = await tulis('/api/persetujuan/keputusan', { id, keputusan, catatan })
+  // Permintaan ubah bobot yang dijalankan membawa kurikulum baru; dipasang supaya transkrip ikut dihitung ulang.
+  if (hasil.kurikulum) {
+    isiKurikulum(hasil.kurikulum)
+    berubah()
+  }
+  return hasil
+}
+
+/** Admin menarik permintaannya sendiri; false bila sudah diputuskan. */
+export async function batalkanPermintaan(id) {
+  if (modeLokal()) throw new Error(TANPA_SERVER)
+  return (await tulis('/api/persetujuan/batal', { id })).ok
+}
+
+/* ---------------------------------- nilai --------------------------------- */
+
+/** Batch yang tersimpan, atau { menunggu, permintaan } bila menunggu persetujuan super admin. */
 export async function simpanBatch(isi) {
   if (modeLokal()) return simpanBatchLokal(isi)
   const { sumber, semester, angkatanId, cara, entri, alasan } = isi
   return tulis('/api/nilai', { sumber, semester, angkatanId, cara, entri, alasan })
 }
 
-/** false bila sudah dibatalkan. `alasan` hanya dituntut server bila batch menyentuh data terkunci. */
+/**
+ * false bila sudah dibatalkan; { menunggu, permintaan } bila menunggu persetujuan super admin.
+ * `alasan` dituntut server bila batch menyentuh data terkunci atau mahasiswa yang sudah lewat Semester 3.
+ */
 export async function rollbackBatch(id, alasan) {
   if (modeLokal()) return rollbackBatchLokal(id)
-  return (await tulis('/api/nilai/rollback', { id, alasan })).ok
+  const hasil = await tulis('/api/nilai/rollback', { id, alasan })
+  return menungguPersetujuan(hasil) ? hasil : hasil.ok
 }
 
-/** status: 'final' | 'sementara' | null (ikuti CONFIG.PENGUNCIAN_ASPEK). */
+/** status: 'final' | 'sementara' | null (ikuti CONFIG.PENGUNCIAN_ASPEK). Jawaban server diteruskan. */
 export async function setPenguncian(isi) {
   if (modeLokal()) return setPenguncianLokal(isi)
-  await tulis('/api/penguncian', { daftar: [{ nim: isi.nim, aspekId: isi.aspekId }], status: isi.status ?? null })
+  return tulis('/api/penguncian', {
+    daftar: [{ nim: isi.nim, aspekId: isi.aspekId }],
+    status: isi.status ?? null,
+    alasan: isi.alasan,
+  })
 }
 
 export async function setPenguncianBanyak(daftar, opsi) {
   if (modeLokal()) return setPenguncianBanyakLokal(daftar, opsi)
-  await tulis('/api/penguncian', {
+  return tulis('/api/penguncian', {
     daftar: daftar.map(({ nim, aspekId }) => ({ nim, aspekId })),
     status: opsi.status ?? null,
+    alasan: opsi.alasan,
   })
 }
 
@@ -560,10 +608,11 @@ export async function usulkanNilai(isi) {
   return USULAN_NILAI.find((u) => u.id === id) ?? { id, entri: isi.entri ?? [] }
 }
 
-/** false bila sudah diputuskan sebelumnya. */
+/** false bila sudah diputuskan sebelumnya; { menunggu, permintaan } bila menunggu persetujuan super admin. */
 export async function putuskanUsulan(id, keputusan, opsi = {}) {
   if (modeLokal()) return putuskanUsulanLokal(id, keputusan, opsi)
-  return (await tulis('/api/usulan/keputusan', { id, keputusan, catatan: opsi.catatan ?? '' })).ok
+  const hasil = await tulis('/api/usulan/keputusan', { id, keputusan, catatan: opsi.catatan ?? '' })
+  return menungguPersetujuan(hasil) ? hasil : hasil.ok
 }
 
 /** Satu-satunya aksi tulis mahasiswa (R8); tidak mengubah nilai. */
@@ -595,13 +644,65 @@ function kunciAngkatanLokal({ angkatanId, konfirmasi }) {
   return true
 }
 
-/** Satu-satunya pemanggil API penguncian angkatan (API-nya belum final); false bila sudah terkunci. */
-export async function kunciAngkatan({ angkatanId, konfirmasi }) {
+/**
+ * Satu-satunya pemanggil API penguncian angkatan. false bila sudah terkunci; { menunggu, permintaan } bila admin
+ * biasa: angkatan baru boleh dikunci sesudah Semester 3, jadi selalu menunggu persetujuan super admin.
+ */
+export async function kunciAngkatan({ angkatanId, konfirmasi, alasan }) {
   if (modeLokal()) return kunciAngkatanLokal({ angkatanId, konfirmasi })
-  const hasil = await tulis('/api/angkatan/kunci', { angkatanId, konfirmasi })
+  const hasil = await tulis('/api/angkatan/kunci', { angkatanId, konfirmasi, alasan })
+  if (menungguPersetujuan(hasil)) return hasil
   // Status angkatan di data master baru ikut berubah saat halaman dimuat ulang, jadi disamakan di sini.
   if (hasil.ok) tandaiAngkatanTerkunci(angkatanId)
   return Boolean(hasil.ok)
+}
+
+/* ------------------------------ bobot kurikulum --------------------------- */
+
+/* Mode lokal: bobot hanya diganti di memori dan hilang saat halaman dimuat ulang. */
+function simpanBobotLokal({ pengaturan, aspek }) {
+  const masalah = periksaBobot({ pengaturan, aspek })
+  if (masalah.length) throw new Error(masalah[0].pesan)
+  for (const k of KOMPONEN) k.bobot = aspek[k.aspekId]?.[k.id] ?? null
+  updateConfig(pengaturan)
+  berubah()
+  return { ok: true }
+}
+
+/**
+ * Menyimpan susunan bobot (lihat src/lib/bobot.js). Kurikulum yang tersimpan di basis data langsung dipasang,
+ * jadi transkrip di layar ikut dihitung ulang tanpa memuat ulang halaman.
+ */
+export async function simpanBobot({ pengaturan, aspek, alasan }) {
+  if (modeLokal()) return simpanBobotLokal({ pengaturan, aspek })
+  const hasil = await kirim('/api/kurikulum/bobot', {
+    isi: { versi: KURIKULUM_TERPASANG.versi, pengaturan, aspek, alasan },
+  })
+  // Menunggu persetujuan super admin: kurikulum belum berubah, hanya daftar permintaan yang dimuat ulang.
+  if (menungguPersetujuan(hasil)) {
+    await muatDariServer()
+    return hasil
+  }
+  isiKurikulum(hasil.kurikulum ?? {})
+  berubah()
+  return hasil
+}
+
+/* ----------------------- penilaian satu aspek (Input Manual) --------------------- */
+
+/**
+ * Menyimpan susunan penilaian satu aspek (lihat src/lib/penilaian.js). Super admin: kurikulum baru langsung
+ * dipasang dan data dimuat ulang (nilai komponen yang dipulihkan ikut terbaca lagi). Admin biasa: jawabannya
+ * { menunggu, permintaan } dan belum ada yang berubah.
+ */
+export async function simpanPenilaian({ aspekId, aspek, komponen, alasan }) {
+  if (modeLokal()) throw new Error('Mengubah penilaian hanya tersedia saat terhubung ke basis data.')
+  const hasil = await kirim('/api/kurikulum/penilaian', {
+    isi: { versi: KURIKULUM_TERPASANG.versi, aspekId, aspek, komponen, alasan },
+  })
+  if (!menungguPersetujuan(hasil)) isiKurikulum(hasil.kurikulum ?? {})
+  await muatDariServer()
+  return hasil
 }
 
 /* ------------------------------- saat dimuat ------------------------------ */

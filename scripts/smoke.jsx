@@ -5,7 +5,8 @@ import { act } from 'react'
 import Penyedia from '../app/penyedia'
 import { RequireRole } from '../src/lib/auth'
 import { COHORTS, MASTER_AWAL, STUDENTS, getStudent, getStudentByNim, isiData, isiMaster, pengumpulanDosen, resetTranskripCache } from '../src/lib/data'
-import { getKomponenById } from '../src/lib/curriculum'
+import { getKomponen, getKomponenById, isiKurikulum } from '../src/lib/curriculum'
+import { bobotKomponen } from '../src/lib/scoring'
 import { DATA_CONTOH, DOSEN, PERSONA_SEMESTER, getDosenByEmail, getStudentByEmail } from './dataContoh'
 import { bersihkanPerubahan } from '../src/lib/store'
 import { aturJalur } from './palsu-next-navigation'
@@ -28,6 +29,8 @@ import Nilai from '../src/halaman/admin/Nilai'
 import UsulanAdmin from '../src/halaman/admin/Usulan'
 import CetakSertifikat from '../src/halaman/admin/CetakSertifikat'
 import Angkatan from '../src/halaman/admin/Angkatan'
+import Kurikulum from '../src/halaman/admin/Kurikulum'
+import PersetujuanAdmin from '../src/halaman/admin/PersetujuanAdmin'
 import DosenLayout from '../src/halaman/dosen/DosenLayout'
 import Masuk from '../src/halaman/dosen/Masuk'
 import NilaiDosen from '../src/halaman/dosen/Nilai'
@@ -141,6 +144,8 @@ const RUTE = {
   '/admin/mahasiswa/DEMO-3': { pohon: () => admin(<StudentDetail />), params: { id: 'DEMO-3' } },
   '/admin/sertifikat': { pohon: () => admin(<CetakSertifikat />) },
   '/admin/angkatan': { pohon: () => admin(<Angkatan />) },
+  '/admin/kurikulum': { pohon: () => admin(<Kurikulum />) },
+  '/admin/persetujuan': { pohon: () => admin(<PersetujuanAdmin />) },
   '/admin/program-studi': { pohon: () => admin(<Programs />) },
   '/admin/nilai': { pohon: () => admin(<Nilai />) },
   '/admin/profil': { pohon: () => admin(<Profil />) },
@@ -1503,9 +1508,13 @@ export async function ujiAngkatan() {
     angkatan: MASTER_AWAL.angkatan.map((a) => (a.id === '2025' ? { ...a, intake: { tahun: '2024/2025', semester: 'Ganjil' } } : a)),
   })
   ;({ el, lepas } = await pasang('/admin/angkatan?angkatan=2025'))
-  const tombolKunci = () => [...el.querySelectorAll('button[type="submit"]')].find((b) => /Kunci angkatan/.test(b.textContent))
+  // Admin biasa: angkatan yang sudah lewat Semester 3 tidak dikunci langsung, tetapi "Ajukan penguncian" ke super admin.
+  const tombolKunci = () =>
+    [...el.querySelectorAll('button[type="submit"]')].find((b) => /Kunci angkatan|Ajukan penguncian/.test(b.textContent))
   const isian = el.querySelector('form input')
   hasil.pratinjauTampil = /Bila dikunci sekarang, \d+ dari \d+ mahasiswa berhak atas sertifikat/.test(el.textContent)
+  hasil.ajukanUntukAdminBiasa =
+    /Ajukan penguncian/.test(tombolKunci()?.textContent ?? '') && /dikirim ke Super Admin sebagai permintaan/.test(el.textContent)
   hasil.matiSebelumDiketik = Boolean(tombolKunci()?.disabled)
   await ketik(isian, '2024')
   hasil.matiBilaSalahKetik = Boolean(tombolKunci()?.disabled)
@@ -1526,6 +1535,129 @@ export async function ujiAngkatan() {
   hasil.sertifikatTersaring = el.querySelector('select')?.value === '2024'
   lepas()
 
+  if (lama) window.localStorage.setItem('sk5c.session', lama)
+  else window.localStorage.removeItem('sk5c.session')
+  return hasil
+}
+
+// Penyunting penilaian di Input Manual: teks aspek, komponen, bobot. Tidak menyimpan (mode lokal tidak punya server).
+export async function ujiPenilaian() {
+  const lama = window.localStorage.getItem('sk5c.session')
+  const hasil = {}
+  const sesi = (superAdmin) =>
+    window.localStorage.setItem(
+      'sk5c.session',
+      JSON.stringify({ role: 'admin', superAdmin, email: superAdmin ? 'super.admin@umn.ac.id' : 'admin@umn.ac.id', name: 'Y', initials: 'SA' }),
+    )
+  const tombol = (el, pola) => [...el.querySelectorAll('button')].find((b) => pola.test(b.textContent))
+
+  for (const superAdmin of [true, false]) {
+    sesi(superAdmin)
+    const { el, lepas } = await pasang('/admin/nilai?semester=1&sumber=MK&angkatan=2025')
+    const buka = tombol(el, /Atur penilaian A\.1/)
+    if (superAdmin) hasil.adaTombol = Boolean(buka)
+    await klik(buka)
+    if (superAdmin) {
+      hasil.editorTerbuka = /Penilaian A\.1/.test(el.textContent) && /Tambah komponen/.test(el.textContent) && Boolean(el.querySelector('textarea'))
+      hasil.belumAdaSimpan = !tombol(el, /Simpan penilaian|Ajukan ke Super Admin/)
+    }
+    await klik(tombol(el, /Tambah komponen/))
+    if (superAdmin) hasil.barisBaruDiperiksa = /nama komponen wajib diisi/.test(el.textContent)
+    const isian = [...el.querySelectorAll('input[aria-label="Nama komponen"]')]
+    await ketik(isian[isian.length - 1], 'Tugas 3: Refleksi akhir')
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30))
+    })
+    if (superAdmin) {
+      hasil.pratinjauBelumLengkap = /menjadi belum lengkap karena ada komponen baru/.test(el.textContent)
+      hasil.simpanUntukSuperAdmin = Boolean(tombol(el, /Simpan penilaian/))
+    } else {
+      hasil.ajukanUntukAdminBiasa = Boolean(tombol(el, /Ajukan ke Super Admin/)) && !tombol(el, /Simpan penilaian/)
+    }
+    lepas()
+  }
+
+  if (lama) window.localStorage.setItem('sk5c.session', lama)
+  else window.localStorage.removeItem('sk5c.session')
+  return hasil
+}
+
+// Super admin memakai panel admin yang sama; yang berbeda label perannya di profil dan menu akun.
+export async function ujiSuperAdmin() {
+  const lama = window.localStorage.getItem('sk5c.session')
+  const hasil = {}
+  const sesi = (superAdmin) =>
+    window.localStorage.setItem(
+      'sk5c.session',
+      JSON.stringify(
+        superAdmin
+          ? { role: 'admin', superAdmin: true, email: 'super.admin@umn.ac.id', name: 'Super Admin', initials: 'SA' }
+          : { role: 'admin', email: 'admin@umn.ac.id', name: 'Biro Kemahasiswaan & Humaniora', initials: 'KH' },
+      ),
+    )
+  const lencana = (el) => el.querySelector('main header p span')?.textContent ?? ''
+
+  sesi(true)
+  let { el, lepas } = await pasang('/admin/profil')
+  hasil.panelAdminTerbuka = !el.textContent.includes('Aplikasi gagal dimuat') && /Profil|Super Admin/.test(el.textContent)
+  hasil.lencanaSuperAdmin = lencana(el) === 'Super Admin'
+  await klik(el.querySelector('button[aria-label="Menu akun"]'))
+  hasil.menuAkunSuperAdmin = [...el.querySelectorAll('p')].some((p) => p.textContent === 'Super Admin' && /rounded-md/.test(p.className))
+  lepas()
+
+  sesi(false)
+  ;({ el, lepas } = await pasang('/admin/profil'))
+  hasil.adminBiasaTetap = lencana(el) === 'Kemahasiswaan'
+  lepas()
+
+  if (lama) window.localStorage.setItem('sk5c.session', lama)
+  else window.localStorage.removeItem('sk5c.session')
+  return hasil
+}
+
+// Halaman Kurikulum CPMK: bobot satu aspek diatur manual, pratinjau dampak, alasan untuk data terkunci, simpan.
+export async function ujiKurikulum() {
+  const lama = window.localStorage.getItem('sk5c.session')
+  window.localStorage.setItem('sk5c.session', JSON.stringify({ role: 'admin', email: 'a@umn.ac.id', name: 'Y', initials: 'KH' }))
+  const hasil = {}
+  const idA1 = getKomponen('A1').map((k) => k.id)
+  const isianPorsi = (el) => [...el.querySelectorAll('input[aria-label^="Porsi baru"]')]
+  // Admin biasa: bila nilai mahasiswa yang sudah lewat Semester 3 ikut berubah, tombolnya "Ajukan ke Super Admin".
+  const tombolSimpan = (el) =>
+    [...el.querySelectorAll('button[type="submit"]')].find((b) => /Simpan bobot|Ajukan ke Super Admin/.test(b.textContent))
+
+  const { el, lepas } = await pasang('/admin/kurikulum')
+  hasil.sepuluhAspek = el.querySelectorAll('main li > button[aria-pressed]').length === 10
+  hasil.bawaanOtomatis = /Belum ada perubahan/.test(el.textContent) && isianPorsi(el).length === 0 && /20%/.test(el.textContent)
+
+  await klik(el.querySelectorAll('input[name="cara-A1"]')[1])
+  const isian = isianPorsi(el)
+  hasil.manualDiisiPorsiBerlaku = isian.length === idA1.length && isian.every((x) => x.value === '20')
+
+  await ketik(isian[0], '40')
+  hasil.jumlahSalahDitandai = /Perlu diperbaiki/.test(el.textContent) && /sekarang 120%/.test(el.textContent) && !tombolSimpan(el)
+
+  for (const x of isian.slice(1)) await ketik(x, '15')
+  await act(async () => { await new Promise((r) => setTimeout(r, 30)) })
+  hasil.dampakTampil = /Bila disimpan, nilai \d+ dari \d+ mahasiswa berubah/.test(el.textContent)
+  // Data contoh punya angkatan 2024 yang terkunci (dan sudah lewat Semester 3), jadi alasan wajib.
+  hasil.alasanWajib = /Alasan perubahan \(wajib\)/.test(el.textContent) && Boolean(tombolSimpan(el)?.disabled)
+  hasil.ajukanUntukAdminBiasa =
+    /Ajukan ke Super Admin/.test(tombolSimpan(el)?.textContent ?? '') && /dikirim ke Super Admin sebagai permintaan/.test(el.textContent)
+  await ketik(el.querySelector('form input'), 'Penyesuaian bobot A.1 untuk uji')
+  hasil.hidupSesudahAlasan = Boolean(tombolSimpan(el)) && !tombolSimpan(el).disabled
+
+  await act(async () => {
+    tombolSimpan(el).click()
+    await new Promise((r) => setTimeout(r, 0))
+  })
+  hasil.tersimpan = /Bobot tersimpan/.test(el.textContent) && Math.abs(bobotKomponen('A1')[idA1[0]] - 40) < 1e-9
+  hasil.kartuManual = /A\.1\.\s*Manual/.test(el.querySelector('main li > button[aria-pressed]')?.textContent ?? '')
+  lepas()
+
+  // Kurikulum dan CONFIG dikembalikan ke bawaan kode supaya uji berikutnya tidak terpengaruh.
+  isiKurikulum({})
+  resetTranskripCache()
   if (lama) window.localStorage.setItem('sk5c.session', lama)
   else window.localStorage.removeItem('sk5c.session')
   return hasil

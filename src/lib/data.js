@@ -27,6 +27,13 @@ const isiUlang = (larik, isi) => larik.splice(0, larik.length, ...(isi ?? []))
 /** Semester kalender sejak masuk, TANPA dibatasi: 4 atau lebih berarti program tiga semester sudah lewat. */
 export const semesterKalender = (intake, aktif = PERIODE_AKTIF) => ordinal(aktif) - ordinal(intake) + 1
 
+/**
+ * Program angkatan ini sudah lewat Semester 3. Sejak itu dosen tidak lagi menangani mahasiswanya; datanya
+ * diurus Kemahasiswaan, dan perubahan oleh admin biasa menunggu persetujuan super admin.
+ */
+export const programSelesai = (intake, aktif = PERIODE_AKTIF) =>
+  semesterKalender(intake, aktif) > CONFIG.TOTAL_SEMESTER_PROGRAM
+
 export function turunkanSemesterAktif(intake, aktif = PERIODE_AKTIF) {
   return Math.max(1, Math.min(CONFIG.TOTAL_SEMESTER_PROGRAM, semesterKalender(intake, aktif)))
 }

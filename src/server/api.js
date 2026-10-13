@@ -16,11 +16,28 @@ export class GalatApi extends Error {
 // atau berganti peran langsung berlaku, tanpa menunggu cookie-nya habis.
 export async function penggunaDari(request) {
   const id = await penggunaIdDari(request)
-  if (!id) return null
+  return id ? penggunaDariId(id) : null
+}
+
+/** Akun `id` dalam bentuk yang diterima setiap `kerja`; null bila tidak ada atau nonaktif. */
+export async function penggunaDariId(id) {
   const p = await db.pengguna.findUnique({ where: { id }, include: { mahasiswa: true, dosen: true } })
   if (!p || !p.aktif) return null
-  return { id: p.id, peran: PERAN[p.peran], email: p.email, mahasiswa: p.mahasiswa, dosen: p.dosen }
+  return {
+    id: p.id,
+    peran: PERAN[p.peran],
+    // Super admin tetap berperan admin, jadi semua pintu admin terbuka untuknya. Tanda yang
+    // tertinggal di akun dosen atau mahasiswa diabaikan.
+    superAdmin: p.peran === 'ADMIN' && p.superAdmin === true,
+    email: p.email,
+    mahasiswa: p.mahasiswa,
+    dosen: p.dosen,
+  }
 }
+
+/** Apakah `pengguna` memenuhi salah satu `peran`. 'superadmin' hanya dipenuhi admin bertanda super admin. */
+export const bolehPeran = (pengguna, peran) =>
+  !peran || peran.some((p) => (p === 'superadmin' ? pengguna.superAdmin : p === pengguna.peran))
 
 export function jawabGalat(e) {
   if (e instanceof GalatApi || Number.isInteger(e?.status)) {
@@ -36,13 +53,14 @@ export function jawabGalat(e) {
 
 /**
  * Kerangka setiap pintu API yang butuh sesi: membaca pemilik cookie, memeriksa perannya,
- * lalu menjalankan `kerja(pengguna, isi)`. `peran` null berarti semua peran boleh.
+ * lalu menjalankan `kerja(pengguna, isi)`. `peran` null berarti semua peran boleh; ['admin']
+ * juga meloloskan super admin; ['superadmin'] hanya super admin.
  */
 export async function tangani(request, peran, kerja) {
   try {
     const pengguna = await penggunaDari(request)
     if (!pengguna) throw new GalatApi('Sesi berakhir. Silakan masuk lagi.', 401)
-    if (peran && !peran.includes(pengguna.peran)) {
+    if (!bolehPeran(pengguna, peran)) {
       throw new GalatApi('Akun ini tidak berwenang melakukan tindakan tersebut.', 403)
     }
     await siapkanKurikulum()

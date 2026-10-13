@@ -2,9 +2,13 @@
 
    Membuat satu akun mahasiswa sementara (NIM berawalan UJI) dan menghapus seluruh jejaknya di
    akhir, berhasil maupun gagal. Butuh MySQL menyala dan `npm run db:seed` sudah pernah dijalankan
-   (memakai akun admin@umn.ac.id dan simon.petrus@lecturer.umn.ac.id dengan sandi umn12345).
+   (memakai akun admin@umn.ac.id, super.admin@umn.ac.id, dan simon.petrus@lecturer.umn.ac.id dengan
+   sandi umn12345).
    Bagian kurikulum menambah satu indikator dan menimpa dua pengaturan sebentar, lalu mengembalikannya;
-   penanda VERSI_KURIKULUM ikut naik dan tidak diturunkan lagi. */
+   penanda VERSI_KURIKULUM ikut naik dan tidak diturunkan lagi. Bagian bobot mengubah bobot A.1 lewat
+   pintu API lalu mengembalikannya; kolom komponen A.1 dan catatan log yang dibuatnya dipulihkan di akhir.
+   Bagian persetujuan membuat beberapa PermintaanAdmin untuk mahasiswa uji yang sudah lewat Semester 3;
+   permintaan dan catatan log-nya ikut dihapus di akhir. */
 
 import 'dotenv/config'
 import bcrypt from 'bcryptjs'
@@ -25,10 +29,28 @@ import * as angkatanPratinjau from '../app/api/angkatan/pratinjau/route.js'
 import * as angkatanKunci from '../app/api/angkatan/kunci/route.js'
 import * as log from '../app/api/log/route.js'
 import * as angkatanRingkasan from '../app/api/angkatan/route.js'
-import { KOMPONEN, KOMPONEN_BAWAAN, KUNCI_VERSI_KURIKULUM, getAspekList, getIndikator, isiKurikulum } from '../src/lib/curriculum.js'
+import * as bobot from '../app/api/kurikulum/bobot/route.js'
+import * as keputusanPermintaan from '../app/api/persetujuan/keputusan/route.js'
+import * as batalPermintaan from '../app/api/persetujuan/batal/route.js'
+import * as penilaian from '../app/api/kurikulum/penilaian/route.js'
+import {
+  KOMPONEN,
+  KOMPONEN_BAWAAN,
+  KUNCI_VERSI_KURIKULUM,
+  KURIKULUM_TERPASANG,
+  getAspekList,
+  getIndikator,
+  getKomponen,
+  isiKurikulum,
+} from '../src/lib/curriculum.js'
+import { susunanBobot } from '../src/lib/bobot.js'
+import { susunanPenilaian } from '../src/lib/penilaian.js'
+import { bobotKomponen } from '../src/lib/scoring.js'
 import { CONFIG } from '../src/lib/config.js'
 import { ambilKurikulum } from '../src/server/kurikulum.js'
 import { ambilMaster } from '../src/server/master.js'
+import { tangani } from '../src/server/api.js'
+import { cookieSesi } from '../src/server/sesi.js'
 
 const PINTU = {
   '/api/masuk': masuk,
@@ -47,6 +69,10 @@ const PINTU = {
   '/api/angkatan/kunci': angkatanKunci,
   '/api/log': log,
   '/api/angkatan': angkatanRingkasan,
+  '/api/kurikulum/bobot': bobot,
+  '/api/persetujuan/keputusan': keputusanPermintaan,
+  '/api/persetujuan/batal': batalPermintaan,
+  '/api/kurikulum/penilaian': penilaian,
 }
 
 let gagal = 0
@@ -92,6 +118,15 @@ const IND_UJI = 'UJI-IND-' + SUF
 const KONFIGURASI_UJI = ['AMBANG_SERTIFIKAT', 'TOTAL_SEMESTER_PROGRAM']
 /** Baris Konfigurasi sebelum disentuh uji ({ kunci: baris | null }); undefined = belum disentuh. */
 let konfigurasiAsli
+/* Bagian "bobot": baris komponen A.1 sebelum disentuh uji, dan id log UBAH_BOBOT yang dibuat uji. */
+let komponenA1Asli
+const logBobotUji = []
+/* Bagian "persetujuan": id PermintaanAdmin yang dibuat uji; log-nya bertarget 'permintaan P-..' (lihat targetLog). */
+const permintaanUji = []
+/* Bagian "penilaian": baris komponen dan Aspek C2 sebelum disentuh uji, komponen buatan uji, dan log-nya. */
+let penilaianAsli
+const komponenUji = []
+const logPenilaianUji = []
 /** Target baris LogAktivitas yang dibuat uji ini; ditambah id batch begitu diketahui. */
 const targetLog = ['angkatan ' + ANG_A, 'angkatan ' + ANG_B, 'mahasiswa ' + NIM, 'mahasiswa ' + NIM2]
 
@@ -137,8 +172,46 @@ async function pulihkanKurikulum() {
   if (berubah) await naikkanVersi()
 }
 
+/** Bobot dan jejak pengubah komponen A.1 dikembalikan persis seperti sebelum uji, lalu versi dinaikkan. */
+async function pulihkanBobot() {
+  if (komponenA1Asli) {
+    for (const k of komponenA1Asli) {
+      await db.komponen.update({
+        where: { id: k.id },
+        data: { bobot: k.bobot, diubahOleh: k.diubahOleh, diubahPada: k.diubahPada },
+      })
+    }
+    komponenA1Asli = undefined
+    await naikkanVersi()
+  }
+  if (logBobotUji.length) await db.logAktivitas.deleteMany({ where: { id: { in: logBobotUji } } })
+}
+
+/** Komponen C2 dikembalikan persis seperti sebelum uji, komponen buatan uji dihapus, teks aspek C2 dipulihkan. */
+async function pulihkanPenilaian() {
+  if (penilaianAsli) {
+    if (komponenUji.length) await db.komponen.deleteMany({ where: { id: { in: komponenUji } } })
+    for (const k of penilaianAsli.komponen) {
+      const { id, ...data } = k
+      await db.komponen.update({ where: { id }, data })
+    }
+    if (penilaianAsli.aspek) {
+      const { id, ...data } = penilaianAsli.aspek
+      await db.aspek.update({ where: { id }, data })
+    } else {
+      await db.aspek.deleteMany({ where: { id: 'C2' } })
+    }
+    penilaianAsli = undefined
+    await naikkanVersi()
+  }
+  if (logPenilaianUji.length) await db.logAktivitas.deleteMany({ where: { id: { in: logPenilaianUji } } })
+}
+
 async function bersihkan() {
+  await pulihkanPenilaian()
+  await pulihkanBobot()
   await pulihkanKurikulum()
+  if (permintaanUji.length) await db.permintaanAdmin.deleteMany({ where: { id: { in: permintaanUji } } })
   await bersihkanMahasiswa(EMAIL)
   await bersihkanMahasiswa(EMAIL2)
   await bersihkanMahasiswa(EMAIL3)
@@ -168,12 +241,16 @@ try {
   const mhs = peramban()
   const dosen = peramban()
   const tamu = peramban()
+  // Super admin: mengubah data mahasiswa yang sudah lewat Semester 3 tanpa antre (admin biasa harus meminta izin).
+  const sa = peramban()
 
   /* ------------------------------ sesi ------------------------------ */
   garis('1. MASUK, SESI, DAN WEWENANG')
   cek('tanpa cookie: /api/data ditolak 401', (await tamu('/api/data')).status === 401)
   cek('sandi salah ditolak', (await tamu('/api/masuk', { metode: 'POST', isi: { email: EMAIL, password: 'salah' } })).status === 401)
   cek('admin masuk', (await admin('/api/masuk', { metode: 'POST', isi: { email: 'admin@umn.ac.id', password: 'umn12345' } })).status === 200)
+  const masukSA = await sa('/api/masuk', { metode: 'POST', isi: { email: 'super.admin@umn.ac.id', password: 'umn12345' } })
+  cek('super admin masuk', masukSA.status === 200)
   cek('mahasiswa uji masuk', (await mhs('/api/masuk', { metode: 'POST', isi: { email: EMAIL, password: 'umn12345' } })).status === 200)
   cek('dosen masuk', (await dosen('/api/masuk', { metode: 'POST', isi: { email: 'simon.petrus@lecturer.umn.ac.id', password: 'umn12345' } })).status === 200)
   const s = await mhs('/api/sesi')
@@ -305,6 +382,9 @@ try {
   })
   const mahasiswaId2 = akunUji2.mahasiswa.id
   const adminId = (await db.pengguna.findUnique({ where: { email: 'admin@umn.ac.id' } })).id
+  const saId = (await db.pengguna.findUnique({ where: { email: 'super.admin@umn.ac.id' } })).id
+  // ANG_A sudah lewat Semester 3: perubahan datanya oleh admin biasa menjadi permintaan (bagian 14). Aturan
+  // penguncian dan data terkunci di bawah diuji lewat super admin, yang tidak pernah tertahan.
   const nilaiMhs2 = () => db.nilai.count({ where: { mahasiswaId: mahasiswaId2 } })
   const logAda = (aksi, target) => db.logAktivitas.findFirst({ where: { aksi, target } })
 
@@ -329,21 +409,21 @@ try {
   )
   cek('angkatan tidak dikenal 404', (await admin('/api/angkatan/pratinjau', { metode: 'POST', isi: { angkatanId: 'TIDAK-ADA' } })).status === 404)
 
-  const kunciA = await admin('/api/angkatan/kunci', { metode: 'POST', isi: { angkatanId: ANG_A, konfirmasi: 'Uji A ' + SUF } })
+  const kunciA = await sa('/api/angkatan/kunci', { metode: 'POST', isi: { angkatanId: ANG_A, konfirmasi: 'Uji A ' + SUF } })
   const barisA = await db.angkatan.findUnique({ where: { id: ANG_A } })
   cek(
     'angkatan terkunci beserta pencatat dan waktunya',
-    kunciA.status === 200 && kunciA.isi.ok === true && barisA.status === 'TERKUNCI' && barisA.dikunciOleh === adminId && barisA.dikunciPada != null,
+    kunciA.status === 200 && kunciA.isi.ok === true && barisA.status === 'TERKUNCI' && barisA.dikunciOleh === saId && barisA.dikunciPada != null,
     JSON.stringify(kunciA.isi),
   )
   cek('penguncian angkatan tercatat di log', Boolean(await logAda('KUNCI_ANGKATAN', 'angkatan ' + ANG_A)))
-  cek('mengunci dua kali ditolak (ok false)', (await admin('/api/angkatan/kunci', { metode: 'POST', isi: { angkatanId: ANG_A, konfirmasi: 'Uji A ' + SUF } })).isi.ok === false)
+  cek('mengunci dua kali ditolak (ok false)', (await sa('/api/angkatan/kunci', { metode: 'POST', isi: { angkatanId: ANG_A, konfirmasi: 'Uji A ' + SUF } })).isi.ok === false)
   const dataAdmin = (await admin('/api/data')).isi
   cek('data admin menunjukkan status angkatan terkunci', dataAdmin.mahasiswa.find((m) => m.nim === NIM2)?.statusAngkatan === 'terkunci')
 
-  // --- admin mengubah / melengkapi data terkunci, wajib beralasan ---
+  // --- (super) admin mengubah / melengkapi data terkunci, wajib beralasan ---
   const isiTerkunci = (komponenId, nilaiBaru, alasan) =>
-    admin('/api/nilai', {
+    sa('/api/nilai', {
       metode: 'POST',
       isi: { sumber: 'MK', semester: 1, angkatanId: ANG_A, cara: 'manual', entri: [{ nim: NIM2, komponenId, nilai: nilaiBaru }], alasan },
     })
@@ -357,19 +437,16 @@ try {
   const logUbah = await logAda('UBAH_DATA_TERKUNCI', 'batch ' + denganAlasan.isi.id)
   cek('perubahan data terkunci tercatat beserta alasannya', logUbah?.rincian?.alasan === 'Melengkapi nilai susulan sesudah semester 3.', JSON.stringify(logUbah?.rincian))
 
-  cek('rollback data terkunci tanpa alasan ditolak', (await admin('/api/nilai/rollback', { metode: 'POST', isi: { id: denganAlasan.isi.id } })).status === 400 && (await nilaiMhs2()) === 1)
-  const rbTerkunci = await admin('/api/nilai/rollback', { metode: 'POST', isi: { id: denganAlasan.isi.id, alasan: 'Salah memasukkan nilai, dibatalkan.' } })
+  cek('rollback data terkunci tanpa alasan ditolak', (await sa('/api/nilai/rollback', { metode: 'POST', isi: { id: denganAlasan.isi.id } })).status === 400 && (await nilaiMhs2()) === 1)
+  const rbTerkunci = await sa('/api/nilai/rollback', { metode: 'POST', isi: { id: denganAlasan.isi.id, alasan: 'Salah memasukkan nilai, dibatalkan.' } })
   cek('rollback dengan alasan berhasil dan tercatat', rbTerkunci.isi.ok === true && (await nilaiMhs2()) === 0 && Boolean(await logAda('ROLLBACK_DATA_TERKUNCI', 'batch ' + denganAlasan.isi.id)), JSON.stringify(rbTerkunci.isi))
 
-  // --- dosen tetap boleh mengusulkan; admin yang memutuskan, dengan catatan ---
+  // --- sesudah Semester 3 dosen tidak lagi bertanggung jawab: usulannya ditolak, mahasiswanya tidak terlihat ---
   const usulTerkunci = await dosen('/api/usulan', { metode: 'POST', isi: { cara: 'manual', entri: [{ nim: NIM2, komponenId: 'A1-MK-UAS', nilai: 70 }] } })
-  cek('dosen tetap boleh mengusulkan untuk angkatan terkunci', usulTerkunci.status === 200, JSON.stringify(usulTerkunci.isi))
-  cek('menyetujui usulan data terkunci tanpa catatan ditolak', (await admin('/api/usulan/keputusan', { metode: 'POST', isi: { id: usulTerkunci.isi.id, keputusan: 'disetujui' } })).status === 400)
-  const setujuTerkunci = await admin('/api/usulan/keputusan', { metode: 'POST', isi: { id: usulTerkunci.isi.id, keputusan: 'disetujui', catatan: 'Disetujui setelah memeriksa berkas dosen.' } })
-  cek('menyetujui dengan catatan berhasil dan nilai masuk', setujuTerkunci.isi.ok === true && (await nilaiMhs2()) === 1, JSON.stringify(setujuTerkunci.isi))
-  const usulSetuju = (await admin('/api/data')).isi.usulan.find((x) => x.id === usulTerkunci.isi.id)
-  if (usulSetuju?.batchId) targetLog.push('batch ' + usulSetuju.batchId)
-  cek('persetujuan usulan data terkunci tercatat di log', Boolean(usulSetuju?.batchId && (await logAda('UBAH_DATA_TERKUNCI', 'batch ' + usulSetuju.batchId))))
+  cek('dosen tidak bisa mengusulkan untuk mahasiswa yang sudah lewat Semester 3', usulTerkunci.status === 400 && /lewat Semester 3/.test(usulTerkunci.isi.galat ?? ''), JSON.stringify(usulTerkunci.isi))
+  const dataDosenA = (await dosen('/api/data')).isi
+  cek('dosen tidak melihat mahasiswa yang sudah lewat Semester 3, tetap melihat yang belum', !dataDosenA.mahasiswa.some((m) => m.nim === NIM2) && dataDosenA.mahasiswa.some((m) => m.nim === NIM))
+  cek('penolakan dosen tidak menulis nilai', (await nilaiMhs2()) === 0)
 
   // --- aspek final MANUAL pada angkatan yang belum terkunci ---
   await db.penguncian.create({ data: { mahasiswaId, aspekId: 'A2', status: 'FINAL', olehId: adminId } })
@@ -441,7 +518,7 @@ try {
   // --- tindakan admin (LogAktivitas) ---
   const akt = await bacaLog({ jenis: 'aktivitas', dari: hariIni, ukuran: 100 })
   const barisKunci = akt.isi.baris.find((b) => b.aksi === 'KUNCI_ANGKATAN' && b.target === 'angkatan ' + ANG_A)
-  cek('aktivitas: penguncian angkatan terbaca beserta pelakunya', akt.status === 200 && barisKunci?.aktor === 'Biro Kemahasiswaan' && barisKunci.rincian?.label === 'Uji A ' + SUF, JSON.stringify(barisKunci))
+  cek('aktivitas: penguncian angkatan terbaca beserta pelakunya', akt.status === 200 && barisKunci?.aktor === 'Super Admin' && barisKunci.rincian?.label === 'Uji A ' + SUF, JSON.stringify(barisKunci))
   const barisUbah = akt.isi.baris.find((b) => b.aksi === 'UBAH_DATA_TERKUNCI' && b.target === 'batch ' + denganAlasan.isi.id)
   cek('aktivitas: alasan perubahan data terkunci terbaca', barisUbah?.rincian?.alasan === 'Melengkapi nilai susulan sesudah semester 3.', JSON.stringify(barisUbah))
   const hanyaKunci = await bacaLog({ jenis: 'aktivitas', aksi: 'KUNCI_ANGKATAN', ukuran: 100 })
@@ -483,7 +560,7 @@ try {
 
   cek(
     'angkatan terkunci: pencatat dan waktu kunci terbaca',
-    gA?.status === 'terkunci' && gA.dikunciOleh === 'Biro Kemahasiswaan' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(gA.dikunciPada ?? ''),
+    gA?.status === 'terkunci' && gA.dikunciOleh === 'Super Admin' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(gA.dikunciPada ?? ''),
     JSON.stringify(gA),
   )
   cek('angkatan aktif: belum ada pencatat kunci', gB?.status === 'aktif' && gB.dikunciOleh === null && gB.dikunciPada === null)
@@ -570,8 +647,257 @@ try {
   )
   isiKurikulum(kur)
 
+  /* ------------------------------ bobot ------------------------------ */
+  garis('12. BOBOT KURIKULUM')
+  await admin('/api/data') // memasang kurikulum dan versinya dari basis data, seperti halaman
+  komponenA1Asli = await db.komponen.findMany({
+    where: { aspekId: 'A1' },
+    select: { id: true, bobot: true, diubahOleh: true, diubahPada: true },
+  })
+  const idA1 = getKomponen('A1').map((k) => k.id)
+  const susunanAwal = susunanBobot()
+  const versiAwal = KURIKULUM_TERPASANG.versi
+  // Porsi yang sengaja tidak rata: komponen pertama 40, sisanya 15.
+  const a1Manual = Object.fromEntries(idA1.map((id, i) => [id, i === 0 ? 40 : 15]))
+  // Lewat super admin: bobot menggeser nilai semua angkatan, termasuk yang sudah lewat Semester 3, dan
+  // simpanan admin biasa untuk itu menunggu persetujuan (diuji di bagian 14).
+  const kirimBobot = (aspekA1, isi = {}) =>
+    sa('/api/kurikulum/bobot', {
+      metode: 'POST',
+      isi: {
+        versi: KURIKULUM_TERPASANG.versi,
+        pengaturan: susunanAwal.pengaturan,
+        aspek: { ...susunanAwal.aspek, A1: aspekA1 },
+        alasan: 'Uji otomatis perubahan bobot A.1',
+        ...isi,
+      },
+    })
+  const logBobot = (v) => db.logAktivitas.findFirst({ where: { aksi: 'UBAH_BOBOT', target: 'kurikulum versi ' + v } })
+
+  cek('basis data sudah memegang kurikulum (versi ada)', versiAwal >= 1, String(versiAwal))
+  cek(
+    'dosen tidak boleh mengubah bobot (403)',
+    (await dosen('/api/kurikulum/bobot', { metode: 'POST', isi: { aspek: {}, pengaturan: {} } })).status === 403,
+  )
+  cek('jumlah porsi bukan 100 ditolak', (await kirimBobot({ ...a1Manual, [idA1[0]]: 39 })).status === 400)
+  cek('versi basi ditolak (409)', (await kirimBobot(a1Manual, { versi: versiAwal + 99 })).status === 409)
+
+  const simpan1 = await kirimBobot(a1Manual)
+  const log1 = simpan1.status === 200 ? await logBobot(simpan1.isi.versi) : null
+  if (log1) logBobotUji.push(log1.id)
+  cek('bobot manual A.1 tersimpan, versi naik', simpan1.status === 200 && simpan1.isi.versi === versiAwal + 1, JSON.stringify(simpan1.isi).slice(0, 300))
+  const barisA1 = await db.komponen.findMany({ where: { aspekId: 'A1' } })
+  cek(
+    'kolom bobot dan jejak pengubah di tabel Komponen terisi',
+    barisA1.every((k) => k.bobot === a1Manual[k.id] && k.diubahPada != null && k.diubahOleh != null),
+  )
+  cek(
+    'jawaban membawa kurikulum baru',
+    simpan1.isi.kurikulum?.komponen.filter((k) => k.aspekId === 'A1').every((k) => k.bobot === a1Manual[k.id]) === true,
+  )
+  cek(
+    'log UBAH_BOBOT mencatat alasan, sebelum, dan sesudah',
+    log1?.rincian?.alasan === 'Uji otomatis perubahan bobot A.1' &&
+      log1.rincian.aspek?.[0]?.aspekId === 'A1' &&
+      JSON.stringify(log1.rincian.aspek[0].sebelum) === JSON.stringify(susunanAwal.aspek.A1) &&
+      log1.rincian.aspek[0].sesudah?.[idA1[0]] === 40 &&
+      typeof log1.rincian.dampak?.berubah === 'number',
+    JSON.stringify(log1?.rincian ?? null).slice(0, 300),
+  )
+  await admin('/api/data')
+  cek('pintu API berikutnya menghitung dengan bobot baru', Math.abs(bobotKomponen('A1')[idA1[0]] - 40) < 1e-9, JSON.stringify(bobotKomponen('A1')))
+  cek('halaman lama (versi sebelum simpan) ditolak (409)', (await kirimBobot(null, { versi: versiAwal })).status === 409)
+  const aktBobot = await admin('/api/log', { metode: 'POST', isi: { jenis: 'aktivitas', aksi: 'UBAH_BOBOT' } })
+  cek(
+    'log bobot bisa disaring lewat /api/log',
+    aktBobot.status === 200 && aktBobot.isi.baris?.some((b) => b.target === log1?.target),
+    JSON.stringify(aktBobot.isi).slice(0, 200),
+  )
+
+  const simpan2 = await kirimBobot(susunanAwal.aspek.A1)
+  const log2 = simpan2.status === 200 ? await logBobot(simpan2.isi.versi) : null
+  if (log2) logBobotUji.push(log2.id)
+  await admin('/api/data')
+  cek(
+    'dikembalikan ke semula: bobot A.1 seperti sebelum uji',
+    simpan2.status === 200 && JSON.stringify(susunanBobot().aspek.A1) === JSON.stringify(susunanAwal.aspek.A1),
+    JSON.stringify(simpan2.isi).slice(0, 200),
+  )
+
+  /* ------------------------------ super admin ------------------------------ */
+  garis('13. SUPER ADMIN')
+  // Akun super.admin@umn.ac.id dibuat npm run db:seed (masuk di bagian 1); bagian ini hanya membaca.
+  cek('super admin masuk, sesinya bertanda superAdmin', masukSA.status === 200 && masukSA.isi.akun?.superAdmin === true, JSON.stringify(masukSA.isi))
+  cek('/api/sesi super admin membawa superAdmin: true', (await sa('/api/sesi')).isi.akun?.superAdmin === true)
+  cek('/api/sesi admin biasa membawa superAdmin: false', (await admin('/api/sesi')).isi.akun?.superAdmin === false)
+  cek('super admin bisa membuka pintu admin yang sudah ada', (await sa('/api/angkatan')).status === 200)
+  const coba = async (email, peran) => {
+    const id = (await db.pengguna.findUnique({ where: { email } })).id
+    const cookie = (await cookieSesi(id)).split(';')[0]
+    const r = new Request('http://localhost/uji', { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: '{}' })
+    return (await tangani(r, peran, async () => ({ ok: true }))).status
+  }
+  cek("pintu ['superadmin']: super admin lolos", (await coba('super.admin@umn.ac.id', ['superadmin'])) === 200)
+  cek("pintu ['superadmin']: admin biasa ditolak 403", (await coba('admin@umn.ac.id', ['superadmin'])) === 403)
+  cek("pintu ['superadmin']: dosen ditolak 403", (await coba('simon.petrus@lecturer.umn.ac.id', ['superadmin'])) === 403)
+  cek("pintu ['superadmin']: mahasiswa ditolak 403", (await coba(EMAIL, ['superadmin'])) === 403)
+
+  /* ------------------------------ persetujuan ------------------------------ */
+  garis('14. PERSETUJUAN SUPER ADMIN')
+  // NIM2 ada di ANG_A yang sudah lewat Semester 3: admin biasa mengajukan, super admin memutuskan.
+  const nomorP = (r) => Number(String(r.isi?.permintaan?.id ?? '').slice(2))
+  const ajukan = async (alamat, isi) => {
+    const r = await admin(alamat, { metode: 'POST', isi })
+    if (r.isi?.permintaan?.id) {
+      permintaanUji.push(nomorP(r))
+      targetLog.push('permintaan ' + r.isi.permintaan.id)
+    }
+    return r
+  }
+  const isiA = (alasan) => ({
+    sumber: 'MK', semester: 1, angkatanId: ANG_A, cara: 'manual', entri: [{ nim: NIM2, komponenId: 'A1-MK-SIKAP', nilai: 85 }], alasan,
+  })
+  cek('admin biasa tanpa alasan ditolak (400)', (await ajukan('/api/nilai', isiA(''))).status === 400)
+  const p1 = await ajukan('/api/nilai', isiA('Melengkapi nilai sikap sesudah semester 3'))
+  cek('admin biasa: dijawab menunggu persetujuan, nilai belum masuk', p1.status === 200 && p1.isi.menunggu === true && (await nilaiMhs2()) === 0, JSON.stringify(p1.isi))
+  const daftarAdmin = (await admin('/api/data')).isi.permintaan ?? []
+  cek('permintaan tampil di data admin sebagai miliknya', daftarAdmin.some((p) => p.id === p1.isi.permintaan?.id && p.milikSaya && p.status === 'menunggu'))
+  cek('admin biasa tidak bisa memutuskan (403)', (await admin('/api/persetujuan/keputusan', { metode: 'POST', isi: { id: p1.isi.permintaan?.id, keputusan: 'disetujui' } })).status === 403)
+  const putus1 = await sa('/api/persetujuan/keputusan', { metode: 'POST', isi: { id: p1.isi.permintaan?.id, keputusan: 'disetujui' } })
+  const p1Db = await db.permintaanAdmin.findUnique({ where: { id: nomorP(p1) } })
+  if (p1Db?.hasil?.batchId) targetLog.push('batch ' + p1Db.hasil.batchId)
+  cek(
+    'super admin menyetujui: nilai masuk atas nama admin pengaju',
+    putus1.isi.ok === true && (await nilaiMhs2()) === 1 && p1Db?.status === 'DISETUJUI' &&
+      (await db.batch.findUnique({ where: { id: p1Db.hasil?.batchId ?? '' } }))?.aktorId === adminId,
+    JSON.stringify(putus1.isi),
+  )
+  const p2 = await ajukan('/api/nilai/rollback', { id: p1Db?.hasil?.batchId, alasan: 'Ternyata nilai sikap belum final' })
+  cek('rollback oleh admin biasa juga menunggu', p2.isi.menunggu === true && (await nilaiMhs2()) === 1, JSON.stringify(p2.isi))
+  cek('admin menarik permintaannya', (await admin('/api/persetujuan/batal', { metode: 'POST', isi: { id: p2.isi.permintaan?.id } })).isi.ok === true)
+  const p3 = await ajukan('/api/nilai/rollback', { id: p1Db?.hasil?.batchId, alasan: 'Ternyata nilai sikap belum final' })
+  cek('menolak tanpa catatan ditolak (400)', (await sa('/api/persetujuan/keputusan', { metode: 'POST', isi: { id: p3.isi.permintaan?.id, keputusan: 'ditolak' } })).status === 400)
+  const tolak3 = await sa('/api/persetujuan/keputusan', { metode: 'POST', isi: { id: p3.isi.permintaan?.id, keputusan: 'ditolak', catatan: 'Nilai sudah benar' } })
+  cek('ditolak: nilai tetap', tolak3.isi.status === 'ditolak' && (await nilaiMhs2()) === 1, JSON.stringify(tolak3.isi))
+  cek(
+    'pengajuan, keputusan, dan penarikan tercatat di log',
+    Boolean(await logAda('AJUKAN_PERSETUJUAN', 'permintaan ' + p1.isi.permintaan?.id)) &&
+      Boolean(await logAda('PUTUSKAN_PERSETUJUAN', 'permintaan ' + p1.isi.permintaan?.id)) &&
+      Boolean(await logAda('TARIK_PERMINTAAN', 'permintaan ' + p2.isi.permintaan?.id)),
+  )
+  const biasa = await kirimNilai(87)
+  cek('mahasiswa yang belum lewat Semester 3 tetap langsung tersimpan', biasa.status === 200 && !biasa.isi.menunggu, JSON.stringify(biasa.isi).slice(0, 120))
+
+  /* ------------------------------ penilaian ------------------------------ */
+  garis('15. PENILAIAN ASPEK (INPUT MANUAL)')
+  // Aspek C2: komponen dan teksnya diubah lewat pintu API, lalu dipulihkan persis di akhir (pulihkanPenilaian).
+  penilaianAsli = {
+    komponen: await db.komponen.findMany({ where: { aspekId: 'C2' } }),
+    aspek: await db.aspek.findUnique({ where: { id: 'C2' } }),
+  }
+  const logPenilaianTerakhir = async () => {
+    const l = await db.logAktivitas.findFirst({
+      where: { aksi: 'UBAH_PENILAIAN', target: { startsWith: 'aspek C2' } },
+      orderBy: { id: 'desc' },
+    })
+    if (l && !logPenilaianUji.includes(l.id)) logPenilaianUji.push(l.id)
+    return l
+  }
+  await admin('/api/data') // kurikulum dan versinya terpasang di proses ini, seperti halaman
+  const kirimPenilaian = (peramban, ubah, alasan = 'Uji otomatis penilaian aspek C2') => {
+    const s = structuredClone(susunanPenilaian('C2'))
+    ubah(s)
+    return peramban('/api/kurikulum/penilaian', {
+      metode: 'POST',
+      isi: { versi: KURIKULUM_TERPASANG.versi, aspekId: 'C2', ...s, alasan },
+    })
+  }
+  const bobotRata = (s) => {
+    const aktif = s.komponen.filter((k) => k.aktif)
+    const rata = Math.round(10000 / aktif.length) / 100
+    aktif.forEach((k, i) => {
+      k.bobot = i === aktif.length - 1 ? Math.round((100 - rata * (aktif.length - 1)) * 100) / 100 : rata
+    })
+  }
+  cek('dosen tidak boleh mengubah penilaian (403)', (await dosen('/api/kurikulum/penilaian', { metode: 'POST', isi: { aspekId: 'C2' } })).status === 403)
+  const tambahUji = await kirimPenilaian(sa, (s) => {
+    s.aspek.mk = 'Civics (uji ' + SUF + ')'
+    s.komponen.push({ id: null, label: 'Komponen uji ' + SUF, sumber: 'PDP', jenis: null, ranah: 'afektif', status: 'draft', aktif: true, bobot: null })
+    bobotRata(s)
+  })
+  const idUji = tambahUji.isi.ditambah?.[0]?.id
+  if (idUji) komponenUji.push(idUji)
+  await logPenilaianTerakhir()
+  cek(
+    'super admin menambah komponen + mengubah teks aspek: langsung tersimpan',
+    tambahUji.status === 200 && tambahUji.isi.ok === true && /^C2-PDP-B\d+$/.test(idUji ?? ''),
+    JSON.stringify(tambahUji.isi).slice(0, 200),
+  )
+  const rowUji = idUji ? await db.komponen.findUnique({ where: { id: idUji } }) : null
+  cek(
+    'tabel Komponen: baris baru dengan pengubah super admin',
+    rowUji?.aspekId === 'C2' && rowUji.aktif === true && rowUji.resmi === false && rowUji.diubahOleh === saId,
+    JSON.stringify(rowUji),
+  )
+  cek('tabel Aspek: teks C2 tersimpan', (await db.aspek.findUnique({ where: { id: 'C2' } }))?.mk === 'Civics (uji ' + SUF + ')')
+  await admin('/api/data')
+  cek(
+    'pintu API berikutnya memakai komponen dan teks baru',
+    getKomponen('C2').some((k) => k.id === idUji) && getAspekList().find((a) => a.id === 'C2')?.mk === 'Civics (uji ' + SUF + ')',
+  )
+  cek('tanpa perubahan ditolak (400)', (await kirimPenilaian(sa, () => {})).status === 400)
+  const gantiSumber = await kirimPenilaian(sa, (s) => {
+    s.komponen.find((x) => x.id !== idUji && x.sumber === 'MK').sumber = 'PDP'
+  })
+  cek(
+    'sumber komponen yang sudah dinilai tidak bisa diganti (400)',
+    gantiSumber.status === 400 && /tidak bisa diganti/.test(gantiSumber.isi.galat ?? ''),
+    JSON.stringify(gantiSumber.isi),
+  )
+  const pAdmin = await kirimPenilaian(
+    admin,
+    (s) => {
+      s.komponen.find((x) => x.id === idUji).label = 'Komponen uji ' + SUF + ' (diganti admin)'
+    },
+    'Admin memperjelas nama komponen uji',
+  )
+  if (pAdmin.isi?.permintaan?.id) {
+    permintaanUji.push(Number(pAdmin.isi.permintaan.id.slice(2)))
+    targetLog.push('permintaan ' + pAdmin.isi.permintaan.id)
+  }
+  cek(
+    'admin biasa selalu mengajukan (menunggu), nama belum berubah',
+    pAdmin.isi.menunggu === true && (await db.komponen.findUnique({ where: { id: idUji } }))?.label === 'Komponen uji ' + SUF,
+    JSON.stringify(pAdmin.isi),
+  )
+  const setujuP = await sa('/api/persetujuan/keputusan', { metode: 'POST', isi: { id: pAdmin.isi.permintaan?.id, keputusan: 'disetujui' } })
+  await logPenilaianTerakhir()
+  cek(
+    'super admin menyetujui: nama berubah, pengubah = admin',
+    setujuP.isi.ok === true && (await db.komponen.findUnique({ where: { id: idUji } }))?.diubahOleh === adminId,
+    JSON.stringify(setujuP.isi).slice(0, 160),
+  )
+  await admin('/api/data')
+  const arsipUji = await kirimPenilaian(sa, (s) => {
+    s.komponen.find((x) => x.id === idUji).aktif = false
+    bobotRata(s)
+  })
+  const logArsip = await logPenilaianTerakhir()
+  await admin('/api/data')
+  cek(
+    'hapus = masuk arsip: baris tetap ada, tidak dihitung',
+    arsipUji.isi.ok === true && (await db.komponen.findUnique({ where: { id: idUji } }))?.aktif === false && !getKomponen('C2').some((k) => k.id === idUji),
+    JSON.stringify(arsipUji.isi).slice(0, 160),
+  )
+  cek(
+    'log UBAH_PENILAIAN mencatat alasan dan komponen yang diarsipkan',
+    logArsip?.rincian?.alasan === 'Uji otomatis penilaian aspek C2' && logArsip.rincian.diarsipkan?.includes(idUji),
+    JSON.stringify(logArsip?.rincian ?? null).slice(0, 200),
+  )
+
   /* ------------------------------ keluar ------------------------------ */
-  garis('12. KELUAR')
+  garis('16. KELUAR')
+  await sa('/api/keluar', { metode: 'POST' })
   await mhs('/api/keluar', { metode: 'POST' })
   cek('setelah keluar, sesi tidak berlaku', (await mhs('/api/sesi')).status === 401)
 } catch (e) {

@@ -51,6 +51,7 @@ import {
 import {
   BATCH_SESI,
   bersihkanPerubahan,
+  menungguPersetujuan,
   peringatanSesi,
   putuskanKoreksi,
   setPenguncianBanyak,
@@ -61,6 +62,8 @@ import {
 import { modeLokal } from '../../lib/modeData'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
+import { CatatanPersetujuan, PesanMenunggu, usePerluPersetujuan } from './PermintaanTerkirim'
+import EditorPenilaian from './EditorPenilaian'
 
 const PAGE_SIZE = 10
 const SEMESTER_KOSONG = '— Pilih semester —'
@@ -600,6 +603,10 @@ function InputManual({
   awalCari = '',
 }) {
   const teks = useTeks()
+  const perluPersetujuan = usePerluPersetujuan(angkatan?.intake)
+  const { user } = useAuth()
+  // Penyunting penilaian aspek (teks aspek, komponen, bobot); super admin langsung, admin biasa mengajukan.
+  const [aturPenilaian, setAturPenilaian] = useState(false)
   const [aspekId, setAspekId] = useState(() =>
     aspekList.some((a) => a.id === awalAspek) ? awalAspek : (aspekList[0]?.id ?? null),
   )
@@ -683,6 +690,12 @@ function InputManual({
     setTanda({})
     setTandaBuka(null)
     setAlasanUbah('')
+    if (menungguPersetujuan(batch)) {
+      /* Menunggu super admin: belum ada nilai yang tersimpan, jadi tanda aspek juga belum diterapkan. */
+      setPesan({ menunggu: batch })
+      setSibuk(false)
+      return
+    }
     try {
       setPesan({ batch, status: await terapkanStatus(batch, aktor, tandaBaris) })
     } catch (e) {
@@ -719,11 +732,28 @@ function InputManual({
           {teks('Kosongkan sel yang belum dinilai; sel kosong tidak dihitung sebagai nol.')}{' '}
           {teks('Baris yang tidak ditandai mengikuti aturan sistem: aspeknya menjadi final sendiri begitu seluruh komponennya terisi.')}
         </p>
+        {user?.role === 'admin' ? (
+          <div className="sm:col-span-2">
+            <button
+              type="button"
+              className="btn-ghost !px-3 !py-2 text-[13px]"
+              aria-expanded={aturPenilaian}
+              onClick={() => setAturPenilaian((v) => !v)}
+            >
+              <IconPencil size={15} />
+              {teks(aturPenilaian ? 'Tutup pengaturan penilaian' : 'Atur penilaian {kode}', {
+                kode: (aspekList.find((a) => a.id === aspekId)?.kode ?? '').replace(/\.$/, ''),
+              })}
+            </button>
+          </div>
+        ) : null}
       </div>
+
+      {aturPenilaian ? <EditorPenilaian key={aspekId} aspekId={aspekId} sumberAwal={sumber} /> : null}
 
       {pesan ? (
         <div className="px-5 pt-4 sm:px-6">
-          <HasilSimpan hasil={pesan} />
+          {pesan.menunggu ? <PesanMenunggu hasil={pesan.menunggu} /> : <HasilSimpan hasil={pesan} />}
         </div>
       ) : null}
       {galat ? (
@@ -834,7 +864,8 @@ function InputManual({
         </table>
       </div>
 
-      <div className="border-t border-line px-5 py-4 sm:px-6">
+      <div className="space-y-3 border-t border-line px-5 py-4 sm:px-6">
+        {perluPersetujuan ? <CatatanPersetujuan /> : null}
         <IsianAlasan nilai={alasanUbah} onChange={setAlasanUbah} />
       </div>
 
@@ -888,6 +919,7 @@ const labelKomponen = (k) => k.id + ' · ' + k.label
 
 function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, aktor, program }) {
   const tr = useTeks()
+  const perluPersetujuan = usePerluPersetujuan(angkatan?.intake)
   const [teks, setTeks] = useState('')
   const [analisa, setAnalisa] = useState(null)
   const [peta, setPeta] = useState({})
@@ -997,6 +1029,11 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
     setTeks('')
     setAlasanUbah('')
     if (berkasRef.current) berkasRef.current.value = ''
+    if (menungguPersetujuan(batch)) {
+      setPesan({ menunggu: batch })
+      setSibuk(false)
+      return
+    }
     try {
       setPesan({ batch, status: await terapkanStatus(batch, aktor) })
     } catch (e) {
@@ -1085,7 +1122,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
         </div>
       </div>
 
-      {pesan ? <HasilSimpan hasil={pesan} /> : null}
+      {pesan ? pesan.menunggu ? <PesanMenunggu hasil={pesan.menunggu} /> : <HasilSimpan hasil={pesan} /> : null}
       {galat ? <PesanGalat pesan={galat} /> : null}
 
       {analisa?.kosong ? (
@@ -1357,6 +1394,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
 
       {adaAnalisa ? (
         <div className="space-y-3">
+          {perluPersetujuan ? <CatatanPersetujuan /> : null}
           <IsianAlasan nilai={alasanUbah} onChange={setAlasanUbah} />
           <div className="flex flex-wrap items-center gap-3">
             <button type="button" className="btn-primary" disabled={!entriSiap.length || sibuk} onClick={proses}>
@@ -1504,6 +1542,7 @@ function RiwayatBatch() {
   const t = useTeks()
   const [galat, setGalat] = useState('')
   const [alasanRollback, setAlasanRollback] = useState('')
+  const [menunggu, setMenunggu] = useState(null)
   return (
     <Card>
       <CardHeader
@@ -1548,6 +1587,12 @@ function RiwayatBatch() {
         </p>
       ) : null}
 
+      {menunggu ? (
+        <div className="mx-5 mt-4 sm:mx-6">
+          <PesanMenunggu hasil={menunggu} />
+        </div>
+      ) : null}
+
       {BATCH_SESI.length && !modeLokal() ? (
         <div className="border-b border-line px-5 py-4 sm:px-6">
           <IsianAlasan label="Alasan rollback" nilai={alasanRollback} onChange={setAlasanRollback} />
@@ -1573,12 +1618,14 @@ function RiwayatBatch() {
                   type="button"
                   onClick={async () => {
                     try {
-                      if (!(await rollbackBatch(b.id, alasanRollback))) {
+                      const hasil = await rollbackBatch(b.id, alasanRollback)
+                      if (!hasil) {
                         setGalat(t('Batch ini sudah dibatalkan sebelumnya.'))
                         return
                       }
                       setAlasanRollback('')
                       setGalat('')
+                      setMenunggu(menungguPersetujuan(hasil) ? hasil : null)
                     } catch (e) {
                       setGalat(e.message)
                     }

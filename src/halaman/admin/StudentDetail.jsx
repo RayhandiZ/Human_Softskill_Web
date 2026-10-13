@@ -5,12 +5,13 @@ import Transkrip from '../student/Transkrip'
 import { Badge, Card, CardHeader, CatatanKaki, EmptyState } from '../../components/Ui'
 import { IconAlert, IconArrowLeft, IconCheck, IconList, IconLock, IconPrint, IconUndo } from '../../components/Icons'
 import { bolehTandaiFinal, kelayakanSertifikat } from '../../lib/rules'
-import { auditUntuk, getStudent, transkripOf } from '../../lib/data'
-import { setPenguncian } from '../../lib/store'
+import { auditUntuk, getAngkatan, getStudent, transkripOf } from '../../lib/data'
+import { menungguPersetujuan, setPenguncian } from '../../lib/store'
 import { CONFIG } from '../../lib/config'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 import { useStore } from '../../lib/store'
+import { CatatanPersetujuan, PesanMenunggu, usePerluPersetujuan } from './PermintaanTerkirim'
 
 export default function StudentDetail() {
   const teks = useTeks()
@@ -148,11 +149,18 @@ function PanelStatusAspek({ student }) {
   const terbuka = t.aspek.filter((a) => !a.terkunci)
 
   const [galat, setGalat] = useState('')
+  const [alasan, setAlasan] = useState('')
+  const [menunggu, setMenunggu] = useState(null)
+  // Mahasiswa yang programnya sudah lewat Semester 3: tanda yang diubah admin biasa menunggu super admin.
+  const perluPersetujuan = usePerluPersetujuan(getAngkatan(student.angkatanId)?.intake)
 
   const ubah = async (aspekId, status) => {
     setGalat('')
+    setMenunggu(null)
     try {
-      await setPenguncian({ nim: student.nim, aspekId, status, aktor: admin.officer })
+      const hasil = await setPenguncian({ nim: student.nim, aspekId, status, aktor: admin.officer, alasan })
+      if (menungguPersetujuan(hasil)) setMenunggu(hasil)
+      setAlasan('')
     } catch (e) {
       setGalat(e.message)
     }
@@ -178,6 +186,27 @@ function PanelStatusAspek({ student }) {
           <IconAlert size={16} className="mt-px shrink-0" />
           {galat}
         </p>
+      ) : null}
+
+      {menunggu ? (
+        <div className="mx-5 mt-4 sm:mx-6">
+          <PesanMenunggu hasil={menunggu} />
+        </div>
+      ) : null}
+
+      {perluPersetujuan && terbuka.length ? (
+        <div className="space-y-3 border-b border-line px-5 py-4 sm:px-6">
+          <CatatanPersetujuan />
+          <label className="block">
+            <span className="mb-1.5 block label">{teks('Alasan perubahan')}</span>
+            <input
+              className="field !py-2.5"
+              value={alasan}
+              onChange={(e) => setAlasan(e.target.value)}
+              placeholder={teks('Wajib, minimal 10 karakter, bila angkatan atau aspek sudah terkunci')}
+            />
+          </label>
+        </div>
       ) : null}
 
       {terbuka.length ? (

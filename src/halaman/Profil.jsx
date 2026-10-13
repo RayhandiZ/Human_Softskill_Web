@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Avatar, Badge, Card } from '../components/Ui'
 import { IconAlert, IconCheck, IconChevronDown, IconEye, IconPencil, IconUpload } from '../components/Icons'
-import { LABEL_PERAN, useAuth } from '../lib/auth'
+import { labelPeran, useAuth } from '../lib/auth'
 import { useTeks } from '../lib/bahasa'
 import { CONFIG } from '../lib/config'
 import { SUMBER } from '../lib/curriculum'
@@ -185,7 +185,7 @@ export default function Profil() {
             ) : null}
           </h1>
           <p className="mt-1.5">
-            <Badge tone="brand">{t(LABEL_PERAN[user?.role] ?? 'Kemahasiswaan')}</Badge>
+            <Badge tone="brand">{t(labelPeran(user) ?? 'Kemahasiswaan')}</Badge>
           </p>
         </div>
 
@@ -449,7 +449,7 @@ export default function Profil() {
             </Baris>
             <Baris
               label={t('Rata-rata minimal sertifikat')}
-              catatan={t('Bobot dan rata-rata minimal diubah lewat berkas konfigurasi oleh pengelola sistem.')}
+              catatan={t('Rata-rata minimal diubah lewat berkas konfigurasi oleh pengelola sistem. Bobot diubah di halaman Kurikulum CPMK.')}
             >
               <Tetap angka>{CONFIG.AMBANG_SERTIFIKAT}</Tetap>
             </Baris>

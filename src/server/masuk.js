@@ -55,6 +55,8 @@ function susunAkun(akun) {
   return {
     penggunaId: akun.id,
     peran,
+    // Sama dengan penggunaDari() di api.js: hanya akun admin yang bisa menjadi super admin.
+    superAdmin: peran === 'admin' && akun.superAdmin === true,
     email: akun.email,
     mahasiswa: m
       ? {

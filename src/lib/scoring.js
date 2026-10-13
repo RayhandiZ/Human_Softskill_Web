@@ -85,8 +85,10 @@ function bagi(komponen, total) {
 export function bobotKomponen(aspekId) {
   const komponen = getKomponen(aspekId)
   if (!komponen.length) return {}
-  // 100 dibagi rata ke seluruh komponen aspek, tanpa melihat sumber atau jenisnya.
-  if (CONFIG.MODE_BOBOT_KOMPONEN === 'merata') return bagi(komponen, 100)
+  // 100 dibagi rata ke seluruh komponen aspek, tanpa melihat sumber atau jenisnya. Aspek yang bobotnya
+  // diatur manual di halaman Kurikulum (seluruh komponennya berbobot) selalu memakai angka itu, di mode apa pun.
+  const manual = komponen.every((x) => typeof x.bobot === 'number')
+  if (CONFIG.MODE_BOBOT_KOMPONEN === 'merata' || manual) return bagi(komponen, 100)
 
   const perSumber = {}
   for (const x of komponen) (perSumber[x.sumber] ??= []).push(x)

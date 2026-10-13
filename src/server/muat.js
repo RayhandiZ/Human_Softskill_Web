@@ -1,6 +1,6 @@
 import { db } from './db.js'
 import { getKomponenById } from '../lib/curriculum.js'
-import { komponenDosen, labelPeriode, periodeAngkatan, turunkanSemesterAktif } from '../lib/data.js'
+import { komponenDosen, labelPeriode, periodeAngkatan, programSelesai, turunkanSemesterAktif } from '../lib/data.js'
 
 // Menyusun data halaman dari basis data, dalam bentuk yang dibaca isiData() di src/lib/data.js.
 // Isinya disaring per peran: admin melihat semuanya, dosen hanya kelasnya, mahasiswa hanya dirinya.
@@ -21,6 +21,8 @@ export const tanggalWib = (d) => (d ? waktuWib(d).slice(0, 10) : null)
 
 export const intakeDari = (a) => ({ tahun: a.periodeTahun, semester: a.periodeSemester === 'GENAP' ? 'Genap' : 'Ganjil' })
 export const semesterDari = (a) => turunkanSemesterAktif(intakeDari(a))
+/** Program angkatan `a` (baris tabel Angkatan) sudah lewat Semester 3; lihat programSelesai di src/lib/data.js. */
+export const selesaiProgram = (a) => programSelesai(intakeDari(a))
 
 /** Angka di balik id tampilan seperti 'K-12' atau 'U-3'. */
 export const angkaId = (id) => Number(String(id ?? '').replace(/^[A-Z]+-/, '')) || 0
@@ -34,12 +36,18 @@ const JUDUL_BERKAS = {
   UAS: 'Berkas UAS',
 }
 
-// Nama yang tampil untuk seorang pengguna. Akun Kemahasiswaan tidak punya nama orang.
+// Nama yang tampil untuk seorang pengguna. Akun Kemahasiswaan tidak punya nama orang; super admin
+// ditulis "Super Admin" supaya jejak tindakannya terbedakan dari admin biasa.
 export async function petaNama(ids) {
   const unik = [...new Set(ids.filter((x) => x != null))]
   if (!unik.length) return new Map()
   const daftar = await db.pengguna.findMany({ where: { id: { in: unik } }, include: { dosen: true, mahasiswa: true } })
-  return new Map(daftar.map((p) => [p.id, p.dosen?.nama ?? p.mahasiswa?.nama ?? 'Biro Kemahasiswaan']))
+  return new Map(
+    daftar.map((p) => [
+      p.id,
+      p.dosen?.nama ?? p.mahasiswa?.nama ?? (p.peran === 'ADMIN' && p.superAdmin ? 'Super Admin' : 'Biro Kemahasiswaan'),
+    ]),
+  )
 }
 
 export const SERTA_MAHASISWA = {
@@ -125,6 +133,7 @@ function susunPengumpulan(p, dosen) {
     fakultas: m.prodi.fakultas.nama,
     angkatanId: m.angkatanId,
     angkatanLabel: m.angkatan.label,
+    programSelesai: selesaiProgram(m.angkatan),
     semester: dosen?.semester ?? null,
     sumber: dosen?.sumber ?? null,
     dosenNip: dosen?.nip ?? null,
@@ -194,6 +203,38 @@ async function muatPengumpulan(where) {
   return daftar.map((p) => susunPengumpulan(p, dosenDariId.get(p.dosenId)))
 }
 
+/**
+ * Permintaan admin kepada super admin (src/server/persetujuan.js). Super admin melihat semuanya, admin biasa
+ * hanya miliknya. Pelaku ditulis dengan email: semua akun admin bernama "Biro Kemahasiswaan", padahal super
+ * admin perlu tahu admin mana yang meminta.
+ */
+async function muatPermintaan(pengguna) {
+  const daftar = await db.permintaanAdmin.findMany({
+    where: pengguna.superAdmin ? {} : { diajukanOleh: pengguna.id },
+    orderBy: [{ diajukanPada: 'desc' }, { id: 'desc' }],
+    take: 200,
+  })
+  const orang = await db.pengguna.findMany({
+    where: { id: { in: [...new Set(daftar.flatMap((p) => [p.diajukanOleh, p.diputuskanOleh]).filter(Boolean))] } },
+    select: { id: true, email: true },
+  })
+  const email = new Map(orang.map((o) => [o.id, o.email]))
+  return daftar.map((p) => ({
+    id: 'P-' + p.id,
+    aksi: p.aksi,
+    status: kecil(p.status),
+    ringkasan: p.ringkasan ?? null,
+    alasan: p.alasan ?? '',
+    diajukanOleh: email.get(p.diajukanOleh) ?? null,
+    milikSaya: p.diajukanOleh === pengguna.id,
+    diajukanPada: waktuWib(p.diajukanPada),
+    diputuskanOleh: email.get(p.diputuskanOleh) ?? null,
+    diputuskanPada: waktuWib(p.diputuskanPada),
+    catatanKeputusan: p.catatanKeputusan ?? '',
+    hasil: p.hasil ?? null,
+  }))
+}
+
 async function muatProfil(penggunaId) {
   const p = await db.profil.findUnique({ where: { penggunaId } })
   return p ? { telepon: p.telepon ?? '', ponsel: p.ponsel ?? '', alamat: p.alamat ?? '', foto: p.foto, fotoSumber: p.fotoSumber } : null
@@ -212,6 +253,7 @@ export async function muatData(pengguna) {
     usulan: [],
     batch: [],
     batchImport: [],
+    permintaan: [],
     profil: await muatProfil(pengguna.id),
   }
 
@@ -231,11 +273,12 @@ export async function muatData(pengguna) {
   if (pengguna.peran === 'dosen') {
     const dosen = pengguna.dosen
     const komponenBoleh = new Set(komponenDosen(dosen).map((k) => k.id))
+    // Mahasiswa yang programnya sudah lewat Semester 3 tidak lagi ditangani dosen: diurus Kemahasiswaan.
     const mhs = (await db.mahasiswa.findMany({ where: { prodiId: dosen.prodiId }, include: SERTA_MAHASISWA, orderBy: { nim: 'asc' } }))
-      .filter((m) => semesterDari(m.angkatan) >= dosen.semester)
+      .filter((m) => semesterDari(m.angkatan) >= dosen.semester && !selesaiProgram(m.angkatan))
     const nama = await petaNama(idPengguna(mhs))
     hasil.mahasiswa = mhs.map((m) => susunMahasiswa(m, nama, { komponenBoleh, denganEmail: false }))
-    hasil.pengumpulan = await muatPengumpulan({ dosenId: dosen.id })
+    hasil.pengumpulan = (await muatPengumpulan({ dosenId: dosen.id })).filter((p) => !p.programSelesai)
     hasil.usulan = await muatUsulan({ dosenId: dosen.id })
     return hasil
   }
@@ -283,6 +326,7 @@ export async function muatData(pengguna) {
   hasil.koreksi = koreksi.map((k) => susunKoreksi(k, nama))
   hasil.pengumpulan = await muatPengumpulan({})
   hasil.usulan = await muatUsulan({})
+  hasil.permintaan = await muatPermintaan(pengguna)
 
   for (const b of batch) {
     if (b.status === 'DIKUNCI') {

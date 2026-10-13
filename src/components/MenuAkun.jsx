@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { LABEL_PERAN, panelUntuk, useAuth } from '../lib/auth'
+import { labelPeran, panelUntuk, useAuth } from '../lib/auth'
 import { useTeks } from '../lib/bahasa'
 import { Avatar } from './Ui'
 import { IconChevronDown, IconChevronRight, IconLogout, IconUsers } from './Icons'
@@ -68,7 +68,7 @@ export default function MenuAkun({ foto = null, tone = 'onbrand', rinci = null }
             <p className="truncate text-sm font-bold text-ink">{user?.name}</p>
             <p className="truncate text-[12.5px] text-ink-2">{user?.email}</p>
             <p className="mt-1.5 inline-flex rounded-md bg-brand-soft px-2 py-0.5 text-[11px] font-bold text-brand-ink">
-              {t(LABEL_PERAN[user?.role] ?? 'Pengguna')}
+              {t(labelPeran(user) ?? 'Pengguna')}
             </p>
           </div>
           <Link

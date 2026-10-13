@@ -71,10 +71,11 @@ async function main() {
   /* 3. Kurikulum (komponen dan indikator) dari curriculum.js, beserta penanda VERSI_KURIKULUM. */
   await tanamKurikulum(db)
 
-  /* 4. Akun: satu admin, semua dosen, semua mahasiswa. Satu hash dipakai ulang. */
+  /* 4. Akun: satu super admin, satu admin, semua dosen, semua mahasiswa. Satu hash dipakai ulang. */
   const passwordHash = await bcrypt.hash(SANDI_AWAL, 10)
   await db.pengguna.createMany({
     data: [
+      { email: 'super.admin@umn.ac.id', passwordHash, peran: 'ADMIN', superAdmin: true },
       { email: 'admin@umn.ac.id', passwordHash, peran: 'ADMIN' },
       ...DOSEN.map((d) => ({ email: d.email, passwordHash, peran: 'DOSEN' })),
       ...STUDENTS.map((s) => ({ email: s.email, passwordHash, peran: 'MAHASISWA' })),

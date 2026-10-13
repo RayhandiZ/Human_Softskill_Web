@@ -13,6 +13,14 @@ const ADMIN_PROFILE = {
   officer: 'Biro Kemahasiswaan',
 }
 
+/* Super admin: wewenang tertinggi, berperan admin sehingga seluruh panel admin terbuka untuknya. */
+const SUPER_ADMIN_PROFILE = {
+  name: 'Super Admin',
+  unit: 'Pengawas Sistem',
+  /* Sama dengan nama yang dipakai server (petaNama di src/server/muat.js). */
+  officer: 'Super Admin',
+}
+
 const AuthContext = createContext(null)
 
 /* Tebakan dari domain hanya untuk petunjuk; peran yang berlaku dibaca dari basis data. */
@@ -33,6 +41,9 @@ export const panelUntuk = (role) => PANEL[role] ?? '/masuk'
 
 export const LABEL_PERAN = { admin: 'Kemahasiswaan', dosen: 'Dosen', student: 'Mahasiswa' }
 
+/** Label peran pemilik sesi; super admin dibedakan dari admin biasa. */
+export const labelPeran = (user) => (user?.superAdmin ? 'Super Admin' : LABEL_PERAN[user?.role])
+
 const inisial = (nama) =>
   String(nama ?? '')
     .split(',')[0]
@@ -44,6 +55,17 @@ const inisial = (nama) =>
     .toUpperCase()
 
 function sesiDari(akun) {
+  if (akun.peran === 'admin' && akun.superAdmin) {
+    return {
+      role: 'admin',
+      superAdmin: true,
+      email: akun.email,
+      name: SUPER_ADMIN_PROFILE.name,
+      initials: 'SA',
+      subtitle: SUPER_ADMIN_PROFILE.unit,
+    }
+  }
+
   if (akun.peran === 'admin') {
     return {
       role: 'admin',
@@ -158,7 +180,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   const value = useMemo(
-    () => ({ user, siap, login, logout, admin: ADMIN_PROFILE }),
+    () => ({ user, siap, login, logout, admin: user?.superAdmin ? SUPER_ADMIN_PROFILE : ADMIN_PROFILE }),
     [user, siap, login, logout],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

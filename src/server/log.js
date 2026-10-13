@@ -4,7 +4,8 @@ import { petaNama, waktuWib } from './muat.js'
 import { getKomponenById } from '../lib/curriculum.js'
 
 // Catatan tindakan admin selain perubahan nilai (yang sudah punya AuditLog): kunci angkatan, perubahan
-// data terkunci beserta alasannya, dan perubahan tanda penguncian aspek.
+// data terkunci beserta alasannya, perubahan tanda penguncian aspek, perubahan bobot kurikulum, serta
+// permintaan admin kepada super admin (diajukan, diputuskan, ditarik).
 //
 // Dipanggil DI DALAM transaksi `tx` yang sama dengan perubahan datanya, supaya catatan dan perubahan
 // selalu berhasil atau gagal bersama: tidak ada perubahan tanpa jejak, tidak ada jejak tanpa perubahan.
@@ -21,7 +22,17 @@ export async function catatLog(tx, { aktorId, aksi, target, rincian }) {
 // keduanya lewat `jenis`: 'nilai' (AuditLog, setiap perubahan satu nilai) dan 'aktivitas' (LogAktivitas,
 // tindakan admin). Yang dikembalikan satu halaman saja, bukan seluruh tabel. Tabel ini hanya dibaca.
 
-export const AKSI_LOG = ['KUNCI_ANGKATAN', 'UBAH_DATA_TERKUNCI', 'ROLLBACK_DATA_TERKUNCI', 'UBAH_PENGUNCIAN']
+export const AKSI_LOG = [
+  'KUNCI_ANGKATAN',
+  'UBAH_DATA_TERKUNCI',
+  'ROLLBACK_DATA_TERKUNCI',
+  'UBAH_PENGUNCIAN',
+  'UBAH_BOBOT',
+  'AJUKAN_PERSETUJUAN',
+  'PUTUSKAN_PERSETUJUAN',
+  'TARIK_PERMINTAAN',
+  'UBAH_PENILAIAN',
+]
 
 const UKURAN_BAWAAN = 25
 const UKURAN_MAKS = 100
