@@ -4,7 +4,7 @@ import { turunkanSemesterAktif } from '../lib/data.js'
 
 const HASH_PENGGANTI = bcrypt.hashSync('bukan-kata-sandi-siapa-pun', 10)
 
-const PERAN = { MAHASISWA: 'student', DOSEN: 'dosen', ADMIN: 'admin' }
+const PERAN = { MAHASISWA: 'student', DOSEN: 'dosen', ADMIN: 'admin', SUPER_ADMIN: 'admin' }
 
 // Galat yang boleh dibaca pengguna, lengkap dengan kode HTTP-nya.
 export class GalatMasuk extends Error {
@@ -55,8 +55,9 @@ function susunAkun(akun) {
   return {
     penggunaId: akun.id,
     peran,
-    // Sama dengan penggunaDari() di api.js: hanya akun admin yang bisa menjadi super admin.
-    superAdmin: peran === 'admin' && akun.superAdmin === true,
+    // Sama dengan penggunaDari() di api.js. Dibandingkan dengan akun.peran (nilai basis data),
+    // karena `peran` di atas sudah diterjemahkan menjadi 'admin'.
+    superAdmin: akun.peran === 'SUPER_ADMIN',
     email: akun.email,
     mahasiswa: m
       ? {

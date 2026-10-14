@@ -2,7 +2,7 @@ import { db } from './db.js'
 import { siapkanKurikulum } from './kurikulum.js'
 import { penggunaIdDari } from './sesi.js'
 
-const PERAN = { MAHASISWA: 'student', DOSEN: 'dosen', ADMIN: 'admin' }
+const PERAN = { MAHASISWA: 'student', DOSEN: 'dosen', ADMIN: 'admin', SUPER_ADMIN: 'admin' }
 
 // Galat yang boleh dibaca pengguna, lengkap dengan kode HTTP-nya.
 export class GalatApi extends Error {
@@ -26,16 +26,16 @@ export async function penggunaDariId(id) {
   return {
     id: p.id,
     peran: PERAN[p.peran],
-    // Super admin tetap berperan admin, jadi semua pintu admin terbuka untuknya. Tanda yang
-    // tertinggal di akun dosen atau mahasiswa diabaikan.
-    superAdmin: p.peran === 'ADMIN' && p.superAdmin === true,
+    // Peran SUPER_ADMIN dibaca sebagai admin bertanda superAdmin, jadi semua pintu admin tetap
+    // terbuka untuknya.
+    superAdmin: p.peran === 'SUPER_ADMIN',
     email: p.email,
     mahasiswa: p.mahasiswa,
     dosen: p.dosen,
   }
 }
 
-/** Apakah `pengguna` memenuhi salah satu `peran`. 'superadmin' hanya dipenuhi admin bertanda super admin. */
+/** Apakah `pengguna` memenuhi salah satu `peran`. 'superadmin' hanya dipenuhi akun berperan SUPER_ADMIN. */
 export const bolehPeran = (pengguna, peran) =>
   !peran || peran.some((p) => (p === 'superadmin' ? pengguna.superAdmin : p === pengguna.peran))
 

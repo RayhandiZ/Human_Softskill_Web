@@ -526,6 +526,40 @@ async function tulis(alamat, isi) {
   return hasil
 }
 
+/* ------------------------------ log aktivitas ------------------------------ */
+
+/* Satu halaman log dari /api/log (src/server/log.js). Hanya membaca, jadi data tidak dimuat ulang sesudahnya.
+   Tanpa server, perubahan nilai dibaca dari AUDIT_LOG yang sudah termuat; tindakan admin tidak tercatat. */
+export async function bacaLog(saring = {}) {
+  if (modeLokal()) return bacaLogLokal(saring)
+  return kirim('/api/log', { isi: saring })
+}
+
+function bacaLogLokal({ jenis = 'nilai', halaman = 1, ukuran = 25, aktorId, dari, sampai, nim } = {}) {
+  const dasar = { jenis, halaman: 1, ukuran, total: 0, jumlahHalaman: 1, pilihanAktor: [], baris: [], lokal: true }
+  if (jenis !== 'nilai') return dasar
+  const cocok = AUDIT_LOG.filter((l) => {
+    const tanggal = String(l.waktu ?? '').slice(0, 10)
+    return (
+      (!aktorId || l.aktor === aktorId) &&
+      (!nim || l.nim === String(nim).trim()) &&
+      (!dari || tanggal >= dari) &&
+      (!sampai || tanggal <= sampai)
+    )
+  })
+  const jumlahHalaman = Math.max(1, Math.ceil(cocok.length / ukuran))
+  const ke = Math.min(Math.max(1, halaman), jumlahHalaman)
+  const aktor = [...new Set(AUDIT_LOG.map((l) => l.aktor).filter(Boolean))].sort()
+  return {
+    ...dasar,
+    halaman: ke,
+    total: cocok.length,
+    jumlahHalaman,
+    pilihanAktor: aktor.map((nama) => ({ id: nama, nama })),
+    baris: cocok.slice((ke - 1) * ukuran, ke * ukuran).map((l) => ({ ...l, dibatalkan: false })),
+  }
+}
+
 /* --------------------- permintaan admin kepada super admin ------------------ */
 
 /* Admin biasa yang mengubah data mahasiswa yang sudah lewat Semester 3 tidak langsung menyimpan: server

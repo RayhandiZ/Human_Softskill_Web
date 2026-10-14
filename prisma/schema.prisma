@@ -17,7 +17,8 @@ datasource db {
 enum Peran          { 
   MAHASISWA 
   DOSEN 
-  ADMIN 
+  ADMIN
+  SUPER_ADMIN   // wewenang tertinggi: semua wewenang ADMIN + memutuskan permintaan admin; diisi lewat seed/basis data
   }
 
 enum Sumber         { 
@@ -63,7 +64,6 @@ model Pengguna {
   email        String     @unique
   passwordHash String
   peran        Peran
-  superAdmin   Boolean    @default(false)   // wewenang tertinggi; hanya bermakna bila peran = ADMIN, diisi lewat seed/basis data
   aktif        Boolean    @default(true)
   dibuat       DateTime   @default(now())
   mahasiswa    Mahasiswa?

@@ -75,7 +75,7 @@ async function main() {
   const passwordHash = await bcrypt.hash(SANDI_AWAL, 10)
   await db.pengguna.createMany({
     data: [
-      { email: 'super.admin@umn.ac.id', passwordHash, peran: 'ADMIN', superAdmin: true },
+      { email: 'super.admin@umn.ac.id', passwordHash, peran: 'SUPER_ADMIN' },
       { email: 'admin@umn.ac.id', passwordHash, peran: 'ADMIN' },
       ...DOSEN.map((d) => ({ email: d.email, passwordHash, peran: 'DOSEN' })),
       ...STUDENTS.map((s) => ({ email: s.email, passwordHash, peran: 'MAHASISWA' })),

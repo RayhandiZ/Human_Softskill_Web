@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { labelPeran, panelUntuk, useAuth } from '../lib/auth'
+import { labelPeran, panelPengguna, useAuth } from '../lib/auth'
 import { useTeks } from '../lib/bahasa'
 import { Avatar } from './Ui'
 import { IconChevronDown, IconChevronRight, IconLogout, IconUsers } from './Icons'
@@ -13,7 +13,7 @@ export default function MenuAkun({ foto = null, tone = 'onbrand', rinci = null }
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
-  const profilKe = panelUntuk(user?.role) + '/profil'
+  const profilKe = panelPengguna(user) + '/profil'
   const terang = tone === 'terang'
 
   useEffect(() => {

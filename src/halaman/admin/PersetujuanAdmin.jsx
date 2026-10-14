@@ -8,7 +8,7 @@ import { useTeks } from '../../lib/bahasa'
 /* Permintaan admin kepada super admin; lihat src/server/persetujuan.js dan README.md › Persetujuan super admin.
    Super admin melihat semua permintaan dan memutuskannya; admin biasa melihat miliknya dan bisa menariknya. */
 
-const LABEL_AKSI = {
+export const LABEL_AKSI = {
   SIMPAN_NILAI: 'Simpan nilai',
   ROLLBACK_NILAI: 'Batalkan batch nilai',
   UBAH_PENGUNCIAN: 'Ubah tanda final/sementara',

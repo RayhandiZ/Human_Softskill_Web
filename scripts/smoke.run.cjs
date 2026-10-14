@@ -13,7 +13,8 @@ w.ResizeObserver = global.ResizeObserver
 const SESI = { student: JSON.stringify({ role:'student', studentId:'DEMO-2', email:'a@student.umn.ac.id', name:'X', initials:'RZ' }),
                admin:   JSON.stringify({ role:'admin',   email:'a@umn.ac.id', name:'Y', initials:'KH' }),
                dosen:   JSON.stringify({ role:'dosen',   email:'simon.petrus@lecturer.umn.ac.id', name:'Simon Petrus Wenehenubun, S.S., M.M.',
-                                         initials:'SP', nip:'0312078801', sumber:'MK', semester:1, prodi:'Sistem Informasi' }) }
+                                         initials:'SP', nip:'0312078801', sumber:'MK', semester:1, prodi:'Sistem Informasi' }),
+               super:   JSON.stringify({ role:'admin', superAdmin:true, email:'super.admin@umn.ac.id', name:'Super Admin', initials:'SA' }) }
 
 const ISI = {
   '/mahasiswa': [
@@ -156,6 +157,38 @@ const ISI = {
     [/Cara membagi bobot otomatis/, 'pengaturan pembagian otomatis'],
     [/Tinjau dan simpan/, 'bagian tinjau dan simpan'],
   ],
+  '/admin/log': [
+    [/Log Aktivitas/, 'judul Log Aktivitas'],
+    [/Fase \d/, 'bukan lagi halaman segera hadir', false],
+    [/Tindakan admin[\s\S]{0,40}Perubahan nilai/, 'tab tindakan admin dan perubahan nilai'],
+  ],
+  '/super': [
+    [/Pusat Kendali/, 'judul Pusat Kendali'],
+    [/Menunggu keputusan/, 'ubin permintaan yang menunggu'],
+    [/Perlu keputusan Anda/, 'daftar yang perlu diputuskan'],
+    [/Rantai pengawasan/, 'rantai pengawasan'],
+    [/aria-label="Menu super admin"/, 'menu samping super admin', true, true],
+  ],
+  '/super/persetujuan': [
+    [/Persetujuan Admin/, 'super admin melihat judul Persetujuan Admin'],
+    [/Menunggu[\s\S]{0,40}Riwayat/, 'tab menunggu dan riwayat'],
+  ],
+  '/super/log': [
+    [/Log Aktivitas/, 'judul Log Aktivitas'],
+    [/Jenis tindakan/, 'penyaring jenis tindakan'],
+    [/Hari ini[\s\S]{0,80}7 hari terakhir/, 'pilihan cepat rentang waktu'],
+  ],
+  '/super/wewenang': [
+    [/Matriks wewenang/, 'matriks wewenang'],
+    [/Mengunci angkatan[\s\S]{0,400}Selalu perlu persetujuan/, 'kunci angkatan oleh admin selalu perlu persetujuan'],
+    [/Yang meminta tidak menyetujui/, 'prinsip pemisahan tugas'],
+  ],
+  '/super/aturan': [
+    [/Aturan Sistem/, 'judul Aturan Sistem'],
+    [/Nilai minimum sertifikat[\s\S]{0,200}70/, 'ambang sertifikat 70'],
+    [/Menunggu konfirmasi/, 'tanda menunggu konfirmasi'],
+  ],
+  '/super/profil': [[/Super Admin/, 'profil berperan Super Admin']],
   '/admin/persetujuan': [
     [/Permintaan Saya/, 'admin biasa melihat judul Permintaan Saya'],
     [/menunggu persetujuan Super Admin sebelum berlaku/, 'penjelasan alur persetujuan'],
@@ -189,6 +222,13 @@ const RUTE = [
   ['admin', '/admin/angkatan', 'Angkatan'],
   ['admin', '/admin/kurikulum', 'Kurikulum CPMK'],
   ['admin', '/admin/persetujuan', 'Permintaan Saya'],
+  ['admin', '/admin/log', 'Log aktivitas'],
+  ['super', '/super', 'Pusat Kendali'],
+  ['super', '/super/persetujuan', 'Persetujuan (super admin)'],
+  ['super', '/super/log', 'Log aktivitas (super admin)'],
+  ['super', '/super/wewenang', 'Peran & wewenang'],
+  ['super', '/super/aturan', 'Aturan sistem'],
+  ['super', '/super/profil', 'Profil super admin'],
   ['dosen', '/dosen', 'Data masuk'],
   ['dosen', '/dosen/nilai', 'Input nilai dosen'],
   ['dosen', '/dosen/usulan', 'Status usulan dosen'],
@@ -198,7 +238,7 @@ const RUTE = [
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -210,6 +250,7 @@ const RUTE = [
     student: mod.sesiLogin('rayhandi.zulmi@student.umn.ac.id'),
     admin: JSON.parse(SESI.admin),
     dosen: mod.sesiLogin('simon.petrus@lecturer.umn.ac.id'),
+    super: JSON.parse(SESI.super),
   }
   const ISI_KOSONG = {
     '/mahasiswa': [[/berdasarkan 0 dari 10 aspek/, 'nilai akhir dihitung dari 0 aspek'], [/Belum dinilai/, 'aspek tertulis belum dinilai']],
@@ -1024,6 +1065,24 @@ const RUTE = [
   gagal += rusakSupa.length
   console.log((rusakSupa.length ? 'GAGAL  ' : 'OK     ') + 'Super admin (label peran)')
   for (const [ket, ok] of cekSupa) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
+
+  const ps = await ujiPanelSuper()
+  const cekPs = [
+    ['super admin diarahkan ke /super, admin biasa ke /admin', ps.arahSuper && ps.arahAdminBiasa],
+    ['admin biasa yang membuka /super dikembalikan ke /admin', ps.adminBiasaDitolak],
+    ['menu samping: lima butir, semuanya di /super', ps.menuLima],
+    ['menu samping memakai sorotan gelap', ps.menuGelap],
+    ['Pusat Kendali tersorot sebagai menu aktif', ps.kendaliAktif],
+    ['ada tautan kembali ke panel Kemahasiswaan', ps.keKemahasiswaan],
+    ['Pusat Kendali memuat antrean dan rantai pengawasan', ps.isiKendali],
+    ['tanpa basis data, log tindakan admin dinyatakan tidak tersedia', ps.tanpaServerJujur],
+    ['log perubahan nilai terisi', ps.logNilaiTerisi],
+    ['penyaring NIM hanya menyisakan mahasiswa itu', ps.saringNim],
+  ]
+  const rusakPs = cekPs.filter(([, ok]) => !ok)
+  gagal += rusakPs.length
+  console.log((rusakPs.length ? 'GAGAL  ' : 'OK     ') + 'Panel Super Admin')
+  for (const [ket, ok] of cekPs) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
   const kr = await ujiKurikulum()
   const cekKr = [

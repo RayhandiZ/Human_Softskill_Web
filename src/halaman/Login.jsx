@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { LABEL_PERAN, panelUntuk, roleFromEmail, useAuth } from '../lib/auth'
+import { LABEL_PERAN, panelPengguna, roleFromEmail, useAuth } from '../lib/auth'
 import { IconAlert, IconTabBaru } from '../components/Icons'
 import LogoPdp from '../components/LogoPdp'
 import { useTeks } from '../lib/bahasa'
@@ -34,7 +34,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (user) router.replace(panelUntuk(user.role))
+    if (user) router.replace(panelPengguna(user))
   }, [user, router])
 
   if (user) return null
@@ -47,7 +47,7 @@ export default function Login() {
     setBusy(true)
     try {
       const next = await login(form)
-      router.replace(panelUntuk(next.role))
+      router.replace(panelPengguna(next))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -72,6 +72,10 @@ export default function Login() {
         <div className="-mt-12 mb-8 self-start">
           <div className="pita-logo">
             <div className="pita-kertas">
+              {/* Tepi bergelombang dan bayangan lipatan saat diterpa angin. */}
+              <span aria-hidden="true" className="pita-tepi pita-tepi-kiri" />
+              <span aria-hidden="true" className="pita-tepi pita-tepi-kanan" />
+              <span aria-hidden="true" className="pita-lipat" />
               <LogoPdp className="h-[84px] w-auto text-brand-deep" />
             </div>
             <span aria-hidden="true" className="pita-tongkat" />

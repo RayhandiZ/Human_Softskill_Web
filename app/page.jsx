@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { panelUntuk, useAuth } from '../src/lib/auth'
+import { panelPengguna, useAuth } from '../src/lib/auth'
 
 /* Tunggu `siap`: sesi yang masih dibaca jangan dilempar ke halaman masuk. */
 export default function Beranda() {
@@ -11,7 +11,7 @@ export default function Beranda() {
 
   useEffect(() => {
     if (!siap) return
-    router.replace(!user ? '/masuk' : panelUntuk(user.role))
+    router.replace(!user ? '/masuk' : panelPengguna(user))
   }, [user, siap, router])
 
   return null

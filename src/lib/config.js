@@ -94,11 +94,18 @@ export const KUNCI_DAPAT_DIUBAH = [
   'IZINKAN_FINAL_DRAFT',
 ]
 
+/** Kunci yang saat ini ditimpa tabel Konfigurasi; sisanya memakai bawaan dari kode (halaman Aturan Sistem). */
+export const DARI_BASIS_DATA = new Set()
+
+export const nilaiBawaan = (kunci) => BAWAAN[kunci]
+
 /**
  * CONFIG = bawaan dari kode, ditimpa `simpanan` (isi tabel Konfigurasi). Kunci di luar KUNCI_DAPAT_DIUBAH
  * diabaikan, kunci yang tidak disebut kembali ke bawaannya, dan pelanggan hanya diberi tahu bila ada yang berubah.
  */
 export function terapkanKonfigurasi(simpanan = {}) {
+  DARI_BASIS_DATA.clear()
+  for (const k of KUNCI_DAPAT_DIUBAH) if (simpanan[k] != null) DARI_BASIS_DATA.add(k)
   const baru = {}
   for (const k of KUNCI_DAPAT_DIUBAH) baru[k] = structuredClone(simpanan[k] ?? BAWAAN[k])
   const berubah = KUNCI_DAPAT_DIUBAH.some((k) => JSON.stringify(baru[k]) !== JSON.stringify(CONFIG[k]))

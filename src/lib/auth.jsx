@@ -39,6 +39,9 @@ const PANEL = { admin: '/admin', dosen: '/dosen', student: '/mahasiswa' }
 
 export const panelUntuk = (role) => PANEL[role] ?? '/masuk'
 
+/** Panel awal pemilik sesi: super admin punya panelnya sendiri; lihat README.md › Panel Super Admin. */
+export const panelPengguna = (user) => (user?.superAdmin ? '/super' : panelUntuk(user?.role))
+
 export const LABEL_PERAN = { admin: 'Kemahasiswaan', dosen: 'Dosen', student: 'Mahasiswa' }
 
 /** Label peran pemilik sesi; super admin dibedakan dari admin biasa. */
@@ -192,8 +195,11 @@ export function useAuth() {
   return ctx
 }
 
-/** Penjaga peran: pindah rute di dalam efek dan tunggu sesi selesai dibaca. */
-export function RequireRole({ role, children }) {
+/**
+ * Penjaga peran: pindah rute di dalam efek dan tunggu sesi selesai dibaca. `superAdmin` hanya meloloskan admin
+ * bertanda super admin; ini penjaga tampilan saja, pintu API tetap memeriksa ulang di server.
+ */
+export function RequireRole({ role, superAdmin = false, children }) {
   const { user, siap } = useAuth()
   const router = useRouter()
 
@@ -201,8 +207,8 @@ export function RequireRole({ role, children }) {
     ? null
     : !user
       ? '/masuk'
-      : user.role !== role
-        ? panelUntuk(user.role)
+      : user.role !== role || (superAdmin && !user.superAdmin)
+        ? panelPengguna(user)
         : null
 
   useEffect(() => {

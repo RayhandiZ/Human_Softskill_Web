@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TautanNav } from '../lib/nav'
-import { panelUntuk, useAuth } from '../lib/auth'
+import { panelPengguna, useAuth } from '../lib/auth'
 import { useTeks } from '../lib/bahasa'
 import { useTheme } from '../lib/theme'
 import Laci from './Laci'
@@ -18,7 +18,7 @@ export default function Navbar({ links = [], kelompok = null, aksi = null, foto 
   const router = useRouter()
   const [laci, setLaci] = useState(false)
 
-  const profilKe = panelUntuk(user?.role) + '/profil'
+  const profilKe = panelPengguna(user) + '/profil'
 
   return (
     <header className="sticky top-0 z-40 bg-brand text-white">

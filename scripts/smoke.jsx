@@ -3,13 +3,13 @@ import './modeLokal'
 import { createRoot } from 'react-dom/client'
 import { act } from 'react'
 import Penyedia from '../app/penyedia'
-import { RequireRole } from '../src/lib/auth'
+import { RequireRole, panelPengguna } from '../src/lib/auth'
 import { COHORTS, MASTER_AWAL, STUDENTS, getStudent, getStudentByNim, isiData, isiMaster, pengumpulanDosen, resetTranskripCache } from '../src/lib/data'
 import { getKomponen, getKomponenById, isiKurikulum } from '../src/lib/curriculum'
 import { bobotKomponen } from '../src/lib/scoring'
 import { DATA_CONTOH, DOSEN, PERSONA_SEMESTER, getDosenByEmail, getStudentByEmail } from './dataContoh'
 import { bersihkanPerubahan } from '../src/lib/store'
-import { aturJalur } from './palsu-next-navigation'
+import { aturJalur, rekamNavigasi } from './palsu-next-navigation'
 import { jalurMulus } from '../src/lib/kurva'
 
 import Login from '../src/halaman/Login'
@@ -31,6 +31,11 @@ import CetakSertifikat from '../src/halaman/admin/CetakSertifikat'
 import Angkatan from '../src/halaman/admin/Angkatan'
 import Kurikulum from '../src/halaman/admin/Kurikulum'
 import PersetujuanAdmin from '../src/halaman/admin/PersetujuanAdmin'
+import Log from '../src/halaman/admin/Log'
+import SuperLayout from '../src/halaman/super/SuperLayout'
+import Kendali from '../src/halaman/super/Kendali'
+import Wewenang from '../src/halaman/super/Wewenang'
+import Aturan from '../src/halaman/super/Aturan'
 import DosenLayout from '../src/halaman/dosen/DosenLayout'
 import Masuk from '../src/halaman/dosen/Masuk'
 import NilaiDosen from '../src/halaman/dosen/Nilai'
@@ -131,6 +136,12 @@ const dosen = (isi) => (
   </RequireRole>
 )
 
+const superAdmin = (isi) => (
+  <RequireRole role="admin" superAdmin>
+    <SuperLayout>{isi}</SuperLayout>
+  </RequireRole>
+)
+
 const RUTE = {
   '/masuk': { pohon: () => <Login />, params: {} },
   '/mahasiswa': { pohon: () => mahasiswa(<Dashboard />) },
@@ -150,6 +161,13 @@ const RUTE = {
   '/admin/nilai': { pohon: () => admin(<Nilai />) },
   '/admin/profil': { pohon: () => admin(<Profil />) },
   '/admin/usulan': { pohon: () => admin(<UsulanAdmin />) },
+  '/admin/log': { pohon: () => admin(<Log />) },
+  '/super': { pohon: () => superAdmin(<Kendali />) },
+  '/super/persetujuan': { pohon: () => superAdmin(<PersetujuanAdmin />) },
+  '/super/log': { pohon: () => superAdmin(<Log />) },
+  '/super/wewenang': { pohon: () => superAdmin(<Wewenang />) },
+  '/super/aturan': { pohon: () => superAdmin(<Aturan />) },
+  '/super/profil': { pohon: () => superAdmin(<Profil />) },
   '/dosen': { pohon: () => dosen(<Masuk />) },
   '/dosen/nilai': { pohon: () => dosen(<NilaiDosen />) },
   '/dosen/usulan': { pohon: () => dosen(<UsulanDosen />) },
@@ -1608,6 +1626,63 @@ export async function ujiSuperAdmin() {
   sesi(false)
   ;({ el, lepas } = await pasang('/admin/profil'))
   hasil.adminBiasaTetap = lencana(el) === 'Kemahasiswaan'
+  lepas()
+
+  if (lama) window.localStorage.setItem('sk5c.session', lama)
+  else window.localStorage.removeItem('sk5c.session')
+  return hasil
+}
+
+// Panel Super Admin: hanya super admin yang masuk, menu sampingnya gelap, dan Log Aktivitas benar-benar menyaring.
+export async function ujiPanelSuper() {
+  const lama = window.localStorage.getItem('sk5c.session')
+  const sesi = (superAdmin) =>
+    window.localStorage.setItem(
+      'sk5c.session',
+      JSON.stringify(
+        superAdmin
+          ? { role: 'admin', superAdmin: true, email: 'super.admin@umn.ac.id', name: 'Super Admin', initials: 'SA' }
+          : { role: 'admin', email: 'admin@umn.ac.id', name: 'Biro Kemahasiswaan & Humaniora', initials: 'KH' },
+      ),
+    )
+  const hasil = {
+    arahSuper: panelPengguna({ role: 'admin', superAdmin: true }) === '/super',
+    arahAdminBiasa: panelPengguna({ role: 'admin' }) === '/admin',
+  }
+
+  sesi(false)
+  let { el, lepas } = await pasang('/super')
+  hasil.adminBiasaDitolak =
+    !/Pusat Kendali/.test(el.textContent) && rekamNavigasi.some((n) => n.cara === 'replace' && n.ke === '/admin')
+  lepas()
+
+  sesi(true)
+  ;({ el, lepas } = await pasang('/super'))
+  const menu = [...el.querySelectorAll('aside nav a')]
+  hasil.menuLima = menu.length === 5 && menu.every((a) => a.getAttribute('href').startsWith('/super'))
+  hasil.menuGelap = menu.every((a) => a.classList.contains('menu-sorot-gelap'))
+  hasil.kendaliAktif = Boolean(menu[0]?.classList.contains('menu-aktif'))
+  hasil.keKemahasiswaan = Boolean(el.querySelector('aside a[href="/admin"]'))
+  hasil.isiKendali = /Pusat Kendali/.test(el.textContent) && /Rantai pengawasan/.test(el.textContent)
+  hasil.tanpaServerJujur = /hanya tercatat saat website terhubung ke basis data/.test(el.textContent)
+  lepas()
+
+  // Tanpa server, perubahan nilai dibaca dari AUDIT_LOG yang sudah termuat.
+  ;({ el, lepas } = await pasang('/super/log'))
+  const tunggu = () => act(async () => { await new Promise((r) => setTimeout(r, 30)) })
+  await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /Perubahan nilai/.test(b.textContent)))
+  await tunggu()
+  const baris = () => [...el.querySelectorAll('tbody tr')]
+  const nimBaris = (tr) => tr.querySelector('td:nth-child(3) span')?.textContent ?? ''
+  hasil.logNilaiTerisi = baris().length > 0
+  const nim = nimBaris(baris()[0] ?? document.createElement('tr'))
+  const isian = el.querySelector('input[type="search"]')
+  await ketik(isian, nim)
+  await act(async () => {
+    isian.form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }))
+  })
+  await tunggu()
+  hasil.saringNim = nim !== '' && baris().length > 0 && baris().every((tr) => nimBaris(tr) === nim)
   lepas()
 
   if (lama) window.localStorage.setItem('sk5c.session', lama)

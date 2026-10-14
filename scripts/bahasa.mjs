@@ -39,6 +39,7 @@ const BERKAS = [
   ...readdirSync('src/halaman/student').map((f) => join('src/halaman/student', f)),
   ...readdirSync('src/halaman/dosen').map((f) => join('src/halaman/dosen', f)),
   ...readdirSync('src/halaman/admin').map((f) => join('src/halaman/admin', f)),
+  ...readdirSync('src/halaman/super').map((f) => join('src/halaman/super', f)),
   ...readdirSync('src/components').map((f) => join('src/components', f)),
   ...readdirSync('src/components/charts').map((f) => join('src/components/charts', f)),
   'src/halaman/Login.jsx',

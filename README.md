@@ -241,7 +241,8 @@ scripts/          skrip uji; dataContoh.js berisi data contoh (290 mahasiswa, 5 
 
 src/components/   Ui, Icons, Navbar, Laci, MenuAkun, Footer, FilterBar, ErrorBoundary,
                   TombolBahasa, PilihanMengambang, PenyuntingFoto, LihatFoto, LayananTambahan,
-                  LogoPdp, Lipat
+                  LogoPdp, Lipat, MenuSamping (menu samping mahasiswa dan super admin),
+                  TombolTema
 src/components/charts/  ChartFrame, RadarCluster (6 sumbu), AspectBars (10 aspek), MutuDonut,
                   PerkembanganAngkatan
 src/halaman/      Login, Profil (satu halaman profil untuk tiga peran)
@@ -251,8 +252,8 @@ src/halaman/dosen/    DosenLayout, Masuk (Data Masuk), Nilai, Usulan, status
 src/halaman/admin/    AdminLayout, Overview, Students, StudentDetail, Programs, Nilai, Usulan,
                     LoncengKemahasiswaan, StatusData, Kurikulum (bobot), Angkatan,
                     PersetujuanAdmin, PermintaanTerkirim (bagian layar bersama),
-                    EditorPenilaian (di Input Manual), Log
-                    (Log masih "Segera Hadir")
+                    EditorPenilaian (di Input Manual), Log (juga dipakai panel super admin)
+src/halaman/super/    SuperLayout, Kendali, Wewenang, Aturan (lihat Panel Super Admin)
 ```
 
 Arah ketergantungan satu arah: `curriculum → scoring → rules → UI`.
@@ -275,23 +276,27 @@ Akun awal dari `npm run db:seed` (kata sandi pengembangan, ganti sebelum dipakai
 
 ### Super admin
 
-Super admin adalah **wewenang tertinggi**: akun berperan `ADMIN` yang diberi tanda
-`Pengguna.superAdmin = true`. Karena perannya tetap admin, seluruh panel dan pintu API admin
-terbuka untuknya tanpa diubah satu per satu. Rantai pengawasannya: super admin → admin, dosen,
+Super admin adalah **wewenang tertinggi**: akun berperan `SUPER_ADMIN`. Server membacanya sebagai
+admin bertanda `superAdmin`, jadi seluruh panel dan pintu API admin terbuka untuknya tanpa diubah
+satu per satu. Rantai pengawasannya: super admin → admin, dosen,
 mahasiswa; admin → dosen, mahasiswa; dosen → mahasiswa. Rancangan lengkapnya (persetujuan
 tindakan admin, halaman pengawasan) dikerjakan bertahap; Tahap 1 berisi fondasinya:
 
-- **Basis data** (migrasi `super_admin`): kolom `Pengguna.superAdmin` dan tabel
+- **Basis data**: nilai `SUPER_ADMIN` pada enum `Peran` (migrasi `peran_super_admin`, yang
+  menggantikan kolom `Pengguna.superAdmin` dari migrasi `super_admin`) dan tabel
   `PermintaanAdmin` (antrean permintaan admin kepada super admin, dipakai tahap berikutnya).
-- **Tanda hanya dari basis data**: diisi lewat seed atau langsung di tabel; tidak ada tombol di
-  website untuk mengangkat diri sendiri. Tanda pada akun dosen atau mahasiswa diabaikan.
-- **Server**: `penggunaDari()` dan `susunAkun()` membawa `superAdmin`; `tangani()` menerima
+- **Peran hanya dari basis data**: diisi lewat seed atau langsung di tabel; tidak ada tombol di
+  website untuk mengangkat diri sendiri.
+- **Server**: `penggunaDari()` (`api.js`) dan `susunAkun()` (`masuk.js`) menerjemahkan
+  `SUPER_ADMIN` menjadi `peran: 'admin'` dan `superAdmin: true`. Bandingkan dengan nilai basis
+  data (`akun.peran`), bukan `peran` yang sudah diterjemahkan menjadi `'admin'`. `tangani()` menerima
   syarat `'superadmin'` untuk pintu yang hanya boleh dibuka super admin (`['admin']` tetap
   meloloskan super admin). Jejak tindakannya tertulis "Super Admin", bukan "Biro Kemahasiswaan".
 - **Layar**: menu akun dan halaman profil menulis peran "Super Admin".
 
-Setelah menarik migrasi ini, hentikan `npm run dev`, jalankan `npx prisma generate`, lalu
-nyalakan lagi; server yang sudah jalan belum mengenal kolom `superAdmin`.
+Setelah menarik migrasi ini, hentikan `npm run dev`, jalankan `npx prisma migrate dev` (menerapkan
+migrasi dan membuat ulang Prisma Client), lalu nyalakan lagi; server yang sudah jalan belum
+mengenal peran `SUPER_ADMIN`.
 
 ### Persetujuan super admin (mahasiswa yang sudah lewat Semester 3)
 
@@ -345,6 +350,35 @@ basis data terlihat setelah halaman dimuat ulang — tidak perlu masuk ulang.
 
 Kasus sertifikat ada di data contoh angkatan 2024 yang sudah dikunci, dan kini hanya dipakai
 skrip uji: `DEMO-LAYAK` (berhak), `DEMO-KOSONG` (satu komponen kosong), `DEMO-RENDAH` (nilai 63).
+
+### Panel Super Admin
+
+Super admin punya panel sendiri di `/super` (front-end saja, memakai pintu API yang sudah ada).
+Setelah masuk ia diarahkan ke sana (`panelPengguna()` di `src/lib/auth.jsx`); panel Kemahasiswaan
+tetap terbuka untuknya lewat tautan "Panel Kemahasiswaan" di kaki menu samping, dan dari panel
+Kemahasiswaan ada tautan balik "Super Admin". `RequireRole role="admin" superAdmin` mengembalikan
+admin biasa ke `/admin`; itu hanya penjaga tampilan, pintu API tetap memeriksa ulang di server.
+
+| Halaman | Isi | Sumber data |
+|---|---|---|
+| `/super` Pusat Kendali | jumlah yang menunggu keputusan, keputusan dan perubahan nilai 7 hari terakhir, angkatan terkunci, permintaan terlama di atas, enam tindakan admin terbaru, rantai pengawasan | `PERMINTAAN`, `AUDIT_LOG`, `COHORTS`, `/api/log` |
+| `/super/persetujuan` | antrean Setujui/Tolak (halaman `PersetujuanAdmin` yang sama) | `PERMINTAAN`, `/api/persetujuan/keputusan` |
+| `/super/log` | Log Aktivitas (lihat di bawah) | `/api/log` |
+| `/super/wewenang` | matriks siapa boleh melakukan apa, plus prinsip yang dipakai | konstanta di `Wewenang.jsx`, diturunkan dari aturan server |
+| `/super/aturan` | aturan perhitungan yang berlaku, sumbernya (bawaan kode atau tabel Konfigurasi), dan tanda menunggu konfirmasi; hanya bacaan | `CONFIG`, `DARI_BASIS_DATA` di `src/lib/config.js` |
+
+Rancangannya mengikuti praktik umum panel admin: wewenang secukupnya dan pemisahan tugas (yang
+meminta tidak menyetujui) dari OWASP Authorization Cheat Sheet, pola maker-checker untuk antrean
+persetujuan, serta log audit yang bisa disaring per pelaku, tindakan, sasaran, dan rentang waktu.
+Matriks di `/super/wewenang` ditulis tangan: bila aturan di `src/server/persetujuan.js` berubah,
+ubah juga `MATRIKS` di sana.
+
+**Log Aktivitas** (`src/halaman/admin/Log.jsx`, dipakai `/super/log` dan `/admin/log`) membaca satu
+halaman (25 baris) dari `POST /api/log` lewat `bacaLog()` di `src/lib/store.js`, tanpa memuat ulang
+data. Tab *Tindakan admin* (`LogAktivitas`) bisa disaring per pelaku dan jenis tindakan, tab
+*Perubahan nilai* (`AuditLog`) per pelaku dan NIM; keduanya per rentang tanggal WIB, dengan pilihan
+cepat Hari ini dan 7 hari terakhir. Rincian tiap tindakan dibuka per baris. Tanpa basis data (uji),
+perubahan nilai dibaca dari `AUDIT_LOG` yang termuat dan tindakan admin dinyatakan tidak tersedia.
 
 ## Bahasa visual: rata, bukan bertumpuk
 
@@ -1016,8 +1050,11 @@ panah kiri/kanan). Bagian yang mudah rusak:
   `.animate-halaman` memakai `animation-fill-mode: backwards`, **bukan** `both`: dengan `both`,
   Chrome menahan `transform` sesudah animasi dan setiap elemen `fixed` di halaman ikut mengacu ke
   pembungkus itu, bukan ke layar.
-- Sorotan menu samping mahasiswa (`.menu-sorot`) digambar tiap butir sendiri dengan
-  `::before`/`::after` di bawah isinya (`isolation: isolate`). Butir aktif (`.menu-aktif`)
+- Sorotan menu samping mahasiswa dan super admin (`.menu-sorot`, komponen `MenuSamping.jsx`)
+  digambar tiap butir sendiri dengan `::before`/`::after` di bawah isinya (`isolation: isolate`).
+  Warnanya dari variabel `--sorot-latar`, `--sorot-garis`, dan `--sorot-teks`; di menu berlatar
+  gelap (`.menu-sorot-gelap`, panel super admin) latarnya putih tembus pandang dan garisnya emas.
+  Butir aktif (`.menu-aktif`)
   menampilkannya penuh; butir lain memunculkannya saat ditunjuk atau difokus: latarnya memudar
   masuk sambil sedikit membesar, lalu garis kirinya tergambar dari tengah ke atas dan bawah
   (`clip-path`). Efek tunjuk hanya untuk perangkat berkursor (`hover: hover`) supaya ketukan di
@@ -1039,6 +1076,15 @@ panah kiri/kanan). Bagian yang mudah rusak:
   ukuran logo atau ruangnya diganti. Pita menjorok 24px ke balik tepi atas supaya tetap menempel
   saat memantul. Saat kurangi gerak aktif, animasinya dilepas sama sekali (`animation: none`),
   karena blok global hanya memendekkan durasi dan jeda awalnya tetap berjalan.
+- Setelah digelar, pita diterpa angin dalam siklus 8 detik: hembusan datang cepat, lalu reda pelan.
+  Pita berayun dari titik gantungnya (`rotate` + `skewX`), tepi kiri-kanannya bergelombang 4px
+  dengan ombak yang merambat ke bawah, dan bayangan lipatannya menebal saat hembusan. Logo tidak
+  ikut melengkung supaya tetap tajam. Semua animasi angin berdurasi dan berjeda sama, dan hanya
+  menggerakkan `transform`, `translate`, dan `opacity` supaya dikerjakan GPU (di bawah 1% utas
+  utama; versi dengan `mask`/`background-position` beranimasi memakan sekitar 25%). Dua jebakan
+  yang sudah dicoba: lekuk yang diperbesar-perkecil dengan `scale` memunculkan garis tipis terang
+  di tepi kertas, dan `opacity` yang dianimasikan di induk unsur yang bergeser membuat keduanya
+  kembali dikerjakan utas utama. Rinciannya ada di komentar `index.css` › pita logo masuk.
 
 ### Cetak
 
@@ -1097,7 +1143,7 @@ panah kiri/kanan). Bagian yang mudah rusak:
 | — | Panel dosen: Data Masuk, Input & Import Nilai sebagai usulan, Status Usulan | selesai |
 | — | Basis data MySQL: 21 tabel, 9 migrasi, 20 pintu API, sesi cookie | selesai |
 | — | Penilaian per aspek dari Input Manual (teks aspek, komponen, arsip, bobot) | selesai; super admin langsung, admin biasa lewat persetujuan |
-| — | Super admin | sebagian: Tahap 1 (akun, tanda `superAdmin`, penjaga `'superadmin'`) dan Tahap 2 (persetujuan perubahan data mahasiswa yang sudah lewat Semester 3, halaman Persetujuan Admin, dosen lepas tangan) selesai; halaman pengawasan (Log Aktivitas) belum |
+| — | Super admin | sebagian: Tahap 1 (akun berperan `SUPER_ADMIN`, penjaga `'superadmin'`) dan Tahap 2 (persetujuan perubahan data mahasiswa yang sudah lewat Semester 3, halaman Persetujuan Admin, dosen lepas tangan) selesai; halaman pengawasan selesai di panel `/super` (Pusat Kendali, Persetujuan, Log Aktivitas, Peran & Wewenang, Aturan Sistem) |
 
 Yang belum dikerjakan:
 

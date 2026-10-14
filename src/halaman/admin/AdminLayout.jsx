@@ -47,6 +47,7 @@ const KELOMPOK_LACI = (koreksi, usulan, permintaan, superAdmin) => [
   {
     judul: 'Workspace',
     item: [
+      ...(superAdmin ? [{ to: '/super', label: 'Panel Super Admin', icon: IconCheckShield }] : []),
       { to: '/admin', label: 'Overview', icon: IconGauge, end: true },
       { to: '/admin/mahasiswa', label: 'Data Mahasiswa', icon: IconUsers },
       { to: '/admin/nilai', label: 'Input & Import Nilai', icon: IconUpload, lencana: koreksi || null },
@@ -76,7 +77,11 @@ export default function AdminLayout({ children }) {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar
-        links={user?.superAdmin ? [...NAV, { to: '/admin/persetujuan', label: 'Persetujuan' }] : NAV}
+        links={
+          user?.superAdmin
+            ? [...NAV, { to: '/admin/persetujuan', label: 'Persetujuan' }, { to: '/super', label: 'Super Admin' }]
+            : NAV
+        }
         kelompok={KELOMPOK_LACI(
           PENGAJUAN_KOREKSI.filter((k) => k.status === 'menunggu').length,
           usulanMenunggu().length,

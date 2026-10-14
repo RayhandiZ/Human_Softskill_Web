@@ -1,27 +1,18 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { TautanNav } from '../../lib/nav'
 import Footer from '../../components/Footer'
 import Laci from '../../components/Laci'
 import LogoPdp from '../../components/LogoPdp'
 import MenuAkun from '../../components/MenuAkun'
+import MenuSamping from '../../components/MenuSamping'
 import TombolBahasa from '../../components/TombolBahasa'
+import TombolTema from '../../components/TombolTema'
 import LayananTambahan from '../../components/LayananTambahan'
-import {
-  IconCertificate,
-  IconDocument,
-  IconGauge,
-  IconList,
-  IconMenu,
-  IconMoon,
-  IconRoute,
-  IconSun,
-} from '../../components/Icons'
+import { IconCertificate, IconDocument, IconGauge, IconList, IconMenu, IconRoute } from '../../components/Icons'
 import { mahasiswaSesi, transkripOf } from '../../lib/data'
 import { useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
-import { useTheme } from '../../lib/theme'
 import { useTeks } from '../../lib/bahasa'
 import { kunciSesi, useProfil } from '../../lib/profil'
 import LoncengBelumDinilai from './LoncengBelumDinilai'
@@ -45,63 +36,7 @@ const KonteksMahasiswa = createContext(null)
 
 export const useStudent = () => useContext(KonteksMahasiswa)
 
-function DaftarMenu({ onPilih, besar = false }) {
-  const t = useTeks()
-  const jalur = usePathname() ?? ''
-
-  const [tujuan, setTujuan] = useState(null)
-  useEffect(() => setTujuan(null), [jalur])
-  useEffect(() => {
-    if (!tujuan) return undefined
-    const id = setTimeout(() => setTujuan(null), 8000)
-    return () => clearTimeout(id)
-  }, [tujuan])
-
-  const cocok = (m) => (m.end ? jalur === m.to : jalur === m.to || jalur.startsWith(m.to + '/'))
-  const aktif = tujuan ?? MENU.find(cocok)?.to ?? null
-
-  // Tiap butir menggambar sorotannya sendiri, jadi saat pindah menu tidak ada yang meluncur; lihat README.md › Gerak.
-  return (
-    <ul className="space-y-1">
-      {MENU.map(({ to, label, icon: Icon, end }) => (
-        <li key={to}>
-          <TautanNav
-            href={to}
-            end={end}
-            onClick={(e) => {
-              if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)) setTujuan(to)
-              onPilih?.(e)
-            }}
-            // aria-current tetap mengikuti halaman yang benar-benar terbuka; sorotan mengikuti tujuan klik.
-            className={() =>
-              'menu-sorot relative flex items-center gap-3 rounded-2xl px-3.5 font-bold transition-colors duration-200 ease-[cubic-bezier(.22,.68,.35,1)] ' +
-              (besar ? 'py-3.5 text-[16px] ' : 'py-3 text-[14.5px] ') +
-              (to === aktif ? 'menu-aktif text-brand-ink' : 'text-ink-2')
-            }
-          >
-            <Icon size={20} className="shrink-0" />
-            <span className="truncate">{t(label)}</span>
-          </TautanNav>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function TombolTema() {
-  const { theme, toggle } = useTheme()
-  const t = useTeks()
-  return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label={t(theme === 'dark' ? 'Aktifkan mode terang' : 'Aktifkan mode gelap')}
-      className="grid h-10 w-10 place-items-center rounded-2xl border border-line bg-surface text-ink-2 transition hover:text-ink"
-    >
-      {theme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
-    </button>
-  )
-}
+const DaftarMenu = (props) => <MenuSamping items={MENU} {...props} />
 
 export default function StudentLayout({ children }) {
   const versi = useStore()

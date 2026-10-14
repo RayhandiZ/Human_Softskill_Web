@@ -26,7 +26,7 @@ const SANDI_AWAL = 'umn12345' // hanya untuk pengembangan
 
 const AKUN_AWAL = [
   /* Wewenang tertinggi: bisa semua yang bisa dilakukan admin, dan mengawasi admin, dosen, mahasiswa. */
-  { email: 'super.admin@umn.ac.id', peran: 'ADMIN', superAdmin: true },
+  { email: 'super.admin@umn.ac.id', peran: 'SUPER_ADMIN' },
   { email: 'admin@umn.ac.id', peran: 'ADMIN' },
   {
     email: 'rayhandi.zulmi@student.umn.ac.id',
@@ -114,7 +114,6 @@ async function main() {
         email: a.email,
         passwordHash,
         peran: a.peran,
-        superAdmin: a.superAdmin === true,
         mahasiswa: m
           ? { create: { nim: m.nim, nama: m.nama, prodiId: prodiId[m.prodi], angkatanId: m.angkatanId } }
           : undefined,

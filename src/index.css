@@ -171,7 +171,16 @@ body {
   }
   /* Sorotan butir menu samping: penuh pada butir aktif, muncul saat ditunjuk pada butir lain; lihat README.md › Gerak. */
   .menu-sorot {
+    --sorot-latar: var(--brand-soft);
+    --sorot-garis: var(--brand-ink);
+    --sorot-teks: var(--brand-ink);
     isolation: isolate;
+  }
+  /* Menu di atas latar gelap (panel Super Admin): latar tembus pandang, garis emas. */
+  .menu-sorot.menu-sorot-gelap {
+    --sorot-latar: rgb(255 255 255 / 0.1);
+    --sorot-garis: var(--accent);
+    --sorot-teks: #ffffff;
   }
   .menu-sorot::before,
   .menu-sorot::after {
@@ -183,7 +192,7 @@ body {
     pointer-events: none;
   }
   .menu-sorot::before {
-    background: var(--brand-soft);
+    background: var(--sorot-latar);
     opacity: 0;
     transform: scale(0.94);
     transition:
@@ -191,13 +200,13 @@ body {
       transform 0.3s cubic-bezier(0.22, 0.68, 0.35, 1);
   }
   .menu-sorot::after {
-    box-shadow: inset 3px 0 0 var(--brand-ink);
+    box-shadow: inset 3px 0 0 var(--sorot-garis);
     clip-path: inset(50% 0 50% 0);
     transition: clip-path 0.3s cubic-bezier(0.22, 0.68, 0.35, 1) 0.05s;
   }
   .menu-sorot.menu-aktif,
   .menu-sorot:focus-visible {
-    color: var(--brand-ink);
+    color: var(--sorot-teks);
   }
   .menu-sorot.menu-aktif::before,
   .menu-sorot:focus-visible::before {
@@ -210,7 +219,7 @@ body {
   }
   @media (hover: hover) {
     .menu-sorot:hover {
-      color: var(--brand-ink);
+      color: var(--sorot-teks);
     }
     .menu-sorot:hover::before {
       opacity: 1;
@@ -387,14 +396,100 @@ body {
   --tinggi-kertas: 194px; /* 76 + logo 84 + 34 */
   position: relative;
   margin-top: -24px;
-  animation: pita-mantul 0.4s ease-out 0.85s backwards;
+  /* Diayun angin dari titik gantungnya di tepi atas kertas. */
+  transform-origin: 50% 0;
+  animation:
+    pita-mantul 0.4s ease-out 0.85s backwards,
+    pita-angin 8s ease-in-out 1.3s infinite;
 }
 .pita-kertas {
+  position: relative;
   height: var(--tinggi-kertas);
-  padding: 76px 24px 34px;
-  background: linear-gradient(rgb(8 42 82 / 0.1) 24px, transparent 38px), #ffffff;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+  /* 26px = ruang 24px + rata-rata lekuk tepi (separuh dari 4px). */
+  padding: 76px 26px 34px;
+  /* Badan kertas berhenti 4px sebelum tepi; sisanya diisi .pita-tepi yang bergelombang. */
+  background: linear-gradient(#ffffff 0 0) center / calc(100% - 8px) 100% no-repeat;
+  /* Bukan box-shadow: bayangannya harus ikut tepi yang bergelombang. */
+  filter: drop-shadow(0 2px 8px rgb(0 0 0 / 0.25));
   animation: pita-buka 0.8s cubic-bezier(0.4, 0.1, 0.3, 1) 0.1s backwards;
+}
+/* Angin hanya menggerakkan transform, translate, dan opacity supaya dikerjakan GPU tanpa menggambar
+   ulang kertas tiap bingkai; topeng atau latar yang dianimasikan memakan sekitar seperempat utas
+   utama. Logo tidak ikut melengkung, jadi tetap tajam.
+   Tepi kiri-kanan adalah lajur 9px yang menumpang 5px di atas badan kertas. Di dalamnya, kolom
+   ombak setinggi kertas + 256px digeser ke bawah (pita-riak); lekuknya tetap 4px. Hembusan terasa
+   dari laju ombak, ayunan, dan bayangan lipatan. Besar lekuk sengaja tidak dianimasikan: scale
+   memunculkan garis tipis terang di tepi lajur, dan menggeser kolom keluar-masuk lajur membuat
+   tepinya tampak tergigit. Latar lajur adalah penjepit yang meluruskan tepi dekat titik gantung
+   dan gulungan. */
+.pita-tepi {
+  position: absolute;
+  inset-block: 0;
+  z-index: -1;
+  width: 9px;
+  overflow: hidden;
+}
+.pita-tepi::before {
+  content: '';
+  position: absolute;
+  top: -256px;
+  bottom: 0;
+  /* Lebih lebar dari lajurnya supaya selalu menumpang di atas badan kertas. Kalau hanya
+     bersentuhan di tengah piksel, muncul garis tipis tembus pandang. */
+  width: 24px;
+  animation: pita-riak 8s cubic-bezier(0.3, 0, 0.2, 1) 1.3s infinite;
+}
+.pita-tepi-kiri {
+  left: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 194' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M0 0H9V66C9 46 0 46 0 26ZM9 148C9 163 0 163 0 178V194H9Z'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+}
+.pita-tepi-kiri::before {
+  left: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 64' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M2 0Q6 16 2 32T2 64H24V0Z'/%3E%3C/svg%3E")
+    0 0 / 24px 64px repeat-y;
+}
+.pita-tepi-kanan {
+  right: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 194' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M9 0H0V66C0 46 9 46 9 26ZM0 148C0 163 9 163 9 178V194H0Z'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+}
+.pita-tepi-kanan::before {
+  right: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 64' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M22 0Q18 16 22 32T22 64H0V0Z'/%3E%3C/svg%3E")
+    0 0 / 24px 64px repeat-y;
+}
+/* Bayangan lipatan yang ikut merambat: gelap di lereng ombak yang menghadap ke bawah, dan menebal
+   saat hembusan. Warnanya --brand-deep, sama persis dengan panel di kedua tema, jadi bagian yang
+   lewat di luar tepi kertas tidak terlihat. */
+.pita-lipat {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+}
+/* Opacity dan translate di unsur yang sama: kalau opacity dianimasikan di induknya, Chrome
+   mengerjakan keduanya di utas utama (±12% beban). */
+.pita-lipat::before {
+  content: '';
+  position: absolute;
+  inset: -256px 0 0;
+  --lipat: color-mix(in srgb, var(--brand-deep) 8%, transparent);
+  background: linear-gradient(var(--lipat), transparent 50%, var(--lipat)) 0 0 / 100% 64px;
+  opacity: 0.35;
+  animation:
+    pita-riak 8s cubic-bezier(0.3, 0, 0.2, 1) 1.3s infinite,
+    pita-lipat-tegas 8s ease-in-out 1.3s infinite;
+}
+/* Bayangan di tepi atas, tempat kertas masuk ke balik panel; digambar setelah lajur tepi supaya
+   tidak terpotong di sana. */
+.pita-kertas::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: -1;
+  height: 38px;
+  background: linear-gradient(rgb(8 42 82 / 0.1) 24px, transparent);
 }
 /* Gulungan di depan kertas; menutup 8px terbawah kertas dan bergerak seiring tepi kertas yang terbuka. */
 .pita-gulungan {
@@ -473,17 +568,49 @@ body {
     transform: translateY(calc(32px - var(--tinggi-kertas)));
   }
 }
+/* Memakai `translate`, bukan `transform`, supaya tidak berebut dengan ayunan angin. */
 @keyframes pita-mantul {
   40% {
-    transform: translateY(5px);
+    translate: 0 5px;
   }
   75% {
-    transform: translateY(-1px);
+    translate: 0 -1px;
+  }
+}
+/* Satu siklus angin 8 detik: hembusan datang cepat dan memuncak di 30%, lalu reda pelan sampai
+   hampir diam. Semua animasi angin berdurasi dan berjeda sama, jadi ombak paling deras dan lipatan
+   paling gelap saat ayunan terjauh. Riak bergeser tepat 4 gelombang (4 × 64px) supaya sambungan
+   siklusnya tak terlihat. */
+@keyframes pita-riak {
+  to {
+    translate: 0 256px;
+  }
+}
+@keyframes pita-lipat-tegas {
+  30% {
+    opacity: 1;
+  }
+}
+/* Didorong ke kanan, lalu berayun balik makin kecil. */
+@keyframes pita-angin {
+  30% {
+    transform: rotate(-1deg) skewX(1.6deg);
+  }
+  46% {
+    transform: rotate(0.45deg) skewX(-0.8deg);
+  }
+  61% {
+    transform: rotate(-0.25deg) skewX(0.45deg);
+  }
+  76% {
+    transform: rotate(0.1deg) skewX(-0.2deg);
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .pita-logo,
   .pita-kertas,
+  .pita-tepi::before,
+  .pita-lipat::before,
   .pita-gulungan,
   .pita-tongkat {
     animation: none;

@@ -45,7 +45,7 @@ export async function petaNama(ids) {
   return new Map(
     daftar.map((p) => [
       p.id,
-      p.dosen?.nama ?? p.mahasiswa?.nama ?? (p.peran === 'ADMIN' && p.superAdmin ? 'Super Admin' : 'Biro Kemahasiswaan'),
+      p.dosen?.nama ?? p.mahasiswa?.nama ?? (p.peran === 'SUPER_ADMIN' ? 'Super Admin' : 'Biro Kemahasiswaan'),
     ]),
   )
 }
