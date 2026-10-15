@@ -1,12 +1,20 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { EN } from './teks'
 import { dumpOtomatis, hasilOtomatis, mintaTerjemahan, saatSelesai } from './terjemahOtomatis'
 
 /* Kalimat Indonesia dipakai sebagai kunci kamus; lihat README.md › Kamus dan terjemahan. */
 
-const KUNCI = 'sk5c.bahasa'
+/* Hanya pilihan pengguna yang disimpan. Kunci lama ('sk5c.bahasa') juga menyimpan bahasa bawaan
+   yang tidak pernah dipilih, jadi isinya dibuang; lihat README.md › Hidrasi. */
+const KUNCI = 'sk5c.bahasa.pilihan'
+const KUNCI_LAMA = 'sk5c.bahasa'
+
+/* Bahasa bila pengguna belum pernah memilih: halaman masuk Inggris karena penggunanya tidak hanya
+   orang Indonesia, panel tetap Indonesia. */
+export const bahasaBawaan = (jalur) => (jalur === '/masuk' ? 'en' : 'id')
 
 export const BAHASA = [
   { id: 'id', kode: 'ID', nama: 'Bahasa Indonesia' },
@@ -56,35 +64,42 @@ export function terjemah(bahasa, teks, nilai) {
 export const OTOMATIS = { aktif: true }
 
 export function BahasaProvider({ children }) {
-  /* Selalu mulai dari Indonesia seperti HTML server; pilihan tersimpan dipasang setelah menempel. */
-  const [bahasa, setBahasa] = useState('id')
-  const [siap, setSiap] = useState(false)
+  /* null: belum pernah memilih, jadi tiap halaman memakai bawaannya. Render pertama selalu memakai
+     bawaan jalur, sama seperti HTML server; pilihan tersimpan dipasang setelah menempel. */
+  const jalur = usePathname()
+  const [pilihan, setPilihan] = useState(null)
+  const bahasa = pilihan ?? bahasaBawaan(jalur)
 
   useEffect(() => {
     try {
+      localStorage.removeItem(KUNCI_LAMA)
       const tersimpan = localStorage.getItem(KUNCI)
-      if (tersimpan === 'en' || tersimpan === 'id') setBahasa(tersimpan)
+      if (tersimpan === 'en' || tersimpan === 'id') setPilihan(tersimpan)
     } catch {
     }
-
-    /* Bawaan selalu Indonesia, bukan bahasa peramban. */
-    setSiap(true)
   }, [])
 
-  const sebelumnya = useRef(null)
+  /* Diset oleh setBahasa: hanya pergantian dari pemilih yang diberi efek pudar, bukan pembacaan
+     pilihan tersimpan atau pindah dari halaman masuk ke panel. */
+  const dariPemilih = useRef(false)
 
-  /* Tulis hanya setelah pembacaan awal; render pertama selalu 'id'. */
+  const setBahasa = useCallback(
+    (baru) => {
+      if (baru !== 'id' && baru !== 'en') return
+      if (baru !== bahasa) dariPemilih.current = true
+      setPilihan(baru)
+      try {
+        localStorage.setItem(KUNCI, baru)
+      } catch {
+      }
+    },
+    [bahasa],
+  )
+
   useEffect(() => {
-    if (!siap) return
     document.documentElement.lang = bahasa
-    try {
-      localStorage.setItem(KUNCI, bahasa)
-    } catch {
-    }
-
-    const awal = sebelumnya.current
-    sebelumnya.current = bahasa
-    if (awal === null || awal === bahasa) return
+    if (!dariPemilih.current) return
+    dariPemilih.current = false
 
     const akar = document.documentElement
     akar.classList.add('ganti-bahasa')
@@ -93,7 +108,7 @@ export function BahasaProvider({ children }) {
       clearTimeout(id)
       akar.classList.remove('ganti-bahasa')
     }
-  }, [bahasa, siap])
+  }, [bahasa])
 
   const [putaran, setPutaran] = useState(0)
 
@@ -112,9 +127,9 @@ export function BahasaProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [bahasa, putaran],
   )
-  const toggle = useCallback(() => setBahasa((b) => (b === 'id' ? 'en' : 'id')), [])
+  const toggle = useCallback(() => setBahasa(bahasa === 'id' ? 'en' : 'id'), [bahasa, setBahasa])
 
-  const nilai = useMemo(() => ({ bahasa, setBahasa, toggle, t }), [bahasa, toggle, t])
+  const nilai = useMemo(() => ({ bahasa, setBahasa, toggle, t }), [bahasa, setBahasa, toggle, t])
   return <BahasaContext.Provider value={nilai}>{children}</BahasaContext.Provider>
 }
 

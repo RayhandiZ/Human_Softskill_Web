@@ -8,6 +8,7 @@ import MenuSamping from '../../components/MenuSamping'
 import TombolBahasa from '../../components/TombolBahasa'
 import TombolTema from '../../components/TombolTema'
 import {
+  IconBell,
   IconBook,
   IconBuilding,
   IconCheckShield,
@@ -18,7 +19,6 @@ import {
   IconMenu,
   IconUsers,
 } from '../../components/Icons'
-import { PERIODE_AKTIF, labelPeriode } from '../../lib/data'
 import { permintaanMenunggu, useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
@@ -26,15 +26,16 @@ import { kunciSesi, useProfil } from '../../lib/profil'
 
 /* Panel pengawasan Super Admin, terpisah dari panel Kemahasiswaan; lihat README.md › Panel Super Admin. */
 
-// Tiga tugas utama super admin di atas, halaman pengawasan di bawahnya.
+// Tiga tugas utama super admin di atas, halaman pengawasan di bawahnya; judul kelompok memisahkan
+// halaman tempat bertindak dari halaman yang hanya dibaca.
 const menuSuper = (menunggu) => [
-  { to: '/super', label: 'Pusat Kendali', icon: IconGauge, end: true },
-  { to: '/super/persetujuan', label: 'Persetujuan', icon: IconCheckShield, lencana: menunggu || null },
-  { to: '/super/penilaian', label: 'Penilaian & Bobot', icon: IconDocument },
-  { to: '/super/akses', label: 'Akses Pengguna', icon: IconLock },
-  { to: '/super/log', label: 'Log Aktivitas', icon: IconList },
-  { to: '/super/wewenang', label: 'Peran & Wewenang', icon: IconUsers },
-  { to: '/super/aturan', label: 'Aturan Sistem', icon: IconBook },
+  { to: '/super', label: 'Pusat Kendali', icon: IconGauge, end: true, kelompok: 'Utama' },
+  { to: '/super/persetujuan', label: 'Persetujuan', icon: IconCheckShield, lencana: menunggu || null, kelompok: 'Utama' },
+  { to: '/super/penilaian', label: 'Penilaian & Bobot', icon: IconDocument, kelompok: 'Utama' },
+  { to: '/super/akses', label: 'Akses Pengguna', icon: IconLock, kelompok: 'Utama' },
+  { to: '/super/log', label: 'Log Aktivitas', icon: IconList, kelompok: 'Pengawasan' },
+  { to: '/super/wewenang', label: 'Peran & Wewenang', icon: IconUsers, kelompok: 'Pengawasan' },
+  { to: '/super/aturan', label: 'Aturan Sistem', icon: IconBook, kelompok: 'Pengawasan' },
 ]
 
 function KeKemahasiswaan({ besar = false, onClick }) {
@@ -44,12 +45,12 @@ function KeKemahasiswaan({ besar = false, onClick }) {
       href="/admin"
       onClick={onClick}
       className={
-        'flex items-center gap-3 rounded-2xl px-3.5 font-bold text-white/75 transition hover:bg-white/10 hover:text-white ' +
+        'flex items-center gap-3 rounded-2xl px-3.5 font-bold text-white/85 transition hover:bg-white/10 hover:text-white ' +
         (besar ? 'py-3.5 text-[16px]' : 'py-3 text-[14px]')
       }
     >
       <IconBuilding size={20} className="shrink-0" />
-      {t('Panel Kemahasiswaan')}
+      {t('Panel Admin')}
     </Link>
   )
 }
@@ -62,17 +63,19 @@ export default function SuperLayout({ children }) {
   const jalur = usePathname()
   const [laci, setLaci] = useState(false)
   const { foto } = useProfil(kunciSesi(user))
-  const menu = menuSuper(permintaanMenunggu().length)
+  const menunggu = permintaanMenunggu().length
+  const menu = menuSuper(menunggu)
 
   return (
-    <div className="min-h-screen bg-bg lg:pl-[264px] print:pl-0">
+    // panel-super: teks redup dipertebal khusus panel ini; lihat index.css › panel super admin.
+    <div className="panel-super min-h-screen bg-bg lg:pl-[264px] print:pl-0">
       {/* -------------------------------- sidebar ------------------------------- */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] p-4 pr-0 lg:block print:hidden">
-        <div className="flex h-full flex-col rounded-3xl bg-brand-deep px-3 py-5 text-white dark:ring-1 dark:ring-white/10">
+        <div className="kartu-aurora kartu-aurora-tegak relative flex h-full flex-col overflow-y-auto rounded-3xl px-3 py-5 text-white dark:ring-1 dark:ring-white/10">
           <Link href="/super" className="flex items-center gap-2.5 px-2.5">
             <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-white" />
             <span aria-hidden="true" className="h-6 w-px shrink-0 bg-white/25" />
-            <span className="whitespace-nowrap text-[15px] font-extrabold tracking-tight">
+            <span className="whitespace-nowrap text-[20px] font-extrabold tracking-tight">
               HUMAN <span className="text-[var(--accent)]">SKILL</span>
             </span>
           </Link>
@@ -106,16 +109,29 @@ export default function SuperLayout({ children }) {
 
             <Link href="/super" className="flex items-center gap-2.5 lg:hidden">
               <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
-              <span className="hidden text-[12px] font-extrabold uppercase tracking-[.12em] text-[var(--accent-ink)] sm:block">
+              <span className="hidden text-[20px] font-extrabold uppercase tracking-[.12em] text-[var(--accent-ink)] sm:block">
                 Super Admin
               </span>
             </Link>
 
-            <p className="hidden text-[13.5px] text-ink-2 lg:block">
-              Universitas Multimedia Nusantara · {t('Periode {periode}', { periode: labelPeriode(PERIODE_AKTIF) })}
-            </p>
-
             <div className="ml-auto flex items-center gap-2">
+              {/* Di layar sempit menu samping tersembunyi, jadi lencananya pindah ke lonceng ini. Hanya muncul
+                  bila ada yang menunggu, dan langsung menuju antreannya; lihat README.md › Bahasa visual. */}
+              {menunggu ? (
+                <Link
+                  href="/super/persetujuan"
+                  aria-label={t('{n} permintaan menunggu keputusan', { n: menunggu })}
+                  className="relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-ink-2 transition hover:bg-surface hover:text-ink lg:hidden"
+                >
+                  <IconBell size={20} />
+                  <span
+                    aria-hidden="true"
+                    className="absolute right-1.5 top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-[var(--accent)] px-1 text-[10px] font-extrabold text-[#2b1c00]"
+                  >
+                    {menunggu > 99 ? '99+' : menunggu}
+                  </span>
+                </Link>
+              ) : null}
               <TombolBahasa nada="terang" />
               <TombolTema />
               <MenuAkun foto={foto} tone="terang" rinci={{ judul: 'Super Admin', sub: user?.email ?? '' }} />
@@ -132,7 +148,7 @@ export default function SuperLayout({ children }) {
       </div>
 
       {/* --------------------------- laci layar kecil -------------------------- */}
-      <Laci buka={laci} onTutup={() => setLaci(false)} label="Menu super admin" nada="gelap">
+      <Laci buka={laci} onTutup={() => setLaci(false)} label="Menu super admin" nada="aurora">
         <nav aria-label={t('Menu super admin')} className="p-3">
           <MenuSamping items={menu} besar gelap onPilih={() => setLaci(false)} />
 

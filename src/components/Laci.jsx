@@ -4,7 +4,8 @@ import LogoPdp from './LogoPdp'
 import { useTeks } from '../lib/bahasa'
 
 export default function Laci({ buka, onTutup, label = 'Menu navigasi', nada = 'terang', children }) {
-  const gelap = nada === 'gelap'
+  // 'aurora': laci gelap dengan latar .kartu-aurora (panel super admin); selain latarnya sama dengan 'gelap'.
+  const gelap = nada === 'gelap' || nada === 'aurora'
   const t = useTeks()
 
   const panelRef = useRef(null)
@@ -47,7 +48,7 @@ export default function Laci({ buka, onTutup, label = 'Menu navigasi', nada = 't
         tabIndex={-1}
         className={
           'absolute inset-y-0 left-0 flex w-[84%] max-w-[320px] flex-col shadow-pop outline-none animate-geser ' +
-          (gelap ? 'bg-brand-deep text-white' : 'bg-surface')
+          (nada === 'aurora' ? 'kartu-aurora kartu-aurora-tegak text-white' : gelap ? 'bg-brand-deep text-white' : 'bg-surface')
         }
       >
         <div

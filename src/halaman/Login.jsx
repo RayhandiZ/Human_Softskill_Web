@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation'
 import { LABEL_PERAN, panelPengguna, roleFromEmail, useAuth } from '../lib/auth'
 import { IconAlert, IconArrowRight, IconEye, IconEyeOff, IconTabBaru } from '../components/Icons'
 import LogoPdp from '../components/LogoPdp'
+import TombolBahasa from '../components/TombolBahasa'
 import { useTeks } from '../lib/bahasa'
 import { SSO_LUPA_SANDI } from '../lib/layanan'
 import { AREA } from '../lib/curriculum'
@@ -130,7 +131,13 @@ export default function Login() {
       </aside>
 
       {/* -------------------------- panel kanan --------------------------- */}
-      <main className="flex flex-col px-5 pb-12 pt-6 sm:px-10 lg:pt-12">
+      <main className="relative flex flex-col px-5 pb-12 pt-6 sm:px-10 lg:pt-12">
+        {/* Bawaan halaman ini Inggris, panel tetap Indonesia; bahasa yang dipilih di sini diingat dan ikut
+            dipakai di panel. Di layar sempit sejajar dengan logo PDP. Alas gelapnya menjaga label yang tidak
+            aktif tetap terbaca saat cahaya sian lewat di belakangnya. Lihat README.md › Hidrasi. */}
+        <div className="absolute right-5 top-6 z-10 rounded-2xl bg-[color-mix(in_srgb,var(--surface)_62%,transparent)] sm:right-10">
+          <TombolBahasa nada="onbrand" />
+        </div>
         <JudulAplikasi className="mx-auto mt-8 hidden w-full max-w-[400px] lg:block" />
         {/* Di layar sempit kolom ini menempel ke atas; di layar lebar ia di tengah. */}
         <div className="mx-auto w-full max-w-[440px] animate-rise lg:my-auto">
@@ -225,7 +232,7 @@ export default function Login() {
                   className="flex items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--critical)_10%,transparent)] px-3.5 py-3 text-[13px] font-semibold text-[var(--critical)]"
                 >
                   <IconAlert size={16} className="mt-px shrink-0" />
-                  {error}
+                  {t(error)}
                 </p>
               ) : null}
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Badge, Card, CatatanKaki, EmptyState, SearchInput, Select, Tabs } from '../../components/Ui'
-import { IconAlert, IconLock, IconRefresh, IconUndo } from '../../components/Icons'
+import { Avatar, Badge, Card, CatatanKaki, EmptyState, SearchInput, Select, Tabs } from '../../components/Ui'
+import { IconAlert, IconCheck, IconLock, IconRefresh, IconUndo } from '../../components/Icons'
 import { ALASAN_AKSES_MIN, muatAkses, ubahAkses } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
@@ -16,6 +16,13 @@ const KELOMPOK = {
 const LABEL_STATUS = { semua: 'Semua status', aktif: 'Punya akses', dicabut: 'Akses dicabut' }
 
 const urut = (a, b) => (a.nama || a.email).localeCompare(b.nama || b.email, 'id')
+
+/** Inisial dari nama tanpa gelar ("Simon Petrus W., S.S." menjadi SP), atau dari email bila nama tidak ada. */
+function inisial(a) {
+  const nama = String(a.nama ?? '').split(',')[0].trim()
+  if (nama) return nama.split(/\s+/).slice(0, 2).map((k) => k[0]).join('').toUpperCase()
+  return String(a.email ?? '').split('@')[0].replace(/[^a-z]/gi, '').slice(0, 2).toUpperCase() || '?'
+}
 
 export default function Akses() {
   const t = useTeks()
@@ -61,9 +68,15 @@ export default function Akses() {
       <Card className="overflow-hidden">
         {muat.keadaan === 'galat' ? (
           muat.galat?.status === 404 ? (
-            <EmptyState title={t('Pengaturan akses belum tersedia')}>
-              {t('Server belum menyediakan daftar akun. Halaman ini langsung berfungsi begitu pintu /api/akses dibuat; rinciannya ada di README › Akses Pengguna.')}
-            </EmptyState>
+            <div className="px-6 py-12 text-center">
+              <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-soft text-brand-ink">
+                <IconLock size={22} />
+              </span>
+              <p className="mt-4 text-[15px] font-bold text-ink">{t('Pengaturan akses belum tersedia')}</p>
+              <p className="mx-auto mt-1.5 max-w-sm text-[13px] text-ink-2">
+                {t('Server belum menyediakan daftar akun. Halaman ini langsung berfungsi begitu pintu /api/akses dibuat; rinciannya ada di README › Akses Pengguna.')}
+              </p>
+            </div>
           ) : (
             <div className="px-6 py-12 text-center">
               <p className="text-[15px] font-bold text-ink">{t('Daftar akun gagal dimuat')}</p>
@@ -178,13 +191,16 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti }) {
   return (
     <li className="px-5 py-4 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5">
-        <div className="min-w-0">
-          <p className="break-words text-[14.5px] font-bold text-ink">{a.nama || a.email}</p>
-          {rincian ? <p className="mt-0.5 break-words text-[12.5px] text-ink-2">{rincian}</p> : null}
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar initials={inisial(a)} size={36} />
+          <div className="min-w-0">
+            <p className="break-words text-[14.5px] font-bold text-ink">{a.nama || a.email}</p>
+            {rincian ? <p className="mt-0.5 break-words text-[12.5px] text-ink-2">{rincian}</p> : null}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
           {a.peran === 'superadmin' ? <Badge tone="brand">{t('Super Admin')}</Badge> : null}
-          <Badge tone={a.aktif ? 'good' : 'critical'} icon={a.aktif ? null : IconLock}>
+          <Badge tone={a.aktif ? 'good' : 'critical'} icon={a.aktif ? IconCheck : IconLock}>
             {t(a.aktif ? 'Punya akses' : 'Akses dicabut')}
           </Badge>
           {bisaDiubah ? (

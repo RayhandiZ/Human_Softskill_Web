@@ -50,6 +50,9 @@
   --semester-3: #104281;
 
   --grid: #eceef6;
+
+  /* Butiran halus aurora (halaman masuk dan kartu aurora panel super admin). */
+  --butiran: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 .dark {
@@ -674,7 +677,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-image: var(--butiran);
   opacity: 0.13;
   mix-blend-mode: overlay;
 }
@@ -1021,6 +1024,75 @@ body {
   }
 }
 @keyframes pudar { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------------------------- panel super admin ---------------------------- */
+/* --text-muted bawaan (#8a8ea9) hanya 3,2:1 di kartu putih, di bawah 4,5:1 untuk teks kecil. Di panel ini
+   (catatan kaki, label EN yang tidak aktif, keterangan tabel) dipertebal: 5,6:1 di kartu putih, 5,1:1 di
+   latar halaman, 4,8:1 di --brand-soft. Versi gelapnya (#7b869e) hanya 4,2:1 di --surface-2, jadi
+   dinaikkan juga: 5,3:1 di --surface-2, 5,7:1 di kartu. */
+.panel-super {
+  --text-muted: #63677f;
+}
+.dark .panel-super {
+  --text-muted: #8b96ad;
+}
+/* Tulisan lencana "Menunggu konfirmasi" di Aturan Sistem: warna nada warning milik Badge hanya 2,8:1 di
+   latarnya sendiri; amber tua ini 6:1. Tema gelap memakai --warning-ink yang sudah lolos. */
+.teks-tunggu {
+  color: #7a5208;
+}
+.dark .teks-tunggu {
+  color: var(--warning-ink);
+}
+
+/* Permukaan navy panel super admin (menu samping, laci HP, kartu keputusan Pusat Kendali, Super Admin di
+   rantai pengawasan, kartu peran Super Admin): aurora halaman masuk versi diam, dengan dasar navy yang
+   sedikit lebih terang dan cahaya biru muda supaya tidak terlalu gelap. Tidak beranimasi, jadi tidak
+   menambah beban saat panel dibiarkan terbuka. Elemennya wajib berposisi (relative atau absolute) karena
+   ::after mengisi kotaknya; position sengaja tidak dipasang di sini supaya tidak menimpa absolute milik laci.
+   Kontras teks di atasnya diukur per piksel; ukur ulang bila cahayanya diubah (README.md › Panel Super
+   Admin › Tampilan). */
+.kartu-aurora {
+  /* Emas lebih muda di atas aurora yang lebih terang: tulisan emas kecil ("ANDA", lama menunggu) dengan
+     --accent biasa turun ke 3,8:1 di bagian yang tersinari biru muda. */
+  --accent: #f2c062;
+  isolation: isolate;
+  background-color: #0b2f5e;
+  background-image:
+    radial-gradient(70% 90% at 100% 0%, rgb(125 211 252 / 0.3), transparent 70%),
+    radial-gradient(60% 100% at 72% 100%, rgb(59 130 246 / 0.3), transparent 70%),
+    radial-gradient(65% 110% at 0% 100%, rgb(99 102 241 / 0.28), transparent 70%),
+    linear-gradient(140deg, #0a2550 0%, #0d3770 55%, #0b2c5e 100%);
+}
+/* Versi tegak untuk menu samping dan laci: biru muda di bawah, jauh dari logo dan label emas di atas. */
+.kartu-aurora.kartu-aurora-tegak {
+  background-image:
+    radial-gradient(130% 40% at 100% 100%, rgb(125 211 252 / 0.3), transparent 70%),
+    radial-gradient(120% 35% at 0% 62%, rgb(59 130 246 / 0.24), transparent 70%),
+    radial-gradient(120% 30% at 0% 0%, rgb(99 102 241 / 0.22), transparent 70%),
+    linear-gradient(170deg, #0a2550 0%, #0d3770 55%, #0b2c5e 100%);
+}
+.kartu-aurora::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: var(--butiran);
+  opacity: 0.1;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* ------------------------- data satu seri (super admin) ------------------------ */
+/* Batang grafik dan isian meter di Pusat Kendali: biru merek di tema terang. Di tema gelap --brand hanya
+   sekitar 2:1 di atas kartu, di bawah 3:1 untuk tanda grafik, jadi diganti biru yang lebih terang. */
+.isi-data {
+  background-color: var(--brand);
+}
+.dark .isi-data {
+  background-color: #5598e7;
+}
 
 /* --------------------------------- cetak ---------------------------------- */
 

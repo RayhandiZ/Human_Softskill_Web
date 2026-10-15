@@ -4,11 +4,11 @@ import { createRoot } from 'react-dom/client'
 import { act } from 'react'
 import Penyedia from '../app/penyedia'
 import { RequireRole, panelPengguna } from '../src/lib/auth'
-import { COHORTS, MASTER_AWAL, STUDENTS, getStudent, getStudentByNim, isiData, isiMaster, pengumpulanDosen, resetTranskripCache } from '../src/lib/data'
+import { AUDIT_LOG, COHORTS, MASTER_AWAL, STUDENTS, getStudent, getStudentByNim, isiData, isiMaster, pengumpulanDosen, resetTranskripCache } from '../src/lib/data'
 import { getAspekList, getKomponen, getKomponenById, isiKurikulum } from '../src/lib/curriculum'
 import { bobotKomponen } from '../src/lib/scoring'
 import { DATA_CONTOH, DOSEN, PERSONA_SEMESTER, getDosenByEmail, getStudentByEmail } from './dataContoh'
-import { AKUN_LOKAL, bersihkanPerubahan, muatAkses } from '../src/lib/store'
+import { AKUN_LOKAL, PERMINTAAN, bersihkanPerubahan, muatAkses, permintaanMenunggu } from '../src/lib/store'
 import { aturJalur, rekamNavigasi } from './palsu-next-navigation'
 import { jalurMulus } from '../src/lib/kurva'
 
@@ -1672,7 +1672,48 @@ export async function ujiPanelSuper() {
   hasil.keKemahasiswaan = Boolean(el.querySelector('aside a[href="/admin"]'))
   hasil.isiKendali = /Pusat Kendali/.test(el.textContent) && /Rantai pengawasan/.test(el.textContent)
   hasil.tanpaServerJujur = /hanya tercatat saat website terhubung ke basis data/.test(el.textContent)
+  // Menu samping dikelompokkan: tempat bertindak di atas, halaman yang hanya dibaca di bawah.
+  const daftarMenu = [...el.querySelectorAll('aside nav ul')]
+  hasil.menuBerkelompok =
+    JSON.stringify(daftarMenu.map((ul) => document.getElementById(ul.getAttribute('aria-labelledby') ?? '')?.textContent)) ===
+      JSON.stringify(['Utama', 'Pengawasan']) &&
+    daftarMenu.map((ul) => ul.querySelectorAll('a').length).join() === '4,3'
+  // Lonceng hanya muncul bila ada yang menunggu (README.md › Bahasa visual).
+  hasil.tanpaLonceng = permintaanMenunggu().length > 0 || !el.querySelector('header a[href="/super/persetujuan"]')
   lepas()
+
+  // Satu permintaan menunggu dan satu perubahan nilai hari ini, lalu dibuang lagi.
+  const hariIni = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  const jumlahMenunggu = permintaanMenunggu().length
+  PERMINTAAN.push({ id: 'P-UJI', aksi: 'UBAH_BOBOT', status: 'menunggu', alasan: '', diajukanOleh: 'admin@umn.ac.id', diajukanPada: hariIni + ' 08:00' })
+  AUDIT_LOG.push({ id: 'A-UJI', waktu: hariIni + ' 08:00', nim: 'UJI-1', aktor: 'uji' })
+  ;({ el, lepas } = await pasang('/super'))
+  hasil.loncengMenunggu =
+    el.querySelector('header a[href="/super/persetujuan"]')?.getAttribute('aria-label') ===
+    jumlahMenunggu + 1 + ' permintaan menunggu keputusan'
+  hasil.grafikBulanan =
+    el.querySelectorAll('main ol[aria-label] > li[tabindex="0"]').length === 6 &&
+    /Perubahan nilai per bulan/.test(el.textContent)
+
+  // Pemilih periode: daftar dari angkatan tertua sampai periode aktif; periode lain menyaring isi halaman.
+  const keping = () => el.querySelector('main button[aria-haspopup="listbox"]')
+  const aktifDulu = /Aktif/.test(keping()?.textContent ?? '')
+  await klik(keping(), 1)
+  const pilihan = [...el.querySelectorAll('[role="listbox"] [role="option"]')]
+  const adaPilihan = pilihan.length > 1 && pilihan[0].getAttribute('aria-selected') === 'true'
+  const nama = pilihan[1]?.textContent.match(/(Ganjil|Genap) \d{4}\/\d{4}/)?.[0]
+  await klik(pilihan[1], 1)
+  hasil.pilihPeriode =
+    aktifDulu &&
+    adaPilihan &&
+    Boolean(nama) &&
+    !el.querySelector('[role="listbox"]') &&
+    keping()?.textContent.includes(nama) &&
+    /Saat ini/.test(el.querySelector('#judul-keputusan')?.textContent ?? '') &&
+    el.textContent.includes('Diputuskan di ' + nama)
+  lepas()
+  PERMINTAAN.splice(PERMINTAAN.findIndex((p) => p.id === 'P-UJI'), 1)
+  AUDIT_LOG.splice(AUDIT_LOG.findIndex((l) => l.id === 'A-UJI'), 1)
 
   // Tanpa server, perubahan nilai dibaca dari AUDIT_LOG yang sudah termuat.
   ;({ el, lepas } = await pasang('/super/log'))
@@ -1955,7 +1996,7 @@ export async function ujiMataSandi() {
     adaMata:
       Boolean(mata) &&
       !/Tampilkan|Sembunyikan/.test(mata.textContent) &&
-      mata.getAttribute('aria-label') === 'Lihat kata sandi' &&
+      ['Lihat kata sandi', 'Show password'].includes(mata.getAttribute('aria-label')) &&
       Boolean(mata.querySelector('svg')),
   }
   await penunjuk('pointerover', 'mouse')
@@ -1980,12 +2021,64 @@ export async function ujiMataSandi() {
   return hasil
 }
 
+/**
+ * Bahasa bawaan: halaman masuk Inggris selama pengguna belum pernah memilih, panel tetap Indonesia.
+ * Hanya pilihan dari pemilih yang disimpan (kunci 'sk5c.bahasa.pilihan'); kunci lama 'sk5c.bahasa'
+ * ikut menyimpan bawaan yang tidak pernah dipilih, jadi harus dibuang dan tidak boleh dipakai.
+ */
+export async function ujiBahasaMasuk() {
+  const PILIHAN = 'sk5c.bahasa.pilihan'
+  const sesi = window.localStorage.getItem('sk5c.session')
+  const hasil = {}
+  const tombol = (el, kode) =>
+    [...el.querySelectorAll('[role="group"][aria-label] button')].find((b) => b.textContent.trim() === kode)
+  const masuk = async () => {
+    window.localStorage.removeItem('sk5c.session')
+    return pasang('/masuk')
+  }
+
+  window.localStorage.removeItem(PILIHAN)
+  window.localStorage.setItem('sk5c.bahasa', 'id')
+  let h = await masuk()
+  hasil.masukInggris =
+    h.el.querySelector('h2')?.textContent === 'Sign in' &&
+    tombol(h.el, 'EN')?.getAttribute('aria-pressed') === 'true' &&
+    document.documentElement.lang === 'en'
+  hasil.adaPemilih = Boolean(tombol(h.el, 'ID') && tombol(h.el, 'EN'))
+  hasil.kunciLamaDibuang = window.localStorage.getItem('sk5c.bahasa') === null
+  hasil.bawaanTidakDisimpan = window.localStorage.getItem(PILIHAN) === null
+
+  await klik(tombol(h.el, 'EN'))
+  hasil.enAktifTetapDisimpan = window.localStorage.getItem(PILIHAN) === 'en'
+  window.localStorage.removeItem(PILIHAN)
+  h.lepas()
+
+  if (sesi) window.localStorage.setItem('sk5c.session', sesi)
+  h = await pasang('/mahasiswa')
+  hasil.panelIndonesia =
+    tombol(h.el, 'ID')?.getAttribute('aria-pressed') === 'true' && document.documentElement.lang === 'id'
+  h.lepas()
+
+  h = await masuk()
+  await klik(tombol(h.el, 'ID'))
+  hasil.pilihIndonesia =
+    h.el.querySelector('h2')?.textContent === 'Masuk' && window.localStorage.getItem(PILIHAN) === 'id'
+  h.lepas()
+  h = await masuk()
+  hasil.pilihanDiingat = h.el.querySelector('h2')?.textContent === 'Masuk'
+  h.lepas()
+
+  window.localStorage.removeItem(PILIHAN)
+  if (sesi) window.localStorage.setItem('sk5c.session', sesi)
+  return hasil
+}
+
 export async function ujiPanelLain(rute) {
   /* Pilihan bahasa bertahan di penyimpanan. Tanpa dibersihkan, panel kedua
      sudah berbahasa Inggris sejak dibuka dan menekan EN tidak mengubah apa
      pun — uji ini akan gagal karena keadaan sisa, bukan karena ada yang rusak. */
   try {
-    localStorage.removeItem('sk5c.bahasa')
+    localStorage.removeItem('sk5c.bahasa.pilihan')
   } catch {
     /* diabaikan */
   }
@@ -2075,7 +2168,7 @@ export async function ujiLayanan(rute = '/mahasiswa') {
    -------------------------------------------------------------------------- */
 export async function ujiSeretBahasa() {
   try {
-    localStorage.removeItem('sk5c.bahasa')
+    localStorage.removeItem('sk5c.bahasa.pilihan')
   } catch {
     /* diabaikan */
   }
@@ -2154,13 +2247,13 @@ export async function ujiSeretBahasa() {
 
    Yang diuji bukan isi kamusnya, melainkan MEKANISMENYA: bahwa halaman benar
    benar berganti bahasa saat tombolnya ditekan, bahwa pilihannya tersimpan,
-   dan bahwa render pertama selalu Indonesia — sebab render pertama di peramban
+   dan bahwa render pertama panel selalu Indonesia — sebab render pertama di peramban
    harus sama persis dengan HTML dari server, kalau tidak React menolak
    hidrasinya.
    -------------------------------------------------------------------------- */
 export async function ujiBahasa() {
   try {
-    localStorage.removeItem('sk5c.bahasa')
+    localStorage.removeItem('sk5c.bahasa.pilihan')
   } catch {
     /* diabaikan */
   }
@@ -2186,7 +2279,7 @@ export async function ujiBahasa() {
   hasil.menuIkutBerganti = /Road Map/.test(teks())
   hasil.tersimpan = (() => {
     try {
-      return localStorage.getItem('sk5c.bahasa') === 'en'
+      return localStorage.getItem('sk5c.bahasa.pilihan') === 'en'
     } catch {
       return false
     }

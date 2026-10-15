@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Badge, Card, CatatanKaki } from '../../components/Ui'
-import { IconChevronRight } from '../../components/Icons'
+import { IconCheck, IconChevronRight, IconClock } from '../../components/Icons'
 import { CONFIG, DARI_BASIS_DATA, KUNCI_DAPAT_DIUBAH, MENUNGGU_KONFIRMASI, nilaiBawaan } from '../../lib/config'
 import { useStore } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
@@ -58,6 +58,9 @@ const ATURAN = {
 export default function Aturan() {
   useStore()
   const t = useTeks()
+  // Baris tabel: aturan yang bisa ditimpa ditambah lama program, yang selalu ditetapkan.
+  const jumlah = KUNCI_DAPAT_DIUBAH.length + 1
+  const menunggu = KUNCI_DAPAT_DIUBAH.filter((k) => MENUNGGU_KONFIRMASI.includes(k)).length
 
   return (
     <div className="space-y-6">
@@ -65,23 +68,38 @@ export default function Aturan() {
         <h1 className="text-[26px] font-extrabold tracking-tight text-ink">{t('Aturan Sistem')}</h1>
         <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-ink-2">
           {t(
-            'Aturan perhitungan yang sedang berlaku. Halaman ini hanya bacaan: aturan diubah lewat tabel Konfigurasi di basis data, sedangkan bobot dan penilaian aspek lewat halaman Kurikulum CPMK.',
+            'Aturan perhitungan yang sedang berlaku. Halaman ini hanya bacaan: aturan diubah lewat tabel Konfigurasi di basis data, sedangkan bobot dan penilaian aspek lewat halaman Penilaian & Bobot.',
           )}
         </p>
         <Link
-          href="/admin/kurikulum"
-          className="mt-3 inline-flex items-center gap-1 text-[14px] font-bold text-brand-ink hover:underline"
+          href="/super/penilaian"
+          className="mt-3 inline-flex min-h-[44px] items-center gap-1 text-[14px] font-bold text-brand-ink hover:underline sm:min-h-0"
         >
-          {t('Buka Kurikulum CPMK')}
+          {t('Buka Penilaian & Bobot')}
           <IconChevronRight size={16} />
         </Link>
       </header>
+
+      {/* Ringkasan sebelum tabel: seberapa banyak aturan yang angkanya masih bisa berubah. */}
+      <Card className="card-pad">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+          <p className="text-[14px] text-ink-2">
+            <span className="text-[26px] font-extrabold leading-none text-ink">{menunggu}</span>
+            <span className="font-bold text-ink-2"> / {jumlah} </span>
+            {t('aturan masih menunggu konfirmasi')}
+          </p>
+          <p className="text-[13px] text-ink-2">{t('{n} sudah ditetapkan', { n: jumlah - menunggu })}</p>
+        </div>
+        <span aria-hidden="true" className="mt-3 block h-2 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--warning)_22%,transparent)]">
+          <span className="block h-full rounded-full bg-[var(--warning)]" style={{ width: Math.round((menunggu / jumlah) * 100) + '%' }} />
+        </span>
+      </Card>
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left">
             <thead>
-              <tr className="border-b border-line text-[12px] font-bold uppercase tracking-[.06em] text-ink-3">
+              <tr className="border-b border-line bg-surface-2 text-[12px] font-bold uppercase tracking-[.06em] text-ink-2">
                 <th className="px-5 py-3 sm:px-6">{t('Aturan')}</th>
                 <th className="px-3 py-3">{t('Yang berlaku')}</th>
                 <th className="px-3 py-3">{t('Sumber')}</th>
@@ -101,7 +119,7 @@ export default function Aturan() {
                     </th>
                     <td className="px-3 py-3 text-[13.5px] font-semibold text-ink">{a.tampil(CONFIG[k], t)}</td>
                     <td className="px-3 py-3 text-[13px] text-ink-2">
-                      {t(dariBasisData ? 'Basis data' : 'Bawaan kode')}
+                      <span className="whitespace-nowrap">{t(dariBasisData ? 'Basis data' : 'Bawaan kode')}</span>
                       {dariBasisData && beda ? (
                         <span className="mt-0.5 block text-[12px] text-ink-3">
                           {t('bawaan: {nilai}', { nilai: a.tampil(nilaiBawaan(k), t) })}
@@ -110,9 +128,9 @@ export default function Aturan() {
                     </td>
                     <td className="px-5 py-3 sm:px-6">
                       {MENUNGGU_KONFIRMASI.includes(k) ? (
-                        <Badge tone="warning">{t('Menunggu konfirmasi')}</Badge>
+                        <Badge tone="warning" icon={IconClock} className="teks-tunggu whitespace-nowrap">{t('Menunggu konfirmasi')}</Badge>
                       ) : (
-                        <Badge tone="neutral">{t('Ditetapkan')}</Badge>
+                        <Badge tone="neutral" icon={IconCheck} className="whitespace-nowrap">{t('Ditetapkan')}</Badge>
                       )}
                     </td>
                   </tr>
@@ -128,9 +146,9 @@ export default function Aturan() {
                 <td className="px-3 py-3 text-[13.5px] font-semibold text-ink">
                   {t('{n} semester', { n: CONFIG.TOTAL_SEMESTER_PROGRAM })}
                 </td>
-                <td className="px-3 py-3 text-[13px] text-ink-2">{t('Bawaan kode')}</td>
+                <td className="whitespace-nowrap px-3 py-3 text-[13px] text-ink-2">{t('Bawaan kode')}</td>
                 <td className="px-5 py-3 sm:px-6">
-                  <Badge tone="neutral">{t('Ditetapkan')}</Badge>
+                  <Badge tone="neutral" icon={IconCheck} className="whitespace-nowrap">{t('Ditetapkan')}</Badge>
                 </td>
               </tr>
             </tbody>

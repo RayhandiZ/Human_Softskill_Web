@@ -20,6 +20,30 @@ function periodeSetelah(p, n) {
 
 export const labelPeriode = (p) => p.semester + ' ' + p.tahun
 
+export const samaPeriode = (a, b) => ordinal(a) === ordinal(b)
+
+/*
+ * Rentang tanggal tiap periode, untuk menyaring data per semester (Pusat Kendali super admin). Mengikuti
+ * Kalender Akademik UMN 2026/2027 (umn.ac.id): Ganjil dibuka tambah-ganti KRS 19-20 Agustus, kuliah mulai
+ * 24 Agustus, UAS 14-23 Desember, lalu remedial di Januari; Genap dibuka tambah-ganti KRS 3-5 Februari,
+ * kuliah mulai 8 Februari, UAS 7-19 Juni, lalu Semester Antara sampai akhir Juli. Dibulatkan per bulan supaya
+ * setahun tertutup tanpa celah; Semester Antara ikut Genap. Tanggal dalam TTTT-BB-HH WIB, sama dengan
+ * penyaring /api/log.
+ */
+export function rentangPeriode(p) {
+  const th = tahunAwal(p.tahun)
+  return p.semester === 'Ganjil'
+    ? { mulai: th + '-08-01', selesai: th + 1 + '-01-31' }
+    : { mulai: th + 1 + '-02-01', selesai: th + 1 + '-07-31' }
+}
+
+/** Periode dari intake angkatan tertua sampai periode aktif, terbaru dulu. */
+export function daftarPeriode() {
+  const akhir = ordinal(PERIODE_AKTIF)
+  const awal = Math.min(akhir, ...COHORTS.map((c) => ordinal(c.intake)))
+  return Array.from({ length: akhir - awal + 1 }, (_, i) => periodeSetelah(PERIODE_AKTIF, -i))
+}
+
 export const periodeAngkatan = (intake) => [0, 1, 2].map((n) => periodeSetelah(intake, n))
 
 const isiUlang = (larik, isi) => larik.splice(0, larik.length, ...(isi ?? []))

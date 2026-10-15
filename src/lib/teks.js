@@ -58,6 +58,23 @@ export const EN = {
     'Relational growth: collaboration, trust, empathy, and conflict handling.',
   'Pengembangan peran profesional: kepemimpinan dan kewargaan organisasi.':
     'Professional growth: leadership and organisational citizenship.',
+  'Apa sih Human Skill itu?': 'What is Human Skill?',
+  'Human Skill merupakan sistem penilaian yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:':
+    'Human Skill is an assessment system designed to evaluate and develop the interpersonal abilities, technical skills, and other competencies of Universitas Multimedia Nusantara students. It covers the three assessment areas below:',
+  /* Pesan galat masuk, dari src/lib/auth.jsx dan src/server/masuk.js. */
+  'Email dan kata sandi wajib diisi.': 'Email and password are required.',
+  'Email atau kata sandi salah.': 'Incorrect email or password.',
+  'Akun ini dinonaktifkan. Hubungi Biro Kemahasiswaan.':
+    'This account has been deactivated. Contact the Student Affairs Bureau.',
+  'Data akun ini belum lengkap. Hubungi Biro Kemahasiswaan.':
+    'This account’s details are incomplete. Contact the Student Affairs Bureau.',
+  'Server tidak bisa dihubungi. Periksa koneksi, lalu coba lagi.':
+    'Cannot reach the server. Check your connection, then try again.',
+  'Gagal masuk. Coba lagi.': 'Sign-in failed. Try again.',
+  'Server sedang bermasalah. Coba lagi sebentar lagi.':
+    'The server is having problems. Try again in a moment.',
+  'Basis data tidak bisa dihubungi. Pastikan MySQL sudah berjalan.':
+    'Cannot reach the database. Make sure MySQL is running.',
 
   /* -------------------------------- sapaan ------------------------------- */
   'Selamat pagi': 'Good morning',
@@ -1125,8 +1142,12 @@ export const EN = {
   'Peran & Wewenang': 'Roles & Permissions',
   'Aturan Sistem': 'System Rules',
   'Panel Kemahasiswaan': 'Student Affairs panel',
+  'Panel Admin': 'Admin panel',
   'Panel Super Admin': 'Super Admin panel',
   'Menu super admin': 'Super admin menu',
+  Utama: 'Main',
+  Pengawasan: 'Oversight',
+  '{n} permintaan menunggu keputusan': '{n} requests awaiting a decision',
   'Pengawasan seluruh sistem Human Skill: permintaan yang perlu diputuskan, jejak tindakan, dan aturan yang berlaku.':
     'Oversight of the whole Human Skill system: requests awaiting a decision, action trails, and the rules in effect.',
   'Menyetujui permintaan admin dan mengawasi seluruh jejak tindakan.': 'Approves admin requests and oversees every action trail.',
@@ -1158,6 +1179,44 @@ export const EN = {
   'Lihat seluruh log': 'View the full log',
   'Rantai pengawasan': 'Chain of oversight',
   'Setiap peran diawasi peran di atasnya.': 'Each role is overseen by the role above it.',
+  'Permintaan admin, diurutkan dari yang paling lama menunggu.': 'Admin requests, oldest first.',
+  'permintaan menunggu': 'requests waiting',
+  'Terlama menunggu {n} hari, sejak {tanggal}.': 'The oldest has waited {n} days, since {tanggal}.',
+  'Yang terlama diajukan hari ini.': 'The oldest was submitted today.',
+  'dan {n} lainnya di antrean': 'and {n} more in the queue',
+  'Tidak ada yang perlu Anda putuskan sekarang.': 'Nothing needs your decision right now.',
+  'Keputusan terakhir: {status}, {kapan}.': 'Last decision: {status}, {kapan}.',
+  'Keadaan sistem': 'System status',
+  '{n} disetujui': '{n} approved',
+  '{n} gagal dijalankan': '{n} failed to run',
+  'Belum ada keputusan di periode ini.': 'No decisions in this period.',
+  'Diputuskan di {periode}': 'Decided in {periode}',
+  'Angkatan dan aturan di bawah ini menunjukkan keadaan saat ini.':
+    'The cohorts and rules below show the current state.',
+  'Saat ini': 'Current',
+  Ganjil: 'Odd',
+  Genap: 'Even',
+  'Periode yang ditampilkan: {periode}': 'Period shown: {periode}',
+  'Pilih periode': 'Choose a period',
+  'Terkunci: {daftar}': 'Locked: {daftar}',
+  'Belum ada angkatan yang terkunci.': 'No cohort is locked yet.',
+  'Aturan menunggu konfirmasi': 'Rules awaiting confirmation',
+  'Lihat aturan': 'View rules',
+  'Perubahan nilai per bulan': 'Score changes per month',
+  'Per bulan dalam semester yang dipilih, menurut tanggal WIB.': 'Per month in the selected semester, by WIB date.',
+  Bulan: 'Month',
+  '{n} perubahan nilai pada {m} mahasiswa.': '{n} score changes across {m} students.',
+  'Perubahan nilai per bulan di {periode}': 'Score changes per month in {periode}',
+  'belum berjalan': 'not started yet',
+  'Belum berjalan': 'Not started yet',
+  '{n} perubahan': '{n} changes',
+  'Tidak ada perubahan nilai di {periode}': 'No score changes in {periode}',
+  'Nilai yang diinput, diimpor, atau disetujui akan terhitung di sini per bulan.':
+    'Scores that are entered, imported, or approved are counted here per month.',
+  'Enam catatan terakhir di {periode}.': 'The six most recent entries in {periode}.',
+  'Penguncian, perubahan bobot, dan keputusan persetujuan akan tercatat di sini.':
+    'Locks, weight changes, and approval decisions will be recorded here.',
+  'Lihat matriks': 'View matrix',
   Anda: 'You',
   'Lihat matriks peran & wewenang': 'View the roles & permissions matrix',
   'Siapa boleh melakukan apa di Human Skill. Halaman ini hanya bacaan: peran diatur lewat basis data, bukan dari website.':
@@ -1251,11 +1310,15 @@ export const EN = {
   Tidak: 'No',
   'Selalu perlu persetujuan': 'Always needs approval',
   'Matriks wewenang': 'Permissions matrix',
+  'Boleh {n} dari {total} tindakan': 'Allowed {n} of {total} actions',
+  '{n} lainnya lewat persetujuan Super Admin': '{n} more through Super Admin approval',
   'Mengikuti aturan yang dijaga server saat ini.': 'Follows the rules the server currently enforces.',
   'Prinsip yang dipakai': 'Principles applied',
-  'Aturan perhitungan yang sedang berlaku. Halaman ini hanya bacaan: aturan diubah lewat tabel Konfigurasi di basis data, sedangkan bobot dan penilaian aspek lewat halaman Kurikulum CPMK.':
-    'The calculation rules currently in effect. This page is read-only: rules are changed through the Konfigurasi table in the database, while weights and aspect assessments are changed on the CPMK Curriculum page.',
-  'Buka Kurikulum CPMK': 'Open CPMK Curriculum',
+  'Aturan perhitungan yang sedang berlaku. Halaman ini hanya bacaan: aturan diubah lewat tabel Konfigurasi di basis data, sedangkan bobot dan penilaian aspek lewat halaman Penilaian & Bobot.':
+    'The calculation rules currently in effect. This page is read-only: rules are changed through the Konfigurasi table in the database, while weights and aspect assessments are changed on the Assessment & Weights page.',
+  'Buka Penilaian & Bobot': 'Open Assessment & Weights',
+  'aturan masih menunggu konfirmasi': 'rules still awaiting confirmation',
+  '{n} sudah ditetapkan': '{n} confirmed',
   Aturan: 'Rule',
   'Yang berlaku': 'In effect',
   'Basis data': 'Database',

@@ -361,13 +361,13 @@ admin biasa ke `/admin`; itu hanya penjaga tampilan, pintu API tetap memeriksa u
 
 | Halaman | Isi | Sumber data |
 |---|---|---|
-| `/super` Pusat Kendali | jumlah yang menunggu keputusan, keputusan dan perubahan nilai 7 hari terakhir, angkatan terkunci, permintaan terlama di atas, enam tindakan admin terbaru, rantai pengawasan | `PERMINTAAN`, `AUDIT_LOG`, `COHORTS`, `/api/log` |
+| `/super` Pusat Kendali | pemilih periode di pojok kanan atas; kartu keputusan (jumlah yang menunggu saat ini, tiga yang terlama, tombol ke antrean), keadaan sistem (keputusan di periode terpilih, angkatan terkunci, aturan menunggu konfirmasi), grafik perubahan nilai per bulan dalam periode itu beserta tabelnya, enam tindakan admin terbaru di periode itu sebagai linimasa, rantai pengawasan | `PERMINTAAN`, `AUDIT_LOG`, `COHORTS`, `MENUNGGU_KONFIRMASI`, `/api/log` |
 | `/super/persetujuan` | antrean Setujui/Tolak (halaman `PersetujuanAdmin` yang sama) | `PERMINTAAN`, `/api/persetujuan/keputusan` |
 | `/super/penilaian` | Penilaian & Bobot: tab *Aspek & komponen* (editor Input Manual, `EditorPenilaian`) dan tab *Bobot* (halaman `Kurikulum` tanpa judulnya); simpanan super admin langsung berlaku | `/api/kurikulum/penilaian`, `/api/kurikulum/bobot` |
 | `/super/akses` | Akses Pengguna: mencabut dan memulihkan akses dosen dan admin (lihat di bawah) | `/api/akses`, `/api/akses/ubah` (**belum ada di back-end**) |
 | `/super/log` | Log Aktivitas (lihat di bawah) | `/api/log` |
-| `/super/wewenang` | matriks siapa boleh melakukan apa, plus prinsip yang dipakai | konstanta di `Wewenang.jsx`, diturunkan dari aturan server |
-| `/super/aturan` | aturan perhitungan yang berlaku, sumbernya (bawaan kode atau tabel Konfigurasi), dan tanda menunggu konfirmasi; hanya bacaan | `CONFIG`, `DARI_BASIS_DATA` di `src/lib/config.js` |
+| `/super/wewenang` | kartu tiap peran beserta jumlah tindakan yang boleh dilakukannya, matriks siapa boleh melakukan apa (kolom Super Admin disorot), plus prinsip yang dipakai | konstanta di `Wewenang.jsx`, diturunkan dari aturan server |
+| `/super/aturan` | ringkasan berapa aturan yang masih menunggu konfirmasi, lalu aturan perhitungan yang berlaku, sumbernya (bawaan kode atau tabel Konfigurasi), dan statusnya; hanya bacaan, tautannya ke Penilaian & Bobot | `CONFIG`, `DARI_BASIS_DATA` di `src/lib/config.js` |
 
 Rancangannya mengikuti praktik umum panel admin: wewenang secukupnya dan pemisahan tugas (yang
 meminta tidak menyetujui) dari OWASP Authorization Cheat Sheet, pola maker-checker untuk antrean
@@ -404,6 +404,51 @@ fiturnya belum tersedia (jawaban 404 dikenali lewat `galat.status` dari `kirim()
   ada di `LABEL_LOG`) beserta email, peran, aktif sebelum dan sesudah, dan alasan; tambahkan
   `UBAH_AKSES` ke daftar aksi di `src/server/log.js`. Jawaban: `{ akun }` dengan bentuk yang sama.
 
+**Tampilan panel super admin** mengambil pola dasbor modern di Dribbble (sapaan bertanggal, satu kartu
+fokus, angka dengan meter, grafik batang dengan tooltip, linimasa berikon, kepingan periode) tanpa
+meninggalkan bahasa visual di bawah: warna padat, garis rambut, tanpa bayangan besar.
+
+- **Permukaan aurora.** Menu samping, laci HP (`Laci nada="aurora"`), kartu keputusan, Super Admin di
+  rantai pengawasan, dan kartu peran Super Admin memakai `.kartu-aurora`: aurora halaman masuk versi diam
+  (butiran `--butiran` yang sama), dengan dasar navy sedikit lebih terang dan cahaya biru muda supaya
+  tidak terlalu gelap. Menu samping dan laci memakai `.kartu-aurora-tegak`, yang menaruh biru muda di
+  bawah, jauh dari logo dan label emas. Tidak beranimasi, supaya panel tidak terbebani saat dibiarkan
+  terbuka. Di atasnya `--accent` diganti emas yang lebih muda (`#f2c062`), karena emas biasa turun ke
+  3,8:1 di bagian yang tersinari biru muda. Kelas ini tidak memasang `position` (laci memakai `absolute`),
+  jadi elemen pemakainya wajib berposisi. Kontras teksnya diukur per piksel di kedua keadaan kartu
+  keputusan, menu samping, dan laci, tema terang dan gelap, laptop dan HP: terendah 4,97:1 (tulisan
+  "Anda"). Bila cahayanya diubah, ukur ulang.
+- **Satu titik fokus.** Pusat Kendali disusun mengikuti satu keputusan yang diambil di sana: permintaan
+  admin yang menunggu. Kartu navy itu selebar halaman; sisanya bahan pengawasan. Emas hanya dipakai pada
+  tombol "Buka antrean persetujuan" saat ada yang menunggu; tanpa permintaan, kartunya tenang (tanda
+  centang, keterangan, keputusan terakhir) dan tombolnya putih tembus pandang.
+- **Angka asli saja.** Semua angka dihitung dari data yang termuat (`PERMINTAAN`, `AUDIT_LOG`, `COHORTS`,
+  `MENUNGGU_KONFIRMASI`) atau `/api/log`; tidak ada delta atau tren tanpa periode pembanding yang nyata.
+- **Pemilih periode** (keping di pojok kanan atas Pusat Kendali, tepat di bawah menu akun) mendaftar semester dari intake angkatan
+  tertua sampai periode aktif (`daftarPeriode()` di `src/lib/data.js`), terbaru di atas. Memilih periode
+  menyaring keputusan, grafik, dan tindakan admin (`/api/log` dengan `dari`/`sampai`) ke rentang semester
+  itu (`rentangPeriode()`). Antrean "Perlu keputusan Anda", angkatan terkunci, dan aturan tetap keadaan
+  saat ini; saat periode lain dipilih, kartu keputusan diberi tanda "Saat ini" dan kartu keadaan sistem
+  menyebutkannya. Rentangnya mengikuti Kalender Akademik UMN 2026/2027 (umn.ac.id): Ganjil dibuka
+  tambah-ganti KRS 19-20 Agustus dan ditutup remedial di Januari, Genap dibuka 3-5 Februari dan ditutup
+  Semester Antara di akhir Juli. Dibulatkan per bulan supaya setahun tertutup: Ganjil 1 Agustus sampai
+  31 Januari, Genap 1 Februari sampai 31 Juli. Pilihan tidak disimpan; membuka Pusat Kendali lagi kembali
+  ke periode aktif. Daftarnya berpola listbox: panah, Home/End, Enter atau Spasi, Escape.
+- **Grafik perubahan nilai** menjawab "bulan apa saja nilai banyak berubah" dalam periode terpilih: enam
+  batang bulanan; bulan yang belum berjalan di periode aktif tidak diberi batang. Satu seri, satu warna
+  (`.isi-data`: `--brand` di tema terang, `#5598e7` di tema gelap karena `--brand` di bawah 3:1 di kartu
+  gelap), batang paling lebar 24px dengan ujung 4px, garis bantu rambut, hanya nilai terbesar yang diberi
+  label. Setiap batang bisa difokus papan ketik dan menampilkan keterangan yang sama dengan tunjuk
+  tetikus; tombol Tabel di `ChartFrame` memuat keenam angkanya.
+- **Menu samping berkelompok**: Utama (tempat bertindak) dan Pengawasan (hanya dibaca). Satu `MenuSamping`
+  menggambar kedua kelompok supaya hanya satu butir yang tersorot. Di layar sempit, lencana Persetujuan
+  pindah ke lonceng di bilah atas yang hanya muncul bila ada yang menunggu.
+- **Waktu** ditulis relatif ("3 hari yang lalu", `Intl.RelativeTimeFormat`, ikut bahasa pilihan) dengan
+  waktu WIB lengkap di `title`; tanggal dan sapaan memakai zona WIB, sama dengan log server.
+- **Kontras**: `--text-muted` bawaan hanya 3,2:1 di kartu putih, jadi di dalam `.panel-super` nilainya
+  dipertebal (5,6:1 terang, 5,3:1 gelap di `--surface-2`), begitu juga tulisan lencana "Menunggu
+  konfirmasi" (`.teks-tunggu`). Panel lain belum ikut; bila ingin seragam, ubah `--text-muted` di `:root`.
+
 ## Bahasa visual: rata, bukan bertumpuk
 
 Seluruh panel memakai satu bahasa yang sama, mengikuti gaya E-Learning UMN:
@@ -416,7 +461,9 @@ Seluruh panel memakai satu bahasa yang sama, mengikuti gaya E-Learning UMN:
   pun tema perangkat. Cahaya dijauhkan dari judul, dan kontras setiap teksnya diukur sepanjang
   animasi (minimal 4,5:1, judul besar 3:1); bila cahaya diubah, ukur ulang. Gumpalan hanya
   menggerakkan `transform`, diam saat kurangi gerak aktif, dan kartunya menjadi padat saat kurangi
-  transparansi aktif. Tombol Masuk-nya juga bergradasi biru (`.tombol-masuk`, lihat Gerak);
+  transparansi aktif. Tombol Masuk-nya juga bergradasi biru (`.tombol-masuk`, lihat Gerak).
+  Pengecualian kedua: menu samping dan kartu navy panel super admin (`.kartu-aurora`, lihat Panel
+  Super Admin › Tampilan) memakai aurora yang sama versi diam, sedikit lebih terang;
   kartu identitas hanya diberi garis merek setebal 1px di atasnya;
 - **bayangan nyaris tidak ada** — kartu cukup dibatasi garis rambut;
 - **menu aktif diisi penuh warna merek dengan teks putih**, bukan latar samar —
@@ -949,10 +996,18 @@ di peramban harus menunggu komponen menempel:
   masuk", kalau tidak pengguna yang sudah masuk ikut ditendang ke halaman masuk.
 - **Tema** dipasang skrip kecil di `<head>` (`src/lib/theme.jsx`) sebelum halaman digambar,
   jadi `<html>` wajib memakai `suppressHydrationWarning`.
-- **Bahasa** selalu mulai dari Indonesia, sama dengan HTML dari server. Pilihan tersimpan baru
-  dipasang setelah menempel. Bawaannya Indonesia, bukan bahasa peramban.
-- **Tulis setelah baca**: sesi, tema, dan bahasa baru ditulis ke `localStorage` setelah
-  pembacaan awal selesai. Tanpa penjagaan itu, render pertama menimpa pilihan yang tersimpan.
+- **Bahasa** mulai dari bawaan jalurnya, sama dengan HTML dari server: halaman masuk Inggris
+  (penggunanya tidak hanya orang Indonesia), panel Indonesia (`bahasaBawaan()` di
+  `src/lib/bahasa.jsx`), bukan bahasa peramban. Pilihan tersimpan baru dipasang setelah menempel
+  dan berlaku di semua halaman. Tanpa pilihan, masuk dari halaman masuk yang berbahasa Inggris
+  tetap membuka panel berbahasa Indonesia.
+- **Hanya pilihan yang disimpan**: bahasa ditulis ke `localStorage` (`sk5c.bahasa.pilihan`)
+  hanya saat pengguna memakai pemilih ID/EN, termasuk menekan bahasa yang sedang tampil. Bawaan
+  tidak pernah ditulis; kalau ditulis, ia membeku menjadi "pilihan" dan bawaan halaman masuk tidak
+  akan pernah tampil lagi. Kunci lama `sk5c.bahasa` menyimpan bawaan seperti itu, jadi isinya
+  dibuang saat halaman dibuka.
+- **Tulis setelah baca**: sesi dan tema baru ditulis ke `localStorage` setelah pembacaan awal
+  selesai. Tanpa penjagaan itu, render pertama menimpa pilihan yang tersimpan.
 - **Jam** di penanda kesegaran data (`StatusData.jsx`) dirender sesudah menempel karena jam
   server dan peramban berbeda.
 
@@ -1031,6 +1086,9 @@ panah kiri/kanan). Bagian yang mudah rusak:
   jari turun. Klik itu diabaikan supaya tidak membalikkan pilihan yang baru diseret.
 - Selama diseret, transisi pil dimatikan, dan `touch-none` wajib supaya seretan di ponsel tidak
   ikut menggulir halaman.
+- Pemilih juga ada di pojok kanan atas halaman masuk (`nada="onbrand"`), di atas alas gelap
+  `--surface` 62% supaya label yang tidak aktif tetap minimal 4,5:1 saat cahaya sian aurora lewat
+  di belakangnya (terukur paling rendah 5,98:1; tanpa alas hanya 4,50:1 di HP).
 ### Grafik
 
 - **Kartu nilai akhir mahasiswa**: tren dua garis (nilai semester dan kumulatif) baru tampil bila

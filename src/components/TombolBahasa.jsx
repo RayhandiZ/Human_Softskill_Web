@@ -11,7 +11,7 @@ const SELA = 3
 const LENGKUNG = 'cubic-bezier(.34,1.42,.44,1)'
 
 export default function TombolBahasa({ nada = 'terang' }) {
-  const { bahasa, setBahasa } = useBahasa()
+  const { bahasa, setBahasa, t } = useBahasa()
   const terang = nada === 'terang'
 
   const [seretX, setSeretX] = useState(null)
@@ -61,7 +61,8 @@ export default function TombolBahasa({ nada = 'terang' }) {
       tujuan = relatif > SELA + SEGMEN ? BAHASA[1].id : BAHASA[0].id
     }
 
-    if (tujuan !== bahasa) setBahasa(tujuan)
+    /* Tetap dipanggil walau sama: menekan bahasa yang sedang tampil juga pilihan yang diingat. */
+    setBahasa(tujuan)
     setSeretX(null)
 
     if (bergerak.current) {
@@ -82,7 +83,7 @@ export default function TombolBahasa({ nada = 'terang' }) {
   return (
     <div
       role="group"
-      aria-label="Pilih bahasa"
+      aria-label={t('Pilih bahasa')}
       onPointerDown={mulaiSeret}
       onPointerMove={seret}
       onPointerUp={selesaiSeret}

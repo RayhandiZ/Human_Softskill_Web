@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { TautanNav } from '../lib/nav'
 import { useTeks } from '../lib/bahasa'
 
 /* Menu samping panel mahasiswa dan super admin. Tiap butir menggambar sorotannya sendiri (.menu-sorot),
-   jadi saat pindah menu tidak ada yang meluncur; lihat README.md › Gerak. */
+   jadi saat pindah menu tidak ada yang meluncur; lihat README.md › Gerak. Butir boleh membawa `kelompok`:
+   butir berurutan dengan kelompok yang sama dijadikan satu daftar berjudul. Semua kelompok berbagi satu
+   sorotan aktif, jadi klik di kelompok lain tidak membuat dua butir tersorot sekaligus. */
 export default function MenuSamping({ items, besar = false, gelap = false, onPilih }) {
   const t = useTeks()
+  const awalan = useId()
   const jalur = usePathname() ?? ''
 
   const [tujuan, setTujuan] = useState(null)
@@ -20,9 +23,16 @@ export default function MenuSamping({ items, besar = false, gelap = false, onPil
   const cocok = (m) => (m.end ? jalur === m.to : jalur === m.to || jalur.startsWith(m.to + '/'))
   const aktif = tujuan ?? items.find(cocok)?.to ?? null
 
-  return (
-    <ul className="space-y-1">
-      {items.map(({ to, label, icon: Icon, end, lencana }) => (
+  const kelompok = []
+  for (const m of items) {
+    const akhir = kelompok[kelompok.length - 1]
+    if (akhir && akhir.judul === (m.kelompok ?? null)) akhir.butir.push(m)
+    else kelompok.push({ judul: m.kelompok ?? null, butir: [m] })
+  }
+
+  const daftar = (butir, labelId) => (
+    <ul className="space-y-1" aria-labelledby={labelId}>
+      {butir.map(({ to, label, icon: Icon, end, lencana }) => (
         <li key={to}>
           <TautanNav
             href={to}
@@ -54,5 +64,31 @@ export default function MenuSamping({ items, besar = false, gelap = false, onPil
         </li>
       ))}
     </ul>
+  )
+
+  if (kelompok.length === 1 && !kelompok[0].judul) return daftar(items)
+
+  return (
+    <div className="space-y-5">
+      {kelompok.map((k, i) => {
+        const labelId = k.judul ? awalan + '-' + i : undefined
+        return (
+          <div key={k.judul ?? i}>
+            {k.judul ? (
+              <p
+                id={labelId}
+                className={
+                  'mb-1.5 px-3.5 text-[11px] font-bold uppercase tracking-[.08em] ' +
+                  (gelap ? 'text-white/60' : 'text-ink-3')
+                }
+              >
+                {t(k.judul)}
+              </p>
+            ) : null}
+            {daftar(k.butir, labelId)}
+          </div>
+        )
+      })}
+    </div>
   )
 }

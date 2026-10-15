@@ -1,11 +1,23 @@
 import { Card, CardHeader } from '../../components/Ui'
-import { IconCheck, IconCheckShield, IconClock, IconMinus } from '../../components/Icons'
+import {
+  IconBook,
+  IconBuilding,
+  IconCheck,
+  IconCheckShield,
+  IconClock,
+  IconMinus,
+  IconPencil,
+} from '../../components/Icons'
 import { useTeks } from '../../lib/bahasa'
 
 /* Matriks wewenang tiap peran, diturunkan dari aturan server (src/server/persetujuan.js, tangani() di api.js).
    Hanya bacaan: peran diubah lewat basis data. Lihat README.md › Panel Super Admin. */
 
 const PERAN = ['Mahasiswa', 'Dosen', 'Kemahasiswaan', 'Super Admin']
+const SUPER = PERAN.indexOf('Super Admin')
+
+// Ikon per peran, menurut pekerjaan utamanya: melihat capaian, mengusulkan nilai, mengelola, mengawasi.
+const IKON_PERAN = { Mahasiswa: IconBook, Dosen: IconPencil, Kemahasiswaan: IconBuilding, 'Super Admin': IconCheckShield }
 
 const RINGKAS_PERAN = {
   Mahasiswa: 'Melihat capaiannya sendiri dan mengajukan koreksi bila nilainya keliru.',
@@ -43,28 +55,44 @@ const PRINSIP = [
   ['Semua tercatat', 'Pengajuan, keputusan, dan penarikan masuk Log Aktivitas dan tidak bisa dihapus dari website.'],
 ]
 
+/** Jumlah tindakan yang boleh dilakukan peran ke-`i` (langsung atau bersyarat) dan yang harus lewat persetujuan. */
+function hitungIzin(i) {
+  const jenis = MATRIKS.map((m) => m.izin[i][0])
+  return {
+    boleh: jenis.filter((j) => j === 'ya' || j === 'syarat').length,
+    minta: jenis.filter((j) => j === 'minta').length,
+  }
+}
+
 function Sel({ izin }) {
   const t = useTeks()
   const [jenis, catatan] = izin
+  // Setiap keadaan punya ikon dan tulisannya sendiri, jadi tidak bergantung pada warna saja.
   if (jenis === 'tidak') {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[13px] text-ink-3">
-        <IconMinus size={14} className="shrink-0" />
+      <span className="inline-flex items-center gap-2 text-[13px] text-ink-2">
+        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-surface-2 text-ink-3 ring-1 ring-line">
+          <IconMinus size={12} />
+        </span>
         {t('Tidak')}
       </span>
     )
   }
   if (jenis === 'minta') {
     return (
-      <span className="inline-flex items-start gap-1.5 text-[13px] font-semibold text-[var(--warning-ink)]">
-        <IconClock size={14} className="mt-0.5 shrink-0" />
+      <span className="inline-flex items-start gap-2 text-[13px] font-semibold text-[var(--warning-ink)]">
+        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--warning)_22%,transparent)]">
+          <IconClock size={12} />
+        </span>
         {t('Selalu perlu persetujuan')}
       </span>
     )
   }
   return (
-    <span className="inline-flex items-start gap-1.5 text-[13px] font-semibold text-ink">
-      <IconCheck size={14} className="mt-0.5 shrink-0 text-[var(--good)]" />
+    <span className="inline-flex items-start gap-2 text-[13px] font-semibold text-ink">
+      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--good)_16%,transparent)] text-[var(--good)]">
+        <IconCheck size={12} strokeWidth={2.4} />
+      </span>
       <span>
         {t('Ya')}
         {catatan ? <span className="block font-normal text-ink-2">{t(catatan)}</span> : null}
@@ -84,13 +112,48 @@ export default function Wewenang() {
         </p>
       </header>
 
+      {/* Kartu Super Admin navy seperti di rantai pengawasan Pusat Kendali: peran pembaca halaman ini. */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {PERAN.map((p) => (
-          <div key={p} className={'card card-pad ' + (p === 'Super Admin' ? 'ring-2 ring-[var(--accent)]' : '')}>
-            <p className="text-[15px] font-extrabold text-ink">{t(p)}</p>
-            <p className="mt-1.5 text-[13px] leading-snug text-ink-2">{t(RINGKAS_PERAN[p])}</p>
-          </div>
-        ))}
+        {PERAN.map((p, i) => {
+          const Ikon = IKON_PERAN[p]
+          const anda = i === SUPER
+          const { boleh, minta } = hitungIzin(i)
+          return (
+            <div
+              key={p}
+              className={
+                'flex flex-col rounded-2xl p-5 sm:p-6 ' +
+                (anda ? 'kartu-aurora relative text-white dark:ring-1 dark:ring-white/10' : 'card')
+              }
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className={
+                    'grid h-9 w-9 shrink-0 place-items-center rounded-xl ' +
+                    (anda ? 'bg-white/10 text-[var(--accent)]' : 'bg-brand-soft text-brand-ink')
+                  }
+                >
+                  <Ikon size={18} />
+                </span>
+                <p className={'text-[15px] font-extrabold ' + (anda ? '' : 'text-ink')}>
+                  {t(p)}
+                  {anda ? (
+                    <span className="ml-2 text-[11px] font-bold uppercase tracking-[.1em] text-[var(--accent)]">{t('Anda')}</span>
+                  ) : null}
+                </p>
+              </div>
+              <p className={'mt-3 text-[13px] leading-snug ' + (anda ? 'text-white/80' : 'text-ink-2')}>{t(RINGKAS_PERAN[p])}</p>
+              <p className={'mt-auto pt-4 text-[12.5px] font-semibold ' + (anda ? 'text-white/85' : 'text-ink-2')}>
+                {t('Boleh {n} dari {total} tindakan', { n: boleh, total: MATRIKS.length })}
+                {minta ? (
+                  <span className={'block font-normal ' + (anda ? 'text-white/75' : 'text-ink-2')}>
+                    {t('{n} lainnya lewat persetujuan Super Admin', { n: minta })}
+                  </span>
+                ) : null}
+              </p>
+            </div>
+          )
+        })}
       </div>
 
       <Card className="overflow-hidden">
@@ -102,10 +165,10 @@ export default function Wewenang() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left">
             <thead>
-              <tr className="border-b border-line text-[12px] font-bold uppercase tracking-[.06em] text-ink-3">
+              <tr className="border-b border-line bg-surface-2 text-[12px] font-bold uppercase tracking-[.06em] text-ink-2">
                 <th className="px-5 py-3 sm:px-6">{t('Tindakan')}</th>
-                {PERAN.map((p) => (
-                  <th key={p} className="px-3 py-3">
+                {PERAN.map((p, i) => (
+                  <th key={p} className={'px-3 py-3 ' + (i === SUPER ? 'bg-brand-soft text-brand-ink' : '')}>
                     {t(p)}
                   </th>
                 ))}
@@ -117,8 +180,12 @@ export default function Wewenang() {
                   <th scope="row" className="px-5 py-3 text-[13.5px] font-semibold text-ink sm:px-6">
                     {t(m.tindakan)}
                   </th>
+                  {/* Kolom Super Admin diberi latar merek tipis: itu kolom pembaca halaman ini. */}
                   {m.izin.map((izin, i) => (
-                    <td key={PERAN[i]} className="px-3 py-3">
+                    <td
+                      key={PERAN[i]}
+                      className={'px-3 py-3 ' + (i === SUPER ? 'bg-[color-mix(in_srgb,var(--brand-soft)_60%,transparent)]' : '')}
+                    >
                       <Sel izin={izin} />
                     </td>
                   ))}

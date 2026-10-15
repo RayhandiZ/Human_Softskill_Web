@@ -164,7 +164,7 @@ const ISI = {
   ],
   '/super': [
     [/Pusat Kendali/, 'judul Pusat Kendali'],
-    [/Menunggu keputusan/, 'ubin permintaan yang menunggu'],
+    [/permintaan menunggu/, 'jumlah permintaan yang menunggu di kartu keputusan'],
     [/Perlu keputusan Anda/, 'daftar yang perlu diputuskan'],
     [/Rantai pengawasan/, 'rantai pengawasan'],
     [/aria-label="Menu super admin"/, 'menu samping super admin', true, true],
@@ -251,7 +251,7 @@ const RUTE = [
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiMataSandi, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -807,7 +807,7 @@ const RUTE = [
   const bh = await ujiBahasa()
   const cekBahasa = [
     ['pemilih ID / EN ada di bilah atas', bh.adaPemilih],
-    ['render pertama selalu Indonesia', bh.mulaiIndonesia],
+    ['render pertama panel selalu Indonesia', bh.mulaiIndonesia],
     ['isinya memang Indonesia', bh.isiIndonesia],
     ['menekan EN mengaktifkan Inggris', bh.inggrisAktif],
     ['isi halaman ikut berganti', bh.isiInggris],
@@ -1090,6 +1090,11 @@ const RUTE = [
     ['ada tautan kembali ke panel Kemahasiswaan', ps.keKemahasiswaan],
     ['Pusat Kendali memuat antrean dan rantai pengawasan', ps.isiKendali],
     ['tanpa basis data, log tindakan admin dinyatakan tidak tersedia', ps.tanpaServerJujur],
+    ['menu samping dikelompokkan: Utama (4) dan Pengawasan (3)', ps.menuBerkelompok],
+    ['tanpa permintaan menunggu, lonceng tidak muncul', ps.tanpaLonceng],
+    ['ada permintaan menunggu: lonceng muncul dengan jumlahnya', ps.loncengMenunggu],
+    ['grafik perubahan nilai: enam batang bulanan yang bisa difokus', ps.grafikBulanan],
+    ['pemilih periode: memilih periode lain menyaring isi dan menandai antrean "Saat ini"', ps.pilihPeriode],
     ['log perubahan nilai terisi', ps.logNilaiTerisi],
     ['penyaring NIM hanya menyisakan mahasiswa itu', ps.saringNim],
     ['Penilaian & Bobot: semua aspek bisa dipilih, aspek pertama terbuka', ps.kartuSemuaAspek],
@@ -1118,6 +1123,22 @@ const RUTE = [
   gagal += rusakMs.length
   console.log((rusakMs.length ? 'GAGAL  ' : 'OK     ') + 'Mata kata sandi di halaman masuk')
   for (const [ket, ok] of cekMs) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
+
+  const bm = await ujiBahasaMasuk()
+  const cekBm = [
+    ['halaman masuk berbahasa Inggris selama belum ada pilihan', bm.masukInggris],
+    ['halaman masuk punya pemilih ID / EN', bm.adaPemilih],
+    ['kunci lama (bawaan yang ikut tersimpan) dibuang', bm.kunciLamaDibuang],
+    ['bahasa bawaan tidak disimpan sebagai pilihan', bm.bawaanTidakDisimpan],
+    ['menekan EN yang sudah aktif tetap tercatat sebagai pilihan', bm.enAktifTetapDisimpan],
+    ['tanpa pilihan, panel tetap Indonesia', bm.panelIndonesia],
+    ['memilih ID di halaman masuk mengganti bahasa dan disimpan', bm.pilihIndonesia],
+    ['pilihan itu diingat saat halaman masuk dibuka lagi', bm.pilihanDiingat],
+  ]
+  const rusakBm = cekBm.filter(([, ok]) => !ok)
+  gagal += rusakBm.length
+  console.log((rusakBm.length ? 'GAGAL  ' : 'OK     ') + 'Bahasa bawaan halaman masuk')
+  for (const [ket, ok] of cekBm) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
   const kr = await ujiKurikulum()
   const cekKr = [
