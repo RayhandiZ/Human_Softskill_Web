@@ -173,6 +173,17 @@ const ISI = {
     [/Persetujuan Admin/, 'super admin melihat judul Persetujuan Admin'],
     [/Menunggu[\s\S]{0,40}Riwayat/, 'tab menunggu dan riwayat'],
   ],
+  '/super/penilaian': [
+    [/Pilih aspek yang ingin diubah/, 'pemilih aspek'],
+    [/Penilaian A\.1/, 'editor penilaian aspek pertama terbuka'],
+    [/Tambah komponen/, 'komponen bisa ditambah manual'],
+    [/Ajukan ke Super Admin/, 'super admin tidak diminta mengajukan', false],
+  ],
+  '/super/akses': [
+    [/Akses Pengguna/, 'judul Akses Pengguna'],
+    [/Tentukan dosen dan admin Kemahasiswaan/, 'penjelasan siapa yang diatur'],
+    [/Akses Super Admin tidak bisa dicabut dari sini/, 'catatan batas wewenang'],
+  ],
   '/super/log': [
     [/Log Aktivitas/, 'judul Log Aktivitas'],
     [/Jenis tindakan/, 'penyaring jenis tindakan'],
@@ -225,6 +236,8 @@ const RUTE = [
   ['admin', '/admin/log', 'Log aktivitas'],
   ['super', '/super', 'Pusat Kendali'],
   ['super', '/super/persetujuan', 'Persetujuan (super admin)'],
+  ['super', '/super/penilaian', 'Penilaian & bobot'],
+  ['super', '/super/akses', 'Akses pengguna'],
   ['super', '/super/log', 'Log aktivitas (super admin)'],
   ['super', '/super/wewenang', 'Peran & wewenang'],
   ['super', '/super/aturan', 'Aturan sistem'],
@@ -238,7 +251,7 @@ const RUTE = [
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiMataSandi, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -1070,7 +1083,8 @@ const RUTE = [
   const cekPs = [
     ['super admin diarahkan ke /super, admin biasa ke /admin', ps.arahSuper && ps.arahAdminBiasa],
     ['admin biasa yang membuka /super dikembalikan ke /admin', ps.adminBiasaDitolak],
-    ['menu samping: lima butir, semuanya di /super', ps.menuLima],
+    ['menu samping: tujuh butir, semuanya di /super', ps.menuTujuh],
+    ['tiga tugas utama tepat di bawah Pusat Kendali: persetujuan, penilaian, akses', ps.urutanTugas],
     ['menu samping memakai sorotan gelap', ps.menuGelap],
     ['Pusat Kendali tersorot sebagai menu aktif', ps.kendaliAktif],
     ['ada tautan kembali ke panel Kemahasiswaan', ps.keKemahasiswaan],
@@ -1078,11 +1092,32 @@ const RUTE = [
     ['tanpa basis data, log tindakan admin dinyatakan tidak tersedia', ps.tanpaServerJujur],
     ['log perubahan nilai terisi', ps.logNilaiTerisi],
     ['penyaring NIM hanya menyisakan mahasiswa itu', ps.saringNim],
+    ['Penilaian & Bobot: semua aspek bisa dipilih, aspek pertama terbuka', ps.kartuSemuaAspek],
+    ['Penilaian & Bobot: super admin menyimpan langsung, tanpa mengajukan', ps.simpanLangsung],
+    ['draf yang belum disimpan ditanyakan sebelum berganti aspek', ps.drafDitanyakan],
+    ['tab Bobot memasang halaman Kurikulum tanpa judulnya, aspek terpilih ikut', ps.bobotTertanam],
+    ['Akses Pengguna: daftar dosen beserta status aksesnya', ps.aksesDaftarDosen],
+    ['mencabut akses butuh alasan, lalu statusnya berubah', ps.cabutAkses],
+    ['pencarian NIP menyisakan dosen itu', ps.cariAkun],
+    ['akun super admin (milik sendiri) tidak bisa dicabut', ps.superTidakBisaDicabut],
+    ['pintu API yang belum dibuat (404) dikenali', ps.apiBelumAdaDikenali],
   ]
   const rusakPs = cekPs.filter(([, ok]) => !ok)
   gagal += rusakPs.length
   console.log((rusakPs.length ? 'GAGAL  ' : 'OK     ') + 'Panel Super Admin')
   for (const [ket, ok] of cekPs) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
+
+  const ms = await ujiMataSandi()
+  const cekMs = [
+    ['kolom sandi berikon mata, tanpa tulisan Tampilkan/Sembunyikan', ms.adaMata],
+    ['ditunjuk tetikus: sandi tampil, lalu tersembunyi lagi saat kursor pergi', ms.tunjukTetikus],
+    ['ditahan jari: sandi tampil, lalu tersembunyi lagi saat dilepas', ms.tahanSentuh],
+    ['klik tetikus diabaikan; Enter/Spasi menyalakan dan mematikan (aria-pressed)', ms.papanKetik],
+  ]
+  const rusakMs = cekMs.filter(([, ok]) => !ok)
+  gagal += rusakMs.length
+  console.log((rusakMs.length ? 'GAGAL  ' : 'OK     ') + 'Mata kata sandi di halaman masuk')
+  for (const [ket, ok] of cekMs) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
   const kr = await ujiKurikulum()
   const cekKr = [

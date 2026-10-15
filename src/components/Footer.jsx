@@ -24,11 +24,28 @@ function Pintasan({ ke, label, icon: Icon }) {
   )
 }
 
-export default function Footer({ pintasan = [] }) {
+/**
+ * `melayang`: mulai layar laptop (lg, saat sidebar tampil), kartu bersudut bulat berjarak 16px dari tepi
+ * layar, sepasang dengan sidebar panel mahasiswa yang juga kartu melayang. Di HP dan tablet sidebar
+ * tersembunyi, jadi footer tetap selebar layar. Panel dengan bilah atas penuh (Kemahasiswaan, dosen) selalu
+ * memakai footer selebar layar.
+ */
+export default function Footer({ pintasan = [], melayang = false }) {
   const t = useTeks()
   return (
-    <footer className="mt-12 bg-brand text-white print:hidden">
-      <div className="mx-auto grid max-w-shell gap-x-10 gap-y-9 px-5 py-10 sm:px-6 lg:grid-cols-[auto_1fr_auto_auto]">
+    <footer
+      className={
+        'mt-12 bg-brand text-white print:hidden ' +
+        (melayang ? 'lg:mx-4 lg:mb-4 lg:overflow-hidden lg:rounded-3xl' : '')
+      }
+    >
+      {/* Kartu melayang 32px lebih sempit; jarak antarkolom dirapatkan supaya alamat Helpdesk tidak makin terlipat. */}
+      <div
+        className={
+          'mx-auto grid max-w-shell gap-y-9 px-5 py-10 sm:px-6 lg:grid-cols-[auto_1fr_auto_auto] ' +
+          (melayang ? 'gap-x-7' : 'gap-x-10')
+        }
+      >
         {pintasan.length ? (
           <section>
             <h2 className="text-[13.5px] font-bold">{t('Pintasan')}</h2>
@@ -73,7 +90,7 @@ export default function Footer({ pintasan = [] }) {
             <span aria-hidden="true" className="h-8 w-px shrink-0 bg-white/30" />
             <IconLogo size={40} />
           </div>
-          <p className="mt-3 text-[16px] font-extrabold tracking-tight">
+          <p className="mt-3 text-[20px] font-extrabold tracking-tight">
             HUMAN <span className="text-[var(--accent)]">SKILL</span>
           </p>
           <p className="mt-1.5 max-w-[220px] text-[13px] leading-relaxed text-white/70">

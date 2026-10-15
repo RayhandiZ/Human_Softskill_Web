@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { IconAlert, IconCheck, IconChevronDown, IconLock, IconPlus, IconUndo, IconX } from '../../components/Icons'
 import { JENIS_MK, RANAH, SUMBER_LIST, getAspek } from '../../lib/curriculum'
 import { dampakDari } from '../../lib/bobot'
@@ -67,7 +67,8 @@ function komponenDinilai() {
   return hasil
 }
 
-export default function EditorPenilaian({ aspekId, sumberAwal }) {
+/** `onPerubahan(ada)` dipanggil setiap kali ada/tidaknya perubahan yang belum disimpan berganti. */
+export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
   const t = useTeks()
   const versi = useStore()
   const { user } = useAuth()
@@ -93,6 +94,9 @@ export default function EditorPenilaian({ aspekId, sumberAwal }) {
   )
   const masalah = useMemo(() => periksaPenilaian(usulan, konteks), [usulan, konteks])
   const beda = useMemo(() => bedaPenilaian(tersimpan, usulan), [tersimpan, usulan])
+  const lapor = useRef(onPerubahan)
+  lapor.current = onPerubahan
+  useEffect(() => lapor.current?.(beda.ada), [beda.ada])
 
   // Pratinjau dihitung dari seluruh mahasiswa, jadi ditunda supaya mengetik tetap lancar.
   const drafTunda = useDeferredValue(draf)

@@ -7,7 +7,17 @@ import MenuAkun from '../../components/MenuAkun'
 import MenuSamping from '../../components/MenuSamping'
 import TombolBahasa from '../../components/TombolBahasa'
 import TombolTema from '../../components/TombolTema'
-import { IconBook, IconBuilding, IconCheckShield, IconGauge, IconList, IconMenu, IconUsers } from '../../components/Icons'
+import {
+  IconBook,
+  IconBuilding,
+  IconCheckShield,
+  IconDocument,
+  IconGauge,
+  IconList,
+  IconLock,
+  IconMenu,
+  IconUsers,
+} from '../../components/Icons'
 import { PERIODE_AKTIF, labelPeriode } from '../../lib/data'
 import { permintaanMenunggu, useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
@@ -16,9 +26,12 @@ import { kunciSesi, useProfil } from '../../lib/profil'
 
 /* Panel pengawasan Super Admin, terpisah dari panel Kemahasiswaan; lihat README.md › Panel Super Admin. */
 
+// Tiga tugas utama super admin di atas, halaman pengawasan di bawahnya.
 const menuSuper = (menunggu) => [
   { to: '/super', label: 'Pusat Kendali', icon: IconGauge, end: true },
   { to: '/super/persetujuan', label: 'Persetujuan', icon: IconCheckShield, lencana: menunggu || null },
+  { to: '/super/penilaian', label: 'Penilaian & Bobot', icon: IconDocument },
+  { to: '/super/akses', label: 'Akses Pengguna', icon: IconLock },
   { to: '/super/log', label: 'Log Aktivitas', icon: IconList },
   { to: '/super/wewenang', label: 'Peran & Wewenang', icon: IconUsers },
   { to: '/super/aturan', label: 'Aturan Sistem', icon: IconBook },
@@ -79,7 +92,7 @@ export default function SuperLayout({ children }) {
 
       <div className="flex min-h-screen flex-col">
         {/* ------------------------------ bilah atas ----------------------------- */}
-        <header className="sticky top-0 z-20 bg-[color-mix(in_srgb,var(--bg)_72%,transparent)] backdrop-blur-sm print:hidden">
+        <header className="bilah-kaca sticky top-0 z-20 print:hidden">
           <div className="mx-auto flex h-[72px] w-full max-w-[1200px] items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button
               type="button"

@@ -11,7 +11,7 @@ const RINGKAS_PERAN = {
   Mahasiswa: 'Melihat capaiannya sendiri dan mengajukan koreksi bila nilainya keliru.',
   Dosen: 'Mengusulkan nilai mahasiswa di kelasnya sampai program angkatannya selesai.',
   Kemahasiswaan: 'Mengelola nilai, angkatan, kurikulum, dan sertifikat sehari-hari.',
-  'Super Admin': 'Wewenang tertinggi: menyetujui permintaan admin dan mengawasi seluruh jejak.',
+  'Super Admin': 'Wewenang tertinggi: menyetujui permintaan admin, mengatur penilaian dan akses, dan mengawasi seluruh jejak.',
 }
 
 // ya: boleh langsung · syarat: boleh, kecuali yang ditulis di catatan · minta: selalu lewat persetujuan Super Admin.
@@ -30,6 +30,8 @@ const MATRIKS = [
   { tindakan: 'Memutuskan permintaan admin', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
   { tindakan: 'Menarik permintaan yang belum diputuskan', izin: [['tidak'], ['tidak'], ['syarat', 'hanya miliknya'], ['tidak']] },
   { tindakan: 'Membaca Log Aktivitas', izin: [['tidak'], ['tidak'], ['ya'], ['ya']] },
+  // Menunggu /api/akses/ubah di back-end, yang wajib menolak semua kecuali super admin.
+  { tindakan: 'Mencabut dan memulihkan akses dosen dan admin', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
   // Peran SUPER_ADMIN hanya dipasang langsung di basis data; tidak ada tombolnya di website.
   { tindakan: 'Mengangkat Super Admin dari website', izin: [['tidak'], ['tidak'], ['tidak'], ['tidak']] },
 ]

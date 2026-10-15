@@ -735,7 +735,7 @@ export default function Dashboard() {
       </header>
 
       {/* --------------------------------- ubin -------------------------------- */}
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="kartu flex flex-col px-6 py-6 sm:px-7 sm:py-7">
           <p className="text-[14px] font-semibold text-ink-2">{teks('Nilai akhir')}</p>
 
@@ -845,7 +845,9 @@ export default function Dashboard() {
       </section>
 
       {/* ------------------------------- dua kolom ----------------------------- */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {/* grid-cols-1 wajib: tanpa kolom eksplisit, kolom di HP ikut melebar selebar baris tab Aspek penilaian
+          dan halaman bisa tergeser ke samping. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0">
           <AspekSaya t={t} />
         </div>

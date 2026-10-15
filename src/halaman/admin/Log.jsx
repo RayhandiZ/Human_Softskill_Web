@@ -17,6 +17,8 @@ export const LABEL_LOG = {
   PUTUSKAN_PERSETUJUAN: 'Putuskan persetujuan',
   TARIK_PERMINTAAN: 'Tarik permintaan',
   UBAH_PENILAIAN: 'Ubah penilaian aspek',
+  // Dicatat /api/akses/ubah setelah dibuat di back-end; lihat README.md › Panel Super Admin › Akses Pengguna.
+  UBAH_AKSES: 'Ubah akses akun',
 }
 
 const UKURAN = 25

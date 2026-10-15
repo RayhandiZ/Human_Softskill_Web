@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Card, CardHeader, CatatanKaki, StatusTeks, TandaDraft } from '../../components/Ui'
 import { IconAlert, IconCheck, IconLock, IconUndo } from '../../components/Icons'
 import { SUMBER, getAspek, getAspekList, getKomponen } from '../../lib/curriculum'
@@ -61,13 +61,18 @@ function porsiAwal(porsi, ids) {
   return Object.fromEntries(ids.map((id, i) => [id, keTeks(bulat[i])]))
 }
 
-export default function Kurikulum() {
+/**
+ * Halaman sendiri di panel Kemahasiswaan; di panel super admin dipasang sebagai tab (`tertanam`: tanpa judul
+ * halaman). `aspekAwal`/`onPilihAspek` menyamakan aspek terpilih dengan tab lain, dan `onPerubahan(ada)`
+ * melaporkan ada/tidaknya perubahan yang belum disimpan.
+ */
+export default function Kurikulum({ tertanam = false, aspekAwal, onPilihAspek, onPerubahan } = {}) {
   const t = useTeks()
   const versi = useStore()
   const daftarAspek = useMemo(() => getAspekList(), [versi])
   const tersimpan = useMemo(() => susunanBobot(), [versi])
   const [draf, setDraf] = useState(() => keDraf(susunanBobot()))
-  const [pilih, setPilih] = useState(() => daftarAspek[0]?.id ?? null)
+  const [pilih, setPilih] = useState(() => aspekAwal ?? daftarAspek[0]?.id ?? null)
   const [alasan, setAlasan] = useState('')
   const [pesan, setPesan] = useState('')
   const [menunggu, setMenunggu] = useState(null)
@@ -80,6 +85,9 @@ export default function Kurikulum() {
   const masalah = useMemo(() => periksaBobot(usulan), [usulan, versi])
   const beda = useMemo(() => bedaBobot(tersimpan, usulan), [tersimpan, usulan])
   const adaPerubahan = beda.pengaturan.length > 0 || beda.aspek.length > 0
+  const lapor = useRef(onPerubahan)
+  lapor.current = onPerubahan
+  useEffect(() => lapor.current?.(adaPerubahan), [adaPerubahan])
   const salahAspek = new Set(masalah.map((m) => m.aspekId).filter(Boolean))
   const salahKunci = new Set(masalah.map((m) => m.kunci).filter(Boolean))
 
@@ -153,12 +161,18 @@ export default function Kurikulum() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-[22px] font-extrabold tracking-tight text-ink">{t('Kurikulum CPMK')}</h1>
-        <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-2">
+      {tertanam ? (
+        <p className="max-w-2xl text-[14px] leading-relaxed text-ink-2">
           {t('Atur bobot komponen asesmen di setiap aspek. Bobot berlaku untuk semua angkatan, dan nilai yang sudah masuk langsung dihitung ulang dengannya.')}
         </p>
-      </div>
+      ) : (
+        <div>
+          <h1 className="text-[22px] font-extrabold tracking-tight text-ink">{t('Kurikulum CPMK')}</h1>
+          <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-2">
+            {t('Atur bobot komponen asesmen di setiap aspek. Bobot berlaku untuk semua angkatan, dan nilai yang sudah masuk langsung dihitung ulang dengannya.')}
+          </p>
+        </div>
+      )}
 
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {daftarAspek.map((a) => {
@@ -168,7 +182,10 @@ export default function Kurikulum() {
             <li key={a.id}>
               <button
                 type="button"
-                onClick={() => setPilih(a.id)}
+                onClick={() => {
+                  setPilih(a.id)
+                  onPilihAspek?.(a.id)
+                }}
                 aria-pressed={a.id === aspek?.id}
                 className={
                   'card block h-full w-full p-3.5 text-left transition hover:border-brand-ink ' +

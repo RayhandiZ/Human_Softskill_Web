@@ -47,6 +47,7 @@ export const EN = {
   'Ayo semangat mencari human skill kamu.': 'Come on, let’s discover your human skills.',
   'Kata sandi': 'Password',
   'Lupa kata sandi?': 'Forgot password?',
+  'Lihat kata sandi': 'Show password',
   Sembunyikan: 'Hide',
   Tampilkan: 'Show',
   Masuk: 'Sign in',
@@ -1166,8 +1167,8 @@ export const EN = {
   'Mengusulkan nilai mahasiswa di kelasnya sampai program angkatannya selesai.':
     'Proposes scores for students in their classes until the cohort’s programme ends.',
   'Mengelola nilai, angkatan, kurikulum, dan sertifikat sehari-hari.': 'Manages scores, cohorts, curriculum, and certificates day to day.',
-  'Wewenang tertinggi: menyetujui permintaan admin dan mengawasi seluruh jejak.':
-    'Highest authority: approves admin requests and oversees every trail.',
+  'Wewenang tertinggi: menyetujui permintaan admin, mengatur penilaian dan akses, dan mengawasi seluruh jejak.':
+    'Highest authority: approves admin requests, manages assessment and access, and oversees every trail.',
   'Melihat capaian mahasiswa': 'View student achievements',
   'Mengajukan koreksi nilai': 'Request a score correction',
   'Mengusulkan nilai': 'Propose scores',
@@ -1180,6 +1181,52 @@ export const EN = {
   'Mengunci angkatan': 'Lock a cohort',
   'Memutuskan permintaan admin': 'Decide admin requests',
   'Menarik permintaan yang belum diputuskan': 'Withdraw a pending request',
+  'Mencabut dan memulihkan akses dosen dan admin': 'Revoke and restore lecturer and admin access',
+  'Ubah akses akun': 'Change account access',
+
+  // Penilaian & Bobot
+  'Penilaian & Bobot': 'Assessment & Weights',
+  'Ubah aspek, komponen asesmen, dan bobotnya, termasuk menambah komponen secara manual. Sebagai Super Admin, perubahan Anda langsung berlaku untuk semua angkatan tanpa menunggu persetujuan, dan tetap tercatat di Log Aktivitas.':
+    'Change aspects, assessment components, and their weights, including adding components manually. As Super Admin, your changes apply to every cohort right away without waiting for approval, and are still recorded in the Activity Log.',
+  '{n} permintaan admin untuk mengubah penilaian atau bobot menunggu keputusan Anda.':
+    '{n} admin requests to change assessments or weights are waiting for your decision.',
+  'Putuskan lebih dulu: permintaan yang datanya sudah berubah akan gagal dijalankan.':
+    'Decide on them first: a request whose data has since changed will fail to run.',
+  'Aspek & komponen': 'Aspects & components',
+  'Pilih aspek yang ingin diubah.': 'Choose the aspect to change.',
+  'bobot manual': 'manual weights',
+  'bobot otomatis': 'automatic weights',
+  'Perubahan yang belum disimpan akan hilang. Lanjutkan?': 'Unsaved changes will be lost. Continue?',
+
+  // Akses Pengguna
+  'Akses Pengguna': 'User Access',
+  'Tentukan dosen dan admin Kemahasiswaan yang boleh masuk ke Human Skill. Mencabut akses langsung mengakhiri sesinya dan menolak login berikutnya; datanya tetap tersimpan dan aksesnya bisa dipulihkan kapan saja.':
+    'Decide which lecturers and Student Affairs admins may sign in to Human Skill. Revoking access ends their session immediately and blocks later sign-ins; their data stays and access can be restored at any time.',
+  'Pengaturan akses belum tersedia': 'Access settings are not available yet',
+  'Server belum menyediakan daftar akun. Halaman ini langsung berfungsi begitu pintu /api/akses dibuat; rinciannya ada di README › Akses Pengguna.':
+    'The server does not provide the account list yet. This page works as soon as the /api/akses endpoint exists; details are in README › Akses Pengguna.',
+  'Daftar akun gagal dimuat': 'The account list could not be loaded',
+  'Admin Kemahasiswaan': 'Student Affairs admins',
+  'Cari nama, email, atau NIP': 'Search name, email, or NIP',
+  'Cari email': 'Search email',
+  'Semua status': 'All statuses',
+  'Punya akses': 'Has access',
+  'Akses dicabut': 'Access revoked',
+  '{n} akun · {m} aksesnya dicabut': '{n} accounts · {m} revoked',
+  'Memuat daftar akun…': 'Loading accounts…',
+  'Tidak ada akun yang cocok.': 'No accounts match.',
+  'Belum ada akun dosen.': 'No lecturer accounts yet.',
+  'Belum ada akun admin.': 'No admin accounts yet.',
+  'Akses Super Admin tidak bisa dicabut dari sini, termasuk akun Anda sendiri; itu diatur langsung di basis data. Setiap perubahan akses tercatat di Log Aktivitas beserta alasannya.':
+    'Super Admin access cannot be revoked here, including your own account; it is managed directly in the database. Every access change is recorded in the Activity Log with its reason.',
+  'Cabut akses': 'Revoke access',
+  'Pulihkan akses': 'Restore access',
+  'Akun Anda': 'Your account',
+  'Diatur di basis data': 'Managed in the database',
+  'Akun ini tidak bisa masuk lagi, dan sesi yang sedang terbuka langsung berakhir. Datanya tetap tersimpan.':
+    'This account can no longer sign in, and any open session ends immediately. Its data stays.',
+  'Akun ini bisa masuk lagi seperti semula.': 'This account can sign in again as before.',
+  'Alasan (wajib, minimal {n} karakter)': 'Reason (required, at least {n} characters)',
   'Membaca Log Aktivitas': 'Read the Activity Log',
   'Mengangkat Super Admin dari website': 'Appoint a Super Admin from the website',
   'hanya miliknya': 'own only',

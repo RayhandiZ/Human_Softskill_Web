@@ -17,6 +17,11 @@ export async function kirim(alamat, { metode = 'POST', isi } = {}) {
   }
   const data = await jawaban.json().catch(() => ({}))
   if (jawaban.status === 401) saatSesiHabis?.()
-  if (!jawaban.ok) throw new Error(data.galat ?? 'Permintaan ke server gagal.')
+  if (!jawaban.ok) {
+    // Kode HTTP ikut dibawa supaya halaman bisa membedakan, misalnya, pintu API yang belum dibuat (404).
+    const galat = new Error(data.galat ?? 'Permintaan ke server gagal.')
+    galat.status = jawaban.status
+    throw galat
+  }
   return data
 }

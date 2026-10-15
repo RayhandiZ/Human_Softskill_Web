@@ -59,7 +59,7 @@ export default function StudentLayout({ children }) {
           <Link href="/mahasiswa" className="mb-7 flex items-center gap-2.5 px-2.5">
             <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
             <span aria-hidden="true" className="h-6 w-px shrink-0 bg-line" />
-            <span className="whitespace-nowrap text-[15px] font-extrabold tracking-tight text-ink">
+            <span className="whitespace-nowrap text-[20px] font-extrabold tracking-tight text-ink">
               HUMAN <span className="text-[var(--accent)]">SKILL</span>
             </span>
           </Link>
@@ -72,7 +72,7 @@ export default function StudentLayout({ children }) {
 
       <div className="flex min-h-screen flex-col">
         {/* ------------------------------ bilah atas ----------------------------- */}
-        <header className="sticky top-0 z-20 bg-[color-mix(in_srgb,var(--bg)_72%,transparent)] backdrop-blur-sm print:hidden">
+        <header className="bilah-kaca sticky top-0 z-20 print:hidden">
           <div className="mx-auto flex h-[72px] w-full max-w-[1200px] items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button
               type="button"
@@ -114,7 +114,8 @@ export default function StudentLayout({ children }) {
           </KonteksMahasiswa.Provider>
         </main>
 
-        <Footer pintasan={PINTASAN} />
+        {/* Mulai layar laptop: kartu melayang sepasang dengan sidebar (sudut dan jarak 16px yang sama). */}
+        <Footer pintasan={PINTASAN} melayang />
       </div>
 
       <LayananTambahan />

@@ -282,7 +282,7 @@ export default function Transkrip({ student }) {
       </Card>
 
       {/* -------------------------------- grafik -------------------------------- */}
-      <div className="grid gap-6 xl:grid-cols-2 print:hidden">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 print:hidden">
         <RadarCluster data={clusterRows} seriesName={student.name.split(' ')[0]} />
         <AspectBars rows={t.aspek} />
       </div>

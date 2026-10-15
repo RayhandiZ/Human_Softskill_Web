@@ -5,10 +5,10 @@ import { act } from 'react'
 import Penyedia from '../app/penyedia'
 import { RequireRole, panelPengguna } from '../src/lib/auth'
 import { COHORTS, MASTER_AWAL, STUDENTS, getStudent, getStudentByNim, isiData, isiMaster, pengumpulanDosen, resetTranskripCache } from '../src/lib/data'
-import { getKomponen, getKomponenById, isiKurikulum } from '../src/lib/curriculum'
+import { getAspekList, getKomponen, getKomponenById, isiKurikulum } from '../src/lib/curriculum'
 import { bobotKomponen } from '../src/lib/scoring'
 import { DATA_CONTOH, DOSEN, PERSONA_SEMESTER, getDosenByEmail, getStudentByEmail } from './dataContoh'
-import { bersihkanPerubahan } from '../src/lib/store'
+import { AKUN_LOKAL, bersihkanPerubahan, muatAkses } from '../src/lib/store'
 import { aturJalur, rekamNavigasi } from './palsu-next-navigation'
 import { jalurMulus } from '../src/lib/kurva'
 
@@ -36,6 +36,8 @@ import SuperLayout from '../src/halaman/super/SuperLayout'
 import Kendali from '../src/halaman/super/Kendali'
 import Wewenang from '../src/halaman/super/Wewenang'
 import Aturan from '../src/halaman/super/Aturan'
+import PenilaianSuper from '../src/halaman/super/Penilaian'
+import Akses from '../src/halaman/super/Akses'
 import DosenLayout from '../src/halaman/dosen/DosenLayout'
 import Masuk from '../src/halaman/dosen/Masuk'
 import NilaiDosen from '../src/halaman/dosen/Nilai'
@@ -164,6 +166,8 @@ const RUTE = {
   '/admin/log': { pohon: () => admin(<Log />) },
   '/super': { pohon: () => superAdmin(<Kendali />) },
   '/super/persetujuan': { pohon: () => superAdmin(<PersetujuanAdmin />) },
+  '/super/penilaian': { pohon: () => superAdmin(<PenilaianSuper />) },
+  '/super/akses': { pohon: () => superAdmin(<Akses />) },
   '/super/log': { pohon: () => superAdmin(<Log />) },
   '/super/wewenang': { pohon: () => superAdmin(<Wewenang />) },
   '/super/aturan': { pohon: () => superAdmin(<Aturan />) },
@@ -1659,7 +1663,10 @@ export async function ujiPanelSuper() {
   sesi(true)
   ;({ el, lepas } = await pasang('/super'))
   const menu = [...el.querySelectorAll('aside nav a')]
-  hasil.menuLima = menu.length === 5 && menu.every((a) => a.getAttribute('href').startsWith('/super'))
+  hasil.menuTujuh = menu.length === 7 && menu.every((a) => a.getAttribute('href').startsWith('/super'))
+  hasil.urutanTugas = ['/super/persetujuan', '/super/penilaian', '/super/akses'].every(
+    (h, i) => menu[i + 1]?.getAttribute('href') === h,
+  )
   hasil.menuGelap = menu.every((a) => a.classList.contains('menu-sorot-gelap'))
   hasil.kendaliAktif = Boolean(menu[0]?.classList.contains('menu-aktif'))
   hasil.keKemahasiswaan = Boolean(el.querySelector('aside a[href="/admin"]'))
@@ -1684,6 +1691,90 @@ export async function ujiPanelSuper() {
   await tunggu()
   hasil.saringNim = nim !== '' && baris().length > 0 && baris().every((tr) => nimBaris(tr) === nim)
   lepas()
+
+  // Penilaian & Bobot: kartu aspek memilih editor; draf yang belum disimpan ditanyakan sebelum dibuang.
+  const [aspek1, aspek2] = getAspekList().map((a) => a.kode.replace(/\.$/, ''))
+  const konfirmasiLama = window.confirm
+  ;({ el, lepas } = await pasang('/super/penilaian'))
+  const kartuAspek = () => [...el.querySelectorAll('ul > li > button[aria-pressed]')]
+  const editorUntuk = (kode) => el.textContent.includes('Penilaian ' + kode)
+  hasil.kartuSemuaAspek = kartuAspek().length === getAspekList().length && editorUntuk(aspek1)
+  hasil.simpanLangsung = /Simpan penilaian|langsung berlaku untuk semua angkatan/.test(el.textContent)
+  await ketik(el.querySelector('form input.field'), 'Nama aspek uji')
+  let ditanya = 0
+  window.confirm = () => (ditanya++, false)
+  await klik(kartuAspek()[1])
+  const tetap = editorUntuk(aspek1) && ditanya === 1
+  window.confirm = () => (ditanya++, true)
+  await klik(kartuAspek()[1])
+  hasil.drafDitanyakan = tetap && ditanya === 2 && editorUntuk(aspek2)
+  window.confirm = konfirmasiLama
+  await klik([...el.querySelectorAll('[role="tab"]')].find((b) => b.textContent === 'Bobot'))
+  const kartuBobot = [...el.querySelectorAll('ul > li > button[aria-pressed="true"]')]
+  hasil.bobotTertanam =
+    /Cara membagi bobot otomatis/.test(el.textContent) &&
+    !/Kurikulum CPMK/.test(el.textContent) &&
+    kartuBobot.length === 1 &&
+    kartuBobot[0].textContent.includes(aspek2)
+  lepas()
+
+  // Akses Pengguna (tanpa server: daftar dari AKUN_LOKAL).
+  const [d1, d2] = DOSEN
+  AKUN_LOKAL.length = 0
+  AKUN_LOKAL.push(
+    { id: 11, email: d1.email, peran: 'dosen', aktif: true, nama: d1.nama, nip: d1.nip, prodi: d1.prodi },
+    { id: 12, email: d2.email, peran: 'dosen', aktif: false, nama: d2.nama, nip: d2.nip, prodi: d2.prodi },
+    { id: 21, email: 'admin@umn.ac.id', peran: 'admin', aktif: true },
+    { id: 31, email: 'super.admin@umn.ac.id', peran: 'superadmin', aktif: true },
+  )
+  ;({ el, lepas } = await pasang('/super/akses'))
+  await tunggu()
+  const barisAkun = () => [...el.querySelectorAll('ul.divide-y > li')]
+  const baris1 = () => barisAkun().find((li) => li.textContent.includes(d1.nama))
+  hasil.aksesDaftarDosen =
+    barisAkun().length === 2 && /Akses dicabut/.test(el.textContent) && /Punya akses/.test(el.textContent)
+  await klik([...baris1().querySelectorAll('button')].find((b) => /Cabut akses/.test(b.textContent)))
+  const formCabut = baris1().querySelector('form')
+  const tombolCabut = formCabut?.querySelector('button[type="submit"]')
+  const matiTanpaAlasan = tombolCabut?.disabled === true
+  await ketik(formCabut.querySelector('input'), 'Tidak mengajar lagi semester ini')
+  const hidupDenganAlasan = tombolCabut?.disabled === false
+  await act(async () => {
+    formCabut.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }))
+  })
+  await tunggu()
+  hasil.cabutAkses =
+    matiTanpaAlasan &&
+    hidupDenganAlasan &&
+    AKUN_LOKAL[0].aktif === false &&
+    /Akses dicabut/.test(baris1()?.textContent ?? '') &&
+    !baris1()?.querySelector('form') &&
+    /Pulihkan akses/.test(baris1()?.textContent ?? '')
+  await ketik(el.querySelector('input[type="search"]'), d2.nip)
+  hasil.cariAkun = barisAkun().length === 1 && barisAkun()[0].textContent.includes(d2.nama)
+  await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /Admin Kemahasiswaan/.test(b.textContent)))
+  await ketik(el.querySelector('input[type="search"]'), '')
+  const barisSuper = barisAkun().find((li) => li.textContent.includes('super.admin@umn.ac.id'))
+  hasil.superTidakBisaDicabut =
+    barisAkun().length === 2 && Boolean(barisSuper) && !barisSuper.querySelector('button') && /Akun Anda/.test(barisSuper.textContent)
+  lepas()
+  AKUN_LOKAL.length = 0
+
+  // Pintu API yang belum dibuat (404) dikenali, supaya halaman bisa menjelaskannya.
+  const lokalLama = globalThis.__SK5C_LOKAL__
+  const fetchLama = globalThis.fetch
+  globalThis.__SK5C_LOKAL__ = false
+  globalThis.fetch = async () => new Response('<!doctype html>', { status: 404 })
+  let statusGalat = null
+  try {
+    await muatAkses()
+  } catch (e) {
+    statusGalat = e.status
+  } finally {
+    globalThis.fetch = fetchLama
+    globalThis.__SK5C_LOKAL__ = lokalLama
+  }
+  hasil.apiBelumAdaDikenali = statusGalat === 404
 
   if (lama) window.localStorage.setItem('sk5c.session', lama)
   else window.localStorage.removeItem('sk5c.session')
@@ -1841,6 +1932,54 @@ export async function ujiOtomatis() {
      Kemahasiswaan. Merekalah yang menjawab pertanyaan itu, jadi tombol yang
      menautkan mereka ke diri sendiri tidak menuju ke mana pun.
    -------------------------------------------------------------------------- */
+/**
+ * Halaman masuk: kata sandi tampil selama mata ditunjuk tetikus atau ditahan jari, lalu tersembunyi lagi.
+ * Klik tetikus (detail 1) tidak menyalakannya; klik tanpa tetikus (Enter/Spasi, detail 0) menyalakan dan
+ * mematikannya. jsdom belum punya PointerEvent, jadi dipakai MouseEvent yang ditempeli pointerType.
+ */
+export async function ujiMataSandi() {
+  const lama = window.localStorage.getItem('sk5c.session')
+  window.localStorage.removeItem('sk5c.session')
+  const { el, lepas } = await pasang('/masuk')
+  const sandi = el.querySelector('#password')
+  const mata = el.querySelector('button[aria-controls="password"]')
+  const penunjuk = async (jenis, pointerType) => {
+    await act(async () => {
+      const ev = new window.MouseEvent(jenis, { bubbles: true, cancelable: true, relatedTarget: null })
+      ev.pointerId = 1
+      ev.pointerType = pointerType
+      mata.dispatchEvent(ev)
+    })
+  }
+  const hasil = {
+    adaMata:
+      Boolean(mata) &&
+      !/Tampilkan|Sembunyikan/.test(mata.textContent) &&
+      mata.getAttribute('aria-label') === 'Lihat kata sandi' &&
+      Boolean(mata.querySelector('svg')),
+  }
+  await penunjuk('pointerover', 'mouse')
+  const tampilDitunjuk = sandi.type === 'text'
+  await penunjuk('pointerout', 'mouse')
+  hasil.tunjukTetikus = tampilDitunjuk && sandi.type === 'password'
+
+  await penunjuk('pointerdown', 'touch')
+  const tampilDitahan = sandi.type === 'text'
+  await penunjuk('pointerup', 'touch')
+  hasil.tahanSentuh = tampilDitahan && sandi.type === 'password'
+
+  await klik(mata, 1)
+  const klikTetikusDiabaikan = sandi.type === 'password'
+  await klik(mata, 0)
+  const nyala = sandi.type === 'text' && mata.getAttribute('aria-pressed') === 'true'
+  await klik(mata, 0)
+  hasil.papanKetik = klikTetikusDiabaikan && nyala && sandi.type === 'password' && mata.getAttribute('aria-pressed') === 'false'
+
+  lepas()
+  if (lama) window.localStorage.setItem('sk5c.session', lama)
+  return hasil
+}
+
 export async function ujiPanelLain(rute) {
   /* Pilihan bahasa bertahan di penyimpanan. Tanpa dibersihkan, panel kedua
      sudah berbahasa Inggris sejak dibuka dan menekan EN tidak mengubah apa

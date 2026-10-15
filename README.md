@@ -363,6 +363,8 @@ admin biasa ke `/admin`; itu hanya penjaga tampilan, pintu API tetap memeriksa u
 |---|---|---|
 | `/super` Pusat Kendali | jumlah yang menunggu keputusan, keputusan dan perubahan nilai 7 hari terakhir, angkatan terkunci, permintaan terlama di atas, enam tindakan admin terbaru, rantai pengawasan | `PERMINTAAN`, `AUDIT_LOG`, `COHORTS`, `/api/log` |
 | `/super/persetujuan` | antrean Setujui/Tolak (halaman `PersetujuanAdmin` yang sama) | `PERMINTAAN`, `/api/persetujuan/keputusan` |
+| `/super/penilaian` | Penilaian & Bobot: tab *Aspek & komponen* (editor Input Manual, `EditorPenilaian`) dan tab *Bobot* (halaman `Kurikulum` tanpa judulnya); simpanan super admin langsung berlaku | `/api/kurikulum/penilaian`, `/api/kurikulum/bobot` |
+| `/super/akses` | Akses Pengguna: mencabut dan memulihkan akses dosen dan admin (lihat di bawah) | `/api/akses`, `/api/akses/ubah` (**belum ada di back-end**) |
 | `/super/log` | Log Aktivitas (lihat di bawah) | `/api/log` |
 | `/super/wewenang` | matriks siapa boleh melakukan apa, plus prinsip yang dipakai | konstanta di `Wewenang.jsx`, diturunkan dari aturan server |
 | `/super/aturan` | aturan perhitungan yang berlaku, sumbernya (bawaan kode atau tabel Konfigurasi), dan tanda menunggu konfirmasi; hanya bacaan | `CONFIG`, `DARI_BASIS_DATA` di `src/lib/config.js` |
@@ -380,11 +382,41 @@ data. Tab *Tindakan admin* (`LogAktivitas`) bisa disaring per pelaku dan jenis t
 cepat Hari ini dan 7 hari terakhir. Rincian tiap tindakan dibuka per baris. Tanpa basis data (uji),
 perubahan nilai dibaca dari `AUDIT_LOG` yang termuat dan tindakan admin dinyatakan tidak tersedia.
 
+**Penilaian & Bobot** memakai ulang dua editor panel Kemahasiswaan: `EditorPenilaian` (teks aspek,
+komponen asesmen, bobotnya; komponen bisa ditambah dan diarsipkan) dan `Kurikulum` (bobot semua
+aspek dan cara membagi bobot otomatis). Keduanya sudah membedakan super admin, jadi tidak ada
+"Ajukan ke Super Admin" di sini. Kedua editor melaporkan draf yang belum disimpan
+(`onPerubahan`); berganti aspek atau tab saat masih ada draf ditanyakan dulu. Permintaan admin
+`UBAH_PENILAIAN`/`UBAH_BOBOT` yang masih menunggu diberi peringatan di atas halaman, karena
+permintaan yang datanya sudah berubah akan gagal dijalankan.
+
+**Akses Pengguna** (`src/halaman/super/Akses.jsx`) mengubah `Pengguna.aktif`. Server sudah menolak
+akun nonaktif di setiap permintaan (`penggunaDari()` di `src/server/api.js`) dan saat masuk
+(`masuk.js`), jadi yang belum ada hanya dua pintu berikut; sampai dibuat, halaman ini menyatakan
+fiturnya belum tersedia (jawaban 404 dikenali lewat `galat.status` dari `kirim()`).
+
+- `POST /api/akses`, hanya super admin (`tangani(request, ['superadmin'], …)`). Jawaban:
+  `{ akun: [{ id, email, peran, aktif, nama?, nip?, prodi? }] }`, dengan `peran` `'dosen'`,
+  `'admin'`, atau `'superadmin'`; `nama`, `nip`, dan `prodi` hanya untuk dosen. Mahasiswa tidak ikut.
+- `POST /api/akses/ubah` dengan isi `{ id, aktif, alasan }`, hanya super admin. Tolak (403) bila
+  akunnya milik sendiri atau berperan `SUPER_ADMIN`; tolak (400) bila `alasan` kurang dari 10
+  karakter; 404 bila akun tidak ada. Catat ke `LogAktivitas` dengan aksi `UBAH_AKSES` (label sudah
+  ada di `LABEL_LOG`) beserta email, peran, aktif sebelum dan sesudah, dan alasan; tambahkan
+  `UBAH_AKSES` ke daftar aksi di `src/server/log.js`. Jawaban: `{ akun }` dengan bentuk yang sama.
+
 ## Bahasa visual: rata, bukan bertumpuk
 
 Seluruh panel memakai satu bahasa yang sama, mengikuti gaya E-Learning UMN:
 
-- **tanpa gradien** — navbar, footer, dan kepala kartu memakai warna padat;
+- **tanpa gradien** — navbar, footer, dan kepala kartu memakai warna padat. Pengecualiannya
+  halaman masuk, supaya tidak mirip E-Learning UMN: seluruh halamannya berlatar "aurora" (navy
+  pekat dengan cahaya sian, biru elektrik, nila, dan biru laut yang melayang pelan, plus butiran halus;
+  `.latar-masuk`) dan formulirnya di kartu kaca gelap (`.kaca-masuk`), mengikuti pola halaman masuk
+  modern di Dribbble. Halaman ini selalu memakai warna mode gelap (kelas `dark` di akarnya), apa
+  pun tema perangkat. Cahaya dijauhkan dari judul, dan kontras setiap teksnya diukur sepanjang
+  animasi (minimal 4,5:1, judul besar 3:1); bila cahaya diubah, ukur ulang. Gumpalan hanya
+  menggerakkan `transform`, diam saat kurangi gerak aktif, dan kartunya menjadi padat saat kurangi
+  transparansi aktif. Tombol Masuk-nya juga bergradasi biru (`.tombol-masuk`, lihat Gerak);
   kartu identitas hanya diberi garis merek setebal 1px di atasnya;
 - **bayangan nyaris tidak ada** — kartu cukup dibatasi garis rambut;
 - **menu aktif diisi penuh warna merek dengan teks putih**, bukan latar samar —
@@ -1085,6 +1117,17 @@ panah kiri/kanan). Bagian yang mudah rusak:
   yang sudah dicoba: lekuk yang diperbesar-perkecil dengan `scale` memunculkan garis tipis terang
   di tepi kertas, dan `opacity` yang dianimasikan di induk unsur yang bergeser membuat keduanya
   kembali dikerjakan utas utama. Rinciannya ada di komentar `index.css` › pita logo masuk.
+- Tombol Masuk (`.tombol-masuk`) hanya bergerak saat dipakai, jadi tidak menambah beban saat halaman
+  dibiarkan terbuka. Saat ditunjuk (hanya perangkat berkursor), gradasinya bergeser, kilau menyapu
+  sekali, cahaya di bawahnya menguat ke sian, dan panahnya maju 4px; saat ditekan, tombolnya mengecil
+  ke 98%. Saat memverifikasi, tombolnya mati tanpa dipudarkan: pemutar berputar dan kilau menyapu
+  berulang, satu-satunya umpan balik gerak di HP. Kilau (`::before`, di bawah teks) ikut menerangkan
+  latar teks, jadi gradasinya sengaja cukup gelap (`#143f99 → #2048d4 → #0b5394`) dan kilaunya hanya
+  0,2: kontras teks putih terburuk saat puncak kilau lewat 4,62:1 (tanpa kilau minimal 7,08:1),
+  diukur di setiap posisi kilau dan gradasi, di layar laptop dan HP. Versi pertama (gradasi
+  `#12508f → #2563eb → #0b74c6`, kilau 0,32) menurunkannya ke 2,8:1, jadi bila warna atau kilaunya
+  diubah, ukur ulang. Saat kurangi gerak aktif, kilau dilepas dan pemutarnya berhenti; teks
+  "Memverifikasi…" tetap menandai prosesnya.
 
 ### Cetak
 

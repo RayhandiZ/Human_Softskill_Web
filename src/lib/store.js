@@ -592,6 +592,33 @@ export async function batalkanPermintaan(id) {
   return (await tulis('/api/persetujuan/batal', { id })).ok
 }
 
+/* ------------------------------ akses pengguna ------------------------------ */
+
+/* Akun dosen dan admin beserta status aksesnya (Pengguna.aktif), hanya untuk super admin; lihat README.md ›
+   Panel Super Admin › Akses Pengguna. Daftarnya tidak ikut /api/data, jadi dibaca terpisah dan perubahan tidak
+   memuat ulang data lain. Tanpa server, daftarnya diisi skrip uji lewat AKUN_LOKAL. */
+export const AKUN_LOKAL = []
+
+// Sama dengan aturan yang diminta untuk /api/akses/ubah; server tetap yang memutuskan.
+export const ALASAN_AKSES_MIN = 10
+
+/** { akun: [{ id, email, peran: 'dosen' | 'admin' | 'superadmin', aktif, nama?, nip?, prodi? }] } */
+export async function muatAkses() {
+  if (modeLokal()) return { akun: AKUN_LOKAL.map((a) => ({ ...a })) }
+  return kirim('/api/akses', { isi: {} })
+}
+
+/** Mencabut (aktif false) atau memulihkan (aktif true) akses satu akun; jawabannya { akun } yang baru. */
+export async function ubahAkses({ id, aktif, alasan }) {
+  if (!modeLokal()) return kirim('/api/akses/ubah', { isi: { id, aktif, alasan } })
+  const a = AKUN_LOKAL.find((x) => x.id === id)
+  if (!a) throw new Error('Akun tidak ditemukan.')
+  if (a.peran === 'superadmin') throw new Error('Akses Super Admin diatur langsung di basis data.')
+  if (String(alasan ?? '').trim().length < ALASAN_AKSES_MIN) throw new Error('Alasan wajib diisi, minimal 10 karakter.')
+  a.aktif = Boolean(aktif)
+  return { akun: { ...a } }
+}
+
 /* ---------------------------------- nilai --------------------------------- */
 
 /** Batch yang tersimpan, atau { menunggu, permintaan } bila menunggu persetujuan super admin. */
