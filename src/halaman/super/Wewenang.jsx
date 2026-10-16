@@ -42,8 +42,10 @@ const MATRIKS = [
   { tindakan: 'Memutuskan permintaan admin', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
   { tindakan: 'Menarik permintaan yang belum diputuskan', izin: [['tidak'], ['tidak'], ['syarat', 'hanya miliknya'], ['tidak']] },
   { tindakan: 'Membaca Log Aktivitas', izin: [['tidak'], ['tidak'], ['ya'], ['ya']] },
-  // Menunggu /api/akses/ubah di back-end, yang wajib menolak semua kecuali super admin.
-  { tindakan: 'Mencabut dan memulihkan akses dosen dan admin', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
+  // /api/periode, hanya super admin (src/server/periode.js).
+  { tindakan: 'Memindahkan periode akademik', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
+  // /api/akses/ubah, hanya super admin; akun Super Admin dan akun sendiri ditolak (src/server/akses.js).
+  { tindakan: 'Mencabut dan memulihkan akses mahasiswa, dosen, dan admin', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
   // Peran SUPER_ADMIN hanya dipasang langsung di basis data; tidak ada tombolnya di website.
   { tindakan: 'Mengangkat Super Admin dari website', izin: [['tidak'], ['tidak'], ['tidak'], ['tidak']] },
 ]

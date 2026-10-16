@@ -1240,8 +1240,10 @@ export const EN = {
   'Mengunci angkatan': 'Lock a cohort',
   'Memutuskan permintaan admin': 'Decide admin requests',
   'Menarik permintaan yang belum diputuskan': 'Withdraw a pending request',
-  'Mencabut dan memulihkan akses dosen dan admin': 'Revoke and restore lecturer and admin access',
+  'Memindahkan periode akademik': 'Move the academic period',
+  'Mencabut dan memulihkan akses mahasiswa, dosen, dan admin': 'Revoke and restore student, lecturer, and admin access',
   'Ubah akses akun': 'Change account access',
+  'Ubah periode akademik': 'Change academic period',
 
   // Penilaian & Bobot
   'Penilaian & Bobot': 'Assessment & Weights',
@@ -1259,8 +1261,8 @@ export const EN = {
 
   // Akses Pengguna
   'Akses Pengguna': 'User Access',
-  'Tentukan dosen dan admin Kemahasiswaan yang boleh masuk ke Human Skill. Mencabut akses langsung mengakhiri sesinya dan menolak login berikutnya; datanya tetap tersimpan dan aksesnya bisa dipulihkan kapan saja.':
-    'Decide which lecturers and Student Affairs admins may sign in to Human Skill. Revoking access ends their session immediately and blocks later sign-ins; their data stays and access can be restored at any time.',
+  'Tentukan mahasiswa, dosen, dan admin Kemahasiswaan yang boleh masuk ke Human Skill. Mencabut akses langsung mengakhiri sesinya dan menolak login berikutnya; datanya tetap tersimpan dan aksesnya bisa dipulihkan kapan saja.':
+    'Decide which students, lecturers, and Student Affairs admins may sign in to Human Skill. Revoking access ends their session immediately and blocks later sign-ins; their data stays and access can be restored at any time.',
   'Pengaturan akses belum tersedia': 'Access settings are not available yet',
   'Server belum menyediakan daftar akun. Halaman ini langsung berfungsi begitu pintu /api/akses dibuat; rinciannya ada di README › Akses Pengguna.':
     'The server does not provide the account list yet. This page works as soon as the /api/akses endpoint exists; details are in README › Akses Pengguna.',
@@ -1268,6 +1270,7 @@ export const EN = {
   'Admin Kemahasiswaan': 'Student Affairs admins',
   'Cari nama, email, atau NIP': 'Search name, email, or NIP',
   'Cari email': 'Search email',
+  'Cari nama, email, atau NIM': 'Search name, email, or student ID (NIM)',
   'Semua status': 'All statuses',
   'Punya akses': 'Has access',
   'Akses dicabut': 'Access revoked',
@@ -1276,6 +1279,7 @@ export const EN = {
   'Tidak ada akun yang cocok.': 'No accounts match.',
   'Belum ada akun dosen.': 'No lecturer accounts yet.',
   'Belum ada akun admin.': 'No admin accounts yet.',
+  'Belum ada akun mahasiswa.': 'No student accounts yet.',
   'Akses Super Admin tidak bisa dicabut dari sini, termasuk akun Anda sendiri; itu diatur langsung di basis data. Setiap perubahan akses tercatat di Log Aktivitas beserta alasannya.':
     'Super Admin access cannot be revoked here, including your own account; it is managed directly in the database. Every access change is recorded in the Activity Log with its reason.',
   'Cabut akses': 'Revoke access',
@@ -1314,8 +1318,28 @@ export const EN = {
   '{n} lainnya lewat persetujuan Super Admin': '{n} more through Super Admin approval',
   'Mengikuti aturan yang dijaga server saat ini.': 'Follows the rules the server currently enforces.',
   'Prinsip yang dipakai': 'Principles applied',
-  'Aturan perhitungan yang sedang berlaku. Halaman ini hanya bacaan: aturan diubah lewat tabel Konfigurasi di basis data, sedangkan bobot dan penilaian aspek lewat halaman Penilaian & Bobot.':
-    'The calculation rules currently in effect. This page is read-only: rules are changed through the Konfigurasi table in the database, while weights and aspect assessments are changed on the Assessment & Weights page.',
+  'Aturan perhitungan yang sedang berlaku. Periode akademik dipindah dari halaman ini; aturan lainnya diubah lewat tabel Konfigurasi di basis data, sedangkan bobot dan penilaian aspek lewat halaman Penilaian & Bobot.':
+    'The calculation rules currently in effect. The academic period is moved from this page; other rules are changed through the Konfigurasi table in the database, while weights and aspect assessments are changed on the Assessment & Weights page.',
+  'Periode akademik': 'Academic period',
+  'Semester tiap mahasiswa, siapa yang sudah lewat Semester 3, dan angkatan yang boleh dikunci dihitung dari periode ini.':
+    "Each student's semester, who is already past Semester 3, and which cohorts may be locked are all calculated from this period.",
+  'Tersimpan di basis data': 'Stored in the database',
+  'Bawaan kode, belum pernah dipindah': 'Code default, never moved',
+  'Pindah ke {periode}': 'Move to {periode}',
+  'Kembalikan ke {periode}': 'Move back to {periode}',
+  'Dampak bila dipindah ke {periode}': 'Impact of moving to {periode}',
+  Sekarang: 'Now',
+  'Sesudah dipindah': 'After the move',
+  'Belum mulai': 'Not started',
+  'Lewat Semester {n}': 'Past Semester {n}',
+  'Belum ada angkatan yang terdampak.': 'No cohort is affected.',
+  '{n} angkatan akan lewat Semester {batas}: mahasiswanya tidak lagi ditangani dosen, perubahan datanya oleh admin biasa perlu persetujuan Super Admin, dan angkatannya boleh dikunci.':
+    '{n} cohorts will pass Semester {batas}: their students are no longer handled by lecturers, changes to their data by a regular admin need Super Admin approval, and the cohorts may be locked.',
+  '{n} angkatan akan kembali ke Semester {batas} dan kembali ditangani dosen.':
+    '{n} cohorts will return to Semester {batas} and be handled by lecturers again.',
+  'Pindahkan ke {periode}': 'Move to {periode}',
+  'Hanya bisa satu semester maju atau mundur setiap kali, dan setiap perpindahan tercatat di Log Aktivitas beserta alasannya.':
+    'The period can only move one semester forward or back at a time, and every move is recorded in the Activity Log with its reason.',
   'Buka Penilaian & Bobot': 'Open Assessment & Weights',
   'aturan masih menunggu konfirmasi': 'rules still awaiting confirmation',
   '{n} sudah ditetapkan': '{n} confirmed',

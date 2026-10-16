@@ -6,16 +6,48 @@ import { hitungTranskrip, hurufMutu } from './scoring.js'
 
 /* ------------------------------ periode akademik -------------------------- */
 
+/* Periode yang sedang berjalan. Isinya diganti di tempat oleh pasangPeriode() dari Konfigurasi PERIODE_AKTIF
+   (super admin, /api/periode), jadi pemakainya tidak perlu tahu dari mana asalnya; lihat README.md › Periode
+   akademik. Angka di sini hanya bawaan selama basis data belum menyimpan periode. */
 export const PERIODE_AKTIF = { tahun: '2026/2027', semester: 'Ganjil' }
+
+const PERIODE_BAWAAN = { ...PERIODE_AKTIF }
+export const KUNCI_PERIODE = 'PERIODE_AKTIF'
+
+/** basisData: PERIODE_AKTIF terbaca dari Konfigurasi, bukan bawaan kode (halaman Aturan Sistem). */
+export const ASAL_PERIODE = { basisData: false }
 
 const tahunAwal = (t) => Number(String(t).slice(0, 4))
 const ordinal = (p) => tahunAwal(p.tahun) * 2 + (p.semester === 'Ganjil' ? 0 : 1)
 
-function periodeSetelah(p, n) {
+export function periodeSetelah(p, n) {
   const o = ordinal(p) + n
   const th = Math.floor(o / 2)
   const ganjil = o % 2 === 0
   return { tahun: th + '/' + (th + 1), semester: ganjil ? 'Ganjil' : 'Genap' }
+}
+
+/** { tahun: '2026/2027', semester: 'Ganjil' | 'Genap' } yang sah, atau null. */
+export function periodeSah(p) {
+  const m = /^(\d{4})\/(\d{4})$/.exec(String(p?.tahun ?? ''))
+  if (!m || Number(m[2]) !== Number(m[1]) + 1) return null
+  if (p.semester !== 'Ganjil' && p.semester !== 'Genap') return null
+  return { tahun: p.tahun, semester: p.semester }
+}
+
+/**
+ * Mengganti PERIODE_AKTIF di tempat, jadi semua pemakainya ikut berubah; null = kembali ke bawaan kode. Server
+ * memanggilnya di setiap permintaan, jadi tidak berbuat apa-apa bila periodenya sama.
+ */
+export function pasangPeriode(p) {
+  const tersimpan = periodeSah(p)
+  ASAL_PERIODE.basisData = Boolean(tersimpan)
+  const baru = tersimpan ?? PERIODE_BAWAAN
+  if (samaPeriode(baru, PERIODE_AKTIF)) return
+  Object.assign(PERIODE_AKTIF, baru)
+  // Semester angkatan disimpan saat dipasang (pasangAngkatan), jadi ikut dihitung ulang.
+  for (const c of COHORTS) c.semesterAktif = turunkanSemesterAktif(c.intake)
+  resetTranskripCache()
 }
 
 export const labelPeriode = (p) => p.semester + ' ' + p.tahun
@@ -160,7 +192,9 @@ export function programStudi(faculty = 'Semua') {
 
 export const MASTER_AWAL = { angkatan: ANGKATAN_AWAL, fakultas: FAKULTAS_AWAL }
 
-export function isiMaster({ angkatan, fakultas, kurikulum } = {}) {
+export function isiMaster({ angkatan, fakultas, kurikulum, periode } = {}) {
+  // null = basis data belum menyimpan periode: kembali ke bawaan dari kode.
+  if (periode !== undefined) pasangPeriode(periode)
   if (angkatan) pasangAngkatan(angkatan)
   if (fakultas) pasangFakultas(fakultas)
   // null = basis data belum di-seed: kurikulum dan CONFIG kembali ke isi dari kode.

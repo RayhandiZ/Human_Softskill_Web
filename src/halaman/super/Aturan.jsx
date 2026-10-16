@@ -1,12 +1,18 @@
+import { useState } from 'react'
 import Link from 'next/link'
-import { Badge, Card, CatatanKaki } from '../../components/Ui'
-import { IconCheck, IconChevronRight, IconClock } from '../../components/Icons'
+import { Badge, Card, CardHeader, CatatanKaki } from '../../components/Ui'
+import { IconAlert, IconCalendar, IconCheck, IconChevronRight, IconClock, IconUndo } from '../../components/Icons'
 import { CONFIG, DARI_BASIS_DATA, KUNCI_DAPAT_DIUBAH, MENUNGGU_KONFIRMASI, nilaiBawaan } from '../../lib/config'
-import { useStore } from '../../lib/store'
+import { ASAL_PERIODE, COHORTS, PERIODE_AKTIF, labelPeriode, periodeSetelah, semesterKalender } from '../../lib/data'
+import { ubahPeriode, useStore } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
 
 /* Aturan perhitungan yang sedang berlaku: CONFIG, yaitu bawaan kode yang bisa ditimpa tabel Konfigurasi.
-   Hanya bacaan. Lihat README.md › Panel Super Admin. */
+   Hanya bacaan, kecuali periode akademik yang dipindah lewat /api/periode. Lihat README.md › Panel Super
+   Admin dan › Periode akademik. */
+
+// Sama dengan aturan di src/server/periode.js; server tetap yang memutuskan.
+const ALASAN_PERIODE_MIN = 10
 
 const NAMA_SUMBER = { PDP: 'PDP', MK: 'MK Humaniora', ENGAGEMENT: 'Kemahasiswaan' }
 const NAMA_JENIS = { TUGAS: 'Tugas', SIKAP: 'Sikap', UTS: 'UTS', UAS: 'UAS' }
@@ -68,7 +74,7 @@ export default function Aturan() {
         <h1 className="text-[26px] font-extrabold tracking-tight text-ink">{t('Aturan Sistem')}</h1>
         <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-ink-2">
           {t(
-            'Aturan perhitungan yang sedang berlaku. Halaman ini hanya bacaan: aturan diubah lewat tabel Konfigurasi di basis data, sedangkan bobot dan penilaian aspek lewat halaman Penilaian & Bobot.',
+            'Aturan perhitungan yang sedang berlaku. Periode akademik dipindah dari halaman ini; aturan lainnya diubah lewat tabel Konfigurasi di basis data, sedangkan bobot dan penilaian aspek lewat halaman Penilaian & Bobot.',
           )}
         </p>
         <Link
@@ -79,6 +85,8 @@ export default function Aturan() {
           <IconChevronRight size={16} />
         </Link>
       </header>
+
+      <KartuPeriode />
 
       {/* Ringkasan sebelum tabel: seberapa banyak aturan yang angkanya masih bisa berubah. */}
       <Card className="card-pad">
@@ -160,5 +168,172 @@ export default function Aturan() {
         {t('Menunggu konfirmasi: angka usulan tim yang belum dikonfirmasi unit pengelola, jadi masih bisa berubah.')}
       </CatatanKaki>
     </div>
+  )
+}
+
+/** Keadaan program pada semester kalender `n` (tanpa batas atas). */
+function keadaanSemester(n, t) {
+  if (n < 1) return t('Belum mulai')
+  if (n > CONFIG.TOTAL_SEMESTER_PROGRAM) return t('Lewat Semester {n}', { n: CONFIG.TOTAL_SEMESTER_PROGRAM })
+  return t('Semester {n}', { n })
+}
+
+/* Periode akademik yang sedang berjalan, dipindah satu semester maju atau mundur. Sebelum disimpan, dampaknya
+   ke tiap angkatan dihitung di peramban dengan rumus yang sama dengan server (semesterKalender). */
+function KartuPeriode() {
+  const t = useTeks()
+  const [tujuan, setTujuan] = useState(null)
+  const [alasan, setAlasan] = useState('')
+  const [sibuk, setSibuk] = useState(false)
+  const [galat, setGalat] = useState('')
+
+  const batas = CONFIG.TOTAL_SEMESTER_PROGRAM
+  const maju = periodeSetelah(PERIODE_AKTIF, 1)
+  const mundur = periodeSetelah(PERIODE_AKTIF, -1)
+
+  // Angkatan yang sudah mulai pada salah satu dari kedua periode.
+  const dampak = tujuan
+    ? COHORTS.map((c) => ({ c, sebelum: semesterKalender(c.intake), sesudah: semesterKalender(c.intake, tujuan) })).filter(
+        (d) => d.sebelum >= 1 || d.sesudah >= 1,
+      )
+    : []
+  const jadiSelesai = dampak.filter((d) => d.sebelum <= batas && d.sesudah > batas).length
+  const batalSelesai = dampak.filter((d) => d.sebelum > batas && d.sesudah <= batas).length
+
+  function buka(p) {
+    setTujuan(p)
+    setAlasan('')
+    setGalat('')
+  }
+
+  function tutup() {
+    setTujuan(null)
+    setAlasan('')
+    setGalat('')
+  }
+
+  async function simpan(e) {
+    e.preventDefault()
+    if (sibuk) return
+    setSibuk(true)
+    setGalat('')
+    try {
+      await ubahPeriode({ tahun: tujuan.tahun, semester: tujuan.semester, alasan: alasan.trim() })
+      tutup()
+    } catch (err) {
+      setGalat(err.message)
+    } finally {
+      setSibuk(false)
+    }
+  }
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader
+        icon={IconCalendar}
+        title={t('Periode akademik')}
+        subtitle={t('Semester tiap mahasiswa, siapa yang sudah lewat Semester 3, dan angkatan yang boleh dikunci dihitung dari periode ini.')}
+      />
+      <div className="card-pad space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div>
+            <p className="text-[24px] font-extrabold leading-tight text-ink">{labelPeriode(PERIODE_AKTIF)}</p>
+            <p className="mt-1 text-[12.5px] text-ink-2">
+              {t(ASAL_PERIODE.basisData ? 'Tersimpan di basis data' : 'Bawaan kode, belum pernah dipindah')}
+            </p>
+          </div>
+          {tujuan ? null : (
+            <div className="flex flex-wrap gap-2.5">
+              <button type="button" className="btn-primary" onClick={() => buka(maju)}>
+                <IconChevronRight size={16} />
+                {t('Pindah ke {periode}', { periode: labelPeriode(maju) })}
+              </button>
+              <button type="button" className="btn-ghost" onClick={() => buka(mundur)}>
+                <IconUndo size={16} />
+                {t('Kembalikan ke {periode}', { periode: labelPeriode(mundur) })}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {tujuan ? (
+          <form onSubmit={simpan} className="space-y-4 rounded-xl border border-line bg-surface-2/60 p-4">
+            <p className="text-[13.5px] font-bold text-ink">
+              {t('Dampak bila dipindah ke {periode}', { periode: labelPeriode(tujuan) })}
+            </p>
+            {dampak.length ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[420px] text-left">
+                  <thead>
+                    <tr className="border-b border-line text-[12px] font-bold uppercase tracking-[.06em] text-ink-2">
+                      <th className="py-2 pr-3">{t('Angkatan')}</th>
+                      <th className="px-3 py-2">{t('Sekarang')}</th>
+                      <th className="py-2 pl-3">{t('Sesudah dipindah')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dampak.map(({ c, sebelum, sesudah }) => {
+                      const lintas = (sebelum > batas) !== (sesudah > batas)
+                      return (
+                        <tr key={c.id} className="border-b border-line last:border-0">
+                          <th scope="row" className="py-2 pr-3 text-[13.5px] font-semibold text-ink">
+                            {c.label}
+                          </th>
+                          <td className="px-3 py-2 text-[13.5px] text-ink-2">{keadaanSemester(sebelum, t)}</td>
+                          <td className={'py-2 pl-3 text-[13.5px] ' + (lintas ? 'font-bold text-ink' : 'text-ink-2')}>
+                            {keadaanSemester(sesudah, t)}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-[13px] text-ink-2">{t('Belum ada angkatan yang terdampak.')}</p>
+            )}
+            {jadiSelesai ? (
+              <p className="text-[13px] leading-relaxed text-ink">
+                {t(
+                  '{n} angkatan akan lewat Semester {batas}: mahasiswanya tidak lagi ditangani dosen, perubahan datanya oleh admin biasa perlu persetujuan Super Admin, dan angkatannya boleh dikunci.',
+                  { n: jadiSelesai, batas },
+                )}
+              </p>
+            ) : null}
+            {batalSelesai ? (
+              <p className="text-[13px] leading-relaxed text-ink">
+                {t('{n} angkatan akan kembali ke Semester {batas} dan kembali ditangani dosen.', { n: batalSelesai, batas })}
+              </p>
+            ) : null}
+            <label className="block max-w-xl">
+              <span className="mb-1.5 block label">{t('Alasan (wajib, minimal {n} karakter)', { n: ALASAN_PERIODE_MIN })}</span>
+              <input className="field !py-2.5" value={alasan} onChange={(e) => setAlasan(e.target.value)} autoFocus />
+            </label>
+            <div className="flex flex-wrap gap-2.5">
+              <button type="submit" className="btn-primary" disabled={sibuk || alasan.trim().length < ALASAN_PERIODE_MIN}>
+                <IconCheck size={16} />
+                {t('Pindahkan ke {periode}', { periode: labelPeriode(tujuan) })}
+              </button>
+              <button type="button" className="btn-ghost" disabled={sibuk} onClick={tutup}>
+                {t('Batal')}
+              </button>
+            </div>
+            {galat ? (
+              <p
+                role="alert"
+                className="flex items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--critical)_10%,transparent)] px-3.5 py-3 text-[13px] font-semibold text-[var(--critical)]"
+              >
+                <IconAlert size={16} className="mt-px shrink-0" />
+                {galat}
+              </p>
+            ) : null}
+          </form>
+        ) : null}
+
+        <p className="text-[12.5px] text-ink-3">
+          {t('Hanya bisa satu semester maju atau mundur setiap kali, dan setiap perpindahan tercatat di Log Aktivitas beserta alasannya.')}
+        </p>
+      </div>
+    </Card>
   )
 }

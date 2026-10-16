@@ -5,13 +5,14 @@ import { ALASAN_AKSES_MIN, muatAkses, ubahAkses } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 
-/* Dosen dan admin Kemahasiswaan yang boleh masuk (Pengguna.aktif). Daftar dari /api/akses, perubahan lewat
-   /api/akses/ubah; keduanya dibuat di back-end, lihat README.md › Panel Super Admin › Akses Pengguna.
+/* Mahasiswa, dosen, dan admin Kemahasiswaan yang boleh masuk (Pengguna.aktif). Daftar dari /api/akses, perubahan
+   lewat /api/akses/ubah (src/server/akses.js); lihat README.md › Panel Super Admin › Akses Pengguna.
    Akun yang dicabut sudah ditolak server: penggunaDari() di src/server/api.js membaca `aktif` setiap permintaan. */
 
 const KELOMPOK = {
-  dosen: { label: 'Dosen', peran: ['dosen'], kosong: 'Belum ada akun dosen.' },
-  admin: { label: 'Admin Kemahasiswaan', peran: ['admin', 'superadmin'], kosong: 'Belum ada akun admin.' },
+  dosen: { label: 'Dosen', peran: ['dosen'], kosong: 'Belum ada akun dosen.', cari: 'Cari nama, email, atau NIP' },
+  admin: { label: 'Admin Kemahasiswaan', peran: ['admin', 'superadmin'], kosong: 'Belum ada akun admin.', cari: 'Cari email' },
+  mahasiswa: { label: 'Mahasiswa', peran: ['mahasiswa'], kosong: 'Belum ada akun mahasiswa.', cari: 'Cari nama, email, atau NIM' },
 }
 const LABEL_STATUS = { semua: 'Semua status', aktif: 'Punya akses', dicabut: 'Akses dicabut' }
 
@@ -52,7 +53,7 @@ export default function Akses() {
   const kata = cari.trim().toLowerCase()
   const daftar = anggota(kelompok)
     .filter((a) => status === 'semua' || (status === 'aktif') === Boolean(a.aktif))
-    .filter((a) => !kata || [a.nama, a.email, a.nip].some((x) => String(x ?? '').toLowerCase().includes(kata)))
+    .filter((a) => !kata || [a.nama, a.email, a.nip, a.nim].some((x) => String(x ?? '').toLowerCase().includes(kata)))
     .sort(urut)
   const dicabut = anggota(kelompok).filter((a) => !a.aktif).length
 
@@ -61,7 +62,7 @@ export default function Akses() {
       <header>
         <h1 className="text-[26px] font-extrabold tracking-tight text-ink">{t('Akses Pengguna')}</h1>
         <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-ink-2">
-          {t('Tentukan dosen dan admin Kemahasiswaan yang boleh masuk ke Human Skill. Mencabut akses langsung mengakhiri sesinya dan menolak login berikutnya; datanya tetap tersimpan dan aksesnya bisa dipulihkan kapan saja.')}
+          {t('Tentukan mahasiswa, dosen, dan admin Kemahasiswaan yang boleh masuk ke Human Skill. Mencabut akses langsung mengakhiri sesinya dan menolak login berikutnya; datanya tetap tersimpan dan aksesnya bisa dipulihkan kapan saja.')}
         </p>
       </header>
 
@@ -106,7 +107,7 @@ export default function Akses() {
                 <SearchInput
                   value={cari}
                   onChange={setCari}
-                  placeholder={t(kelompok === 'dosen' ? 'Cari nama, email, atau NIP' : 'Cari email')}
+                  placeholder={t(KELOMPOK[kelompok].cari)}
                   className="min-w-[220px] flex-1"
                 />
                 <Select
@@ -186,7 +187,15 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti }) {
     }
   }
 
-  const rincian = [a.nama ? a.email : null, a.nip ? 'NIP ' + a.nip : null, a.prodi].filter(Boolean).join(' · ')
+  const rincian = [
+    a.nama ? a.email : null,
+    a.nip ? 'NIP ' + a.nip : null,
+    a.nim ? 'NIM ' + a.nim : null,
+    a.prodi,
+    a.angkatan ? t('Angkatan {label}', { label: a.angkatan }) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <li className="px-5 py-4 sm:px-6">

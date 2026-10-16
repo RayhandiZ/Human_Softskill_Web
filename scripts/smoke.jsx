@@ -1767,6 +1767,8 @@ export async function ujiPanelSuper() {
     { id: 12, email: d2.email, peran: 'dosen', aktif: false, nama: d2.nama, nip: d2.nip, prodi: d2.prodi },
     { id: 21, email: 'admin@umn.ac.id', peran: 'admin', aktif: true },
     { id: 31, email: 'super.admin@umn.ac.id', peran: 'superadmin', aktif: true },
+    { id: 41, email: 'mhs.satu@student.umn.ac.id', peran: 'mahasiswa', aktif: true, nama: 'Mahasiswa Satu', nim: '00000100001', prodi: 'Sistem Informasi', angkatan: '2025' },
+    { id: 42, email: 'mhs.dua@student.umn.ac.id', peran: 'mahasiswa', aktif: true, nama: 'Mahasiswa Dua', nim: '00000100002', prodi: 'Informatika', angkatan: '2025 Genap' },
   )
   ;({ el, lepas } = await pasang('/super/akses'))
   await tunggu()
@@ -1798,6 +1800,27 @@ export async function ujiPanelSuper() {
   const barisSuper = barisAkun().find((li) => li.textContent.includes('super.admin@umn.ac.id'))
   hasil.superTidakBisaDicabut =
     barisAkun().length === 2 && Boolean(barisSuper) && !barisSuper.querySelector('button') && /Akun Anda/.test(barisSuper.textContent)
+  await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /Mahasiswa/.test(b.textContent)))
+  const semuaMhs = barisAkun().length
+  const rincianMhs = /NIM 00000100001[\s\S]*Sistem Informasi[\s\S]*Angkatan 2025/.test(
+    barisAkun().find((li) => li.textContent.includes('Mahasiswa Satu'))?.textContent ?? '',
+  )
+  await ketik(el.querySelector('input[type="search"]'), '00000100002')
+  const barisMhs = () => barisAkun().find((li) => li.textContent.includes('Mahasiswa Dua'))
+  const cariMhs = barisAkun().length === 1 && Boolean(barisMhs())
+  await klik([...barisMhs().querySelectorAll('button')].find((b) => /Cabut akses/.test(b.textContent)))
+  const formMhs = barisMhs().querySelector('form')
+  await ketik(formMhs.querySelector('input'), 'Cuti akademik satu semester')
+  await act(async () => {
+    formMhs.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }))
+  })
+  await tunggu()
+  hasil.aksesMahasiswa =
+    semuaMhs === 2 &&
+    rincianMhs &&
+    cariMhs &&
+    AKUN_LOKAL.find((a) => a.id === 42)?.aktif === false &&
+    /Akses dicabut/.test(barisMhs()?.textContent ?? '')
   lepas()
   AKUN_LOKAL.length = 0
 

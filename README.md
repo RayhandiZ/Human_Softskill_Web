@@ -45,7 +45,7 @@ npm run smoke       # render tiap rute di DOM sungguhan, tanpa data lalu dengan 
 npm run assert      # periksa transkrip mematuhi R2, R3, R4, R8
 npm run test:nilai  # simpan batch, rollback, dan validasi import
 npm run test:profil # penyimpanan profil: kunci akun, simpan-muat, foto
-npm run test:db     # setiap pintu API terhadap MySQL, termasuk kunci angkatan, data terkunci, log, kurikulum, bobot;
+npm run test:db     # setiap pintu API terhadap MySQL, termasuk kunci angkatan, data terkunci, log, kurikulum, bobot, periode;
                     # data uji (NIM dan angkatan berawalan UJI) dihapus lagi
 ```
 
@@ -85,7 +85,8 @@ halaman (peramban) → app/api/... → src/server/... → Prisma (src/server/db.
   penilaian (R1, semester komponen, kunci final, data terkunci, wewenang tiap peran) diperiksa
   ulang di server.
 
-Struktur kurikulum (fase, area, cluster, 10 aspek) dan periode aktif masih dibaca dari kode. Data contoh ada di
+Struktur kurikulum (fase, area, cluster, 10 aspek) masih dibaca dari kode; periode aktif dibaca dari basis
+data (lihat Periode akademik). Data contoh ada di
 `scripts/dataContoh.js` dan hanya dipakai skrip uji serta `db:seed:contoh` — website tidak
 memakainya.
 
@@ -221,16 +222,19 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   log.js          catatLog(): catatan tindakan Kemahasiswaan ke tabel LogAktivitas; bacaLog():
                   membaca log nilai dan log aktivitas (POST /api/log)
   profil.js       isian profil milik pemilik sesi
-  kurikulum.js    kurikulum dan timpaan CONFIG dari basis data; siapkanKurikulum() untuk pintu API
+  kurikulum.js    kurikulum dan timpaan CONFIG dari basis data; siapkanKurikulum() untuk pintu API;
+                  ambilPeriode() dan siapkanPeriode() untuk periode akademik
   bobot.js        menyimpan bobot dari halaman Kurikulum (POST /api/kurikulum/bobot)
   persetujuan.js  permintaan admin kepada super admin: gerbang denganPersetujuan(), keputusan,
                   penarikan (lihat Persetujuan super admin)
   penilaian.js    menyimpan penilaian satu aspek (POST /api/kurikulum/penilaian)
+  periode.js      memindahkan periode akademik, hanya super admin (POST /api/periode)
+  akses.js        daftar akun dan cabut/pulihkan akses, hanya super admin (POST /api/akses, /api/akses/ubah)
 
 app/api/          masuk, keluar, sesi, data, nilai, nilai/rollback, penguncian, koreksi,
                   koreksi/keputusan, usulan, usulan/keputusan, profil, angkatan,
                   angkatan/pratinjau, angkatan/kunci, log, kurikulum/bobot, kurikulum/penilaian,
-                  persetujuan/keputusan, persetujuan/batal
+                  persetujuan/keputusan, persetujuan/batal, periode, akses, akses/ubah
 src/components/PemuatData.jsx  memuat /api/data begitu ada yang masuk dan menahan panel
                   sampai datanya tiba
 prisma/           skema, migrasi, seed.js (isi dasar), seed-contoh.js (data contoh),
@@ -364,10 +368,10 @@ admin biasa ke `/admin`; itu hanya penjaga tampilan, pintu API tetap memeriksa u
 | `/super` Pusat Kendali | pemilih periode di pojok kanan atas; kartu keputusan (jumlah yang menunggu saat ini, tiga yang terlama, tombol ke antrean), keadaan sistem (keputusan di periode terpilih, angkatan terkunci, aturan menunggu konfirmasi), grafik perubahan nilai per bulan dalam periode itu beserta tabelnya, enam tindakan admin terbaru di periode itu sebagai linimasa, rantai pengawasan | `PERMINTAAN`, `AUDIT_LOG`, `COHORTS`, `MENUNGGU_KONFIRMASI`, `/api/log` |
 | `/super/persetujuan` | antrean Setujui/Tolak (halaman `PersetujuanAdmin` yang sama) | `PERMINTAAN`, `/api/persetujuan/keputusan` |
 | `/super/penilaian` | Penilaian & Bobot: tab *Aspek & komponen* (editor Input Manual, `EditorPenilaian`) dan tab *Bobot* (halaman `Kurikulum` tanpa judulnya); simpanan super admin langsung berlaku | `/api/kurikulum/penilaian`, `/api/kurikulum/bobot` |
-| `/super/akses` | Akses Pengguna: mencabut dan memulihkan akses dosen dan admin (lihat di bawah) | `/api/akses`, `/api/akses/ubah` (**belum ada di back-end**) |
+| `/super/akses` | Akses Pengguna: mencabut dan memulihkan akses mahasiswa, dosen, dan admin (lihat di bawah) | `/api/akses`, `/api/akses/ubah` |
 | `/super/log` | Log Aktivitas (lihat di bawah) | `/api/log` |
 | `/super/wewenang` | kartu tiap peran beserta jumlah tindakan yang boleh dilakukannya, matriks siapa boleh melakukan apa (kolom Super Admin disorot), plus prinsip yang dipakai | konstanta di `Wewenang.jsx`, diturunkan dari aturan server |
-| `/super/aturan` | ringkasan berapa aturan yang masih menunggu konfirmasi, lalu aturan perhitungan yang berlaku, sumbernya (bawaan kode atau tabel Konfigurasi), dan statusnya; hanya bacaan, tautannya ke Penilaian & Bobot | `CONFIG`, `DARI_BASIS_DATA` di `src/lib/config.js` |
+| `/super/aturan` | kartu periode akademik (pindah satu semester maju atau mundur, dengan pratinjau semester tiap angkatan dan alasan; lihat Periode akademik), ringkasan berapa aturan yang masih menunggu konfirmasi, lalu aturan perhitungan yang berlaku, sumbernya (bawaan kode atau tabel Konfigurasi), dan statusnya; selain periode hanya bacaan, tautannya ke Penilaian & Bobot | `CONFIG`, `DARI_BASIS_DATA` di `src/lib/config.js`; `PERIODE_AKTIF`, `/api/periode` |
 
 Rancangannya mengikuti praktik umum panel admin: wewenang secukupnya dan pemisahan tugas (yang
 meminta tidak menyetujui) dari OWASP Authorization Cheat Sheet, pola maker-checker untuk antrean
@@ -390,19 +394,24 @@ aspek dan cara membagi bobot otomatis). Keduanya sudah membedakan super admin, j
 `UBAH_PENILAIAN`/`UBAH_BOBOT` yang masih menunggu diberi peringatan di atas halaman, karena
 permintaan yang datanya sudah berubah akan gagal dijalankan.
 
-**Akses Pengguna** (`src/halaman/super/Akses.jsx`) mengubah `Pengguna.aktif`. Server sudah menolak
-akun nonaktif di setiap permintaan (`penggunaDari()` di `src/server/api.js`) dan saat masuk
-(`masuk.js`), jadi yang belum ada hanya dua pintu berikut; sampai dibuat, halaman ini menyatakan
-fiturnya belum tersedia (jawaban 404 dikenali lewat `galat.status` dari `kirim()`).
+**Akses Pengguna** (`src/halaman/super/Akses.jsx`) mengubah `Pengguna.aktif` akun mahasiswa, dosen,
+dan admin, dalam tiga tab: Dosen, Admin Kemahasiswaan, dan Mahasiswa. Server menolak akun nonaktif di
+setiap permintaan (`penggunaDari()` di `src/server/api.js`) dan saat masuk (`masuk.js`, "Akun ini
+dinonaktifkan"), jadi mencabut akses langsung mengakhiri sesinya. Datanya tidak disentuh: nilai dan
+riwayat mahasiswa yang dicabut tetap ada dan tetap terlihat di panel Kemahasiswaan. Kedua pintunya ada
+di `src/server/akses.js`. Bila server menjawab 404, halaman menyatakan fiturnya belum tersedia
+(`galat.status` dari `kirim()`).
 
 - `POST /api/akses`, hanya super admin (`tangani(request, ['superadmin'], …)`). Jawaban:
-  `{ akun: [{ id, email, peran, aktif, nama?, nip?, prodi? }] }`, dengan `peran` `'dosen'`,
-  `'admin'`, atau `'superadmin'`; `nama`, `nip`, dan `prodi` hanya untuk dosen. Mahasiswa tidak ikut.
+  `{ akun: [{ id, email, peran, aktif, nama?, nip?, nim?, prodi?, angkatan? }] }` untuk semua akun,
+  dengan `peran` `'mahasiswa'`, `'dosen'`, `'admin'`, atau `'superadmin'`. `nama` dan `prodi` ada
+  untuk dosen dan mahasiswa; `nip` hanya dosen; `nim` dan `angkatan` (label angkatan) hanya mahasiswa.
+  Daftarnya belum berhalaman: seluruh akun dikirim sekaligus, lalu dicari dan disaring di peramban.
 - `POST /api/akses/ubah` dengan isi `{ id, aktif, alasan }`, hanya super admin. Tolak (403) bila
   akunnya milik sendiri atau berperan `SUPER_ADMIN`; tolak (400) bila `alasan` kurang dari 10
-  karakter; 404 bila akun tidak ada. Catat ke `LogAktivitas` dengan aksi `UBAH_AKSES` (label sudah
-  ada di `LABEL_LOG`) beserta email, peran, aktif sebelum dan sesudah, dan alasan; tambahkan
-  `UBAH_AKSES` ke daftar aksi di `src/server/log.js`. Jawaban: `{ akun }` dengan bentuk yang sama.
+  karakter; 404 bila akun tidak ada. Dicatat ke `LogAktivitas` dengan aksi `UBAH_AKSES` beserta email,
+  peran, aktif sebelum dan sesudah, dan alasan; bila statusnya sudah sama, tidak ada yang dicatat.
+  Jawaban: `{ akun }` dengan bentuk yang sama.
 
 **Tampilan panel super admin** mengambil pola dasbor modern di Dribbble (sapaan bertanggal, satu kartu
 fokus, angka dengan meter, grafik batang dengan tooltip, linimasa berikon, kepingan periode) tanpa
@@ -555,6 +564,35 @@ didemokan**.
 2024 pada periode Ganjil 2026/2027, misalnya, berada di semester kalender 5. Angka ini tidak
 ditampilkan; gunanya memutuskan apakah Semester 3 sebuah angkatan sudah berakhir, yang menjadi
 syarat untuk menguncinya (lihat Penguncian angkatan dan data terkunci).
+
+### Periode akademik
+
+`PERIODE_AKTIF` (`src/lib/data.js`) adalah periode yang sedang berjalan dan menjadi dasar semua
+hitungan di atas: `semesterAktif`, `semesterKalender`, `programSelesai` (sudah lewat Semester 3, yang
+menentukan gerbang persetujuan super admin dan batas wewenang dosen), serta boleh-tidaknya angkatan
+dikunci. Nilainya disimpan di tabel `Konfigurasi` dengan kunci `PERIODE_AKTIF`, misalnya
+`{ "tahun": "2026/2027", "semester": "Ganjil" }`. Selama baris itu belum ada, angka di kode yang dipakai.
+Tidak perlu migrasi: tabel `Konfigurasi` sudah ada.
+
+- **Dibaca** lewat `ambilPeriode()` dan `siapkanPeriode()` di `src/server/kurikulum.js`. `tangani()`
+  memanggil `siapkanPeriode()` di setiap pintu API, begitu juga `periksaMasuk()` dan `akunDariId()` di
+  `masuk.js`, karena pintu masuk dan sesi tidak lewat `tangani()`. Data master (`ambilMaster()`)
+  membawanya ke peramban dan `isiMaster()` memasangnya. Bila gagal dibaca, periode terakhir tetap dipakai.
+  Kunci ini bukan bagian dari kurikulum: tidak menaikkan `VERSI_KURIKULUM`, dan `terapkanKonfigurasi()`
+  mengabaikannya.
+- **Dipasang di tempat**: `pasangPeriode()` mengganti isi objek `PERIODE_AKTIF`, bukan objeknya, jadi
+  semua fungsi yang memakainya sebagai nilai bawaan ikut berubah. Semester tiap angkatan di `COHORTS`
+  dihitung ulang dan cache transkrip dikosongkan. Bila periodenya sama, tidak ada yang dikerjakan.
+- **Diubah** hanya oleh super admin dari kartu Periode akademik di `/super/aturan`, lewat
+  `POST /api/periode` (`src/server/periode.js`) dengan isi `{ tahun, semester, alasan }`. Periode hanya
+  bisa dipindah satu semester maju atau mundur dari yang sekarang, supaya salah ketik tidak melompat jauh
+  dan pemindahan bisa dibatalkan. Alasan minimal 10 karakter, dan setiap pemindahan dicatat sebagai
+  `UBAH_PERIODE`. Admin biasa dan dosen ditolak 403. Sebelum disimpan, kartunya menampilkan semester tiap
+  angkatan sekarang dan sesudah dipindah, serta berapa angkatan yang akan lewat Semester 3. Sesudahnya
+  `ubahPeriode()` di `src/lib/store.js` memasang periode baru dan memuat ulang data, karena semester
+  mahasiswa dihitung di server.
+- Periode tidak berganti otomatis menurut tanggal: super admin yang memindahkannya saat semester baru
+  dimulai.
 
 ## Halaman Angkatan
 
@@ -869,6 +907,8 @@ dengan perubahannya: tidak ada perubahan tanpa jejak, dan tidak ada jejak tanpa 
 | `PUTUSKAN_PERSETUJUAN` | super admin menyetujui atau menolak (pelakunya super admin) | aksi, keputusan (disetujui/ditolak/gagal), catatan, pesan galat, id pengaju |
 | `TARIK_PERMINTAAN` | admin menarik permintaannya sendiri | — |
 | `UBAH_PENILAIAN` | penilaian satu aspek disimpan dari Input Manual | alasan, teks aspek sebelum/sesudah, komponen ditambah/diubah/diarsipkan/dipulihkan, bobot sebelum/sesudah, ringkasan dampak |
+| `UBAH_PERIODE` | super admin memindahkan periode akademik (lihat Periode akademik) | periode sebelum/sesudah, alasan |
+| `UBAH_AKSES` | super admin mencabut atau memulihkan akses akun (lihat Panel Super Admin › Akses Pengguna) | email, peran, aktif sebelum/sesudah, alasan |
 
 Kedua log dibaca lewat `POST /api/log` (`bacaLog()`, hanya Kemahasiswaan), satu halaman setiap kali:
 
@@ -1242,7 +1282,7 @@ panah kiri/kanan). Bagian yang mudah rusak:
 | 9 | Poles cetak, responsif, aksesibilitas | sebagian (cetak & reduced-motion sudah) |
 | — | Panel Kemahasiswaan lainnya: Overview, Data Mahasiswa beserta detailnya, Program Studi, Persetujuan Nilai Dosen | selesai |
 | — | Panel dosen: Data Masuk, Input & Import Nilai sebagai usulan, Status Usulan | selesai |
-| — | Basis data MySQL: 21 tabel, 9 migrasi, 20 pintu API, sesi cookie | selesai |
+| — | Basis data MySQL: 21 tabel, 9 migrasi, 23 pintu API, sesi cookie | selesai |
 | — | Penilaian per aspek dari Input Manual (teks aspek, komponen, arsip, bobot) | selesai; super admin langsung, admin biasa lewat persetujuan |
 | — | Super admin | sebagian: Tahap 1 (akun berperan `SUPER_ADMIN`, penjaga `'superadmin'`) dan Tahap 2 (persetujuan perubahan data mahasiswa yang sudah lewat Semester 3, halaman Persetujuan Admin, dosen lepas tangan) selesai; halaman pengawasan selesai di panel `/super` (Pusat Kendali, Persetujuan, Log Aktivitas, Peran & Wewenang, Aturan Sistem) |
 

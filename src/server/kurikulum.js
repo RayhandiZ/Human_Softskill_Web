@@ -1,5 +1,6 @@
 import { db } from './db.js'
 import { KUNCI_VERSI_KURIKULUM, KURIKULUM_TERPASANG, isiKurikulum } from '../lib/curriculum.js'
+import { KUNCI_PERIODE, pasangPeriode, periodeSah } from '../lib/data.js'
 
 // Kurikulum (komponen dan indikator) dan timpaan CONFIG dibaca dari basis data, dalam bentuk yang dipasang
 // isiKurikulum() di src/lib/curriculum.js. Selama penanda VERSI_KURIKULUM belum ada (belum di-seed), isi dari
@@ -76,5 +77,29 @@ export async function siapkanKurikulum() {
     isiKurikulum((await ambilKurikulum()) ?? {})
   } catch (e) {
     console.warn('Kurikulum tidak bisa dibaca dari basis data; isi yang terpasang tetap dipakai:', e.message)
+  }
+}
+
+/* ------------------------------ periode akademik --------------------------- */
+
+// Periode yang sedang berjalan juga tinggal di Konfigurasi (kunci PERIODE_AKTIF), tetapi bukan bagian dari
+// kurikulum: tidak ikut VERSI_KURIKULUM, dan terapkanKonfigurasi() mengabaikan kuncinya. Diubah lewat
+// src/server/periode.js.
+
+/** Periode aktif dari Konfigurasi, atau null bila belum pernah disimpan (periode dari kode yang dipakai). */
+export async function ambilPeriode() {
+  const baris = await db.konfigurasi.findUnique({ where: { kunci: KUNCI_PERIODE } })
+  return baris ? periodeSah(baris.nilai) : null
+}
+
+/**
+ * Dipanggil sebelum menghitung apa pun yang bergantung pada periode (semester mahasiswa, lewat Semester 3,
+ * boleh dikunci). Dibaca ulang setiap kali karena hanya satu baris. Gagal dibaca = periode terakhir tetap dipakai.
+ */
+export async function siapkanPeriode() {
+  try {
+    pasangPeriode(await ambilPeriode())
+  } catch (e) {
+    console.warn('Periode aktif tidak bisa dibaca dari basis data; periode yang terpasang tetap dipakai:', e.message)
   }
 }

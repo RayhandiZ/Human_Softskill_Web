@@ -1,5 +1,5 @@
 import { db } from './db.js'
-import { ambilKurikulum } from './kurikulum.js'
+import { ambilKurikulum, ambilPeriode } from './kurikulum.js'
 
 /* --------------------------------------------------------------------------
    Data master dari basis data — angkatan, fakultas, dan program studi —
@@ -12,12 +12,17 @@ import { ambilKurikulum } from './kurikulum.js'
    -------------------------------------------------------------------------- */
 
 export async function ambilMaster() {
-  const [angkatan, fakultas, kurikulum] = await Promise.all([
+  const [angkatan, fakultas, kurikulum, periode] = await Promise.all([
     db.angkatan.findMany(),
     db.fakultas.findMany({ orderBy: { id: 'asc' }, include: { prodi: { orderBy: { id: 'asc' } } } }),
     // Kurikulum yang gagal dibaca tidak ikut menggagalkan angkatan dan prodi.
     ambilKurikulum().catch((e) => {
       console.warn('Kurikulum dibaca dari kode karena basis data tidak bisa dibaca:', e.message)
+      return null
+    }),
+    // null = belum disimpan atau gagal dibaca: periode dari kode yang dipakai.
+    ambilPeriode().catch((e) => {
+      console.warn('Periode aktif dibaca dari kode karena basis data tidak bisa dibaca:', e.message)
       return null
     }),
   ])
@@ -35,5 +40,6 @@ export async function ambilMaster() {
       programs: f.prodi.map((p) => ({ nama: p.nama, jenjang: p.jenjang })),
     })),
     kurikulum,
+    periode,
   }
 }

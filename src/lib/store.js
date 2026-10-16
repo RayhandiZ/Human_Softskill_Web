@@ -11,6 +11,7 @@ import {
   USULAN_AWAL,
   getStudentByNim,
   isiData,
+  pasangPeriode,
   resetTranskripCache,
 } from './data.js'
 import { kirim } from './kirim.js'
@@ -594,7 +595,7 @@ export async function batalkanPermintaan(id) {
 
 /* ------------------------------ akses pengguna ------------------------------ */
 
-/* Akun dosen dan admin beserta status aksesnya (Pengguna.aktif), hanya untuk super admin; lihat README.md ›
+/* Akun mahasiswa, dosen, dan admin beserta status aksesnya (Pengguna.aktif), hanya untuk super admin; lihat README.md ›
    Panel Super Admin › Akses Pengguna. Daftarnya tidak ikut /api/data, jadi dibaca terpisah dan perubahan tidak
    memuat ulang data lain. Tanpa server, daftarnya diisi skrip uji lewat AKUN_LOKAL. */
 export const AKUN_LOKAL = []
@@ -602,7 +603,10 @@ export const AKUN_LOKAL = []
 // Sama dengan aturan yang diminta untuk /api/akses/ubah; server tetap yang memutuskan.
 export const ALASAN_AKSES_MIN = 10
 
-/** { akun: [{ id, email, peran: 'dosen' | 'admin' | 'superadmin', aktif, nama?, nip?, prodi? }] } */
+/**
+ * { akun: [{ id, email, peran: 'mahasiswa' | 'dosen' | 'admin' | 'superadmin', aktif, nama?, nip?, nim?, prodi?,
+ * angkatan? }] }; nip untuk dosen, nim dan angkatan (label) untuk mahasiswa.
+ */
 export async function muatAkses() {
   if (modeLokal()) return { akun: AKUN_LOKAL.map((a) => ({ ...a })) }
   return kirim('/api/akses', { isi: {} })
@@ -746,6 +750,20 @@ export async function simpanBobot({ pengaturan, aspek, alasan }) {
   }
   isiKurikulum(hasil.kurikulum ?? {})
   berubah()
+  return hasil
+}
+
+/* ------------------------------ periode akademik --------------------------- */
+
+/**
+ * Super admin memindahkan periode akademik satu semester maju atau mundur (src/server/periode.js). Semester
+ * mahasiswa dihitung server, jadi data dimuat ulang sesudahnya. Jawabannya { periode }.
+ */
+export async function ubahPeriode({ tahun, semester, alasan }) {
+  if (modeLokal()) throw new Error('Mengubah periode hanya tersedia saat terhubung ke basis data.')
+  const hasil = await kirim('/api/periode', { isi: { tahun, semester, alasan } })
+  pasangPeriode(hasil.periode)
+  await muatDariServer()
   return hasil
 }
 

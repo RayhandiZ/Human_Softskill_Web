@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import { db } from './db.js'
 import { turunkanSemesterAktif } from '../lib/data.js'
+import { siapkanPeriode } from './kurikulum.js'
 
 const HASH_PENGGANTI = bcrypt.hashSync('bukan-kata-sandi-siapa-pun', 10)
 
@@ -28,6 +29,8 @@ export async function periksaMasuk({ email, password } = {}) {
 
   const cocok = await bcrypt.compare(sandi, akun?.passwordHash ?? HASH_PENGGANTI)
   if (!akun || !cocok) throw new GalatMasuk('Email atau kata sandi salah.', 401)
+  // Pintu masuk tidak lewat tangani(), jadi periode untuk semesterAktif dibaca di sini.
+  await siapkanPeriode()
   return susunAkun(akun)
 }
 
@@ -36,6 +39,7 @@ export async function periksaMasuk({ email, password } = {}) {
 export async function akunDariId(id) {
   const akun = await db.pengguna.findUnique({ where: { id }, include: SERTA })
   if (!akun) throw new GalatMasuk('Sesi berakhir. Silakan masuk lagi.', 401)
+  await siapkanPeriode()
   return susunAkun(akun)
 }
 

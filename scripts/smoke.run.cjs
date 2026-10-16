@@ -181,7 +181,7 @@ const ISI = {
   ],
   '/super/akses': [
     [/Akses Pengguna/, 'judul Akses Pengguna'],
-    [/Tentukan dosen dan admin Kemahasiswaan/, 'penjelasan siapa yang diatur'],
+    [/Tentukan mahasiswa, dosen, dan admin Kemahasiswaan/, 'penjelasan siapa yang diatur'],
     [/Akses Super Admin tidak bisa dicabut dari sini/, 'catatan batas wewenang'],
   ],
   '/super/log': [
@@ -1105,6 +1105,7 @@ const RUTE = [
     ['mencabut akses butuh alasan, lalu statusnya berubah', ps.cabutAkses],
     ['pencarian NIP menyisakan dosen itu', ps.cariAkun],
     ['akun super admin (milik sendiri) tidak bisa dicabut', ps.superTidakBisaDicabut],
+    ['tab Mahasiswa: NIM, prodi, dan angkatan tampil, pencarian NIM jalan, akses bisa dicabut', ps.aksesMahasiswa],
     ['pintu API yang belum dibuat (404) dikenali', ps.apiBelumAdaDikenali],
   ]
   const rusakPs = cekPs.filter(([, ok]) => !ok)

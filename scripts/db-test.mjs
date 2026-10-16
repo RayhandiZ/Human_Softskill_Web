@@ -8,7 +8,10 @@
    penanda VERSI_KURIKULUM ikut naik dan tidak diturunkan lagi. Bagian bobot mengubah bobot A.1 lewat
    pintu API lalu mengembalikannya; kolom komponen A.1 dan catatan log yang dibuatnya dipulihkan di akhir.
    Bagian persetujuan membuat beberapa PermintaanAdmin untuk mahasiswa uji yang sudah lewat Semester 3;
-   permintaan dan catatan log-nya ikut dihapus di akhir. */
+   permintaan dan catatan log-nya ikut dihapus di akhir.
+   Bagian periode memindahkan periode akademik satu semester maju lalu kembali; baris Konfigurasi PERIODE_AKTIF
+   dikembalikan persis seperti sebelumnya (atau dihapus bila dulu belum ada) dan catatan log-nya dihapus.
+   Bagian akses hanya mencabut lalu memulihkan akses akun mahasiswa sementara; log-nya ikut dihapus. */
 
 import 'dotenv/config'
 import bcrypt from 'bcryptjs'
@@ -33,6 +36,9 @@ import * as bobot from '../app/api/kurikulum/bobot/route.js'
 import * as keputusanPermintaan from '../app/api/persetujuan/keputusan/route.js'
 import * as batalPermintaan from '../app/api/persetujuan/batal/route.js'
 import * as penilaian from '../app/api/kurikulum/penilaian/route.js'
+import * as periode from '../app/api/periode/route.js'
+import * as akses from '../app/api/akses/route.js'
+import * as ubahAkses from '../app/api/akses/ubah/route.js'
 import {
   KOMPONEN,
   KOMPONEN_BAWAAN,
@@ -47,7 +53,8 @@ import { susunanBobot } from '../src/lib/bobot.js'
 import { susunanPenilaian } from '../src/lib/penilaian.js'
 import { bobotKomponen } from '../src/lib/scoring.js'
 import { CONFIG } from '../src/lib/config.js'
-import { ambilKurikulum } from '../src/server/kurikulum.js'
+import { KUNCI_PERIODE, PERIODE_AKTIF, periodeSetelah, samaPeriode } from '../src/lib/data.js'
+import { ambilKurikulum, ambilPeriode } from '../src/server/kurikulum.js'
 import { ambilMaster } from '../src/server/master.js'
 import { tangani } from '../src/server/api.js'
 import { cookieSesi } from '../src/server/sesi.js'
@@ -73,6 +80,9 @@ const PINTU = {
   '/api/persetujuan/keputusan': keputusanPermintaan,
   '/api/persetujuan/batal': batalPermintaan,
   '/api/kurikulum/penilaian': penilaian,
+  '/api/periode': periode,
+  '/api/akses': akses,
+  '/api/akses/ubah': ubahAkses,
 }
 
 let gagal = 0
@@ -127,8 +137,11 @@ const permintaanUji = []
 let penilaianAsli
 const komponenUji = []
 const logPenilaianUji = []
+/* Bagian "periode": baris Konfigurasi PERIODE_AKTIF sebelum disentuh uji (null = belum ada), dan log-nya. */
+let periodeAsli
+const logPeriodeUji = []
 /** Target baris LogAktivitas yang dibuat uji ini; ditambah id batch begitu diketahui. */
-const targetLog = ['angkatan ' + ANG_A, 'angkatan ' + ANG_B, 'mahasiswa ' + NIM, 'mahasiswa ' + NIM2]
+const targetLog = ['angkatan ' + ANG_A, 'angkatan ' + ANG_B, 'mahasiswa ' + NIM, 'mahasiswa ' + NIM2, 'akun ' + EMAIL]
 
 async function bersihkanMahasiswa(email) {
   const p = await db.pengguna.findUnique({ where: { email }, include: { mahasiswa: true } })
@@ -207,7 +220,18 @@ async function pulihkanPenilaian() {
   if (logPenilaianUji.length) await db.logAktivitas.deleteMany({ where: { id: { in: logPenilaianUji } } })
 }
 
+/** Baris Konfigurasi PERIODE_AKTIF dikembalikan persis seperti sebelum uji (atau dihapus bila dulu tidak ada). */
+async function pulihkanPeriode() {
+  if (periodeAsli !== undefined) {
+    if (periodeAsli) await db.konfigurasi.upsert({ where: { kunci: KUNCI_PERIODE }, update: { nilai: periodeAsli.nilai }, create: periodeAsli })
+    else await db.konfigurasi.deleteMany({ where: { kunci: KUNCI_PERIODE } })
+    periodeAsli = undefined
+  }
+  if (logPeriodeUji.length) await db.logAktivitas.deleteMany({ where: { id: { in: logPeriodeUji } } })
+}
+
 async function bersihkan() {
+  await pulihkanPeriode()
   await pulihkanPenilaian()
   await pulihkanBobot()
   await pulihkanKurikulum()
@@ -895,8 +919,118 @@ try {
     JSON.stringify(logArsip?.rincian ?? null).slice(0, 200),
   )
 
+  /* ------------------------------ periode ------------------------------ */
+  garis('16. PERIODE AKADEMIK')
+  periodeAsli = await db.konfigurasi.findUnique({ where: { kunci: KUNCI_PERIODE } })
+  await sa('/api/data') // tangani() memasang periode dari basis data ke PERIODE_AKTIF
+  const awal = { ...PERIODE_AKTIF }
+  const maju = periodeSetelah(awal, 1)
+  const semesterMhs = async () => (await mhs('/api/sesi')).isi.akun?.mahasiswa?.semesterAktif
+  const logPeriodeTerakhir = async () => {
+    const l = await db.logAktivitas.findFirst({ where: { aksi: 'UBAH_PERIODE' }, orderBy: { id: 'desc' } })
+    if (l && !logPeriodeUji.includes(l.id)) logPeriodeUji.push(l.id)
+    return l
+  }
+  const jumlahLogPeriode = () => db.logAktivitas.count({ where: { aksi: 'UBAH_PERIODE' } })
+  const pindah = (pelaku, isi) => pelaku('/api/periode', { metode: 'POST', isi })
+  const ALASAN = 'Uji otomatis periode akademik'
+  console.log('periode awal', awal.semester, awal.tahun, '· baris Konfigurasi', periodeAsli ? 'ada' : 'belum ada')
+
+  cek('tanpa sesi ditolak 401', (await pindah(tamu, { ...maju, alasan: ALASAN })).status === 401)
+  cek('admin biasa ditolak 403', (await pindah(admin, { ...maju, alasan: ALASAN })).status === 403)
+  cek('dosen ditolak 403', (await pindah(dosen, { ...maju, alasan: ALASAN })).status === 403)
+  const logSebelum = await jumlahLogPeriode()
+  cek('alasan kurang dari 10 karakter ditolak 400', (await pindah(sa, { ...maju, alasan: 'pendek' })).status === 400)
+  cek('periode tidak sah ditolak 400', (await pindah(sa, { tahun: '2026/2028', semester: 'Genap', alasan: ALASAN })).status === 400)
+  cek('semester tidak dikenal ditolak 400', (await pindah(sa, { tahun: maju.tahun, semester: 'Pendek', alasan: ALASAN })).status === 400)
+  cek('lompat dua semester ditolak 400', (await pindah(sa, { ...periodeSetelah(awal, 2), alasan: ALASAN })).status === 400)
+  cek('penolakan tidak menulis apa pun', (await jumlahLogPeriode()) === logSebelum && samaPeriode((await ambilPeriode()) ?? awal, awal))
+
+  const semesterAwal = await semesterMhs()
+  const majuR = await pindah(sa, { ...maju, alasan: ALASAN })
+  const logMaju = await logPeriodeTerakhir()
+  cek('super admin memindahkan satu semester maju', majuR.status === 200 && samaPeriode(majuR.isi.periode, maju), JSON.stringify(majuR.isi))
+  cek('tersimpan di Konfigurasi PERIODE_AKTIF', samaPeriode((await ambilPeriode()) ?? awal, maju))
+  cek(
+    'log UBAH_PERIODE mencatat sebelum, sesudah, dan alasan',
+    logMaju?.rincian?.alasan === ALASAN && samaPeriode(logMaju.rincian.sebelum, awal) && samaPeriode(logMaju.rincian.sesudah, maju),
+    JSON.stringify(logMaju?.rincian ?? null),
+  )
+  cek(
+    'semester mahasiswa ikut naik (/api/sesi)',
+    semesterAwal >= 1 && (await semesterMhs()) === Math.min(CONFIG.TOTAL_SEMESTER_PROGRAM, semesterAwal + 1),
+    semesterAwal + ' → ' + (await semesterMhs()),
+  )
+  cek(
+    'semester mahasiswa ikut naik (/api/data)',
+    (await mhs('/api/data')).isi.mahasiswa?.[0]?.semesterAktif === Math.min(CONFIG.TOTAL_SEMESTER_PROGRAM, semesterAwal + 1),
+  )
+  cek('data master membawa periode baru', samaPeriode((await ambilMaster()).periode ?? awal, maju))
+  const logSama = await jumlahLogPeriode()
+  cek(
+    'memindah ke periode yang sama tidak menulis log',
+    (await pindah(sa, { ...maju, alasan: ALASAN })).status === 200 && (await jumlahLogPeriode()) === logSama,
+  )
+
+  const mundurR = await pindah(sa, { ...awal, alasan: ALASAN })
+  await logPeriodeTerakhir()
+  cek('kembali satu semester mundur', mundurR.status === 200 && samaPeriode((await ambilPeriode()) ?? maju, awal), JSON.stringify(mundurR.isi))
+  cek('semester mahasiswa kembali seperti semula', (await semesterMhs()) === semesterAwal)
+
+  /* ------------------------------ akses pengguna ------------------------------ */
+  garis('17. AKSES PENGGUNA')
+  // Hanya akun mahasiswa sementara yang dicabut lalu dipulihkan; log UBAH_AKSES-nya bertarget 'akun <EMAIL>'.
+  const ubah = (pelaku, isi) => pelaku('/api/akses/ubah', { metode: 'POST', isi })
+  const ALASAN_AKSES = 'Uji otomatis akses mahasiswa'
+  const idSA = (await db.pengguna.findUnique({ where: { email: 'super.admin@umn.ac.id' } })).id
+  cek('daftar akun tanpa sesi ditolak 401', (await tamu('/api/akses', { metode: 'POST' })).status === 401)
+  cek('daftar akun oleh admin biasa ditolak 403', (await admin('/api/akses', { metode: 'POST' })).status === 403)
+  const daftarAkun = await sa('/api/akses', { metode: 'POST' })
+  const akunMhs = daftarAkun.isi.akun?.find((a) => a.id === akunUji.id)
+  cek(
+    'daftar akun memuat mahasiswa beserta NIM, prodi, dan angkatan',
+    daftarAkun.status === 200 &&
+      akunMhs?.peran === 'mahasiswa' &&
+      akunMhs.nim === NIM &&
+      akunMhs.prodi === prodi.nama &&
+      akunMhs.angkatan === angkatan.label &&
+      akunMhs.aktif === true,
+    JSON.stringify(akunMhs ?? null),
+  )
+  cek(
+    'daftar akun juga memuat dosen dan super admin',
+    daftarAkun.isi.akun?.some((a) => a.peran === 'dosen' && a.nip) && daftarAkun.isi.akun?.some((a) => a.peran === 'superadmin'),
+  )
+  cek('ubah akses oleh admin biasa ditolak 403', (await ubah(admin, { id: akunUji.id, aktif: false, alasan: ALASAN_AKSES })).status === 403)
+  cek('alasan kurang dari 10 karakter ditolak 400', (await ubah(sa, { id: akunUji.id, aktif: false, alasan: 'pendek' })).status === 400)
+  cek('akun yang tidak ada ditolak 404', (await ubah(sa, { id: 0, aktif: false, alasan: ALASAN_AKSES })).status === 404)
+  cek('akses akun sendiri tidak bisa diubah (403)', (await ubah(sa, { id: idSA, aktif: false, alasan: ALASAN_AKSES })).status === 403)
+
+  const cabut = await ubah(sa, { id: akunUji.id, aktif: false, alasan: ALASAN_AKSES })
+  cek('super admin mencabut akses mahasiswa', cabut.status === 200 && cabut.isi.akun?.aktif === false && cabut.isi.akun?.nim === NIM, JSON.stringify(cabut.isi))
+  const logCabut = await db.logAktivitas.findFirst({ where: { aksi: 'UBAH_AKSES', target: 'akun ' + EMAIL }, orderBy: { id: 'desc' } })
+  cek(
+    'log UBAH_AKSES mencatat peran, sebelum, sesudah, dan alasan',
+    logCabut?.rincian?.peran === 'mahasiswa' && logCabut.rincian.sebelum === true && logCabut.rincian.sesudah === false && logCabut.rincian.alasan === ALASAN_AKSES,
+    JSON.stringify(logCabut?.rincian ?? null),
+  )
+  cek('sesi mahasiswa yang dicabut langsung ditolak 401', (await mhs('/api/data')).status === 401)
+  const masukDicabut = await tamu('/api/masuk', { metode: 'POST', isi: { email: EMAIL, password: 'umn12345' } })
+  cek('mahasiswa yang dicabut tidak bisa masuk (403)', masukDicabut.status === 403 && /dinonaktifkan/.test(masukDicabut.isi.galat ?? ''), JSON.stringify(masukDicabut.isi))
+  const logAkses = () => db.logAktivitas.count({ where: { aksi: 'UBAH_AKSES', target: 'akun ' + EMAIL } })
+  const logSebelumSama = await logAkses()
+  cek(
+    'mencabut yang sudah dicabut tidak menulis log',
+    (await ubah(sa, { id: akunUji.id, aktif: false, alasan: ALASAN_AKSES })).status === 200 && (await logAkses()) === logSebelumSama,
+  )
+
+  const pulih = await ubah(sa, { id: akunUji.id, aktif: true, alasan: ALASAN_AKSES })
+  cek('super admin memulihkan akses mahasiswa', pulih.status === 200 && pulih.isi.akun?.aktif === true)
+  cek('mahasiswa bisa masuk lagi', (await mhs('/api/masuk', { metode: 'POST', isi: { email: EMAIL, password: 'umn12345' } })).status === 200)
+  cek('data mahasiswa tetap utuh sesudah dipulihkan', (await mhs('/api/data')).isi.mahasiswa?.[0]?.nim === NIM)
+
   /* ------------------------------ keluar ------------------------------ */
-  garis('16. KELUAR')
+  garis('18. KELUAR')
   await sa('/api/keluar', { metode: 'POST' })
   await mhs('/api/keluar', { metode: 'POST' })
   cek('setelah keluar, sesi tidak berlaku', (await mhs('/api/sesi')).status === 401)
