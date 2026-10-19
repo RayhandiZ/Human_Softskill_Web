@@ -110,7 +110,7 @@ export default function Wewenang() {
       <header>
         <h1 className="text-[26px] font-extrabold tracking-tight text-ink">{t('Peran & Wewenang')}</h1>
         <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-ink-2">
-          {t('Siapa boleh melakukan apa di Human Skill. Halaman ini hanya bacaan: peran diatur lewat basis data, bukan dari website.')}
+          {t('Siapa boleh melakukan apa di VIBE. Halaman ini hanya bacaan: peran diatur lewat basis data, bukan dari website.')}
         </p>
       </header>
 

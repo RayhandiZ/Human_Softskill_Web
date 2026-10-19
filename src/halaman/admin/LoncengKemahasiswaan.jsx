@@ -137,7 +137,7 @@ export default function LoncengKemahasiswaan() {
         className="relative grid h-9 w-9 place-items-center rounded-lg text-white/80 transition hover:bg-white/10 hover:text-white"
       >
         <IconBell size={19} />
-        <span className="absolute right-1.5 top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-[var(--accent)] px-1 text-[10px] font-extrabold text-[#2b1c00]">
+        <span className="absolute right-1.5 top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full isi-toska px-1 text-[10px] font-extrabold text-[var(--accent-on)]">
           {jumlah > 99 ? '99+' : jumlah}
         </span>
       </button>

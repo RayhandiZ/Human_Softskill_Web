@@ -24,9 +24,9 @@ async function bacaMaster() {
 }
 
 export const metadata = {
-  title: 'Dashboard Monitoring Human Skill',
+  title: 'Dashboard Monitoring VIBE',
   description:
-    'Pemantauan capaian human skill mahasiswa Universitas Multimedia Nusantara berbasis CPMK terintegrasi.',
+    'Pemantauan capaian VIBE (Values, Intelligence, Behavior & Excellence) mahasiswa Universitas Multimedia Nusantara berbasis CPMK terintegrasi.',
 }
 
 export const viewport = {

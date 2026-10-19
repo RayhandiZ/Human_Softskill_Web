@@ -156,7 +156,7 @@ export function statusDokumenTranskrip(student) {
     watermark: final ? null : 'SEMENTARA',
     catatan: final
       ? null
-      : 'Dokumen ini bukan bukti kelulusan pembinaan softskill.',
+      : 'Dokumen ini bukan bukti kelulusan pembinaan skill.',
   }
 }
 

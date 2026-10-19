@@ -52,7 +52,7 @@ export default function LembarCetak({ student, transkrip: t }) {
         {teks(final ? 'Transkrip' : 'Transkrip Sementara')}
       </h1>
       <p className="mt-1 text-center font-sans text-[11px]">
-        {teks('Program Pembinaan Human Skill, Semester 1 sampai {total}', { total: CONFIG.TOTAL_SEMESTER_PROGRAM })}
+        {teks('Program Pembinaan VIBE, Semester 1 sampai {total}', { total: CONFIG.TOTAL_SEMESTER_PROGRAM })}
       </p>
 
       <div className="mt-5 grid grid-cols-2 gap-x-10">

@@ -90,8 +90,8 @@ export default function Footer({ pintasan = [], melayang = false }) {
             <span aria-hidden="true" className="h-8 w-px shrink-0 bg-white/30" />
             <IconLogo size={40} />
           </div>
-          <p className="mt-3 text-[20px] font-extrabold tracking-tight">
-            HUMAN <span className="text-[var(--accent)]">SKILL</span>
+          <p className="teks-vibe mt-3 w-fit text-[20px] font-extrabold tracking-tight text-[var(--accent)]">
+            VIBE
           </p>
           <p className="mt-1.5 max-w-[220px] text-[13px] leading-relaxed text-white/70">
             {t('Biro Kemahasiswaan & Humaniora')}

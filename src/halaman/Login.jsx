@@ -13,8 +13,8 @@ function JudulAplikasi({ className = '' }) {
   const t = useTeks()
   return (
     <div className={'text-center ' + className}>
-      <p className="text-[30px] font-extrabold leading-none tracking-tight text-ink">
-        HUMAN <span className="text-[var(--accent-ink)]">SKILL</span>
+      <p className="teks-vibe mx-auto w-fit text-[30px] font-extrabold leading-none tracking-tight text-[var(--accent-ink)]">
+        VIBE
       </p>
       <p className="mt-3 text-[15px] font-medium leading-relaxed text-white/85">
         <span aria-hidden="true" className="text-[var(--accent-ink)]">“</span>
@@ -99,11 +99,11 @@ export default function Login() {
 
         <div className="my-auto max-w-lg">
           <h1 className="mt-4 text-[35px] font-extrabold leading-[1.1] tracking-tight">
-            {t('Apa sih Human Skill itu?')}
+            {t('Apa sih VIBE itu?')}
           </h1>
           <p className="mt-5 text-[15px] leading-relaxed text-white/80">
             {t(
-              'Human Skill merupakan sistem penilaian yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:'
+              'VIBE (Values, Intelligence, Behavior & Excellence) merupakan sistem penilaian yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:'
             )}
           </p>
 

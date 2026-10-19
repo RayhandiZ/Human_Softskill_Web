@@ -18,7 +18,17 @@
   --brand-deep: #082a52;
   --brand-ink: #104281;
   --brand-soft: #e7effb;
-  --accent: #e0a33a;
+  /* Aksen merek VIBE: toska. Ungu terasa redup di atas navy (keduanya dingin dan gelap-terangnya dekat);
+     toska tetap selaras dengan biru muda aurora tapi lebih hidup. --accent untuk tulisan, garis, dan isian di
+     latar gelap (5,52:1 di --brand, 5,33:1 di --brand gelap); di kartu putih ia hanya 1,5:1, jadi tulisan di
+     latar terang memakai --accent-ink. Lihat README.md › Warna dan kontras. */
+  --accent: #5eead4;
+  /* Tulisan di atas isian --accent (lencana jumlah, tombol antrean): 9,78:1. */
+  --accent-on: #042f2e;
+  /* Gradasi tipis toska, satu rona dari terang ke pekat; lihat bagian toska bergradasi. Versi tua untuk tulisan
+     VIBE di latar terang. */
+  --gradasi-toska: linear-gradient(120deg, #99f6e4 0%, #5eead4 50%, #2dd4bf 100%);
+  --gradasi-toska-tua: linear-gradient(120deg, #0d9488 0%, #0f766e 55%, #115e59 100%);
 
   /* Slot kategorikal area (terang). */
   --c1: #2a78d6;
@@ -35,8 +45,8 @@
   /* Amber untuk teks: --warning hanya 1,83:1 di kartu putih. */
   --warning-ink: #96640a;
 
-  /* Emas untuk teks besar: --accent hanya 2,04:1 di --bg, ini 3,52:1. */
-  --accent-ink: #a87a2c;
+  /* Toska tua untuk teks di latar terang: 5,47:1 di kartu putih, 5,03:1 di --bg. */
+  --accent-ink: #0f766e;
 
   /* Huruf mutu: satu hue bertingkat (skala berurutan). */
   --mutu-a: #1c5cab;
@@ -71,7 +81,7 @@
   --brand-deep: #071a30;
   --brand-ink: #9ec5f4;
   --brand-soft: #12263f;
-  --accent: #e8b455;
+  --accent: #5eead4;
 
   /* Latar gelap: merah dinaikkan, #d03b3b hanya 3,56:1. */
   --critical: #f87171;
@@ -79,8 +89,8 @@
   /* Latar gelap: amber aslinya sudah 9,32:1. */
   --warning-ink: #fab219;
 
-  /* Latar gelap: emas aslinya sudah 9,82:1. */
-  --accent-ink: #e8b455;
+  /* Latar gelap: toska yang sama dengan --accent, 12,57:1 di --bg. */
+  --accent-ink: #5eead4;
 
   /* Slot kategorikal area (gelap). */
   --c1: #3987e5;
@@ -179,7 +189,7 @@ body {
     --sorot-teks: var(--brand-ink);
     isolation: isolate;
   }
-  /* Menu di atas latar gelap (panel Super Admin): latar tembus pandang, garis emas. */
+  /* Menu di atas latar gelap (panel Super Admin): latar tembus pandang, garis toska. */
   .menu-sorot.menu-sorot-gelap {
     --sorot-latar: rgb(255 255 255 / 0.1);
     --sorot-garis: var(--accent);
@@ -555,21 +565,23 @@ body {
   height: 10px;
   background: linear-gradient(transparent, rgb(8 42 82 / 0.1));
 }
-/* Tongkat berkenop emas menembus sumbu gulungan; dipasang sebelum gulungan, jadi bagian tengahnya tertutup. */
+/* Tongkat berkenop toska menembus sumbu gulungan; dipasang sebelum gulungan, jadi bagian tengahnya tertutup.
+   Dasarnya toska yang lebih pekat dari --accent supaya gradasi terang-gelap kenopnya tetap terbaca. */
 .pita-tongkat {
-  --emas: linear-gradient(
-    color-mix(in srgb, var(--accent) 40%, white),
-    var(--accent) 50%,
-    color-mix(in srgb, var(--accent) 60%, black)
+  --warna-kenop: #14b8a6;
+  --batang: linear-gradient(
+    color-mix(in srgb, var(--warna-kenop) 40%, white),
+    var(--warna-kenop) 50%,
+    color-mix(in srgb, var(--warna-kenop) 60%, black)
   );
   position: absolute;
   inset: auto -16px -4.5px;
   height: 9px;
   /* Dua cincin dekat kenop, lalu batang 5px di sepanjang tongkat. */
   background:
-    var(--emas) left 8px center / 3px 9px no-repeat,
-    var(--emas) right 8px center / 3px 9px no-repeat,
-    var(--emas) center / 100% 5px no-repeat;
+    var(--batang) left 8px center / 3px 9px no-repeat,
+    var(--batang) right 8px center / 3px 9px no-repeat,
+    var(--batang) center / 100% 5px no-repeat;
   filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.45));
   animation: pita-gulung 0.8s cubic-bezier(0.4, 0.1, 0.3, 1) 0.1s backwards;
 }
@@ -583,9 +595,9 @@ body {
   border-radius: 50%;
   background: radial-gradient(
     circle at 50% 32%,
-    color-mix(in srgb, var(--accent) 35%, white),
-    var(--accent) 50%,
-    color-mix(in srgb, var(--accent) 55%, black)
+    color-mix(in srgb, var(--warna-kenop) 35%, white),
+    var(--warna-kenop) 50%,
+    color-mix(in srgb, var(--warna-kenop) 55%, black)
   );
 }
 .pita-tongkat::before {
@@ -693,7 +705,7 @@ body {
   background: radial-gradient(circle, rgb(59 130 246 / 0.4), transparent 66%);
   animation: gumpal-biru 24s ease-in-out infinite alternate;
 }
-/* Di atas panel kiri (di sekitar lingkaran hiasan), jauh dari judul HUMAN SKILL di kanan atas. */
+/* Di atas panel kiri (di sekitar lingkaran hiasan), jauh dari judul VIBE di kanan atas. */
 .gumpal-langit {
   top: -320px;
   left: 16%;
@@ -710,8 +722,8 @@ body {
   background: radial-gradient(circle, rgb(99 102 241 / 0.34), transparent 66%);
   animation: gumpal-nila 28s ease-in-out infinite alternate;
 }
-/* Biru laut, bukan emas: di antara nada biru lainnya emas tampak tidak menyatu. Emas tetap dipakai pada
-   tulisan SKILL dan kenop pita, sebagai warna merek. */
+/* Biru laut, menyatu dengan nada biru lainnya. Toska merek hanya dipakai pada tulisan VIBE, tanda kutip, dan
+   kenop pita. */
 .gumpal-laut {
   right: -220px;
   bottom: -260px;
@@ -1025,6 +1037,43 @@ body {
 }
 @keyframes pudar { from { opacity: 0; } to { opacity: 1; } }
 
+/* ----------------------------- toska bergradasi ----------------------------- */
+/* Gradasi tipis satu rona (terang ke pekat) pada tulisan VIBE dan isian toska (tombol antrean, lencana jumlah),
+   supaya toska terlihat lebih berkilau tanpa menambah warna. Teks kecil toska dan garis menu aktif tetap polos:
+   di ukuran itu gradasinya tidak terlihat dan hanya mengurangi keterbacaan.
+   - Isian: tulisan --accent-on di atasnya paling rendah 7,77:1 (di ujung #2dd4bf).
+   - Tulisan VIBE di latar gelap: paling rendah 4,24:1 di --brand gelap (ujung #2dd4bf).
+   - Tulisan VIBE di latar terang (.teks-vibe-terang): toska tua, paling rendah 3,74:1 di kartu putih.
+   Tulisan VIBE adalah nama merek (WCAG mengecualikan logo), tetapi tetap dijaga di atas 3:1. */
+.isi-toska {
+  background-color: var(--accent);
+  background-image: var(--gradasi-toska);
+}
+.teks-vibe {
+  --gradasi-teks: var(--gradasi-toska);
+}
+.teks-vibe-terang {
+  --gradasi-teks: var(--gradasi-toska-tua);
+}
+.dark .teks-vibe-terang {
+  --gradasi-teks: var(--gradasi-toska);
+}
+/* Warna polos dari kelas text-[...] tetap jadi cadangan bila peramban tidak mendukung teks bergradasi. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .teks-vibe {
+    background-image: var(--gradasi-teks);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+@media (forced-colors: active) {
+  .teks-vibe {
+    background-image: none;
+    -webkit-text-fill-color: currentColor;
+  }
+}
+
 /* ---------------------------- panel super admin ---------------------------- */
 /* --text-muted bawaan (#8a8ea9) hanya 3,2:1 di kartu putih, di bawah 4,5:1 untuk teks kecil. Di panel ini
    (catatan kaki, label EN yang tidak aktif, keterangan tabel) dipertebal: 5,6:1 di kartu putih, 5,1:1 di
@@ -1044,6 +1093,20 @@ body {
 .dark .teks-tunggu {
   color: var(--warning-ink);
 }
+/* Lencana status di Akses Pengguna. Di latar lencananya sendiri hijau --good hanya 2,85:1 (gelap 4,28:1) dan
+   merah --critical 3,94:1; hijau dan merah tua ini 5,09:1 dan 5,39:1, versi gelapnya 6,31:1 dan 5,08:1. */
+.teks-baik {
+  color: #15731a;
+}
+.dark .teks-baik {
+  color: #22c55e;
+}
+.teks-kritis {
+  color: #b42318;
+}
+.dark .teks-kritis {
+  color: var(--critical);
+}
 
 /* Permukaan navy panel super admin (menu samping, laci HP, kartu keputusan Pusat Kendali, Super Admin di
    rantai pengawasan, kartu peran Super Admin): aurora halaman masuk versi diam, dengan dasar navy yang
@@ -1053,9 +1116,6 @@ body {
    Kontras teks di atasnya diukur per piksel; ukur ulang bila cahayanya diubah (README.md › Panel Super
    Admin › Tampilan). */
 .kartu-aurora {
-  /* Emas lebih muda di atas aurora yang lebih terang: tulisan emas kecil ("ANDA", lama menunggu) dengan
-     --accent biasa turun ke 3,8:1 di bagian yang tersinari biru muda. */
-  --accent: #f2c062;
   isolation: isolate;
   background-color: #0b2f5e;
   background-image:
@@ -1064,7 +1124,7 @@ body {
     radial-gradient(65% 110% at 0% 100%, rgb(99 102 241 / 0.28), transparent 70%),
     linear-gradient(140deg, #0a2550 0%, #0d3770 55%, #0b2c5e 100%);
 }
-/* Versi tegak untuk menu samping dan laci: biru muda di bawah, jauh dari logo dan label emas di atas. */
+/* Versi tegak untuk menu samping dan laci: biru muda di bawah, jauh dari logo dan label toska di atas. */
 .kartu-aurora.kartu-aurora-tegak {
   background-image:
     radial-gradient(130% 40% at 100% 100%, rgb(125 211 252 / 0.3), transparent 70%),

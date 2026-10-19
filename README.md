@@ -1,13 +1,16 @@
-# Dashboard Monitoring Softskill 5C
+# Dashboard Monitoring VIBE
 
-Purwarupa pemantauan **capaian pembelajaran (CPMK) softskill terintegrasi** di UMN.
+Purwarupa pemantauan **capaian pembelajaran (CPMK) softskill terintegrasi** di UMN, dengan nama
+**VIBE** (Values, Intelligence, Behavior & Excellence).
 
 Nilai **tidak** diajukan mahasiswa. Seluruhnya masuk dari tiga program asesmen kurikuler yang
 berjalan paralel pada Semester 1–3: **PDP**, **Mata Kuliah Humaniora/Kebangsaan**, dan
 **Kemahasiswaan (Student Service)**.
 
-Nama produk tetap menyebut 5C karena itu istilah unit pengelola, tetapi **5C bukan sumbu
-penilaian** — ia materi Mentoring 5C di semester 1 yang menyumbang komponen asesmen ke aspek
+Nama VIBE menggantikan Human Skill (dan Softskill 5C sebelumnya) di seluruh tampilan, kecuali kutipan
+motivasi halaman masuk yang sengaja tetap "human skill". Kata "softskill" di tampilan untuk sementara
+ditulis "skill" (catatan transkrip sementara dan isi pesan WhatsApp). **5C bukan sumbu
+penilaian**: ia materi Mentoring 5C di semester 1 yang menyumbang komponen asesmen ke aspek
 A.1 sampai A.3. Sumbu penilaian adalah 10 aspek CPMK.
 
 Pembagian sumber penilaian:
@@ -421,14 +424,14 @@ meninggalkan bahasa visual di bawah: warna padat, garis rambut, tanpa bayangan b
   rantai pengawasan, dan kartu peran Super Admin memakai `.kartu-aurora`: aurora halaman masuk versi diam
   (butiran `--butiran` yang sama), dengan dasar navy sedikit lebih terang dan cahaya biru muda supaya
   tidak terlalu gelap. Menu samping dan laci memakai `.kartu-aurora-tegak`, yang menaruh biru muda di
-  bawah, jauh dari logo dan label emas. Tidak beranimasi, supaya panel tidak terbebani saat dibiarkan
-  terbuka. Di atasnya `--accent` diganti emas yang lebih muda (`#f2c062`), karena emas biasa turun ke
-  3,8:1 di bagian yang tersinari biru muda. Kelas ini tidak memasang `position` (laci memakai `absolute`),
+  bawah, jauh dari logo dan label toska. Tidak beranimasi, supaya panel tidak terbebani saat dibiarkan
+  terbuka. `--accent` (toska) dipakai apa adanya di atasnya, tanpa versi khusus aurora seperti emas
+  dulu. Kelas ini tidak memasang `position` (laci memakai `absolute`),
   jadi elemen pemakainya wajib berposisi. Kontras teksnya diukur per piksel di kedua keadaan kartu
-  keputusan, menu samping, dan laci, tema terang dan gelap, laptop dan HP: terendah 4,97:1 (tulisan
-  "Anda"). Bila cahayanya diubah, ukur ulang.
+  keputusan, menu samping, dan laci, tema terang dan gelap, laptop dan HP: terendah 5,08:1 (keterangan
+  putih 75%); tulisan toska terendah 5,65:1 ("Anda"). Bila cahayanya diubah, ukur ulang.
 - **Satu titik fokus.** Pusat Kendali disusun mengikuti satu keputusan yang diambil di sana: permintaan
-  admin yang menunggu. Kartu navy itu selebar halaman; sisanya bahan pengawasan. Emas hanya dipakai pada
+  admin yang menunggu. Kartu navy itu selebar halaman; sisanya bahan pengawasan. Toska hanya dipakai pada
   tombol "Buka antrean persetujuan" saat ada yang menunggu; tanpa permintaan, kartunya tenang (tanda
   centang, keterangan, keputusan terakhir) dan tombolnya putih tembus pandang.
 - **Angka asli saja.** Semua angka dihitung dari data yang termuat (`PERMINTAAN`, `AUDIT_LOG`, `COHORTS`,
@@ -456,7 +459,9 @@ meninggalkan bahasa visual di bawah: warna padat, garis rambut, tanpa bayangan b
   waktu WIB lengkap di `title`; tanggal dan sapaan memakai zona WIB, sama dengan log server.
 - **Kontras**: `--text-muted` bawaan hanya 3,2:1 di kartu putih, jadi di dalam `.panel-super` nilainya
   dipertebal (5,6:1 terang, 5,3:1 gelap di `--surface-2`), begitu juga tulisan lencana "Menunggu
-  konfirmasi" (`.teks-tunggu`). Panel lain belum ikut; bila ingin seragam, ubah `--text-muted` di `:root`.
+  konfirmasi" (`.teks-tunggu`) dan lencana "Punya akses"/"Akses dicabut" di Akses Pengguna (`.teks-baik`,
+  `.teks-kritis`): nada `good` dan `critical` milik `Badge` hanya 2,85:1 dan 3,94:1 di latar lencananya.
+  Panel lain belum ikut; bila ingin seragam, ubah `--text-muted` di `:root` dan nada `Badge` di `Ui.jsx`.
 
 ## Bahasa visual: rata, bukan bertumpuk
 
@@ -638,6 +643,10 @@ Semuanya ada di `src/lib/config.js` bertanda `// MENUNGGU KONFIRMASI`:
 
 Di luar `config.js`, aturan penguncian angkatan dan perubahan data terkunci juga masih keputusan
 sementara tim dan belum dikonfirmasi unit pengelola (lihat Penguncian angkatan dan data terkunci).
+
+Kotak surat `vibe@umn.ac.id` (helpdesk di footer dan layanan bantuan) belum dibuat. Alamat itu sengaja
+dipasang sebagai penanda tempat, bertanda `// TODO` di `src/lib/layanan.js`; ganti atau aktifkan sebelum
+aplikasi dipakai mahasiswa.
 
 ### Kenapa `IZINKAN_FINAL_DRAFT` ada
 
@@ -1165,8 +1174,34 @@ panah kiri/kanan). Bagian yang mudah rusak:
   sebagai teks di kartu putih, sedangkan `--critical` 4,80:1 (terang) dan 6,18:1 (gelap). Yang
   jarang boleh berwarna.
 - Teks amber memakai `--warning-ink` (5,09:1), bukan `--warning`.
-- Emas untuk teks di latar terang, seperti SKILL di atas formulir masuk, memakai `--accent-ink`
-  (3,52:1, cukup untuk teks besar), bukan `--accent` (2,04:1). Di latar gelap keduanya sama.
+- **Aksen merek toska**, menggantikan emas. Ungu sempat dicoba, tetapi di atas navy terasa redup:
+  keduanya dingin dan gelap-terangnya berdekatan. Dari 220 palet ber-navy populer di Color Hunt,
+  ungu hanya muncul di 8; toska termasuk pasangan yang paling sering dipakai, dan WGSN/Coloro memilih
+  Transformative Teal (paduan biru tua dan hijau aqua) sebagai warna tahun 2026. Toska dipilih dari
+  empat calon (pink, koral, toska, lime) yang dicoba langsung di aplikasi; koral ditolak karena mirip
+  merah galat dan oranye Area B, lime karena jadi hijau zaitun kusam di latar terang.
+  - `--accent` (`#5eead4`) untuk tulisan, garis, dan isian di latar gelap: tulisan VIBE di navbar,
+    footer, laci, dan menu samping super admin, label Super Admin, garis menu aktif, lencana jumlah,
+    tombol antrean (5,52:1 di `--brand`, 5,33:1 di `--brand` gelap).
+  - `--accent-on` (`#042f2e`, 9,78:1) untuk tulisan di atas isian `--accent`.
+  - `--accent-ink` (`#0f766e`, 5,47:1 di kartu putih) untuk tulisan toska di latar terang, seperti
+    VIBE di menu samping mahasiswa; di tema gelap sama dengan `--accent`.
+  - Di halaman masuk judul VIBE terendah 6,14:1 terhadap aurora yang bergerak.
+  - Toska bersebelahan dengan hijau Area C (`#1baf7a`), tetapi jauh lebih muda dan kebiruan, dan aksen
+    tidak dipakai di grafik.
+- **Toska bergradasi tipis**, satu rona dari terang ke pekat, supaya lebih berkilau tanpa menambah warna:
+  - Tulisan VIBE memakai `.teks-vibe`, yaitu teks bergradasi `--gradasi-toska` (`#99f6e4` → `#5eead4` →
+    `#2dd4bf`) dengan `background-clip: text`. Di latar terang ditambah `.teks-vibe-terang`, yang memakai
+    `--gradasi-toska-tua` (`#0d9488` → `#115e59`).
+  - Warna polos dari kelas `text-[...]` tetap jadi cadangan bila peramban tidak mendukung teks bergradasi,
+    dan juga dipakai saat mode kontras tinggi Windows.
+  - Tulisan VIBE adalah nama merek, jadi WCAG mengecualikannya, tetapi tetap dijaga di atas 3:1: paling
+    rendah 4,24:1 di navbar gelap dan 3,74:1 di kartu putih.
+  - Tombol antrean dan lencana jumlah memakai `.isi-toska` dengan gradasi yang sama; tulisan di atasnya
+    paling rendah 7,77:1.
+  - Teks kecil toska dan garis menu aktif (bayangan 3px) tetap polos, karena di ukuran itu gradasinya tidak
+    terlihat.
+  - Tanda huruf V di kotak sempat dicoba di depan tulisan VIBE, lalu dilepas.
 - Lencana lonceng mahasiswa biru, bukan merah: komponen yang belum dinilai bukan galat.
 - Warna identitas hanya milik **area** (tiga slot kategorikal di `index.css`); cluster dan aspek
   dikenali lewat kode dan label. `--brand-ink` sengaja jauh lebih gelap dari `--c1` (ΔE 19,5)
@@ -1183,7 +1218,7 @@ panah kiri/kanan). Bagian yang mudah rusak:
 - Sorotan menu samping mahasiswa dan super admin (`.menu-sorot`, komponen `MenuSamping.jsx`)
   digambar tiap butir sendiri dengan `::before`/`::after` di bawah isinya (`isolation: isolate`).
   Warnanya dari variabel `--sorot-latar`, `--sorot-garis`, dan `--sorot-teks`; di menu berlatar
-  gelap (`.menu-sorot-gelap`, panel super admin) latarnya putih tembus pandang dan garisnya emas.
+  gelap (`.menu-sorot-gelap`, panel super admin) latarnya putih tembus pandang dan garisnya toska.
   Butir aktif (`.menu-aktif`)
   menampilkannya penuh; butir lain memunculkannya saat ditunjuk atau difokus: latarnya memudar
   masuk sambil sedikit membesar, lalu garis kirinya tergambar dari tengah ke atas dan bawah
@@ -1199,7 +1234,8 @@ panah kiri/kanan). Bagian yang mudah rusak:
   dibuka dan dilepas sesaat setelah animasi tutup selesai. Selama menutup, `id`-nya langsung
   dilepas dan isinya `inert`, jadi bagi pembaca layar, Tab, dan uji, semester itu sudah tertutup.
 - Di halaman masuk, logo PDP ada di pita kertas yang kakinya tergulung ke luar (gulungan di depan
-  kertas), dengan tongkat berkenop emas (`--accent`) di kedua ujung gulungan. Saat halaman dibuka, pita digelar sekali dari tepi atas panel kiri: gulungan turun dan
+  kertas), dengan tongkat berkenop toska (`--warna-kenop` `#14b8a6`, lebih pekat dari `--accent` supaya
+  gradasi kenopnya terbaca) di kedua ujung gulungan. Saat halaman dibuka, pita digelar sekali dari tepi atas panel kiri: gulungan turun dan
   kertas terbuka mengikutinya (`transform` dan `clip-path` dengan durasi dan kurva yang sama), lalu
   pita memantul kecil. Jarak tempuh gulungan diambil dari
   `--tinggi-kertas` (194px: ruang atas 76 + logo 84 + ruang bawah 34), jadi ubah bersama bila

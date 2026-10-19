@@ -37,8 +37,6 @@ export const EN = {
 
   /* -------------------------------- masuk -------------------------------- */
   'Dashboard Monitoring': 'Monitoring Dashboard',
-  'Capaian softskill mahasiswa, terukur setiap semester.':
-    'Student soft skill achievement, measured every semester.',
   'Tiga area pengembangan, sepuluh aspek CPMK, dinilai lewat PDP, mata kuliah humaniora, dan program kampus sepanjang Semester 1 sampai 3.':
     'Three development areas and ten CPMK aspects, graded through PDP, humanities courses, and campus programmes across Semesters 1 to 3.',
   'Masuk ke dashboard': 'Sign in to the dashboard',
@@ -58,9 +56,9 @@ export const EN = {
     'Relational growth: collaboration, trust, empathy, and conflict handling.',
   'Pengembangan peran profesional: kepemimpinan dan kewargaan organisasi.':
     'Professional growth: leadership and organisational citizenship.',
-  'Apa sih Human Skill itu?': 'What is Human Skill?',
-  'Human Skill merupakan sistem penilaian yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:':
-    'Human Skill is an assessment system designed to evaluate and develop the interpersonal abilities, technical skills, and other competencies of Universitas Multimedia Nusantara students. It covers the three assessment areas below:',
+  'Apa sih VIBE itu?': 'What is VIBE?',
+  'VIBE (Values, Intelligence, Behavior & Excellence) merupakan sistem penilaian yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:':
+    'VIBE (Values, Intelligence, Behavior & Excellence) is an assessment system designed to evaluate and develop the interpersonal abilities, technical skills, and other competencies of Universitas Multimedia Nusantara students. It covers the three assessment areas below:',
   /* Pesan galat masuk, dari src/lib/auth.jsx dan src/server/masuk.js. */
   'Email dan kata sandi wajib diisi.': 'Email and password are required.',
   'Email atau kata sandi salah.': 'Incorrect email or password.',
@@ -230,10 +228,12 @@ export const EN = {
   Desember: 'December',
 
   /* -------------------------------- transkrip ---------------------------- */
-  'Transkrip Capaian Softskill': 'Soft Skill Achievement Transcript',
-  'Program pembinaan softskill terintegrasi, Semester 1 sampai {total}':
-    'Integrated soft skill development programme, Semester 1 to {total}',
+  'Transkrip Capaian VIBE': 'VIBE Achievement Transcript',
+  'Program pembinaan VIBE terintegrasi, Semester 1 sampai {total}':
+    'Integrated VIBE development programme, Semester 1 to {total}',
   'Dokumen final': 'Final document',
+  // Catatan kaki transkrip sementara, dari statusDokumenTranskrip() di src/lib/rules.js.
+  'Dokumen ini bukan bukti kelulusan pembinaan skill.': 'This document is not proof of completing the skill development programme.',
   Nama: 'Name',
   'Program studi': 'Study programme',
   Fakultas: 'Faculty',
@@ -365,7 +365,7 @@ export const EN = {
     'Pick the channel that best fits your question.',
   'Kirim pesan, dibalas pada jam kerja': 'Send a message, answered during office hours',
   'Hubungi lewat telepon pada jam kerja': 'Call us during office hours',
-  'Surel Softskill 5C': 'Soft Skill 5C email',
+  'Surel VIBE': 'VIBE email',
   'Untuk pertanyaan yang butuh lampiran': 'For questions that need an attachment',
 
   /* --------------------- panel dosen & Kemahasiswaan ---------------------- */
@@ -454,7 +454,6 @@ export const EN = {
 
   /* ------------------------------ ringkasan ------------------------------ */
   'Mahasiswa terpantau': 'Students tracked',
-  'Rata-rata nilai softskill': 'Average soft skill score',
   'Nilai sudah final': 'Scores already final',
   'Nilai yang sudah masuk': 'Scores already in',
   'Di atas batas {ambang}': 'Above the {ambang} threshold',
@@ -913,11 +912,6 @@ export const EN = {
   'Tabel audit setiap perubahan nilai — waktu, aktor, aspek, komponen, nilai lama, nilai baru, dan sumber — dengan filter aktor, jenis aksi, dan rentang tanggal.':
     'An audit table of every score change (time, actor, aspect, component, old score, new score, and source) with filters for actor, action type, and date range.',
 
-  /* -------------------------- halaman masuk ------------------------------ */
-  'Apa sih HUMAN Softskill itu?': 'What exactly is HUMAN Softskill?',
-  'HUMAN Softskill merupakan sistem penilaian softskill yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:':
-    'HUMAN Softskill is an assessment system built to evaluate and develop the interpersonal skills, technical skills, and other competencies of Universitas Multimedia Nusantara students. It rests on the three assessment areas below:',
-
   // 'No' dioper sebagai kepala tabel lembar cetak, jadi tidak terlihat pemindai test:bahasa.
   No: 'No.',
   'Garis putus-putus: ambang {n}': 'Dashed line: threshold {n}',
@@ -968,9 +962,8 @@ export const EN = {
   'Head of Department': 'Head of Department',
   'di bawah {n}': 'below {n}',
   'NIM': 'Student ID',
-  'Program Pembinaan Softskill 5C, Semester 1 sampai {total}': '5C Softskill Development Programme, Semester 1 to {total}',
+  'Program Pembinaan VIBE, Semester 1 sampai {total}': 'VIBE Development Programme, Semester 1 to {total}',
   'Transkrip Sementara': 'Provisional Transcript',
-  'Transkrip Softskill': 'Softskill Transcript',
 
   /* -------------------------- halaman sertifikat -------------------------- */
   '{n} dari {total} syarat belum terpenuhi.': '{n} of {total} requirements not yet met.',
@@ -980,9 +973,9 @@ export const EN = {
   'diberikan kepada': 'awarded to',
   'Nilai akhir {nilai}, predikat {huruf}.': 'Final score {nilai}, grade {huruf}.',
   'Nomor': 'Number',
-  'Program Pembinaan Softskill 5C': '5C Softskill Development Programme',
+  'Program Pembinaan VIBE': 'VIBE Development Programme',
   'Semua syarat terpenuhi. Sertifikat siap dicetak.': 'All requirements met. The certificate is ready to print.',
-  'Sertifikat Pembinaan Softskill 5C': '5C Softskill Development Certificate',
+  'Sertifikat Pembinaan VIBE': 'VIBE Development Certificate',
   'Syarat kelayakan': 'Eligibility requirements',
   'Tombol cetak aktif setelah seluruh syarat di bawah terpenuhi, tanpa terlewat satu pun.': 'The print button turns on once every requirement below is met, with none missing.',
 
@@ -1148,8 +1141,8 @@ export const EN = {
   Utama: 'Main',
   Pengawasan: 'Oversight',
   '{n} permintaan menunggu keputusan': '{n} requests awaiting a decision',
-  'Pengawasan seluruh sistem Human Skill: permintaan yang perlu diputuskan, jejak tindakan, dan aturan yang berlaku.':
-    'Oversight of the whole Human Skill system: requests awaiting a decision, action trails, and the rules in effect.',
+  'Pengawasan seluruh sistem VIBE: permintaan yang perlu diputuskan, jejak tindakan, dan aturan yang berlaku.':
+    'Oversight of the whole VIBE system: requests awaiting a decision, action trails, and the rules in effect.',
   'Menyetujui permintaan admin dan mengawasi seluruh jejak tindakan.': 'Approves admin requests and oversees every action trail.',
   'Mengelola nilai, angkatan, kurikulum, dan sertifikat.': 'Manages scores, cohorts, curriculum, and certificates.',
   'Mengusulkan nilai mahasiswa di kelasnya.': 'Proposes scores for students in their classes.',
@@ -1170,6 +1163,7 @@ export const EN = {
   'Permintaan admin untuk mahasiswa yang sudah lewat Semester 3 akan muncul di sini.':
     'Admin requests for students past Semester 3 will appear here.',
   'Buka antrean persetujuan': 'Open the approval queue',
+  'Lihat riwayat keputusan': 'View decision history',
   'Tindakan admin terbaru': 'Latest admin actions',
   'Enam catatan terakhir dari Log Aktivitas.': 'The six most recent Activity Log entries.',
   'Memuat…': 'Loading…',
@@ -1219,8 +1213,8 @@ export const EN = {
   'Lihat matriks': 'View matrix',
   Anda: 'You',
   'Lihat matriks peran & wewenang': 'View the roles & permissions matrix',
-  'Siapa boleh melakukan apa di Human Skill. Halaman ini hanya bacaan: peran diatur lewat basis data, bukan dari website.':
-    'Who may do what in Human Skill. This page is read-only: roles are set in the database, not from the website.',
+  'Siapa boleh melakukan apa di VIBE. Halaman ini hanya bacaan: peran diatur lewat basis data, bukan dari website.':
+    'Who may do what in VIBE. This page is read-only: roles are set in the database, not from the website.',
   'Melihat capaiannya sendiri dan mengajukan koreksi bila nilainya keliru.':
     'Views their own achievements and requests a correction when a score is wrong.',
   'Mengusulkan nilai mahasiswa di kelasnya sampai program angkatannya selesai.':
@@ -1261,8 +1255,8 @@ export const EN = {
 
   // Akses Pengguna
   'Akses Pengguna': 'User Access',
-  'Tentukan mahasiswa, dosen, dan admin Kemahasiswaan yang boleh masuk ke Human Skill. Mencabut akses langsung mengakhiri sesinya dan menolak login berikutnya; datanya tetap tersimpan dan aksesnya bisa dipulihkan kapan saja.':
-    'Decide which students, lecturers, and Student Affairs admins may sign in to Human Skill. Revoking access ends their session immediately and blocks later sign-ins; their data stays and access can be restored at any time.',
+  'Tentukan mahasiswa, dosen, dan admin Kemahasiswaan yang boleh masuk ke VIBE. Mencabut akses langsung mengakhiri sesinya dan menolak login berikutnya; datanya tetap tersimpan dan aksesnya bisa dipulihkan kapan saja.':
+    'Decide which students, lecturers, and Student Affairs admins may sign in to VIBE. Revoking access ends their session immediately and blocks later sign-ins; their data stays and access can be restored at any time.',
   'Pengaturan akses belum tersedia': 'Access settings are not available yet',
   'Server belum menyediakan daftar akun. Halaman ini langsung berfungsi begitu pintu /api/akses dibuat; rinciannya ada di README › Akses Pengguna.':
     'The server does not provide the account list yet. This page works as soon as the /api/akses endpoint exists; details are in README › Akses Pengguna.',

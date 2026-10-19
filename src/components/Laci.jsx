@@ -60,8 +60,8 @@ export default function Laci({ buka, onTutup, label = 'Menu navigasi', nada = 't
           <span className="flex items-center gap-2.5">
             <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-white" />
             <span aria-hidden="true" className="h-6 w-px shrink-0 bg-white/30" />
-            <span className="text-[14px] font-extrabold tracking-tight">
-              HUMAN <span className="text-[var(--accent)]">SKILL</span>
+            <span className="teks-vibe text-[14px] font-extrabold tracking-tight text-[var(--accent)]">
+              VIBE
             </span>
           </span>
           <button

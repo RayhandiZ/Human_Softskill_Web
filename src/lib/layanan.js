@@ -9,9 +9,11 @@ export const KONTAK_UMN = {
     tampil: '(021) 5422 0808 ext. 3902',
     tautan: 'tel:+622154220808',
   },
+  // TODO: kotak surat vibe@umn.ac.id belum dibuat; alamat ini penanda tempat sampai unit pengelola
+  // membuatnya. Lihat README.md › Yang masih menunggu keputusan unit pengelola.
   surel: {
-    tampil: 'humanskill@umn.ac.id',
-    tautan: 'mailto:humanskill@umn.ac.id',
+    tampil: 'vibe@umn.ac.id',
+    tautan: 'mailto:vibe@umn.ac.id',
   },
   whatsapp: {
     tampil: '+62 21 5422 0808',
@@ -19,7 +21,7 @@ export const KONTAK_UMN = {
       'https://wa.me/' +
       NOMOR_WHATSAPP +
       '?text=' +
-      encodeURIComponent('Halo, saya mahasiswa UMN dan ingin bertanya soal nilai softskill 5C.'),
+      encodeURIComponent('Halo, saya mahasiswa UMN dan ingin bertanya soal nilai skill 5C.'),
   },
   helpdesk: 'Gedung B Lantai 3, Ruang B315',
   jam: 'Senin sampai Jumat, 08.00 hingga 17.00 WIB',
@@ -45,7 +47,7 @@ export const LAYANAN = [
   {
     id: 'surel',
     ikon: IconMail,
-    label: 'Surel Softskill 5C',
+    label: 'Surel VIBE',
     rinci: 'Untuk pertanyaan yang butuh lampiran',
     nilai: KONTAK_UMN.surel.tampil,
     tautan: KONTAK_UMN.surel.tautan,

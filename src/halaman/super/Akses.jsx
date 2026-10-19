@@ -62,7 +62,7 @@ export default function Akses() {
       <header>
         <h1 className="text-[26px] font-extrabold tracking-tight text-ink">{t('Akses Pengguna')}</h1>
         <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-ink-2">
-          {t('Tentukan mahasiswa, dosen, dan admin Kemahasiswaan yang boleh masuk ke Human Skill. Mencabut akses langsung mengakhiri sesinya dan menolak login berikutnya; datanya tetap tersimpan dan aksesnya bisa dipulihkan kapan saja.')}
+          {t('Tentukan mahasiswa, dosen, dan admin Kemahasiswaan yang boleh masuk ke VIBE. Mencabut akses langsung mengakhiri sesinya dan menolak login berikutnya; datanya tetap tersimpan dan aksesnya bisa dipulihkan kapan saja.')}
         </p>
       </header>
 
@@ -209,7 +209,11 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti }) {
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
           {a.peran === 'superadmin' ? <Badge tone="brand">{t('Super Admin')}</Badge> : null}
-          <Badge tone={a.aktif ? 'good' : 'critical'} icon={a.aktif ? IconCheck : IconLock}>
+          <Badge
+            tone={a.aktif ? 'good' : 'critical'}
+            icon={a.aktif ? IconCheck : IconLock}
+            className={a.aktif ? 'teks-baik' : 'teks-kritis'}
+          >
             {t(a.aktif ? 'Punya akses' : 'Akses dicabut')}
           </Badge>
           {bisaDiubah ? (

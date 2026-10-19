@@ -59,8 +59,8 @@ export default function StudentLayout({ children }) {
           <Link href="/mahasiswa" className="mb-7 flex items-center gap-2.5 px-2.5">
             <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
             <span aria-hidden="true" className="h-6 w-px shrink-0 bg-line" />
-            <span className="whitespace-nowrap text-[20px] font-extrabold tracking-tight text-ink">
-              HUMAN <span className="text-[var(--accent)]">SKILL</span>
+            <span className="teks-vibe teks-vibe-terang whitespace-nowrap text-[20px] font-extrabold tracking-tight text-[var(--accent-ink)]">
+              VIBE
             </span>
           </Link>
 
@@ -87,8 +87,8 @@ export default function StudentLayout({ children }) {
             <Link href="/mahasiswa" className="flex items-center gap-2.5 lg:hidden">
               <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
               <span aria-hidden="true" className="hidden h-6 w-px shrink-0 bg-line sm:block" />
-              <span className="hidden text-[14px] font-extrabold tracking-tight text-ink sm:block">
-                HUMAN <span className="text-[var(--accent)]">SKILL</span>
+              <span className="teks-vibe teks-vibe-terang hidden text-[14px] font-extrabold tracking-tight text-[var(--accent-ink)] sm:block">
+                VIBE
               </span>
             </Link>
 

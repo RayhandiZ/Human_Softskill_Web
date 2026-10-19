@@ -36,8 +36,8 @@ export default function Navbar({ links = [], kelompok = null, aksi = null, foto 
         <Link href="/" className="flex items-center gap-2.5 text-white">
           <LogoPdp keterangan={false} className="h-7 w-auto shrink-0" />
           <span aria-hidden="true" className="hidden h-6 w-px shrink-0 bg-white/30 sm:block" />
-          <span className="hidden whitespace-nowrap text-[15px] font-extrabold tracking-tight sm:block">
-            HUMAN <span className="text-[var(--accent)]">SKILL</span>
+          <span className="teks-vibe hidden whitespace-nowrap text-[20px] font-extrabold tracking-tight text-[var(--accent)] sm:block">
+            VIBE
           </span>
         </Link>
 
@@ -110,7 +110,7 @@ export default function Navbar({ links = [], kelompok = null, aksi = null, foto 
                           {l.icon ? <l.icon size={19} className="shrink-0" /> : null}
                           <span className="truncate">{t(l.label)}</span>
                           {l.lencana ? (
-                            <span className="ml-auto grid h-5 min-w-[20px] place-items-center rounded-full bg-[var(--accent)] px-1.5 text-[11px] font-extrabold text-[#2b1c00]">
+                            <span className="ml-auto grid h-5 min-w-[20px] place-items-center rounded-full isi-toska px-1.5 text-[11px] font-extrabold text-[var(--accent-on)]">
                               {l.lencana}
                             </span>
                           ) : null}

@@ -100,12 +100,14 @@ function kunciDi(sumber) {
    dari modul data dan diterjemahkan lewat t(variabel). Pemindai tidak bisa
    melihatnya, jadi didaftarkan di sini supaya tetap ikut diperiksa. */
 const DARI_DATA = [
-  'WhatsApp UMN', 'Customer Service', 'Surel Softskill 5C',
+  'WhatsApp UMN', 'Customer Service', 'Surel VIBE',
   'Kirim pesan, dibalas pada jam kerja',
   'Hubungi lewat telepon pada jam kerja',
   'Untuk pertanyaan yang butuh lampiran',
   'Senin sampai Jumat, 08.00 hingga 17.00 WIB',
 ]
+/* Sama, tetapi dari src/lib/rules.js: catatan kaki transkrip sementara. */
+const DARI_ATURAN = ['Dokumen ini bukan bukti kelulusan pembinaan skill.']
 
 /* kunci rapi -> { asli, berkas } */
 const dipakai = new Map()
@@ -115,6 +117,7 @@ const catat = (k, berkas) => {
 }
 
 for (const k of DARI_DATA) catat(k, 'src/lib/layanan.js')
+for (const k of DARI_ATURAN) catat(k, 'src/lib/rules.js')
 for (const f of BERKAS) for (const k of kunciDi(readFileSync(f, 'utf8'))) catat(k, f)
 
 /* Kamus, juga dirapikan, supaya pembandingannya setara. */

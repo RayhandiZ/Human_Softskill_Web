@@ -32,7 +32,10 @@ const ISI = {
        yang bebas diganti ("Pintasan" pernah menjadi "Short Cuts"), sedangkan
        keberadaan pintasannya sendiri yang ingin dijaga. */
     [/<footer[\s\S]*?Peta Perjalanan[\s\S]{0,900}Riwayat/, 'footer punya pintasan berikon', true, true],
-    [/Helpdesk[\s\S]{0,300}softskill@umn\.ac\.id/, 'helpdesk dan kontak tercantum'],
+    [/Helpdesk[\s\S]{0,300}vibe@umn\.ac\.id/, 'helpdesk dan kontak tercantum'],
+    /* Nama lama tidak boleh tersisa; "Humaniora" di footer tidak ikut tertangkap karena polanya peka huruf. */
+    [/>\s*VIBE\s*<\/span>/, 'merek VIBE di menu samping', true, true],
+    [/HUMAN|[Hh]uman [Ss]kill/, 'nama lama Human Skill sudah tidak tampil', false],
     [/Akses Cepat/, 'tidak ada lagi blok tombol mati', false],
     /* Aksesoris rujukan yang sengaja tidak dibawa. */
     [/<input[^>]*type="search"/, 'tidak ada kotak pencarian hiasan', false, true],

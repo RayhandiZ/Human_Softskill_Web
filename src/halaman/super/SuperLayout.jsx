@@ -75,8 +75,8 @@ export default function SuperLayout({ children }) {
           <Link href="/super" className="flex items-center gap-2.5 px-2.5">
             <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-white" />
             <span aria-hidden="true" className="h-6 w-px shrink-0 bg-white/25" />
-            <span className="whitespace-nowrap text-[20px] font-extrabold tracking-tight">
-              HUMAN <span className="text-[var(--accent)]">SKILL</span>
+            <span className="teks-vibe whitespace-nowrap text-[20px] font-extrabold tracking-tight text-[var(--accent)]">
+              VIBE
             </span>
           </Link>
           <p className="mb-6 mt-3 px-2.5 text-[11px] font-extrabold uppercase tracking-[.14em] text-[var(--accent)]">
@@ -126,7 +126,7 @@ export default function SuperLayout({ children }) {
                   <IconBell size={20} />
                   <span
                     aria-hidden="true"
-                    className="absolute right-1.5 top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-[var(--accent)] px-1 text-[10px] font-extrabold text-[#2b1c00]"
+                    className="absolute right-1.5 top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full isi-toska px-1 text-[10px] font-extrabold text-[var(--accent-on)]"
                   >
                     {menunggu > 99 ? '99+' : menunggu}
                   </span>

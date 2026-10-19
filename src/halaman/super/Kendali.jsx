@@ -404,13 +404,13 @@ function KeputusanAnda({ menunggu, saatIni, t, bahasa }) {
         )}
       </div>
 
-      {/* Emas hanya saat ada yang harus diputuskan: itulah satu-satunya aksi utama halaman ini. */}
+      {/* Toska hanya saat ada yang harus diputuskan: itulah satu-satunya aksi utama halaman ini. */}
       <div className="lg:col-start-1 lg:row-start-2 lg:self-end">
         <Link
           href="/super/persetujuan"
           className={
             'inline-flex min-h-[44px] items-center gap-2 rounded-xl px-4 py-2.5 text-[14px] font-extrabold transition ' +
-            (ada ? 'bg-[var(--accent)] text-[#2b1c00] hover:brightness-105' : 'bg-white/10 text-white hover:bg-white/15')
+            (ada ? 'isi-toska text-[var(--accent-on)] hover:brightness-105' : 'bg-white/10 text-white hover:bg-white/15')
           }
         >
           {t(ada ? 'Buka antrean persetujuan' : 'Lihat riwayat keputusan')}
@@ -784,7 +784,7 @@ export default function Kendali() {
           </p>
           <h1 className="mt-1 text-[26px] font-extrabold tracking-tight text-ink">{t('Pusat Kendali')}</h1>
           <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-ink-2">
-            {t('Pengawasan seluruh sistem Human Skill: permintaan yang perlu diputuskan, jejak tindakan, dan aturan yang berlaku.')}
+            {t('Pengawasan seluruh sistem VIBE: permintaan yang perlu diputuskan, jejak tindakan, dan aturan yang berlaku.')}
           </p>
         </div>
         <div className="ml-auto">
