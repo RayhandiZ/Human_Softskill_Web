@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Avatar, Badge, Card, CatatanKaki, EmptyState, SearchInput, Select, Tabs } from '../../components/Ui'
-import { IconAlert, IconCheck, IconLock, IconRefresh, IconUndo } from '../../components/Icons'
-import { ALASAN_AKSES_MIN, muatAkses, ubahAkses } from '../../lib/store'
+import { IconAlert, IconCheck, IconLock, IconPlus, IconRefresh, IconUndo } from '../../components/Icons'
+import { ALASAN_AKSES_MIN, SANDI_AWAL_MIN, muatAkses, tambahAkun, ubahAkses } from '../../lib/store'
+import { COHORTS, PROGRAMS, getAngkatan } from '../../lib/data'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 
@@ -10,9 +11,9 @@ import { useTeks } from '../../lib/bahasa'
    Akun yang dicabut sudah ditolak server: penggunaDari() di src/server/api.js membaca `aktif` setiap permintaan. */
 
 const KELOMPOK = {
-  dosen: { label: 'Dosen', peran: ['dosen'], kosong: 'Belum ada akun dosen.', cari: 'Cari nama, email, atau NIP' },
-  admin: { label: 'Admin Kemahasiswaan', peran: ['admin', 'superadmin'], kosong: 'Belum ada akun admin.', cari: 'Cari email' },
-  mahasiswa: { label: 'Mahasiswa', peran: ['mahasiswa'], kosong: 'Belum ada akun mahasiswa.', cari: 'Cari nama, email, atau NIM' },
+  dosen: { label: 'Dosen', peran: ['dosen'], kosong: 'Belum ada akun dosen.', cari: 'Cari nama, email, atau NIP', tambah: 'Tambah dosen' },
+  admin: { label: 'Admin Kemahasiswaan', peran: ['admin', 'superadmin'], kosong: 'Belum ada akun admin.', cari: 'Cari email', tambah: 'Tambah admin' },
+  mahasiswa: { label: 'Mahasiswa', peran: ['mahasiswa'], kosong: 'Belum ada akun mahasiswa.', cari: 'Cari nama, email, atau NIM', tambah: 'Tambah mahasiswa' },
 }
 const LABEL_STATUS = { semua: 'Semua status', aktif: 'Punya akses', dicabut: 'Akses dicabut' }
 
@@ -33,6 +34,8 @@ export default function Akses() {
   const [cari, setCari] = useState('')
   const [status, setStatus] = useState('semua')
   const [terbuka, setTerbuka] = useState(null)
+  const [tambah, setTambah] = useState(false)
+
 
   async function ambil() {
     setMuat((m) => ({ ...m, keadaan: 'memuat', galat: null }))
@@ -96,6 +99,7 @@ export default function Akses() {
                 onChange={(k) => {
                   setKelompok(k)
                   setTerbuka(null)
+                  setTambah(false)
                 }}
                 items={Object.entries(KELOMPOK).map(([value, k]) => ({
                   value,
@@ -117,12 +121,27 @@ export default function Akses() {
                   tampilkan={(s) => t(LABEL_STATUS[s])}
                   className="w-[190px]"
                 />
+                <button type="button" className="btn-primary" aria-expanded={tambah} onClick={() => setTambah((x) => !x)}>
+                  <IconPlus size={16} />
+                  {t(KELOMPOK[kelompok].tambah)}
+                </button>
               </div>
               {muat.keadaan === 'siap' ? (
                 <p className="text-[12.5px] text-ink-2">
                   {t('{n} akun · {m} aksesnya dicabut', { n: anggota(kelompok).length, m: dicabut })}
                 </p>
               ) : null}
+              {tambah ? (
+  <FormTambah
+    kelompok={kelompok}
+    onBatal={() => setTambah(false)}
+    onTambah={(akun) => {
+      setMuat((m) => ({ ...m, akun: [...m.akun, akun] }))
+      setTambah(false)
+    }}
+  />
+) : null}
+
             </div>
 
             {muat.keadaan === 'memuat' ? (
@@ -274,5 +293,118 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti }) {
         </form>
       ) : null}
     </li>
+  )
+}
+const SUMBER_DOSEN = { PDP: 'PDP', MK: 'MK Humaniora' }
+
+function FormTambah({ kelompok, onBatal, onTambah }) {
+  const t = useTeks()
+  const [isian, setIsian] = useState({
+    email: '',
+    sandi: '',
+    nama: '',
+    nim: '',
+    nip: '',
+    jabatan: '',
+    prodi: PROGRAMS[0]?.program ?? '',
+    angkatanId: COHORTS[0]?.id ?? '',
+    sumber: 'MK',
+    semester: '1',
+  })
+  const [sibuk, setSibuk] = useState(false)
+  const [galat, setGalat] = useState('')
+  const pasang = (kunci) => (nilai) => setIsian((x) => ({ ...x, [kunci]: nilai }))
+  const prodi = PROGRAMS.map((p) => p.program)
+
+  async function simpan(e) {
+    e.preventDefault()
+    if (sibuk) return
+    setSibuk(true)
+    setGalat('')
+    try {
+      const { akun } = await tambahAkun({ ...isian, peran: kelompok })
+      onTambah(akun)
+    } catch (err) {
+      setGalat(err.message)
+    } finally {
+      setSibuk(false)
+    }
+  }
+
+  return (
+    <form onSubmit={simpan} className="space-y-3 rounded-xl border border-line bg-surface-2/60 p-4">
+      <p className="text-[14px] font-bold text-ink">{t(KELOMPOK[kelompok].tambah)}</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Isian label={t('Email')} type="email" value={isian.email} onChange={pasang('email')} />
+        <Isian
+          label={t('Sandi awal (minimal {n} karakter)', { n: SANDI_AWAL_MIN })}
+          value={isian.sandi}
+          onChange={pasang('sandi')}
+          autoComplete="new-password"
+        />
+        {kelompok !== 'admin' ? <Isian label={t('Nama lengkap')} value={isian.nama} onChange={pasang('nama')} /> : null}
+        {kelompok === 'mahasiswa' ? (
+          <>
+            <Isian label="NIM" inputMode="numeric" value={isian.nim} onChange={pasang('nim')} />
+            <Select label={t('Program studi')} value={isian.prodi} onChange={pasang('prodi')} options={prodi} />
+            <Select
+              label={t('Angkatan')}
+              value={isian.angkatanId}
+              onChange={pasang('angkatanId')}
+              options={COHORTS.map((c) => c.id)}
+              tampilkan={(id) => getAngkatan(id)?.label ?? id}
+            />
+          </>
+        ) : null}
+        {kelompok === 'dosen' ? (
+          <>
+            <Isian label="NIP" value={isian.nip} onChange={pasang('nip')} />
+            <Isian label={t('Jabatan')} value={isian.jabatan} onChange={pasang('jabatan')} />
+            <Select label={t('Program studi')} value={isian.prodi} onChange={pasang('prodi')} options={prodi} />
+            <Select
+              label={t('Sumber penilaian')}
+              value={isian.sumber}
+              onChange={pasang('sumber')}
+              options={Object.keys(SUMBER_DOSEN)}
+              tampilkan={(s) => SUMBER_DOSEN[s]}
+            />
+            <Select
+              label={t('Semester yang diampu')}
+              value={isian.semester}
+              onChange={pasang('semester')}
+              options={['1', '2', '3']}
+              tampilkan={(s) => t('Semester {n}', { n: s })}
+            />
+          </>
+        ) : null}
+      </div>
+      <div className="flex flex-wrap gap-2.5">
+        <button type="submit" className="btn-primary" disabled={sibuk}>
+          <IconPlus size={16} />
+          {t('Simpan akun')}
+        </button>
+        <button type="button" className="btn-ghost" disabled={sibuk} onClick={onBatal}>
+          {t('Batal')}
+        </button>
+      </div>
+      {galat ? (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--critical)_10%,transparent)] px-3.5 py-3 text-[13px] font-semibold text-[var(--critical)]"
+        >
+          <IconAlert size={16} className="mt-px shrink-0" />
+          {galat}
+        </p>
+      ) : null}
+    </form>
+  )
+}
+
+function Isian({ label, onChange, ...sisa }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block label">{label}</span>
+      <input className="field !py-2.5" onChange={(e) => onChange(e.target.value)} {...sisa} />
+    </label>
   )
 }

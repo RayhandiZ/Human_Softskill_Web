@@ -20,6 +20,9 @@ export const LABEL_LOG = {
   // Dicatat /api/akses/ubah setelah dibuat di back-end; lihat README.md › Panel Super Admin › Akses Pengguna.
   UBAH_AKSES: 'Ubah akses akun',
   UBAH_PERIODE: 'Ubah periode akademik',
+  TAMBAH_AKUN: 'Tambah akun',
+  UBAH_AKUN: 'Ubah akun',
+  HAPUS_AKUN: 'Hapus akun',
 }
 
 const UKURAN = 25

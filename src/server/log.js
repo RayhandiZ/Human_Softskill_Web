@@ -34,6 +34,9 @@ export const AKSI_LOG = [
   'UBAH_PENILAIAN',
   'UBAH_AKSES',
   'UBAH_PERIODE',
+  'TAMBAH_AKUN',
+  'UBAH_AKUN',
+  'HAPUS_AKUN',
 ]
 
 const UKURAN_BAWAAN = 25

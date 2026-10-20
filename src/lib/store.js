@@ -622,6 +622,14 @@ export async function ubahAkses({ id, aktif, alasan }) {
   a.aktif = Boolean(aktif)
   return { akun: { ...a } }
 }
+// Sama dengan aturan /api/akses/tambah; server tetap yang memutuskan.
+export const SANDI_AWAL_MIN = 8
+
+/** Menambah akun mahasiswa, dosen, atau admin; jawabannya { akun } baru dalam bentuk yang sama dengan muatAkses. */
+export async function tambahAkun(isi) {
+  if (modeLokal()) throw new Error('Menambah akun hanya bisa saat terhubung ke basis data.')
+  return kirim('/api/akses/tambah', { isi })
+}
 
 /* ---------------------------------- nilai --------------------------------- */
 

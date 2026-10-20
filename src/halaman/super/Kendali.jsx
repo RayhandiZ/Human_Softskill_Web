@@ -53,6 +53,7 @@ const IKON_LOG = {
   TARIK_PERMINTAAN: IconUndo,
   UBAH_PENILAIAN: IconDocument,
   UBAH_AKSES: IconUsers,
+  TAMBAH_AKUN: IconUsers,
 }
 
 const LABEL_KEPUTUSAN = { disetujui: 'Disetujui', ditolak: 'Ditolak', gagal: 'Gagal dijalankan' }

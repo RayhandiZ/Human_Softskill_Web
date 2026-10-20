@@ -1278,6 +1278,9 @@ export const EN = {
     'Super Admin access cannot be revoked here, including your own account; it is managed directly in the database. Every access change is recorded in the Activity Log with its reason.',
   'Cabut akses': 'Revoke access',
   'Pulihkan akses': 'Restore access',
+  'Tambah dosen': 'Add lecturer',
+  'Tambah admin': 'Add admin',
+  'Tambah mahasiswa': 'Add student',
   'Akun Anda': 'Your account',
   'Diatur di basis data': 'Managed in the database',
   'Akun ini tidak bisa masuk lagi, dan sesi yang sedang terbuka langsung berakhir. Datanya tetap tersimpan.':
@@ -1402,4 +1405,26 @@ export const EN = {
   'Lama → baru': 'Old → new',
   'Batch dibatalkan': 'Batch rolled back',
   menjadi: 'to',
+
+  /* ----------------------------------------------------------------------
+     BELUM DITERJEMAHKAN — ditulis otomatis oleh `npm run bahasa:sync`.
+     Isi sisi kanannya, lalu pindahkan barisnya ke bagian yang sesuai di
+     atas. Selama masih kosong, kalimatnya tampil dalam bahasa Indonesia.
+     ---------------------------------------------------------------------- */
+  'Jabatan': '',
+  'Nama lengkap': '',
+  'Sandi awal (minimal {n} karakter)': '',
+  'Semester yang diampu': '',
+  'Simpan akun': '',
+
+  /* ----------------------------------------------------------------------
+     BELUM DITERJEMAHKAN — ditulis otomatis oleh `npm run bahasa:sync`.
+     Isi sisi kanannya, lalu pindahkan barisnya ke bagian yang sesuai di
+     atas. Selama masih kosong, kalimatnya tampil dalam bahasa Indonesia.
+     ---------------------------------------------------------------------- */
+  'Jabatan': '',
+  'Nama lengkap': '',
+  'Sandi awal (minimal {n} karakter)': '',
+  'Semester yang diampu': '',
+  'Simpan akun': '',
 }
