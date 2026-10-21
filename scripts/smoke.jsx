@@ -453,7 +453,11 @@ export async function ujiLoncengAdmin() {
 export async function ujiSasaranInput(alamat) {
   const { el, lepas } = await pasang(alamat)
   const teks = el.textContent
-  const pilihan = [...el.querySelectorAll('select')].map((x) => x.value)
+  // Semester dan sumber kini tombol pilihan (radio); angkatan dan penyaring masih <select>.
+  const pilihan = [
+    ...[...el.querySelectorAll('select')].map((x) => x.value),
+    ...[...el.querySelectorAll('input[type="radio"]:checked')].map((x) => x.value),
+  ]
   const hasil = {
     teks,
     pilihan,
@@ -678,24 +682,27 @@ export async function ujiLihatFoto(rute) {
 }
 
 /**
- * Tombol "Segarkan data" di Data Mahasiswa.
+ * Menyegarkan data dari halaman Data Mahasiswa.
  *
- * Yang diuji bukan keberadaan tombolnya, melainkan akibatnya: penanda waktu
- * baru muncul SETELAH ditekan. Kalau penandanya sudah ada sejak awal, tombol
- * itu hanya hiasan yang mengaku melakukan sesuatu.
+ * Halaman ini dulu punya tombol "Segarkan data" sendiri di samping tombol
+ * Segarkan di bilah status; keduanya menjalankan segarkanData() yang sama,
+ * jadi yang di halaman dibuang. Yang dijaga sekarang: tinggal SATU tombol
+ * segarkan, dan menekannya benar-benar memuat ulang (waktu segar di store
+ * baru terisi sesudah ditekan), bukan hiasan.
  */
 export async function ujiSegarkanData() {
   const { el, lepas } = await pasang('/admin/mahasiswa')
+  const { terakhirSegar } = await import('../src/lib/store')
   const hasil = {}
 
-  const tombol = [...el.querySelectorAll('button')].find((b) =>
-    b.textContent.includes('Segarkan data'),
-  )
+  const tombol = el.querySelector('button[aria-label="Segarkan data sekarang"]')
   hasil.adaTombol = !!tombol
-  hasil.tanpaPenandaAwal = !/Terakhir disegarkan/.test(el.textContent)
+  hasil.satuTombol = [...el.querySelectorAll('button')].filter((b) => /Segarkan/.test(b.textContent)).length === 1
+  const sebelum = terakhirSegar()
 
   await klik(tombol)
-  hasil.adaPenandaSesudah = /Terakhir disegarkan \d{2}[.:]\d{2}/.test(el.textContent)
+  const sesudah = terakhirSegar()
+  hasil.termuatUlang = !!sesudah && sesudah !== sebelum
 
   /* Daftar mahasiswanya harus tetap utuh sesudah disegarkan — memuat ulang
      tidak boleh mengosongkan tabel. */
@@ -718,15 +725,17 @@ export async function ujiLaciAdmin() {
 
   const tombol = el.querySelector('button[aria-label="Buka menu navigasi"]')
   hasil.adaTombol = !!tombol
-  hasil.tampilDiLayarLebar = !!tombol && !tombol.className.split(' ').includes('md:hidden')
+  // Di layar lebar menu samping yang tampil; garis tiga hanya untuk layar sempit (lihat AdminLayout.jsx).
+  hasil.menuSampingDiLayarLebar =
+    !!el.querySelector('aside nav[aria-label="Menu Kemahasiswaan"]') && !!tombol && tombol.className.split(' ').includes('lg:hidden')
 
   await klik(tombol)
   const panel = el.querySelector('[role="dialog"][aria-label="Menu navigasi"]')
   hasil.terbuka = !!panel
-  hasil.panelGelap = !!panel && /bg-brand-deep/.test(panel.className)
+  hasil.panelTerang = !!panel && !/bg-brand-deep|kartu-aurora/.test(panel.className)
 
   const teks = panel?.textContent ?? ''
-  hasil.adaJudulKelompok = /Workspace/.test(teks) && /Rujukan/.test(teks)
+  hasil.adaJudulKelompok = /Kerja harian/.test(teks) && /Rujukan/.test(teks)
 
   const tujuan = panel ? [...panel.querySelectorAll('a')].map((a) => a.getAttribute('href')) : []
   hasil.adaHalamanTersembunyi = ['/admin/kurikulum', '/admin/program-studi', '/admin/log', '/admin/sertifikat'].every((h) =>
@@ -820,31 +829,8 @@ export async function ujiLipatOverview() {
   await klik(kakiAngka)
   hasil.angka.terbukaSetelahDitekan = wadahAngka()?.className.split(' ').includes('grid') ?? false
 
-  /* ----------------------------- more pages ------------------------------ */
-  const tombolHalaman = el.querySelector('button[aria-controls="halaman-lain"]')
-  const kartuTersembunyi = () =>
-    [...el.querySelectorAll('#halaman-lain > li')].filter((li) =>
-      li.className.split(' ').includes('hidden'),
-    ).length
-
-  hasil.halaman = {
-    adaTombol: !!tombolHalaman,
-    tombolKhususPonsel:
-      !!tombolHalaman && tombolHalaman.closest('li').className.split(' ').includes('sm:hidden'),
-    /* Jumlahnya dihitung dari daftar itu sendiri: satu kartu selalu terlihat,
-       sisanya terlipat. Menuliskan angkanya sebagai tetapan membuat uji ini
-       pecah setiap kali ada halaman baru ditambahkan — padahal yang ingin
-       dijaga adalah perilakunya, bukan banyaknya kartu. */
-    terlipatAwal: kartuTersembunyi() === el.querySelectorAll('#halaman-lain > li').length - 2,
-    /* Dicocokkan per kata, bukan per potongan teks: 'sm:hidden' pada baris
-       tombol mengandung kata 'hidden' tetapi bukan kelas yang dimaksud. */
-    tetapUtuhDiLayarLebar: [...el.querySelectorAll('#halaman-lain > li')].every((li) => {
-      const kelas = li.className.split(' ')
-      return !kelas.includes('hidden') || kelas.includes('sm:block')
-    }),
-  }
-  await klik(tombolHalaman)
-  hasil.halaman.tidakAdaYangTersembunyiSesudah = kartuTersembunyi() === 0
+  /* Kartu "Halaman lain" beserta lipatannya di ponsel sudah dilepas: semua halaman ada di menu samping
+     (laci di ponsel), jadi yang diuji tinggal lipatan angka di atas. */
 
   lepas()
   return hasil
@@ -1776,6 +1762,10 @@ export async function ujiPanelSuper() {
   const baris1 = () => barisAkun().find((li) => li.textContent.includes(d1.nama))
   hasil.aksesDaftarDosen =
     barisAkun().length === 2 && /Akses dicabut/.test(el.textContent) && /Punya akses/.test(el.textContent)
+  // Tombol Hapus akun hanya ada di baris yang aksesnya sudah dicabut (d2), tidak di yang masih aktif (d1).
+  const adaTombolHapus = (li) => [...(li?.querySelectorAll('button') ?? [])].some((b) => /Hapus akun/.test(b.textContent))
+  const hapusHanyaUntukDicabut =
+    !adaTombolHapus(baris1()) && adaTombolHapus(barisAkun().find((li) => li.textContent.includes(d2.nama)))
   await klik([...baris1().querySelectorAll('button')].find((b) => /Cabut akses/.test(b.textContent)))
   const formCabut = baris1().querySelector('form')
   const tombolCabut = formCabut?.querySelector('button[type="submit"]')
@@ -1793,6 +1783,22 @@ export async function ujiPanelSuper() {
     /Akses dicabut/.test(baris1()?.textContent ?? '') &&
     !baris1()?.querySelector('form') &&
     /Pulihkan akses/.test(baris1()?.textContent ?? '')
+  // Sesudah dicabut, d1 bisa dihapus: butuh alasan, lalu barisnya hilang dan pesan berhasil muncul.
+  await klik([...baris1().querySelectorAll('button')].find((b) => /Hapus akun/.test(b.textContent)))
+  const formHapus = baris1().querySelector('form')
+  const tombolHapus = formHapus?.querySelector('button[type="submit"]')
+  const hapusMatiTanpaAlasan = tombolHapus?.disabled === true && /Hapus permanen/.test(tombolHapus?.textContent ?? '')
+  await ketik(formHapus.querySelector('input'), 'Akun ganda karena salah input')
+  await act(async () => {
+    formHapus.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }))
+  })
+  await tunggu()
+  hasil.hapusAkun =
+    hapusHanyaUntukDicabut &&
+    hapusMatiTanpaAlasan &&
+    !AKUN_LOKAL.some((a) => a.id === 11) &&
+    !baris1() &&
+    /sudah dihapus dari basis data/.test(el.querySelector('[role="status"]')?.textContent ?? '')
   await ketik(el.querySelector('input[type="search"]'), d2.nip)
   hasil.cariAkun = barisAkun().length === 1 && barisAkun()[0].textContent.includes(d2.nama)
   await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /Admin Kemahasiswaan/.test(b.textContent)))

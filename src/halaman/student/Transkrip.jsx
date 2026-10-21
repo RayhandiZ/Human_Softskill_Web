@@ -5,6 +5,7 @@ import {
   CardHeader,
   CatatanKaki,
   EmptyState,
+  GulirTabel,
   PredikatTeks,
   StatusTeks,
   TandaDraft,
@@ -37,7 +38,10 @@ const STATUS_LABEL = {
 const nomorDokumen = (student) =>
   'TSK/' + student.angkatanId + '/' + student.nim.slice(-5) + '/' + new Date().getFullYear()
 
-export default function Transkrip({ student }) {
+/* `untukAdmin`: dipakai di Detail mahasiswa panel Kemahasiswaan. Kartu "Ada nilai yang menurutmu keliru?" milik
+   mahasiswa tidak ditampilkan di sana: kalimatnya ditujukan ke mahasiswa, dan /api/koreksi hanya menerima peran
+   mahasiswa, jadi pengajuan dari admin selalu gagal. */
+export default function Transkrip({ student, untukAdmin = false }) {
   useStore()
   const teks = useTeks()
   const t = transkripOf(student)
@@ -137,7 +141,7 @@ export default function Transkrip({ student }) {
         />
 
         {/* Di kertas tidak ada yang bisa digulir: print:overflow-visible + print:min-w-0; lihat README.md › Cetak. */}
-        <div className="overflow-x-auto print:overflow-visible">
+        <GulirTabel className="print:overflow-visible">
           <table className="w-full min-w-[820px] border-collapse print:min-w-0 print:table-fixed">
             <thead>
               <tr className="border-b border-line bg-surface-2">
@@ -252,12 +256,21 @@ export default function Transkrip({ student }) {
                             </>
                           )}
                         </td>
-                        <td className="px-2 py-3 text-right print:hidden">
+                        <td className="px-2 py-2 text-right print:hidden">
+                          {/* Tombol sungguhan: dulu baris hanya bisa dibuka dengan klik mouse pada <tr>. */}
                           {a.terkunci ? null : (
-                            <IconChevronDown
-                              size={16}
-                              className={'text-ink-3 transition ' + (dibuka ? 'rotate-180' : '')}
-                            />
+                            <button
+                              type="button"
+                              aria-expanded={dibuka}
+                              aria-label={teks('Rincian aspek {kode}', { kode: a.aspek.kode.replace(/\.$/, '') })}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setTerbuka(dibuka ? null : a.aspek.id)
+                              }}
+                              className="grid h-9 w-9 place-items-center rounded-lg text-ink-3 transition hover:bg-surface-2 hover:text-ink"
+                            >
+                              <IconChevronDown size={16} className={'transition ' + (dibuka ? 'rotate-180' : '')} />
+                            </button>
                           )}
                         </td>
                       </tr>
@@ -269,7 +282,7 @@ export default function Transkrip({ student }) {
               </tbody>
             ))}
           </table>
-        </div>
+        </GulirTabel>
 
         <div className="px-6 py-4">
           <CatatanKaki>
@@ -288,6 +301,9 @@ export default function Transkrip({ student }) {
       </div>
 
       {/* --------------------------------- aksi --------------------------------- */}
+      {untukAdmin ? (
+        dokumen.catatan ? <CatatanKaki>{teks(dokumen.catatan)}</CatatanKaki> : null
+      ) : (
       <Card className="card-pad print:hidden">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -338,6 +354,7 @@ export default function Transkrip({ student }) {
         ) : null}
         {dokumen.catatan ? <CatatanKaki>{teks(dokumen.catatan)}</CatatanKaki> : null}
       </Card>
+      )}
     </div>
     </>
   )
@@ -373,7 +390,7 @@ function BarisRincian({ aspek }) {
           )}
         </p>
 
-        <div className="overflow-x-auto rounded-xl border border-line bg-surface print:overflow-visible">
+        <GulirTabel className="rounded-xl border border-line bg-surface print:overflow-visible">
           <table className="w-full min-w-[680px] border-collapse print:min-w-0 print:table-fixed">
             <thead>
               <tr className="border-b border-line">
@@ -419,7 +436,7 @@ function BarisRincian({ aspek }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </GulirTabel>
 
         <h4 className="mt-5 mb-2 text-[12px] font-bold uppercase tracking-[.07em] text-ink-3">
           {t('Indikator perilaku')}

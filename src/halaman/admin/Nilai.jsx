@@ -7,15 +7,17 @@ import {
   CardHeader,
   CatatanKaki,
   EmptyState,
+  GulirTabel,
+  JudulHalaman,
   SearchInput,
   Select,
-  StatTile,
   Tabs,
   TandaDraft,
 } from '../../components/Ui'
 import {
   IconAlert,
   IconCheck,
+  IconChevronDown,
   IconDownload,
   IconInfo,
   IconLock,
@@ -25,7 +27,7 @@ import {
   IconX,
 } from '../../components/Icons'
 import { CONFIG } from '../../lib/config'
-import { KOMPONEN, SUMBER, SUMBER_LIST, getAspekSemester, getKomponen, getKomponenById } from '../../lib/curriculum'
+import { KOMPONEN, SUMBER, SUMBER_LIST, getAspek, getAspekSemester, getKomponen, getKomponenById } from '../../lib/curriculum'
 import { bolehTandaiFinal, validasiBatchImport } from '../../lib/rules'
 import { susunCSV, unduhBerkas } from '../../lib/csv'
 import {
@@ -40,14 +42,15 @@ import {
   COHORTS,
   FACULTIES,
   FAKULTAS_OF,
-  JENJANG_OF,
   PENGAJUAN_KOREKSI,
   STUDENTS,
   getAngkatan,
   getStudentByNim,
   labelPeriode,
   programStudi,
+  semesterKalender,
 } from '../../lib/data'
+import { daftarKode, labelSemesterAngkatan, tautanKoreksi } from './LoncengKemahasiswaan'
 import {
   BATCH_SESI,
   bersihkanPerubahan,
@@ -70,6 +73,57 @@ const SEMESTER_KOSONG = '— Pilih semester —'
 
 // Sumber tanpa satu pun komponen (kini Kemahasiswaan) tidak ditawarkan di pilihan.
 const sumberAktif = () => SUMBER_LIST.filter((s) => KOMPONEN.some((k) => k.sumber === s.id))
+
+// Nama kelas ditulis utuh supaya terbaca Tailwind (kelas yang dirakit dari angka tidak ikut terbuat).
+const KOLOM_SUMBER = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3' }
+
+/* Pilihan berbentuk tombol untuk langkah sasaran input: semua pilihan terlihat beserta isinya dan sekali klik
+   memilih. Di baliknya radio biasa, jadi Tab masuk ke kelompoknya dan panah memindah pilihan. */
+function Segmen({ nama, judul, pilihan, nilai, onPilih, kolom, catatan, wajib = false }) {
+  return (
+    <fieldset className="min-w-0">
+      <legend className="mb-2 text-[13.5px] font-bold text-ink">{judul}</legend>
+      <div className={'grid gap-2 ' + kolom}>
+        {pilihan.map((p) => {
+          const aktif = p.nilai === nilai
+          return (
+            <label
+              key={p.nilai}
+              className={
+                'relative min-w-0 cursor-pointer rounded-xl border px-3.5 py-2.5 transition ' +
+                (aktif ? 'border-brand-ink bg-brand-soft' : 'border-line bg-surface hover:border-line-strong')
+              }
+            >
+              <input
+                type="radio"
+                name={nama}
+                value={p.nilai}
+                checked={aktif}
+                onChange={() => onPilih(p.nilai)}
+                className="peer sr-only"
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-xl peer-focus-visible:ring-2 peer-focus-visible:ring-brand-ink peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface"
+              />
+              <span className={'block text-[14.5px] font-bold leading-snug ' + (aktif ? 'text-brand-ink' : 'text-ink')}>
+                {p.label}
+              </span>
+              {p.rinci ? <span className="mt-0.5 block text-[12.5px] leading-snug text-ink-2">{p.rinci}</span> : null}
+            </label>
+          )
+        })}
+      </div>
+      {catatan ? (
+        // Ikon info membedakan petunjuk wajib ini dari tautan, karena warnanya sama-sama biru.
+        <p className={'mt-2 flex items-start gap-1.5 text-[13px] ' + (wajib ? 'font-semibold text-brand-ink' : 'text-ink-2')}>
+          {wajib ? <IconInfo size={15} className="mt-[2px] shrink-0" /> : null}
+          {catatan}
+        </p>
+      ) : null}
+    </fieldset>
+  )
+}
 
 
 const TANDA_BARIS = [
@@ -127,9 +181,13 @@ export default function Nilai() {
   const [sumber, setSumber] = useState(() =>
     sumberAktif().some((s) => s.id === awal('sumber')) ? awal('sumber') : 'MK',
   )
-  const [angkatanId, setAngkatanId] = useState(() =>
-    COHORTS.some((c) => c.id === awal('angkatan')) ? awal('angkatan') : (COHORTS[0]?.id ?? null),
-  )
+  // Bawaan: angkatan terbaru yang sudah mulai dan punya mahasiswa. Dulu COHORTS[0], yaitu angkatan terbaru walau
+  // semester pertamanya belum tiba, jadi halaman dibuka dengan "Tidak ada mahasiswa pada pilihan ini".
+  const [angkatanId, setAngkatanId] = useState(() => {
+    if (COHORTS.some((c) => c.id === awal('angkatan'))) return awal('angkatan')
+    const mulai = COHORTS.filter((c) => semesterKalender(c.intake) >= 1)
+    return (mulai.find((c) => STUDENTS.some((s) => s.angkatanId === c.id)) ?? mulai[0] ?? COHORTS[0])?.id ?? null
+  })
   const [faculty, setFaculty] = useState(() => awal('fakultas') ?? 'Semua')
   const [program, setProgram] = useState(() => awal('prodi') ?? 'Semua')
   const [tab, setTab] = useState(() =>
@@ -172,142 +230,161 @@ export default function Nilai() {
     )
   }
 
-  const angkatanSiap = angkatan.semesterAktif >= (semester ?? 1)
+  // Semester kalender, bukan semesterAktif: semesterAktif dibatasi minimal 1, jadi angkatan yang belum mulai dulu
+  // lolos gerbang Semester 1 dan nilainya bisa diisi sebelum semesternya tiba.
+  const kalender = semesterKalender(angkatan.intake)
+  const belumMulai = kalender < 1
+  const angkatanSiap = kalender >= (semester ?? 1)
 
-  const koreksiMenunggu = PENGAJUAN_KOREKSI.filter((k) => k.status === 'menunggu').length
+  const koreksiAntre = PENGAJUAN_KOREKSI.filter((k) => k.status === 'menunggu')
+  const koreksiMenunggu = koreksiAntre.length
+  const areaKerja = Boolean(semester && komponenSumber.length && STUDENTS.length && mahasiswa.length && angkatanSiap)
 
   return (
     <div className="space-y-6">
+      <JudulHalaman
+        judul={t('Input & Import Nilai')}
+        keterangan={t('Pilih semester, sumber penilaian, dan angkatan, lalu isi nilai satu per satu atau unggah rekapnya.')}
+      />
 
-      {/* ---------------------- langkah 1: pilih semester ---------------------- */}
-      <Card>
-        <CardHeader
-          title={t('Pilih Yan Akan Di Input')}
-          subtitle={t('Semester wajib dipilih sebelum data bisa dimasukkan')}
-          icon={IconPencil}
-        />
-        <div className="card-pad grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
-          <div>
-            <Select
-              label={t('Semester yang diisi')}
-              value={semesterPilihan}
-              onChange={setSemesterPilihan}
-              options={[
-                SEMESTER_KOSONG,
-                ...Array.from({ length: CONFIG.TOTAL_SEMESTER_PROGRAM }, (_, i) => 'Semester ' + (i + 1)),
-              ]}
-              tampilkan={t}
-            />
-            <p className="mt-1.5 text-[12px] text-ink-3">
-              {semester
+      {/* ------------- langkah memilih sasaran: semester, sumber, angkatan ------------- */}
+      <Card className="overflow-hidden">
+        <div className="grid gap-6 px-5 py-5 sm:px-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.8fr)]">
+          <Segmen
+            nama="semester"
+            judul={t('1. Semester yang diisi')}
+            nilai={semesterPilihan}
+            onPilih={setSemesterPilihan}
+            kolom="grid-cols-1 sm:grid-cols-3"
+            pilihan={Array.from({ length: CONFIG.TOTAL_SEMESTER_PROGRAM }, (_, i) => {
+              const aspek = getAspekSemester(i + 1)
+              return {
+                nilai: 'Semester ' + (i + 1),
+                label: t('Semester {n}', { n: i + 1 }),
+                rinci: t('{n} aspek', { n: aspek.length }) + ' · ' + aspek.map((a) => a.kode.replace(/\.$/, '')).join(', '),
+              }
+            })}
+            catatan={
+              semester
                 ? t('{n} aspek CPMK berada di semester ini', { n: aspekSemester.length })
-                : t('Belum dipilih')}
-            </p>
-          </div>
+                : t('Semester wajib dipilih sebelum data bisa dimasukkan')
+            }
+            wajib={!semester}
+          />
+
+          <Segmen
+            nama="sumber"
+            judul={t('2. Sumber penilaian')}
+            nilai={sumber}
+            onPilih={setSumber}
+            kolom={KOLOM_SUMBER[Math.min(sumberAktif().length, 3)]}
+            pilihan={sumberAktif().map((s) => ({ nilai: s.id, label: s.label, rinci: s.nama }))}
+          />
 
           <div>
-            <Select
-              label={t('Sumber penilaian')}
-              value={SUMBER[sumber].label}
-              onChange={(v) => setSumber(SUMBER_LIST.find((s) => s.label === v).id)}
-              options={sumberAktif().map((s) => s.label)}
-            />
-            <p className="mt-1.5 text-[12px] text-ink-3">{SUMBER[sumber].nama}</p>
-          </div>
-
-          <div>
-            <Select
-              label={t('Angkatan')}
-              value={angkatan.label}
-              onChange={(v) => setAngkatanId(COHORTS.find((c) => c.label === v).id)}
-              options={COHORTS.map((c) => c.label)}
-            />
-            <p className="mt-1.5 text-[12px] text-ink-3">
-              {t('Kini di Semester {n}', { n: angkatan.semesterAktif })}
+            <label htmlFor="pilih-angkatan" className="mb-2 block text-[13.5px] font-bold text-ink">
+              {t('3. Angkatan')}
+            </label>
+            <span className="relative block">
+              <select
+                id="pilih-angkatan"
+                value={angkatan.label}
+                onChange={(e) => setAngkatanId(COHORTS.find((c) => c.label === e.target.value).id)}
+                className="w-full appearance-none rounded-xl border border-line bg-surface px-3.5 py-3 pr-9 text-[14.5px] font-bold text-ink transition hover:border-line-strong"
+              >
+                {/* Jumlah mahasiswa ikut ditulis supaya angkatan yang masih kosong terlihat sebelum dipilih. */}
+                {COHORTS.map((c) => (
+                  <option key={c.id} value={c.label}>
+                    {c.label} ·{' '}
+                    {semesterKalender(c.intake) < 1
+                      ? t('belum mulai')
+                      : t('{n} mahasiswa', { n: STUDENTS.filter((s) => s.angkatanId === c.id).length.toLocaleString('id-ID') })}
+                  </option>
+                ))}
+              </select>
+              <IconChevronDown size={16} className="pointer-events-none absolute inset-y-0 right-3 my-auto text-ink-3" />
+            </span>
+            <p className="mt-2 text-[13px] text-ink-2">
+              {/* Dulu "Kini di Semester {semesterAktif}": angkatan yang belum mulai terbaca Semester 1, dan yang sudah
+                  selesai terbaca Semester 3. */}
+              {labelSemesterAngkatan(t, angkatan.intake)}
               {semester
                 ? ' · ' +
-                  t('periode {periode}', {
+                  t('Semester {n}: {periode}', {
+                    n: semester,
                     periode: labelPeriode(angkatan.periode[semester - 1]),
                   })
                 : ''}
             </p>
           </div>
+        </div>
 
-          <div>
-            <Select
-              label={t('Fakultas')}
-              value={faculty}
-              onChange={(v) => {
-                setFaculty(v)
-                setProgram('Semua')
-              }}
-              options={['Semua', ...FACULTIES.map((f) => f.name)]}
-              tampilkan={t}
-            />
-            <p className="mt-1.5 text-[12px] text-ink-3">
-              {program !== 'Semua'
-                ? t('mengikuti program studi')
-                : faculty === 'Semua'
-                  ? t('{n} fakultas', { n: FACULTIES.length })
-                  : t('{n} program studi', { n: programStudi(faculty).length })}
-            </p>
-          </div>
-
-          <div>
-            <Select
-              label={t('Program studi')}
-              value={program}
-              onChange={(v) => {
-                setProgram(v)
-                if (v !== 'Semua') setFaculty(FAKULTAS_OF[v] ?? faculty)
-              }}
-              options={['Semua', ...programStudi(faculty)]}
-              tampilkan={t}
-            />
-            <p className="mt-1.5 text-[12px] text-ink-3">
-              {t('{n} mahasiswa', { n: mahasiswa.length })}
-              {program === 'Semua'
-                ? ' ' + t('pada pilihan ini')
-                : ' · ' + t('jenjang {jenjang}', { jenjang: JENJANG_OF[program] ?? '-' })}
-            </p>
-          </div>
+        {/* Penyaring mahasiswa: menyempitkan baris yang tampil, bukan sasaran nilainya. */}
+        <div className="flex flex-wrap items-center gap-2.5 border-t border-line bg-surface-2 px-5 py-3 sm:px-6">
+          <Select
+            ringkas
+            label={t('Fakultas')}
+            value={faculty}
+            onChange={(v) => {
+              setFaculty(v)
+              setProgram('Semua')
+            }}
+            options={['Semua', ...FACULTIES.map((f) => f.name)]}
+            tampilkan={(o) => (o === 'Semua' ? t('Semua') : o)}
+            className="flex-[1_1_230px] sm:max-w-[320px]"
+          />
+          <Select
+            ringkas
+            label={t('Program studi')}
+            value={program}
+            onChange={(v) => {
+              setProgram(v)
+              if (v !== 'Semua') setFaculty(FAKULTAS_OF[v] ?? faculty)
+            }}
+            options={['Semua', ...programStudi(faculty)]}
+            tampilkan={(o) => (o === 'Semua' ? t('Semua') : o)}
+            className="flex-[1_1_230px] sm:max-w-[320px]"
+          />
+          <p className="text-[13.5px] text-ink-2 sm:ml-auto">
+            <strong className="tabular-nums text-ink">{mahasiswa.length.toLocaleString('id-ID')}</strong>{' '}
+            {t('mahasiswa pada pilihan ini')}
+            {semester && komponenSumber.length
+              ? ' · ' +
+                t('{n} komponen', { n: komponenSumber.length }) +
+                ' · ' +
+                daftarKode(aspekBerkomponen)
+              : ''}
+          </p>
         </div>
       </Card>
+
+      {/* Antrean koreksi bersifat global, tetapi tab-nya ada di area kerja yang bergantung pada semester dan
+          angkatan. Dulu, dengan pilihan yang tidak membuka area kerja, antrean itu tidak bisa dicapai sama sekali. */}
+      {!areaKerja && koreksiMenunggu ? (
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-line bg-surface px-5 py-3.5 text-[13.5px] text-ink-2 sm:px-6">
+          <IconAlert size={16} className="shrink-0 text-brand-ink" />
+          <span className="min-w-0 flex-1">
+            {t('{n} pengajuan koreksi dari mahasiswa menunggu keputusan.', { n: koreksiMenunggu })}
+          </span>
+          <Link href={tautanKoreksi(koreksiAntre[0])} className="font-bold text-brand-ink underline-offset-4 hover:underline">
+            {t('Tinjau pengajuan')}
+          </Link>
+        </p>
+      ) : null}
 
       {/* --------------------------- gerbang semester -------------------------- */}
       {!semester ? (
         <Card>
-          <div className="px-6 py-14 text-center">
-            <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-soft text-brand-ink">
-              <IconLock size={22} />
+          <div className="flex flex-wrap items-start gap-4 px-6 py-6">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-ink">
+              <IconLock size={20} />
             </span>
-            <p className="mt-4 text-[16px] font-bold text-ink">
-              {t('Pilih semester terlebih dahulu')}
-            </p>
-            <p className="mx-auto mt-2 max-w-md text-[13.5px] leading-relaxed text-ink-2">
-              {t('Setiap aspek CPMK hanya dinilai pada satu semester tertentu. Tanpa memilih semester, sistem tidak tahu komponen asesmen mana yang boleh diisi, dan nilai yang salah semester akan ditolak.')}
-            </p>
-            <ul className="mx-auto mt-6 grid max-w-lg gap-2 text-left sm:grid-cols-3">
-              {Array.from({ length: CONFIG.TOTAL_SEMESTER_PROGRAM }, (_, i) => i + 1).map((s) => (
-                <li key={s}>
-                  <button
-                    type="button"
-                    onClick={() => setSemesterPilihan('Semester ' + s)}
-                    className="w-full rounded-xl border border-line px-4 py-3 text-left transition hover:border-brand-ink hover:bg-surface-2"
-                  >
-                    <span className="block text-[13.5px] font-bold text-ink">
-                      {t('Semester {n}', { n: s })}
-                    </span>
-                    <span className="mt-0.5 block text-[12px] text-ink-3">
-                      {t('{n} aspek', { n: getAspekSemester(s).length })} ·{' '}
-                      {getAspekSemester(s)
-                        .map((a) => a.kode.replace('.', '').replace('.', ''))
-                        .join(', ')}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <div className="min-w-0 flex-1">
+              <p className="text-[16px] font-bold text-ink">{t('Pilih semester terlebih dahulu')}</p>
+              <p className="mt-1 max-w-2xl text-[14px] leading-relaxed text-ink-2">
+                {t('Setiap aspek CPMK hanya dinilai pada satu semester tertentu. Tanpa memilih semester, sistem tidak tahu komponen asesmen mana yang boleh diisi, dan nilai yang salah semester akan ditolak.')}
+              </p>
+            </div>
           </div>
         </Card>
       ) : !komponenSumber.length ? (
@@ -339,47 +416,34 @@ export default function Nilai() {
             {faculty !== 'Semua' && program === 'Semua'
               ? ' ' + t('fakultas {fakultas}', { fakultas: faculty })
               : ''}{' '}
-            {t('belum punya mahasiswa terdaftar. Longgarkan pilihan fakultas atau program studi.')}
+            {/* Saran "longgarkan pilihan" hanya bila memang ada pilihan fakultas atau prodi yang aktif; dulu saran
+                itu muncul juga saat keduanya "Semua" dan angkatannya memang kosong. */}
+            {faculty !== 'Semua' || program !== 'Semua'
+              ? t('belum punya mahasiswa terdaftar. Longgarkan pilihan fakultas atau program studi.')
+              : t('belum punya mahasiswa terdaftar. Pilih angkatan lain di langkah 3.')}
           </EmptyState>
         </Card>
       ) : !angkatanSiap ? (
         <Card>
           <EmptyState
-            title={t('Angkatan {label} belum sampai Semester {semester}', {
-              label: angkatan.label,
-              semester,
-            })}
+            title={
+              belumMulai
+                ? t('Angkatan {label} belum mulai', { label: angkatan.label })
+                : t('Angkatan {label} belum sampai Semester {semester}', { label: angkatan.label, semester })
+            }
           >
-            {t('Angkatan ini baru menempuh Semester {aktif}. Nilai untuk Semester {semester} belum boleh dimasukkan; bila dipaksakan lewat import, seluruh barisnya akan ditolak.', {
-              aktif: angkatan.semesterAktif,
-              semester,
-            })}
+            {belumMulai
+              ? t('Semester 1 angkatan ini dimulai {periode}. Nilainya belum boleh dimasukkan sebelum semesternya tiba.', {
+                  periode: labelPeriode(angkatan.periode[0]),
+                })
+              : t('Angkatan ini baru menempuh Semester {aktif}. Nilai untuk Semester {semester} belum boleh dimasukkan; bila dipaksakan lewat import, seluruh barisnya akan ditolak.', {
+                  aktif: kalender,
+                  semester,
+                })}
           </EmptyState>
         </Card>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <StatTile
-              label={t('Aspek pada semester ini')}
-              value={aspekBerkomponen.length}
-              unit={'/ ' + aspekSemester.length}
-              icon={IconPencil}
-              hint={aspekBerkomponen.map((a) => a.kode).join(' ')}
-            />
-            <StatTile
-              label={t('Komponen dari sumber ini')}
-              value={komponenSumber.length}
-              icon={IconUpload}
-              hint={SUMBER[sumber].label}
-            />
-            <StatTile
-              label={t('Mahasiswa sasaran')}
-              value={mahasiswa.length}
-              icon={IconCheck}
-              hint={t('Angkatan {label}', { label: angkatan.label })}
-            />
-          </div>
-
           <Card>
             <div className="border-b border-line px-5 py-4 sm:px-6">
               <Tabs
@@ -448,8 +512,9 @@ function HasilSimpan({ hasil }) {
       : '')
 
   return (
-    <div className="rounded-xl border border-line bg-[color-mix(in_srgb,var(--good)_8%,transparent)] px-4 py-3.5">
-      <p className="flex items-start gap-2 text-[13px] font-bold text-[var(--good)]">
+    <div className="animate-rise rounded-xl border border-line bg-[color-mix(in_srgb,var(--good)_8%,transparent)] px-4 py-3.5">
+      {/* --teks-baik: hijau --good hanya 2,85:1 sebagai teks kecil. */}
+      <p className="flex items-start gap-2 text-[13px] font-bold text-[color:var(--teks-baik,var(--good))]">
         <IconCheck size={16} className="mt-px shrink-0" />
         {t('{n} nilai tersimpan sebagai batch {id}.', { n: batch.jumlah, id: batch.id })}
       </p>
@@ -720,8 +785,9 @@ function InputManual({
           options={aspekList.map((a) => a.kode)}
         />
         <div>
-          <span className="mb-1.5 block label">{teks('Cari mahasiswa')}</span>
-          <SearchInput value={cari} onChange={setCari} placeholder={teks('Nama atau NIM…')} />
+          {/* Nama kolom untuk pembaca layar lewat `label`; dulu kolom ini tidak bernama. */}
+          <span aria-hidden="true" className="mb-1.5 block label">{teks('Cari mahasiswa')}</span>
+          <SearchInput value={cari} onChange={setCari} label={teks('Cari mahasiswa')} placeholder={teks('Nama atau NIM…')} />
         </div>
         <p className="text-[12.5px] leading-snug text-ink-2 sm:col-span-2">
           {aspekList.find((a) => a.id === aspekId)?.nama},{' '}
@@ -762,7 +828,7 @@ function InputManual({
         </div>
       ) : null}
 
-      <div className="overflow-x-auto">
+      <GulirTabel>
         <table className="w-full min-w-[720px] border-collapse">
           <thead>
             <tr className="border-b border-line bg-surface-2">
@@ -862,7 +928,7 @@ function InputManual({
             })}
           </tbody>
         </table>
-      </div>
+      </GulirTabel>
 
       <div className="space-y-3 border-t border-line px-5 py-4 sm:px-6">
         {perluPersetujuan ? <CatatanPersetujuan /> : null}
@@ -1166,21 +1232,27 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
               </p>
               <label className="flex items-center gap-2 text-[12.5px] text-ink-2">
                 {tr('Bila satu komponen menerima beberapa kolom:')}
-                <select
-                  value={agregasi}
-                  onChange={(e) => setAgregasi(e.target.value)}
-                  className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[12.5px] font-semibold text-ink"
-                >
-                  {AGREGASI.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.label}
-                    </option>
-                  ))}
-                </select>
+                {/* Panah sendiri seperti Select di Ui.jsx, supaya ikut berputar saat daftarnya terbuka. Lebar minimum
+                    setara select bawaan (selebar pilihan terpanjang): di Chrome select ini selebar pilihan terpilih
+                    saja, jadi tanpa min-w ia menyempit di HP dan teksnya terpotong. */}
+                <span className="relative flex">
+                  <select
+                    value={agregasi}
+                    onChange={(e) => setAgregasi(e.target.value)}
+                    className="min-w-[10.25rem] appearance-none rounded-lg border border-line bg-surface py-1.5 pl-2.5 pr-8 text-[12.5px] font-semibold text-ink"
+                  >
+                    {AGREGASI.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {tr(a.label)}
+                      </option>
+                    ))}
+                  </select>
+                  <IconChevronDown size={14} className="pointer-events-none absolute inset-y-0 right-2.5 my-auto text-ink-3" />
+                </span>
               </label>
             </div>
 
-            <div className="overflow-x-auto">
+            <GulirTabel>
               <table className="w-full min-w-[860px] border-collapse">
                 <thead>
                   <tr className="border-b border-line">
@@ -1201,49 +1273,59 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
                         <td className="px-3 py-2.5">
                           <span className="block text-[13px] font-bold text-ink">{kol.nama}</span>
                           <span className="block text-[11.5px] text-ink-3">
-                            {kol.terisi} terisi · {kol.kosong} kosong
+                            {tr('{terisi} terisi · {kosong} kosong', { terisi: kol.terisi, kosong: kol.kosong })}
                           </span>
                         </td>
                         <td className="px-3 py-2.5 font-mono text-[12px] text-ink-2">
                           {kol.contoh.slice(0, 3).join(' · ') || '—'}
                         </td>
                         <td className="px-3 py-2.5">
-                          <select
-                            value={String(aturan.skala ?? kol.skala)}
-                            onChange={(e) =>
-                              setPeta((p) => ({ ...p, [kol.nama]: { ...p[kol.nama], skala: Number(e.target.value) } }))
-                            }
-                            className="rounded-lg border border-line bg-surface px-2 py-1.5 text-[12.5px] font-semibold text-ink"
-                          >
-                            {SKALA_PILIHAN.map((s) => (
-                              <option key={s.nilai} value={s.nilai}>
-                                {s.label}
-                              </option>
-                            ))}
-                          </select>
+                          {/* Dua pilihan per baris ini dulu tidak bernama bagi pembaca layar. min-w: semua select skala
+                              selebar pilihan terpanjangnya, seperti select bawaan, supaya kolomnya rata. */}
+                          <span className="relative inline-flex">
+                            <select
+                              aria-label={tr('Skala kolom {nama}', { nama: kol.nama })}
+                              value={String(aturan.skala ?? kol.skala)}
+                              onChange={(e) =>
+                                setPeta((p) => ({ ...p, [kol.nama]: { ...p[kol.nama], skala: Number(e.target.value) } }))
+                              }
+                              className="min-w-[11.5rem] appearance-none rounded-lg border border-line bg-surface py-1.5 pl-2 pr-8 text-[12.5px] font-semibold text-ink"
+                            >
+                              {SKALA_PILIHAN.map((s) => (
+                                <option key={s.nilai} value={s.nilai}>
+                                  {tr(s.label)}
+                                </option>
+                              ))}
+                            </select>
+                            <IconChevronDown size={14} className="pointer-events-none absolute inset-y-0 right-2.5 my-auto text-ink-3" />
+                          </span>
                           {kol.skalaMaks != null ? (
-                            <span className="mt-1 block text-[11px] text-ink-3">tertinggi {kol.skalaMaks}</span>
+                            <span className="mt-1 block text-[11px] text-ink-3">{tr('tertinggi {n}', { n: kol.skalaMaks })}</span>
                           ) : null}
                         </td>
                         <td className="px-3 py-2.5">
-                          <select
-                            value={terpilih ? labelKomponen(terpilih) : ABAIKAN}
-                            onChange={(e) => {
-                              const k = komponenSumber.find((x) => labelKomponen(x) === e.target.value)
-                              setPeta((p) => ({ ...p, [kol.nama]: { ...p[kol.nama], komponenId: k?.id ?? null } }))
-                            }}
-                            className={
-                              'w-full max-w-[320px] rounded-lg border bg-surface px-2.5 py-1.5 text-[12.5px] font-semibold text-ink ' +
-                              (terpilih ? 'border-line' : 'border-dashed border-line-strong text-ink-3')
-                            }
-                          >
-                            <option>{ABAIKAN}</option>
-                            {komponenSumber.map((k) => (
-                              <option key={k.id} value={labelKomponen(k)}>
-                                {labelKomponen(k)}
-                              </option>
-                            ))}
-                          </select>
+                          <span className="relative flex w-full max-w-[320px]">
+                            <select
+                              aria-label={tr('Komponen tujuan kolom {nama}', { nama: kol.nama })}
+                              value={terpilih ? labelKomponen(terpilih) : ABAIKAN}
+                              onChange={(e) => {
+                                const k = komponenSumber.find((x) => labelKomponen(x) === e.target.value)
+                                setPeta((p) => ({ ...p, [kol.nama]: { ...p[kol.nama], komponenId: k?.id ?? null } }))
+                              }}
+                              className={
+                                'w-full appearance-none truncate rounded-lg border bg-surface py-1.5 pl-2.5 pr-8 text-[12.5px] font-semibold text-ink ' +
+                                (terpilih ? 'border-line' : 'border-dashed border-line-strong text-ink-3')
+                              }
+                            >
+                              <option value={ABAIKAN}>{tr(ABAIKAN)}</option>
+                              {komponenSumber.map((k) => (
+                                <option key={k.id} value={labelKomponen(k)}>
+                                  {labelKomponen(k)}
+                                </option>
+                              ))}
+                            </select>
+                            <IconChevronDown size={14} className="pointer-events-none absolute inset-y-0 right-2.5 my-auto text-ink-3" />
+                          </span>
                         </td>
                         <td className="px-3 py-2.5">
                           {terpilih ? (
@@ -1253,14 +1335,14 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
                                   yakin.level === 'tinggi' ? 'good' : yakin.level === 'sedang' ? 'warning' : 'critical'
                                 }
                               >
-                                {yakin.label}
+                                {tr(yakin.label)}
                               </Badge>
                               {kol.alasan.length ? (
                                 <span className="mt-1 block text-[11px] text-ink-3">{kol.alasan.join(' · ')}</span>
                               ) : null}
                             </>
                           ) : (
-                            <span className="text-[12px] text-ink-3">tidak dipakai</span>
+                            <span className="text-[12px] text-ink-3">{tr('tidak dipakai')}</span>
                           )}
                         </td>
                       </tr>
@@ -1268,7 +1350,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
                   })}
                 </tbody>
               </table>
-            </div>
+            </GulirTabel>
           </div>
 
           {/* ------------------- pratinjau hasil hitung ------------------- */}
@@ -1293,7 +1375,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
                   <p className="border-b border-line bg-surface-2 px-4 py-2.5 text-[12px] font-bold uppercase tracking-[.07em] text-ink-3">
                     {tr('Pratinjau hasil perhitungan')}
                   </p>
-                  <div className="overflow-x-auto">
+                  <GulirTabel>
                     <table className="w-full min-w-[680px] border-collapse">
                       <thead>
                         <tr className="border-b border-line">
@@ -1328,10 +1410,10 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
                         ))}
                       </tbody>
                     </table>
-                  </div>
+                  </GulirTabel>
                   {hasilMentah.entri.length > 10 ? (
                     <p className="border-t border-line px-4 py-2.5 text-[12.5px] text-ink-3">
-                      dan {hasilMentah.entri.length - 10} nilai lain
+                      {tr('dan {n} nilai lain', { n: hasilMentah.entri.length - 10 })}
                     </p>
                   ) : null}
                 </div>
@@ -1368,17 +1450,17 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
           <div className="flex flex-wrap items-center gap-3">
             <Badge tone="neutral">{tr('Format baku terdeteksi')}</Badge>
             <Badge tone="good" icon={IconCheck}>
-              {hasilBaku.diterima.length} baris siap diproses
+              {tr('{n} baris siap diproses', { n: hasilBaku.diterima.length })}
             </Badge>
             <Badge tone={hasilBaku.ditolak.length ? 'critical' : 'neutral'} icon={IconX}>
-              {hasilBaku.ditolak.length} ditolak
+              {tr('{n} ditolak', { n: hasilBaku.ditolak.length })}
             </Badge>
           </div>
           {hasilBaku.ditolak.length ? (
             <ul className="divide-y divide-line rounded-xl border border-line">
               {hasilBaku.ditolak.slice(0, 10).map((r) => (
                 <li key={r.nomor} className="flex flex-wrap items-start gap-3 px-4 py-2.5">
-                  <span className="w-16 shrink-0 text-[12px] font-bold tabular-nums text-ink-3">baris {r.nomor}</span>
+                  <span className="w-16 shrink-0 text-[12px] font-bold tabular-nums text-ink-3">{tr('baris {n}', { n: r.nomor })}</span>
                   <span className="min-w-[150px] font-mono text-[12px] text-ink-2">
                     {r.nim || '—'} · {r.komponenId || '—'}
                   </span>
@@ -1474,7 +1556,8 @@ function Koreksi({ aktor }) {
             <div className="min-w-[240px] flex-1">
               <p className="text-[14px] font-bold text-ink">{k.komponenLabel}</p>
               <p className="mt-1 text-[12.5px] text-ink-2">
-                {k.nama} · {k.nim} · {t('aspek {kode}', { kode: k.aspekId })} ·{' '}
+                {/* Kode aspek, bukan id-nya (dulu tertulis id mentah seperti "aspek A1"). */}
+                {k.nama} · {k.nim} · {t('aspek {kode}', { kode: daftarKode([getAspek(k.aspekId) ?? k.aspekId]) })} ·{' '}
                 {t('diajukan {tanggal}', { tanggal: k.diajukan })}
               </p>
               <p className="mt-2 max-w-2xl rounded-lg bg-surface-2 px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-2">
@@ -1617,6 +1700,9 @@ function RiwayatBatch() {
                 <button
                   type="button"
                   onClick={async () => {
+                    // Konfirmasi dulu: rollback mengembalikan seluruh nilai satu batch sekaligus. Dulu tombol ini
+                    // langsung berjalan, beda dengan "Hapus semua perubahan" di kartu yang sama.
+                    if (!window.confirm(t('Batalkan batch {id}? Semua nilai di batch ini dikembalikan ke nilai sebelumnya.', { id: b.id }))) return
                     try {
                       const hasil = await rollbackBatch(b.id, alasanRollback)
                       if (!hasil) {

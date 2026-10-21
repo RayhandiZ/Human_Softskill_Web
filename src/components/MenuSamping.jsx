@@ -54,9 +54,11 @@ export default function MenuSamping({ items, besar = false, gelap = false, onPil
             }
           >
             <Icon size={20} className="shrink-0" />
-            <span className="truncate">{t(label)}</span>
+            {/* Label menu turun ke baris kedua, tidak dipotong "…": butir berlencana (pekerjaan menunggu) justru yang
+                labelnya paling panjang, dan menu harus tetap terbaca utuh saat itu. */}
+            <span className="min-w-0 leading-snug [overflow-wrap:anywhere]">{t(label)}</span>
             {lencana ? (
-              <span className="ml-auto grid h-5 min-w-[20px] place-items-center rounded-full isi-toska px-1.5 text-[11px] font-extrabold text-[var(--accent-on)]">
+              <span className="ml-auto grid h-5 min-w-[20px] shrink-0 place-items-center rounded-full isi-toska px-1.5 text-[11px] font-extrabold text-[var(--accent-on)]">
                 {lencana}
               </span>
             ) : null}

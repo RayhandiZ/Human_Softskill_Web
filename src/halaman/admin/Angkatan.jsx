@@ -1,7 +1,18 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Badge, Card, CardHeader, CatatanKaki, EmptyState, StatusTeks, Tabs } from '../../components/Ui'
+import {
+  Card,
+  CardHeader,
+  CatatanKaki,
+  EmptyState,
+  GulirTabel,
+  JUDUL_KOLOM,
+  JudulHalaman,
+  Paginasi,
+  StatusTeks,
+  TabSaring,
+} from '../../components/Ui'
 import { IconAlert, IconLock, IconPencil, IconPrint } from '../../components/Icons'
 import { CONFIG } from '../../lib/config'
 import { SUMBER } from '../../lib/curriculum'
@@ -9,7 +20,7 @@ import { COHORTS, STUDENTS, labelPeriode, pekerjaanPenilaian, semesterKalender, 
 import { pratinjauPenguncian } from '../../lib/rules'
 import { kunciAngkatan, menungguPersetujuan, useStore } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
-import { tautanInput } from './LoncengKemahasiswaan'
+import { daftarKode, tautanInput } from './LoncengKemahasiswaan'
 import { CatatanPersetujuan, PesanMenunggu, usePerluPersetujuan } from './PermintaanTerkirim'
 
 const PAGE_SIZE = 12
@@ -64,16 +75,20 @@ export default function Angkatan() {
   const params = useSearchParams()
   const daftar = useMemo(() => COHORTS.map(periksaAngkatan), [versi])
   const [pilih, setPilih] = useState(() => params.get('angkatan'))
-  const pilihan = daftar.find((x) => x.c.id === pilih) ?? daftar[0]
+  // Bawaan: angkatan terbaru yang sudah mulai dan punya mahasiswa. Dulu selalu daftar[0], yaitu angkatan terbaru
+  // walau semester pertamanya belum tiba, sehingga halaman dibuka dengan rincian yang pasti kosong.
+  const pilihan =
+    daftar.find((x) => x.c.id === pilih) ??
+    daftar.find((x) => x.kalender >= 1 && x.mhs.length) ??
+    daftar.find((x) => x.kalender >= 1) ??
+    daftar[0]
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-[22px] font-extrabold tracking-tight text-ink">{t('Angkatan')}</h1>
-        <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-2">
-          {t('Pantau kelengkapan nilai tiap angkatan, temukan mahasiswa yang perlu ditindaklanjuti, lalu kunci angkatan yang programnya sudah selesai.')}
-        </p>
-      </div>
+      <JudulHalaman
+        judul={t('Angkatan')}
+        keterangan={t('Pantau kelengkapan nilai tiap angkatan, temukan mahasiswa yang perlu ditindaklanjuti, lalu kunci angkatan yang programnya sudah selesai.')}
+      />
 
       {!daftar.length ? (
         <Card>
@@ -106,12 +121,14 @@ function KartuAngkatan({ x, aktif, onPilih }) {
   const terkunci = c.status === 'terkunci'
 
   return (
+    // flex-col, bukan block: isi <button> diletakkan di tengah secara vertikal oleh peramban, jadi kartu yang
+    // isinya lebih pendek tampak turun dibanding kartu lain di baris yang sama.
     <button
       type="button"
       onClick={onPilih}
       aria-pressed={aktif}
       className={
-        'card block h-full w-full p-4 text-left transition hover:border-brand-ink ' +
+        'card flex h-full w-full flex-col p-4 text-left transition hover:border-brand-ink hover:shadow-pop motion-safe:hover:-translate-y-0.5 ' +
         (aktif ? 'border-brand-ink bg-brand-soft' : '')
       }
     >
@@ -122,12 +139,15 @@ function KartuAngkatan({ x, aktif, onPilih }) {
       <span className="mt-0.5 block text-[12.5px] text-ink-2">
         {t('Masuk {periode}', { periode: labelPeriode(c.intake) })}
       </span>
-      <span className="mt-1 block text-[13px] font-semibold text-ink">
+      {/* mb-3 di sini + mt-auto di baris angka: jarak minimal tetap ada, dan baris angka semua kartu sejajar di dasar. */}
+      <span className="mb-3 mt-1 block text-[13px] font-semibold text-ink">
         {selesai
           ? t('Program selesai')
-          : t('Semester {n} dari {total}', { n: kalender, total: CONFIG.TOTAL_SEMESTER_PROGRAM })}
+          : kalender < 1
+            ? t('Belum mulai')
+            : t('Semester {n} dari {total}', { n: kalender, total: CONFIG.TOTAL_SEMESTER_PROGRAM })}
       </span>
-      <span className="mt-3 grid grid-cols-3 gap-2 border-t border-line pt-3">
+      <span className="mt-auto grid grid-cols-3 gap-2 border-t border-line pt-3">
         <Angka label={t('Mahasiswa')} nilai={mhs.length.toLocaleString('id-ID')} />
         <Angka label={t('Nilai terisi')} nilai={persen == null ? '-' : persen + '%'} />
         <Angka label={t('Perlu tindak lanjut')} nilai={perlu.length.toLocaleString('id-ID')} />
@@ -136,9 +156,10 @@ function KartuAngkatan({ x, aktif, onPilih }) {
   )
 }
 
+// Label boleh turun baris ("Perlu tindak lanjut"); angkanya didorong ke bawah sel supaya ketiganya tetap sejajar.
 function Angka({ label, nilai }) {
   return (
-    <span className="block min-w-0">
+    <span className="flex min-w-0 flex-col justify-between">
       <span className="block text-[11.5px] leading-tight text-ink-2">{label}</span>
       <span className="mt-0.5 block text-[16px] font-bold tabular-nums text-ink">{nilai}</span>
     </span>
@@ -178,7 +199,7 @@ function RincianAngkatan({ x }) {
                   </span>
                   <span className="block text-[12.5px] text-ink-2">
                     {t('{n} nilai kosong pada {m} mahasiswa', { n: p.kosong, m: p.mahasiswa })} ·{' '}
-                    {p.aspek.map((a) => a.kode).join(' ')}
+                    {daftarKode(p.aspek)}
                   </span>
                 </span>
                 <Link
@@ -247,29 +268,26 @@ function DaftarPerlu({ x }) {
 
       {perlu.length ? (
         <>
-          <div className="px-5 pt-4 sm:px-6">
-            <Tabs
-              value={jenis}
-              onChange={pilihJenis}
-              items={[
-                { value: 'semua', label: t('Semua'), count: perlu.length },
-                { value: 'kosong', label: t('Nilai belum lengkap'), count: hitung.kosong },
-                { value: 'rendah', label: t('Di bawah rata-rata minimal'), count: hitung.rendah },
-                { value: 'sementara', label: t('Masih sementara'), count: hitung.sementara },
-              ]}
-            />
-          </div>
+          <TabSaring
+            label={t('Jenis tindak lanjut')}
+            nilai={jenis}
+            onPilih={pilihJenis}
+            pilihan={[
+              { nilai: 'semua', label: t('Semua'), n: perlu.length },
+              { nilai: 'kosong', label: t('Nilai belum lengkap'), n: hitung.kosong },
+              { nilai: 'rendah', label: t('Di bawah rata-rata minimal'), n: hitung.rendah },
+              { nilai: 'sementara', label: t('Masih sementara'), n: hitung.sementara },
+            ]}
+          />
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[760px] border-collapse">
+          <GulirTabel>
+            <table className="w-full min-w-[760px] border-separate border-spacing-0">
               <thead>
-                <tr className="border-y border-line bg-surface-2">
-                  {['NIM', 'Nama', 'Yang perlu ditindaklanjuti'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[.07em] text-ink-3">
-                      {t(h)}
-                    </th>
-                  ))}
-                  <th className="px-4 py-3">
+                <tr className="bg-surface-2 [&>th]:border-b [&>th]:border-line">
+                  <th className={JUDUL_KOLOM + ' pl-4 text-left sm:pl-5'}>{t('NIM')}</th>
+                  <th className={JUDUL_KOLOM + ' text-left'}>{t('Nama')}</th>
+                  <th className={JUDUL_KOLOM + ' text-left'}>{t('Yang perlu ditindaklanjuti')}</th>
+                  <th className={JUDUL_KOLOM + ' pr-4 sm:pr-5'}>
                     <span className="sr-only">{t('Aksi')}</span>
                   </th>
                 </tr>
@@ -278,22 +296,22 @@ function DaftarPerlu({ x }) {
                 {tampil.map((p) => {
                   const pertama = p.kosong[0]
                   return (
-                    <tr key={p.s.id} className="border-b border-line align-top last:border-0">
-                      <td className="px-4 py-3 text-[12.5px] tabular-nums text-ink-2">{p.s.nim}</td>
-                      <td className="px-4 py-3">
-                        <Link href={'/admin/mahasiswa/' + p.s.id} className="text-[14px] font-bold text-ink hover:text-brand-ink">
+                    <tr key={p.s.id} className="align-top transition-colors hover:bg-surface-2 [&>td]:border-b [&>td]:border-line">
+                      <td className="py-3 pl-4 pr-3 text-[13px] tabular-nums text-ink-2 sm:pl-5">{p.s.nim}</td>
+                      <td className="px-3 py-3">
+                        <Link href={'/admin/mahasiswa/' + p.s.id} className="text-[14.5px] font-bold text-ink hover:text-brand-ink hover:underline">
                           {p.s.name}
                         </Link>
-                        <span className="block text-[12px] text-ink-3">{p.s.program}</span>
+                        <span className="block text-[12.5px] text-ink-2">{p.s.program}</span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3">
                         <ul className="space-y-1 text-[13px] leading-snug text-ink">
                           {pertama ? (
                             <li>
                               {t('{n} komponen belum dinilai', { n: p.kosong.length })}
                               <span className="text-ink-2">
                                 {' '}
-                                ({pertama.aspek.kode} · {SUMBER[pertama.komponen.sumber]?.label ?? pertama.komponen.sumber})
+                                ({daftarKode([pertama.aspek])} · {SUMBER[pertama.komponen.sumber]?.label ?? pertama.komponen.sumber})
                               </span>
                             </li>
                           ) : null}
@@ -308,13 +326,13 @@ function DaftarPerlu({ x }) {
                           {p.sementara.length ? (
                             <li>
                               {t('Aspek {daftar} masih sementara', {
-                                daftar: p.sementara.map((a) => a.aspek.kode).join(', '),
+                                daftar: daftarKode(p.sementara.map((a) => a.aspek)),
                               })}
                             </li>
                           ) : null}
                         </ul>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="py-3 pl-3 pr-4 text-right sm:pr-5">
                         {pertama ? (
                           <Link
                             href={tautanInput({
@@ -344,29 +362,10 @@ function DaftarPerlu({ x }) {
                 })}
               </tbody>
             </table>
-          </div>
+          </GulirTabel>
 
           {halaman > 1 ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-6">
-              <p className="text-[13px] text-ink-2">
-                {t('Menampilkan')}{' '}
-                <strong className="tabular-nums text-ink">
-                  {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, baris.length)}
-                </strong>{' '}
-                {t('dari')} <strong className="tabular-nums text-ink">{baris.length}</strong>
-              </p>
-              <div className="flex items-center gap-2">
-                <button type="button" className="btn-ghost !px-3 !py-2 text-[13px]" disabled={page === 1} onClick={() => setPage((n) => n - 1)}>
-                  {t('Sebelumnya')}
-                </button>
-                <Badge tone="neutral">
-                  {page} / {halaman}
-                </Badge>
-                <button type="button" className="btn-ghost !px-3 !py-2 text-[13px]" disabled={page === halaman} onClick={() => setPage((n) => n + 1)}>
-                  {t('Berikutnya')}
-                </button>
-              </div>
-            </div>
+            <Paginasi halaman={page} jumlahHalaman={halaman} total={baris.length} ukuran={PAGE_SIZE} onHalaman={setPage} />
           ) : null}
         </>
       ) : (
@@ -445,10 +444,16 @@ function PanelKunci({ x }) {
           <>
             <p className="text-[14.5px] font-bold text-ink">{t('Belum bisa dikunci')}</p>
             <p className="text-[13px] leading-relaxed text-ink-2">
-              {t('Angkatan ini baru di Semester {n} dari {total}. Penguncian bisa dilakukan setelah Semester {total} berakhir.', {
-                n: kalender,
-                total: CONFIG.TOTAL_SEMESTER_PROGRAM,
-              })}
+              {/* Dulu angkatan yang belum mulai tertulis "baru di Semester 0 dari 3". */}
+              {kalender < 1
+                ? t('Angkatan ini belum mulai; Semester 1-nya dimulai {periode}. Penguncian bisa dilakukan setelah Semester {total} berakhir.', {
+                    periode: labelPeriode(c.intake),
+                    total: CONFIG.TOTAL_SEMESTER_PROGRAM,
+                  })
+                : t('Angkatan ini baru di Semester {n} dari {total}. Penguncian bisa dilakukan setelah Semester {total} berakhir.', {
+                    n: kalender,
+                    total: CONFIG.TOTAL_SEMESTER_PROGRAM,
+                  })}
             </p>
           </>
         ) : kunci === 'kosong' ? (

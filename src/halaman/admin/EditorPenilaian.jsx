@@ -16,6 +16,7 @@ import { menungguPersetujuan, simpanPenilaian, useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 import { PesanMenunggu } from './PermintaanTerkirim'
+import { GulirTabel } from '../../components/Ui'
 
 /* Penilaian satu aspek di Input Manual: teks aspek, komponen asesmen, dan bobotnya. Super admin menyimpan
    langsung; admin biasa mengajukan ke super admin. Lihat src/server/penilaian.js dan README.md › Mengubah
@@ -33,6 +34,19 @@ const keAngka = (s) => {
   return t === '' ? NaN : Number(t)
 }
 const persen = (n) => (Number.isFinite(n) ? n.toLocaleString('id-ID', { maximumFractionDigits: 2 }) + '%' : '–')
+
+/* Pilihan di sel tabel komponen. Panahnya sendiri, seperti Select di Ui.jsx, supaya ikut berputar saat daftarnya
+   terbuka; lihat index.css › pilihan (select) panel Kemahasiswaan. */
+function PilihanSel({ children, ...rest }) {
+  return (
+    <span className="relative flex">
+      <select className="field appearance-none !py-2 !pl-2.5 !pr-8" {...rest}>
+        {children}
+      </select>
+      <IconChevronDown size={14} className="pointer-events-none absolute inset-y-0 right-2.5 my-auto text-ink-3" />
+    </span>
+  )
+}
 
 function keDraf(s) {
   const aktif = s.komponen.filter((k) => k.aktif)
@@ -268,7 +282,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
           </fieldset>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+        <GulirTabel className="rounded-xl border border-line bg-surface">
           <table className="w-full min-w-[900px] border-collapse">
             <thead>
               <tr className="border-b border-line bg-surface-2">
@@ -306,8 +320,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
                       <span className="mt-1 block font-mono text-[10.5px] text-ink-3">{k.id ?? t('baru, ID dibuat saat disimpan')}</span>
                     </td>
                     <td className="px-3 py-2.5">
-                      <select
-                        className="field !px-2.5 !py-2"
+                      <PilihanSel
                         value={k.sumber}
                         disabled={kunciSumber}
                         title={kunciSumber ? t('Sudah punya nilai: sumbernya tidak bisa diganti.') : undefined}
@@ -321,7 +334,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
                             {s.label}
                           </option>
                         ))}
-                      </select>
+                      </PilihanSel>
                       {kunciSumber ? (
                         <span className="mt-1 flex items-center gap-1 text-[11px] text-ink-3">
                           <IconLock size={11} />
@@ -331,34 +344,34 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
                     </td>
                     <td className="px-3 py-2.5">
                       {k.sumber === 'MK' ? (
-                        <select className="field !px-2.5 !py-2" value={k.jenis} onChange={(e) => ubahKomponen(k.kunci, { jenis: e.target.value })} aria-label={t('Jenis')}>
+                        <PilihanSel value={k.jenis} onChange={(e) => ubahKomponen(k.kunci, { jenis: e.target.value })} aria-label={t('Jenis')}>
                           {JENIS_MK.map((j) => (
                             <option key={j} value={j}>
                               {t(LABEL_JENIS[j])}
                             </option>
                           ))}
-                        </select>
+                        </PilihanSel>
                       ) : (
                         <span className="text-[13px] text-ink-3">–</span>
                       )}
                     </td>
                     <td className="px-3 py-2.5">
-                      <select className="field !px-2.5 !py-2" value={k.ranah} onChange={(e) => ubahKomponen(k.kunci, { ranah: e.target.value })} aria-label={t('Ranah')}>
+                      <PilihanSel value={k.ranah} onChange={(e) => ubahKomponen(k.kunci, { ranah: e.target.value })} aria-label={t('Ranah')}>
                         {Object.values(RANAH).map((r) => (
                           <option key={r.id} value={r.id}>
                             {t(r.label)}
                           </option>
                         ))}
-                      </select>
+                      </PilihanSel>
                     </td>
                     <td className="px-3 py-2.5">
-                      <select className="field !px-2.5 !py-2" value={k.status} onChange={(e) => ubahKomponen(k.kunci, { status: e.target.value })} aria-label={t('Status')}>
+                      <PilihanSel value={k.status} onChange={(e) => ubahKomponen(k.kunci, { status: e.target.value })} aria-label={t('Status')}>
                         {STATUS_KOMPONEN.map((s) => (
                           <option key={s} value={s}>
                             {t(s === 'resmi' ? 'Resmi' : 'Draft')}
                           </option>
                         ))}
-                      </select>
+                      </PilihanSel>
                     </td>
                     <td className="px-3 py-2.5">
                       {draf.bobotManual ? (
@@ -405,7 +418,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
               </tr>
             </tfoot>
           </table>
-        </div>
+        </GulirTabel>
         <p className="mt-2 text-[12px] leading-relaxed text-ink-3">
           {t('Hapus memindahkan komponen ke arsip: tidak tampil dan tidak dihitung, tetapi nilainya tetap tersimpan dan bisa dipulihkan. Komponen yang sudah punya nilai tidak bisa diganti sumbernya.')}
         </p>
@@ -413,9 +426,10 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
 
       {/* --------------------------------- arsip --------------------------------- */}
       {arsip.length ? (
-        <details className="rounded-xl border border-line bg-surface px-4 py-3">
+        <details className="group rounded-xl border border-line bg-surface px-4 py-3">
           <summary className="flex cursor-pointer items-center gap-2 text-[13px] font-bold text-ink">
-            <IconChevronDown size={15} />
+            {/* Panahnya ikut berputar saat arsip dibuka; dulu selalu menunjuk ke bawah. */}
+            <IconChevronDown size={15} className="transition-transform group-open:rotate-180" />
             {t('Arsip komponen ({n})', { n: arsip.length })}
           </summary>
           <ul className="mt-3 divide-y divide-line">
@@ -480,7 +494,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
         />
       ) : null}
       {pesan && !beda.ada ? (
-        <p role="status" className="flex items-center gap-2 text-[13.5px] font-bold text-[var(--good)]">
+        <p role="status" className="flex animate-rise items-center gap-2 text-[13.5px] font-bold text-[color:var(--teks-baik,var(--good))]">
           <IconCheck size={16} />
           {pesan}
         </p>

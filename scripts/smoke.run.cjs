@@ -45,7 +45,10 @@ const ISI = {
     /* Kartu "Requires Review" dilebur ke lonceng — isinya mengulang angka yang
        sama dengan daftar "Belum dinilai" di sana. */
     [/Requires Review/, 'kartu Requires Review sudah tidak ada di Ringkasan', false],
-    [/(Lihat selengkapnya[\s\S]*){6}/, 'enam tautan Lihat selengkapnya ke halaman lain'],
+    /* Kartu "Halaman lain" dilepas: menu samping sudah memuat semua halaman. Yang dibuka di atas sekarang
+       pekerjaan yang menunggu, atau satu baris tenang bila tidak ada. */
+    [/Perlu dikerjakan|Tidak ada pekerjaan yang menunggu/, 'pekerjaan yang menunggu dibuka paling atas'],
+    [/Halaman lain/, 'tidak ada lagi kartu Halaman lain', false],
     [/Mahasiswa terpantau[\s\S]{0,400}Rata-rata nilai[\s\S]{0,400}Nilai sudah final/, 'hanya tiga angka utama'],
     /* Catatan "bobot sementara" DIHAPUS dari halaman oleh pemilik proyek, jadi
        pemeriksaannya ikut dilepas — bukan karena tidak penting. Kalimat itu yang
@@ -105,8 +108,10 @@ const ISI = {
     [/Pilih semester terlebih dahulu/, 'gerbang semester menutup area kerja'],
     [/Semester wajib dipilih sebelum data bisa dimasukkan/, 'dropdown semester ditandai wajib'],
     [/Semester 1 .*3 aspek/, 'tiap pilihan semester menyebut jumlah aspeknya'],
-    [/<option[^>]*>PDP<\/option>/, 'pilihan sumber penilaian tampil', true, true],
-    [/<option[^>]*>Kemahasiswaan<\/option>/, 'Kemahasiswaan tanpa komponen tidak ditawarkan sebagai sumber', false, true],
+    /* Sumber penilaian kini tombol pilihan (radio name="sumber"), bukan <option>. */
+    /* React memasang atribut name paling akhir pada input, jadi urutannya tidak dipatok. */
+    [/<input(?=[^>]*name="sumber")(?=[^>]*value="PDP")[^>]*>/, 'pilihan sumber penilaian tampil', true, true],
+    [/<input(?=[^>]*name="sumber")(?=[^>]*value="ENGAGEMENT")[^>]*>/, 'Kemahasiswaan tanpa komponen tidak ditawarkan sebagai sumber', false, true],
   ],
 
   '/dosen': [
@@ -137,7 +142,8 @@ const ISI = {
   ],
 
   '/admin/usulan': [
-    [/Persetujuan nilai dosen/, 'judul halaman persetujuan'],
+    /* Judulnya kini 'Persetujuan Nilai Dosen', sama dengan menu; huruf besar atau kecil sama-sama sah. */
+    [/Persetujuan [Nn]ilai [Dd]osen/, 'judul halaman persetujuan'],
     [/Usulan menunggu keputusan/, 'angka utama: usulan yang tertahan'],
     [/Rahmat Nugroho/, 'usulan dosen pertama tampil'],
     [/Maria Ulfah/, 'usulan dosen kedua tampil'],
@@ -185,7 +191,7 @@ const ISI = {
   '/super/akses': [
     [/Akses Pengguna/, 'judul Akses Pengguna'],
     [/Tentukan mahasiswa, dosen, dan admin Kemahasiswaan/, 'penjelasan siapa yang diatur'],
-    [/Akses Super Admin tidak bisa dicabut dari sini/, 'catatan batas wewenang'],
+    [/Akses Super Admin tidak bisa dicabut atau dihapus dari sini/, 'catatan batas wewenang'],
   ],
   '/super/log': [
     [/Log Aktivitas/, 'judul Log Aktivitas'],
@@ -210,7 +216,8 @@ const ISI = {
     [/Setujui dan jalankan/, 'admin biasa tidak melihat tombol menyetujui', false],
   ],
   '/admin/sertifikat': [
-    [/Cetak sertifikat/, 'judul halaman cetak sertifikat'],
+    /* Judulnya kini 'Cetak Sertifikat', sama dengan menu; huruf s besar atau kecil sama-sama sah. */
+    [/Cetak [Ss]ertifikat/, 'judul halaman cetak sertifikat'],
     [/[0-9]+ dari [0-9]+ mahasiswa sudah berhak atas sertifikat/, 'jumlah yang berhak tertulis'],
     [/Semua [0-9]+[\s\S]{0,40}Berhak [0-9]+[\s\S]{0,40}Belum berhak [0-9]+/, 'tab kelayakan lengkap dengan jumlahnya'],
     [/Simpan sebagai PDF/, 'petunjuk simpan PDF untuk dikirim ke mahasiswa'],
@@ -735,9 +742,9 @@ const RUTE = [
   w.localStorage.setItem('sk5c.session', SESI.admin)
   const hs = await ujiSegarkanData()
   const cekSegar = [
-    ['tombol Segarkan data ada', hs.adaTombol],
-    ['belum ada penanda waktu sebelum ditekan', hs.tanpaPenandaAwal],
-    ['penanda waktu muncul setelah ditekan', hs.adaPenandaSesudah],
+    ['tombol Segarkan di bilah status ada di Data Mahasiswa', hs.adaTombol],
+    ['hanya satu tombol segarkan di halaman itu', hs.satuTombol],
+    ['menekannya benar-benar memuat ulang data', hs.termuatUlang],
     ['daftar mahasiswa tetap utuh setelah disegarkan', hs.daftarTetapAda],
   ]
   const rusakSegar = cekSegar.filter(([, ok]) => !ok)
@@ -751,11 +758,11 @@ const RUTE = [
   const hla = await ujiLaciAdmin()
   const cekLaci = [
     ['tombol garis tiga ada', hla.adaTombol],
-    ['garis tiga tidak disembunyikan di layar lebar', hla.tampilDiLayarLebar],
+    ['di layar lebar menu samping yang tampil, garis tiga hanya di layar sempit', hla.menuSampingDiLayarLebar],
     ['laci terbuka saat ditekan', hla.terbuka],
-    ['panelnya bernada gelap', hla.panelGelap],
-    ['ada judul kelompok Workspace dan Rujukan', hla.adaJudulKelompok],
-    ['halaman di luar bilah atas ikut tercantum', hla.adaHalamanTersembunyi],
+    ['panelnya terang, sama dengan menu samping', hla.panelTerang],
+    ['ada judul kelompok Kerja harian dan Rujukan', hla.adaJudulKelompok],
+    ['semua halaman tercantum di laci', hla.adaHalamanTersembunyi],
     ['halaman yang sedang dibuka ditandai', hla.adaPenandaAktif],
   ]
   const rusakLaci = cekLaci.filter(([, ok]) => !ok)
@@ -793,11 +800,6 @@ const RUTE = [
     ['angka: membentang setelah ditekan', hlo.angka.terbukaSetelahDitekan],
     ['angka: tetap utuh di layar lebar', hlo.angka.tetapUtuhDiLayarLebar],
     ['angka: kakinya hanya ada di ponsel', hlo.angka.kakiKhususPonsel],
-    ['halaman: ada tombol berbentuk kartu', hlo.halaman.adaTombol],
-    ['halaman: tombolnya hanya ada di ponsel', hlo.halaman.tombolKhususPonsel],
-    ['halaman: enam kartu terlipat saat dibuka', hlo.halaman.terlipatAwal],
-    ['halaman: semuanya tampil setelah ditekan', hlo.halaman.tidakAdaYangTersembunyiSesudah],
-    ['halaman: tetap utuh di layar lebar', hlo.halaman.tetapUtuhDiLayarLebar],
   ]
   const rusakLipat = cekLipat.filter(([, ok]) => !ok)
   gagal += rusakLipat.length
@@ -1106,6 +1108,7 @@ const RUTE = [
     ['tab Bobot memasang halaman Kurikulum tanpa judulnya, aspek terpilih ikut', ps.bobotTertanam],
     ['Akses Pengguna: daftar dosen beserta status aksesnya', ps.aksesDaftarDosen],
     ['mencabut akses butuh alasan, lalu statusnya berubah', ps.cabutAkses],
+    ['hapus akun hanya untuk akses yang dicabut, butuh alasan, lalu barisnya hilang', ps.hapusAkun],
     ['pencarian NIP menyisakan dosen itu', ps.cariAkun],
     ['akun super admin (milik sendiri) tidak bisa dicabut', ps.superTidakBisaDicabut],
     ['tab Mahasiswa: NIM, prodi, dan angkatan tampil, pencarian NIM jalan, akses bisa dicabut', ps.aksesMahasiswa],

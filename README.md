@@ -48,15 +48,17 @@ npm run smoke       # render tiap rute di DOM sungguhan, tanpa data lalu dengan 
 npm run assert      # periksa transkrip mematuhi R2, R3, R4, R8
 npm run test:nilai  # simpan batch, rollback, dan validasi import
 npm run test:profil # penyimpanan profil: kunci akun, simpan-muat, foto
-npm run test:db     # setiap pintu API terhadap MySQL, termasuk kunci angkatan, data terkunci, log, kurikulum, bobot, periode;
-                    # data uji (NIM dan angkatan berawalan UJI) dihapus lagi
+npm run test:db     # setiap pintu API terhadap MySQL, termasuk kunci angkatan, data terkunci, log, kurikulum, bobot, periode,
+                    # akses, tambah akun, dan hapus akun; data uji (NIM dan angkatan berawalan UJI, akun uji.hapus.*) dihapus lagi
 ```
 
 Uji selain `test:db` berjalan tanpa server dan tanpa basis data (mode lokal, lihat
 `src/lib/modeData.js`): sesi dan perubahan hidup di memori, dan halaman diisi data contoh.
 
 `test:db` masuk memakai akun admin dan dosen dari `npm run db:seed`, jadi jalankan seed lebih dulu
-bila basis data baru dikosongkan. `smoke` dan `assert` memakai jsdom 29, yang butuh Node
+bila basis data baru dikosongkan. Bila akun admin di basis datamu sudah diganti (misalnya
+`admin1@umn.ac.id`), sebutkan lewat `UJI_ADMIN_EMAIL=admin1@umn.ac.id npm run test:db`; sandinya tetap
+`umn12345`. `smoke` dan `assert` memakai jsdom 29, yang butuh Node
 `^20.19`, `^22.13`, atau `>=24`. Di Node 22.11 keduanya berhenti dengan galat `ERR_REQUIRE_ESM`,
 kecuali `require(esm)` dinyalakan lewat flag: `NODE_OPTIONS=--experimental-require-module npm run
 smoke` (Git Bash) atau `$env:NODE_OPTIONS='--experimental-require-module'; npm run smoke`
@@ -232,7 +234,8 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
                   penarikan (lihat Persetujuan super admin)
   penilaian.js    menyimpan penilaian satu aspek (POST /api/kurikulum/penilaian)
   periode.js      memindahkan periode akademik, hanya super admin (POST /api/periode)
-  akses.js        daftar akun dan cabut/pulihkan akses, hanya super admin (POST /api/akses, /api/akses/ubah)
+  akses.js        daftar akun, cabut/pulihkan akses, tambah akun, dan hapus akun, hanya super admin
+                  (POST /api/akses, /api/akses/ubah, /api/akses/tambah, /api/akses/hapus)
 
 app/api/          masuk, keluar, sesi, data, nilai, nilai/rollback, penguncian, koreksi,
                   koreksi/keputusan, usulan, usulan/keputusan, profil, angkatan,
@@ -246,10 +249,11 @@ prisma/           skema, migrasi, seed.js (isi dasar), seed-contoh.js (data cont
 scripts/          skrip uji; dataContoh.js berisi data contoh (290 mahasiswa, 5 dosen,
                   audit log) yang dimuat uji lewat isiData() — website tidak memakainya
 
-src/components/   Ui, Icons, Navbar, Laci, MenuAkun, Footer, FilterBar, ErrorBoundary,
+src/components/   Ui (termasuk pola halaman Kemahasiswaan: JudulHalaman, KartuAngka, TabSaring,
+                  Paginasi, GulirTabel, JUDUL_KOLOM), Icons, Navbar, Laci, MenuAkun, Footer, FilterBar, ErrorBoundary,
                   TombolBahasa, PilihanMengambang, PenyuntingFoto, LihatFoto, LayananTambahan,
-                  LogoPdp, Lipat, MenuSamping (menu samping mahasiswa dan super admin),
-                  TombolTema
+                  LogoPdp, Lipat, MenuSamping (menu samping mahasiswa, Kemahasiswaan, dan super
+                  admin), TombolTema, CariCepat (pencarian cepat Ctrl+K panel Kemahasiswaan)
 src/components/charts/  ChartFrame, RadarCluster (6 sumbu), AspectBars (10 aspek), MutuDonut,
                   PerkembanganAngkatan
 src/halaman/      Login, Profil (satu halaman profil untuk tiga peran)
@@ -257,7 +261,7 @@ src/halaman/student/  StudentLayout, Dashboard, Transkrip, Peta, Riwayat, Sertif
                     LembarCetak, LembarSertifikat, LoncengBelumDinilai
 src/halaman/dosen/    DosenLayout, Masuk (Data Masuk), Nilai, Usulan, status
 src/halaman/admin/    AdminLayout, Overview, Students, StudentDetail, Programs, Nilai, Usulan,
-                    LoncengKemahasiswaan, StatusData, Kurikulum (bobot), Angkatan,
+                    LoncengKemahasiswaan, StatusData, Kurikulum (bobot), Angkatan, CetakSertifikat,
                     PersetujuanAdmin, PermintaanTerkirim (bagian layar bersama),
                     EditorPenilaian (di Input Manual), Log (juga dipakai panel super admin)
 src/halaman/super/    SuperLayout, Kendali, Wewenang, Aturan (lihat Panel Super Admin)
@@ -371,7 +375,7 @@ admin biasa ke `/admin`; itu hanya penjaga tampilan, pintu API tetap memeriksa u
 | `/super` Pusat Kendali | pemilih periode di pojok kanan atas; kartu keputusan (jumlah yang menunggu saat ini, tiga yang terlama, tombol ke antrean), keadaan sistem (keputusan di periode terpilih, angkatan terkunci, aturan menunggu konfirmasi), grafik perubahan nilai per bulan dalam periode itu beserta tabelnya, enam tindakan admin terbaru di periode itu sebagai linimasa, rantai pengawasan | `PERMINTAAN`, `AUDIT_LOG`, `COHORTS`, `MENUNGGU_KONFIRMASI`, `/api/log` |
 | `/super/persetujuan` | antrean Setujui/Tolak (halaman `PersetujuanAdmin` yang sama) | `PERMINTAAN`, `/api/persetujuan/keputusan` |
 | `/super/penilaian` | Penilaian & Bobot: tab *Aspek & komponen* (editor Input Manual, `EditorPenilaian`) dan tab *Bobot* (halaman `Kurikulum` tanpa judulnya); simpanan super admin langsung berlaku | `/api/kurikulum/penilaian`, `/api/kurikulum/bobot` |
-| `/super/akses` | Akses Pengguna: mencabut dan memulihkan akses mahasiswa, dosen, dan admin (lihat di bawah) | `/api/akses`, `/api/akses/ubah` |
+| `/super/akses` | Akses Pengguna: mencabut dan memulihkan akses mahasiswa, dosen, dan admin, menambah akun, dan menghapus akun yang aksesnya sudah dicabut (lihat di bawah) | `/api/akses`, `/api/akses/ubah`, `/api/akses/tambah`, `/api/akses/hapus` |
 | `/super/log` | Log Aktivitas (lihat di bawah) | `/api/log` |
 | `/super/wewenang` | kartu tiap peran beserta jumlah tindakan yang boleh dilakukannya, matriks siapa boleh melakukan apa (kolom Super Admin disorot), plus prinsip yang dipakai | konstanta di `Wewenang.jsx`, diturunkan dari aturan server |
 | `/super/aturan` | kartu periode akademik (pindah satu semester maju atau mundur, dengan pratinjau semester tiap angkatan dan alasan; lihat Periode akademik), ringkasan berapa aturan yang masih menunggu konfirmasi, lalu aturan perhitungan yang berlaku, sumbernya (bawaan kode atau tabel Konfigurasi), dan statusnya; selain periode hanya bacaan, tautannya ke Penilaian & Bobot | `CONFIG`, `DARI_BASIS_DATA` di `src/lib/config.js`; `PERIODE_AKTIF`, `/api/periode` |
@@ -415,6 +419,29 @@ di `src/server/akses.js`. Bila server menjawab 404, halaman menyatakan fiturnya 
   karakter; 404 bila akun tidak ada. Dicatat ke `LogAktivitas` dengan aksi `UBAH_AKSES` beserta email,
   peran, aktif sebelum dan sesudah, dan alasan; bila statusnya sudah sama, tidak ada yang dicatat.
   Jawaban: `{ akun }` dengan bentuk yang sama.
+- `POST /api/akses/hapus` dengan isi `{ id, alasan }`, hanya super admin (`hapusAkun()`). Menghapus
+  permanen baris `Pengguna` beserta `Mahasiswa`/`Dosen` dan `Profil`-nya, jadi akunnya juga hilang di
+  phpMyAdmin. Aturannya:
+  - Tolak (403) akun milik sendiri dan akun `SUPER_ADMIN`.
+  - Tolak (400) alasan yang kurang dari 10 karakter, dan beri 404 bila akun tidak ada.
+  - Tolak (409) akun yang aksesnya belum dicabut.
+  - Tolak (409) akun yang masih punya data. Pesannya menyebut jumlahnya, misalnya "masih punya 12
+    nilai dan 3 riwayat tindakan". Yang dihitung sebagai data:
+    - milik mahasiswa: nilai, pengumpulan, pengajuan koreksi, penguncian aspek, riwayat perubahan
+      nilai, dan entri usulan dosen;
+    - milik dosen: usulan nilai dan pengumpulan yang diterima;
+    - milik siapa pun: jejak sebagai pelaku di `AuditLog`, `LogAktivitas`, `Batch`, `Nilai.penilaiId`,
+      `Penguncian`, `Angkatan`, `Komponen`/`Aspek`/`Indikator`, keputusan koreksi dan usulan, serta
+      `PermintaanAdmin`. Kolom-kolom itu menyimpan id akun tanpa relasi, dan Log Aktivitas membaca
+      nama pelakunya dari akun (`petaNama()`), jadi akun seperti itu cukup dibiarkan dicabut.
+  - Penghapusan dan catatan `HAPUS_AKUN` (email, peran, nama, NIM/NIP, prodi, angkatan, alasan) ada
+    dalam satu transaksi. Bila data baru masuk di antara pemeriksaan dan penghapusan, relasi basis data
+    menolaknya dan pintunya menjawab 409.
+  - Jawaban: `{ id }`.
+
+  Di layar, tombol "Hapus akun" hanya muncul di baris yang aksesnya sudah dicabut, di samping "Pulihkan
+  akses". Panelnya meminta alasan sebelum tombol "Hapus permanen" aktif. Penolakan dari server tampil
+  di panel itu; bila berhasil, barisnya hilang dan pesan status muncul di atas daftar.
 
 **Tampilan panel super admin** mengambil pola dasbor modern di Dribbble (sapaan bertanggal, satu kartu
 fokus, angka dengan meter, grafik batang dengan tooltip, linimasa berikon, kepingan periode) tanpa
@@ -461,7 +488,8 @@ meninggalkan bahasa visual di bawah: warna padat, garis rambut, tanpa bayangan b
   dipertebal (5,6:1 terang, 5,3:1 gelap di `--surface-2`), begitu juga tulisan lencana "Menunggu
   konfirmasi" (`.teks-tunggu`) dan lencana "Punya akses"/"Akses dicabut" di Akses Pengguna (`.teks-baik`,
   `.teks-kritis`): nada `good` dan `critical` milik `Badge` hanya 2,85:1 dan 3,94:1 di latar lencananya.
-  Panel lain belum ikut; bila ingin seragam, ubah `--text-muted` di `:root` dan nada `Badge` di `Ui.jsx`.
+  Panel Kemahasiswaan (`.panel-admin`) ikut sejak tampilannya diperbarui; panel mahasiswa dan dosen
+  belum. Bila ingin seragam, ubah `--text-muted` di `:root` dan nada `Badge` di `Ui.jsx`.
 
 ## Bahasa visual: rata, bukan bertumpuk
 
@@ -488,22 +516,198 @@ Seluruh panel memakai satu bahasa yang sama, mengikuti gaya E-Learning UMN:
   dibuang karena keempat tombolnya mati, dan sakelar tema tidak lagi muncul dua
   kali. Footer kemudian dibangun ulang mengikuti susunan E-Learning UMN —
   pintasan berikon, helpdesk, kontak, identitas unit — tetapi **setiap pintasan
-  menunjuk ke halaman yang benar-benar ada**, dan berbeda antara panel mahasiswa
-  (Transkrip, Peta Perjalanan, Riwayat, Sertifikat) dan panel Kemahasiswaan
-  (Data Mahasiswa, Input Nilai, Program Studi, Sertifikat).
+  menunjuk ke halaman yang benar-benar ada** (di panel mahasiswa: Transkrip, Peta
+  Perjalanan, Riwayat, Sertifikat). Panel Kemahasiswaan tidak lagi memakai footer
+  sejak tampilannya diperbarui: semua tujuannya ada di menu samping (lihat Panel
+  Kemahasiswaan › Tampilan).
+
+## Panel Kemahasiswaan
+
+### Tampilan
+
+Penggunanya staf Kemahasiswaan dan dosen dengan rentang usia yang lebar, dan panel ini dipakai bekerja
+setiap hari, jadi susunannya mengutamakan "cepat sampai ke pekerjaan" di atas hiasan. Polanya diambil dari
+dashboard admin modern (Dribbble, Pinterest): menu samping, bilah atas tipis dengan lokasi halaman, dan
+tabel dengan alat saring di kepalanya. Visualnya tetap VIBE: navy, toska hanya untuk lencana, tanpa gradien
+besar.
+
+- **Menu samping putih** selebar 280px (`AdminLayout.jsx`; menu super admin navy, supaya dua panel itu
+  tidak tertukar). Dua kelompok: *Kerja harian* (Overview, Data Mahasiswa, Input & Import Nilai,
+  Persetujuan Nilai Dosen, Permintaan Saya atau Persetujuan Admin, Cetak Sertifikat, Angkatan) dan
+  *Rujukan & catatan* (Kurikulum CPMK, Program Studi, Log Aktivitas). Lencana toska hanya untuk
+  pekerjaan yang menunggu (koreksi, usulan dosen, permintaan). Label menu tidak pernah dipotong "…": bila
+  tidak muat, misalnya saat berlencana, ia turun ke baris kedua (`MenuSamping.jsx`). Di bawah 1024px menu
+  pindah ke laci di balik tombol garis tiga.
+- **Bilah atas**: lokasi halaman (Kemahasiswaan › halaman › rincian), pencarian cepat, lonceng, bahasa,
+  tema, dan menu akun. Di bawahnya bilah status (periode, waktu pembaruan, satu-satunya tombol Segarkan).
+  Supaya lokasi halaman tidak terpotong di 1024 sampai 1366px, tombol cari yang bertulisan baru muncul
+  mulai 1280px (di bawahnya tombol ikon; Ctrl+K tetap bekerja), dan nama serta email di samping avatar
+  baru muncul mulai 1440px (prop `rinciDari` milik `MenuAkun`).
+- **Pencarian cepat** (`CariCepat.jsx`): tombol di bilah atas atau Ctrl+K / ⌘K dari halaman mana pun.
+  Mencari mahasiswa (nama, NIM, email; minimal 2 huruf, paling banyak 6 hasil) dan halaman menu. Pola
+  combobox: fokus tetap di kolom ketik, panah, Home, dan End memindah sorotan (`aria-activedescendant`),
+  Enter membuka, Esc menutup dan mengembalikan fokus ke unsur yang difokus sebelum dialog dibuka (bila
+  unsur itu sudah tidak ada, ke tombol cari yang sedang terlihat). Penanda fokusnya garis bawah kolom,
+  bukan cincin bawaan. Dialognya dipasang lewat portal ke `<body>`: bilah atas punya tumpukan
+  (`z-index`) sendiri yang lebih rendah dari menu samping, jadi tanpa portal menu samping tidak ikut
+  tertutup tirai dan masih bisa diklik.
+- **Pola halaman bersama** di `Ui.jsx`, dipakai semua halaman panel ini supaya kepala halaman, tab, judul
+  kolom, dan kaki daftar sama rupa di mana pun:
+  - `JudulHalaman`: judul 26px, keterangan, dan tombol tindakan di kanan yang turun ke bawah di layar
+    sempit.
+  - `KartuAngka`: satu angka besar dengan satuannya, dan bila ada, satu persentase dengan bilah tipis.
+    Teksnya datang sudah diterjemahkan pemanggil; komponen ini tidak memanggil `t()`, supaya kalimat
+    berisian tidak diterjemahkan dua kali.
+  - `TabSaring`: tab bergaris bawah di kepala kartu, masing-masing dengan jumlahnya, jadi isi tiap kelompok
+    terbaca tanpa harus dipilih. Di baliknya radio: Tab masuk sekali, panah memindah pilihan.
+  - `Paginasi`: "Menampilkan a–b dari n", pilihan baris per halaman (bila ada), lalu Sebelumnya, nomor
+    halaman, dan Berikutnya yang selalu sebaris.
+  - `GulirTabel`: wadah tabel yang bisa digulir ke samping (lihat jebakan tata letak di bawah).
+  - `JUDUL_KOLOM`: kelas judul kolom tabel, huruf biasa 12,5px tebal, bukan huruf kapital kecil 11px.
+
+  Log Aktivitas dan Persetujuan Admin juga dipakai panel super admin, jadi rupa barunya ikut tampil di
+  `/super/log` dan `/super/persetujuan`.
+- **Data Mahasiswa**:
+  - Tab kelengkapan nilai beserta jumlahnya (Semua, Lengkap, Belum lengkap), jadi banyaknya mahasiswa
+    yang nilainya masih kosong terbaca tanpa harus memilih apa pun. Tab Belum lengkap yang kosong ditulis
+    sebagai kabar baik.
+  - Alat saring: kolom cari lalu empat pilihan berlabel di dalam kotak, disusun grid supaya tidak ada
+    pilihan yang tersisa sendirian selebar baris. Di HP keempat pilihan dilipat di balik tombol Filter
+    yang menyebut berapa saringan yang aktif. Atur ulang filter muncul hanya bila ada yang disaring.
+  - Tabel: setiap judul kolom bisa mengurutkan (`aria-sort`). Tombol ⋯ per baris membuka menu *Lihat
+    detail & transkrip* dan *Masukkan nilai*. Menunya ber-`position: fixed` supaya tidak terpotong wadah
+    gulir, dengan pola menu (panah, Home, End, Esc). Kolom ⋯ menempel di kanan (`sticky`) saat tabel
+    digulir ke samping.
+  - Email tidak ditampilkan di tabel. Email tetap ada di detail mahasiswa dan ekspor CSV, dan tetap bisa
+    dicari. Tanpanya tabel muat utuh di layar 1366px dan lebih.
+- **Input & Import Nilai**: tiga langkah bernomor (semester, sumber penilaian, angkatan). Semester dan
+  sumber berupa tombol pilihan (radio) yang langsung menampilkan isinya, misalnya "3 aspek · A.1, A.2,
+  A.3". Penyaring fakultas dan program studi ada di bawahnya. Setiap pilihan angkatan menyebut jumlah
+  mahasiswanya atau "belum mulai", dan keterangan di bawahnya memakai semester kalender ("Belum mulai",
+  "Semester 2 dari 3", "Program selesai"); lihat Input nilai untuk gerbangnya. Bila pilihan yang ada belum
+  membuka area kerja sementara pengajuan koreksi menunggu, satu baris di bawah pilihan menautkan ke
+  antreannya, karena tab Pengajuan koreksi hanya ada di dalam area kerja.
+- **Halaman lainnya** memakai pola yang sama:
+  - *Detail mahasiswa*: tautan kembali dan tombol *Masukkan nilai* di atas, transkrip versi admin
+    (`<Transkrip untukAdmin />`), syarat sertifikat, dan riwayat perubahan nilai yang menampilkan 10
+    terbaru lebih dulu (tombol *Tampilkan semua*). Versi admin tidak memuat kartu "Ajukan koreksi nilai"
+    milik mahasiswa: pengajuan dari akun admin selalu ditolak server (403).
+  - *Cetak Sertifikat*: tab Semua, Berhak, dan Belum berhak beserta jumlahnya, kolom cari dan pilihan
+    angkatan, lalu tabel berhalaman. Tombol Cetak di tiap baris menyebut nama mahasiswanya bagi pembaca
+    layar.
+  - *Program Studi*: tiga angka ringkasan, tab satuan analisis (program studi, fakultas, angkatan), dan
+    penyaring ringkas tanpa kolom cari.
+  - *Persetujuan Nilai Dosen*: tiga angka (menunggu keputusan, disetujui, ditolak) lalu tab Menunggu dan
+    Sudah diputuskan. *Permintaan Saya* dan *Persetujuan Admin*: tab Menunggu dan Riwayat.
+  - *Angkatan*: kartu per angkatan, dengan tiga angkanya sejajar di semua kartu. Angkatan yang semester
+    pertamanya belum tiba ditulis "Belum mulai" dan tidak dipilih sebagai bawaan. Di bawahnya daftar tindak
+    lanjut bertab (Semua, Nilai belum lengkap, Di bawah rata-rata minimal, Masih sementara) dan berhalaman.
+  - *Log Aktivitas*: tab jenis catatan, pilihan pelaku dan jenis tindakan, cari NIM (tekan Enter), tanggal
+    Dari dan Sampai yang tidak bisa saling melewati, pintasan Hari ini, 7 hari terakhir, dan Semua waktu,
+    lalu Atur ulang filter.
+  - *Kurikulum CPMK*: kepala halaman dan judul kolom yang sama; isi kartu aspek rata atas.
+- **Papan ketik**: `Tabs` mengikuti pola tab APG (hanya tab terpilih yang masuk urutan Tab; panah, Home,
+  dan End memindah pilihan beserta fokusnya). Laci menu (di bawah 1024px) mengurung Tab selama terbuka,
+  karena ia `aria-modal`. Lonceng, menu akun, dan laci mengembalikan fokus ke tombol pembukanya saat ditutup
+  dengan Esc (pencarian cepat: lihat di atas); lonceng dan menu akun juga menutup sendiri saat fokus
+  berpindah keluar dengan Tab. Baris aspek di transkrip dibuka lewat tombol bertanda `aria-expanded`, bukan
+  hanya klik pada barisnya.
+- **Kontras**: `.panel-admin` memakai teks redup yang sama tegasnya dengan panel super admin. Nada `good`,
+  `warning`, dan `critical` milik `Badge`, juga pesan "tersimpan", memakai `--teks-baik`, `--teks-tunggu`,
+  dan `--teks-kritis` yang didefinisikan di kedua panel itu; warna asalnya hanya 2,85:1, 2,8:1, dan 3,94:1
+  di latar lencananya. Seluruh halaman panel ini, termasuk dialog pencarian dan menu ⋯ yang terbuka, lolos
+  4,5:1 di tema terang dan gelap, laptop dan HP.
+- **Jebakan tata letak yang sudah terjadi di sini**:
+  - Wadah tabel yang bisa digulir harus `relative` bila di dalamnya ada unsur `position: absolute`,
+    misalnya label `sr-only`. Tanpa itu unsur tersebut keluar dari wadah gulir, dan Chrome di HP
+    memperlebar halaman (Data Mahasiswa sampai 1110px, Cetak Sertifikat 809px, Log Aktivitas 680px).
+    Karena itu setiap tabel kini dibungkus `GulirTabel`, yang sekaligus memberi `scroll-padding` dan
+    menggulir wadahnya saat sesuatu di dalamnya difokus: Chrome tidak menggulir wadah untuk unsur yang sudah
+    terlihat sebagian, jadi tautan yang separuh tersembunyi di tepi tetap terpotong. Wadah gulir tanpa isi
+    yang bisa difokus dijadikan tempat berhenti Tab oleh Chrome, jadi cincin fokus wadah itu digambar ke
+    dalam supaya tidak terpotong kartu.
+  - Bilah atas menempel (`sticky`), jadi `html` diberi `scroll-padding-top: 88px`; tanpanya unsur yang
+    difokus dengan Tab bisa berhenti di balik bilah itu. Kolom ⋯ yang menempel di kanan Data Mahasiswa
+    menutupi sel dengan cara yang sama, jadi wadah tabelnya diberi jarak gulir seukuran kolom itu
+    (`scroll-pr-[72px]`, lewat prop `jarak` milik `GulirTabel`).
+  - `<select>` cocok dengan `:focus-visible` bahkan saat diklik tetikus. Di `Select` ringkas, cincin fokus
+    global milik `<select>` menimpa ujung label di sebelahnya ("Program stud|i"), jadi cincinnya kini
+    digambar di kotak (`has-[:focus-visible]`) dan cincin `<select>` dimatikan.
+  - `<button>` meletakkan isinya di tengah secara tegak. Kartu yang berupa tombol (Kurikulum, Angkatan)
+    diberi `flex flex-col` supaya isinya rata atas dan angka di kakinya sejajar antarkartu.
+  - Garis antarbaris tabel dipasang di sel (`border-separate`), bukan di `<tr>`. Pada `border-collapse`,
+    garis sel yang `sticky` ikut tergulir pergi.
+
+### Gerak
+
+Sedikit gerak supaya panel tidak terasa kaku, tanpa mengganggu kerja. Semuanya pendek (paling lama 0,7 detik),
+hanya `transform` dan `opacity`, dan sekali jalan saat sesuatu muncul atau ditekan. Animasi CSS-nya
+(`index.css` › gerak panel Kemahasiswaan) hanya berlaku di dalam `.panel-admin`; transisi kecil milik komponen
+(garis tab, kartu terangkat) ikut tampil di panel super admin karena komponennya dipakai bersama.
+
+- Bagian halaman (anak langsung isi halaman) naik dan memudar masuk berurutan, berselang 50 md. Bagian yang
+  muncul belakangan, misalnya area kerja Input Nilai sesudah semester dipilih, ikut naik saat dipasang.
+  Mode isiannya `backwards`, sama dengan `.animate-halaman` (lihat Catatan kode › Gerak).
+- Bilah persentase (`KartuAngka`, `ScoreBar`) tumbuh dari kiri (`.bilah-tumbuh`), dan batang grafik
+  Perkembangan per semester tumbuh dari dasarnya bergiliran (`.batang-tumbuh`).
+- Garis bawah tab terpilih di `TabSaring` tumbuh dari tengah.
+- Kartu yang bisa dipilih (Angkatan, Kurikulum) sedikit terangkat saat ditunjuk.
+- Tombol mengecil ke 97% saat ditekan, umpan balik yang terasa juga di HP.
+- Pesan status (perubahan tersimpan, permintaan dikirim ke Super Admin) dan panel saringan di HP muncul
+  dengan `animate-rise`; panah bagian yang bisa dilipat di penyunting penilaian Input Manual berputar saat
+  dibuka.
+- **Daftar pilihan setiap `<select>`** muncul seperti menu akun dan pemilih periode super admin. Bentuknya
+  kartu bersudut 16px dengan bayangan, naik 10px sambil memudar (`rise`, 0,35 detik), dengan centang di kanan
+  pilihan terpilih dan panah yang berputar saat terbuka. Caranya memakai `<select>` yang bisa diberi gaya
+  (`appearance: base-select`, Chrome dan Edge 135 ke atas), jadi tetap select bawaan: papan ketik, pembaca layar,
+  dan `onChange` tidak berubah. Peramban lain memakai daftar bawaannya tanpa animasi; karena itu semua aturannya
+  ada di dalam `@supports` (`index.css` › pilihan (select) panel Kemahasiswaan). Hal yang sudah terbukti di sini:
+  - Pengurai CSS Turbopack menolak pseudo-class sesudah `::picker(select)` (misalnya `:popover-open`), dan
+    galatnya membuat seluruh `index.css` gagal dimuat. Animasinya dipasang langsung di `::picker(select)`: daftar
+    itu `display: none` saat tertutup, jadi animasinya diputar ulang setiap kali dibuka. Uji dulu sintaks CSS
+    baru di rute sementara sebelum memasukkannya ke `index.css`.
+  - Di base-select teks terpilih ada di elemen bawaan yang tidak bisa menyempit, sehingga `truncate` milik
+    `<select>` tidak berlaku dan teks panjang menimpa panah. Penggantinya `-webkit-line-clamp: 1`,
+    `word-break: break-all`, dan `overflow-clip-margin: content-box`, yang menghasilkan "Desain Ko…", sama
+    dengan select bawaan.
+  - Base-select selebar pilihan terpilih, bukan selebar pilihan terpanjang. Select yang lebarnya tidak diatur
+    wadahnya (agregasi dan skala di Import CSV) diberi `min-w` setara select bawaan. Tanpa itu kolom skala
+    tidak rata dan select-nya menyempit di HP sampai teksnya terpotong.
+  - Setiap select di panel ini punya panah sendiri tepat sesudahnya (`select + svg`), dipusatkan dengan
+    `inset-y-0 my-auto`, bukan `translate`. Properti `rotate` yang digabung dengan `translate` milik Tailwind
+    memindahkan panah ke bawah saat berputar. Select baru di panel ini perlu pola yang sama (lihat `Select`
+    di `Ui.jsx` atau `PilihanSel` di `EditorPenilaian.jsx`).
+  - Select ringkas (label di dalam kotak): daftarnya menempel ke tepi kotak (`.pilihan-ringkas` dengan
+    `anchor-scope`), bukan ke `<select>` yang baru mulai sesudah label.
+  - Daftar membuka ke bawah selama muat (`position-try-order: normal`). Bawaan Chrome memilih sisi yang paling
+    lega, sehingga daftar pendek di dekat dasar layar membuka ke atas.
+  - Select yang nonaktif diberi warna redup sendiri. Base-select tidak lagi memakai warna nonaktif bawaan
+    peramban, jadi tanpa aturan ini Sumber yang "sudah dinilai" tampak bisa dipilih.
+  - Pilihan yang difokus dengan papan ketik diberi latar `--brand-soft`, seperti pemilih periode, bukan cincin
+    fokus global. Bila daftar dibuka dengan tetikus, pilihan itu tidak disorot; centang menandai yang terpilih.
+- Saat kurangi gerak aktif, animasi muncul, tumbuh, dan daftar pilihan dilepas sama sekali (`animation: none`),
+  seperti pita logo di halaman masuk. Blok `prefers-reduced-motion` di akhir `index.css` hanya memendekkan durasi, dan
+  jedanya (50 sampai 360 md) tetap berjalan; karena isiannya `backwards`, bagian halaman dan batang grafik
+  sempat tidak terlihat selama jeda itu lalu muncul tiba-tiba. Transisi garis tab dan efek tekan tombol
+  cukup dipendekkan blok global, dan kartu hanya terangkat bila gerak diizinkan (`motion-safe:`). Saat
+  mencetak, bagian halaman tidak dianimasikan.
 
 ## Ringkasan admin sengaja dibuat tenang
 
 Penggunanya dosen dan staf dengan rentang usia dan kebiasaan digital yang lebar, jadi halaman
 `/admin` **bukan** dashboard padat. Aturan yang dipegang:
 
+- **pekerjaan dulu, angka kemudian** — blok **Perlu dikerjakan** ada paling atas;
 - **tiga angka saja** — mahasiswa terpantau, rata-rata nilai, dan nilai yang sudah final;
-- **satu grafik saja** — donat sebaran huruf mutu — dan **tidak ada filter bertingkat**;
-  grafik lainnya tinggal di halaman rinciannya;
+- **dua grafik saja** — perkembangan nilai per semester dan donat sebaran huruf mutu — dan
+  **tidak ada filter bertingkat**; grafik lainnya tinggal di halaman rinciannya;
 - setiap angka besar disertai **satu persentase** dengan bilah tipis; persentasenya selalu
   tertulis angkanya, bilah hanya membantu membandingkan sekilas;
-- blok **Perlu dikerjakan** menuliskan tugas sebagai kalimat utuh, bukan istilah teknis, dan
-  hilang sendiri kalau memang tidak ada yang tertunda;
+- blok **Perlu dikerjakan** menuliskan tugas sebagai kalimat utuh, bukan istilah teknis: usulan
+  dosen dan koreksi mahasiswa lebih dulu, lalu paling banyak tiga kelompok nilai yang belum diisi
+  (sisanya disebut jumlahnya dan ada di lonceng). Kalau tidak ada yang tertunda, blok itu menjadi
+  satu baris tenang "Tidak ada pekerjaan yang menunggu";
+- kartu **Halaman lain** dibuang: semua halaman sudah ada di menu samping;
 - setiap tautan menyebut tujuannya (**Lihat selengkapnya**, *Masukkan nilai*, *Tinjau
   pengajuan*), digarisbawahi, dan bidang kliknya besar;
 - ukuran huruf mulai 14,5–16 px dengan jarak antarbaris longgar; tidak ada teks abu-abu kecil
@@ -758,10 +962,22 @@ mahasiswa dan tidak memercayai hitungan layar.
 
 ## Input nilai
 
-Halaman `/admin/nilai` menuntut **semester dipilih lebih dahulu** — selama dropdownnya masih
-kosong, area kerja tidak ditampilkan sama sekali. Alasannya bukan kosmetik: tiap aspek CPMK
+Halaman `/admin/nilai` menuntut **semester dipilih lebih dahulu** — selama belum ada tombol
+semester yang dipilih (langkah 1), area kerja tidak ditampilkan sama sekali. Alasannya bukan kosmetik: tiap aspek CPMK
 hanya dinilai pada satu semester, jadi tanpa semester sistem tidak tahu komponen mana yang
 boleh diisi.
+
+Angkatan juga harus sudah sampai semester itu. Angkatan yang Semester 1-nya belum tiba, atau yang belum
+sampai semester terpilih, tidak membuka area kerja; layar menyebut kapan semesternya dimulai. Pemeriksaannya
+memakai `semesterKalender`, bukan `semesterAktif`: `semesterAktif` dibatasi minimal 1
+(`turunkanSemesterAktif`), jadi dulu angkatan yang belum mulai lolos gerbang Semester 1, ditulis "Kini di
+Semester 1", dan nilainya bisa diisi sebelum semesternya tiba. Angkatan bawaan adalah angkatan terbaru yang
+sudah mulai dan punya mahasiswa; dulu angkatan terbaru apa pun, sehingga halaman dibuka dengan "Tidak ada
+mahasiswa pada pilihan ini".
+
+Server belum ikut memeriksa ini. `semesterDari()` di `src/server/muat.js` masih memakai
+`turunkanSemesterAktif`, jadi nilai Semester 1 untuk angkatan yang belum mulai tetap diterima bila dikirim
+langsung ke API. Penjaganya perlu ditambahkan di back-end.
 
 Setelah semester, sumber, dan angkatan dipilih, tersedia tiga cara kerja:
 
@@ -777,8 +993,9 @@ Setelah semester, sumber, dan angkatan dipilih, tersedia tiga cara kerja:
 - **Pengajuan koreksi** — antrean sanggahan mahasiswa dengan aksi setujui/tolak.
 
 Setiap penyimpanan menjadi satu **batch** yang tercatat di audit log dan bisa **di-rollback
-utuh**. Batch bertahan setelah halaman dimuat ulang dan ikut tersinkron antar tab — lihat
-bagian Penyimpanan perubahan di bawah. Tombol **Hapus semua perubahan** menghapus seluruhnya.
+utuh** setelah dikonfirmasi (dulu tombol Rollback langsung membatalkan batch). Batch bertahan
+setelah halaman dimuat ulang dan ikut tersinkron antar tab — lihat bagian Penyimpanan perubahan
+di bawah. Tombol **Hapus semua perubahan** menghapus seluruhnya.
 
 Import menolak: NIM tak dikenal, kode komponen asing, komponen dari sumber atau semester
 lain, mahasiswa di luar angkatan sasaran, nilai di luar 0–100, baris duplikat, dan **aspek
@@ -811,6 +1028,11 @@ Lonceng panel Kemahasiswaan menautkan ke `/admin/nilai` lengkap dengan semester,
 program studi, aspek, dan kadang NIM, sehingga sekali klik daftar mahasiswa yang perlu dinilai
 sudah terbuka. Setiap nilai dari alamat diperiksa dulu: alamat bisa diketik tangan atau sudah
 usang, jadi pilihan yang tidak dikenal jatuh ke bawaan, bukan membuat halaman kosong.
+
+Halaman diberi `key` dari parameter alamatnya (`app/admin/nilai/page.jsx`). App Router mempertahankan state
+komponen bila yang berubah hanya parameter, sedangkan pilihan halaman ini dibaca dari alamat hanya saat
+dipasang. Tanpa `key`, tautan lonceng yang diklik saat Input Nilai sudah terbuka hanya mengganti alamat, dan
+semester serta angkatan di layar tetap yang lama.
 
 ## Kapan aspek berubah dari sementara menjadi final
 
@@ -918,6 +1140,7 @@ dengan perubahannya: tidak ada perubahan tanpa jejak, dan tidak ada jejak tanpa 
 | `UBAH_PENILAIAN` | penilaian satu aspek disimpan dari Input Manual | alasan, teks aspek sebelum/sesudah, komponen ditambah/diubah/diarsipkan/dipulihkan, bobot sebelum/sesudah, ringkasan dampak |
 | `UBAH_PERIODE` | super admin memindahkan periode akademik (lihat Periode akademik) | periode sebelum/sesudah, alasan |
 | `UBAH_AKSES` | super admin mencabut atau memulihkan akses akun (lihat Panel Super Admin › Akses Pengguna) | email, peran, aktif sebelum/sesudah, alasan |
+| `HAPUS_AKUN` | super admin menghapus permanen akun yang aksesnya sudah dicabut dan belum punya data | email, peran, nama, NIM/NIP, prodi, angkatan, alasan |
 
 Kedua log dibaca lewat `POST /api/log` (`bacaLog()`, hanya Kemahasiswaan), satu halaman setiap kali:
 
@@ -931,8 +1154,8 @@ Kedua log dibaca lewat `POST /api/log` (`bacaLog()`, hanya Kemahasiswaan), satu 
 
 Pintunya memakai POST karena kerangka API (`tangani`) hanya membaca isi permintaan pada POST; log
 tidak diubah olehnya. Supaya pengurutan dan penyaringan tetap cepat, `AuditLog` diberi indeks pada
-`waktu` dan `aktorId` (migrasi `indeks_audit`). Halaman `/admin/log` yang memakai pintu ini belum
-dibuat.
+`waktu` dan `aktorId` (migrasi `indeks_audit`). Halaman Log Aktivitas (`Log.jsx`, di `/admin/log` dan
+`/super/log`) membaca pintu ini; susunannya ada di Panel Kemahasiswaan › Tampilan.
 
 ## Penyimpanan perubahan
 
@@ -1114,7 +1337,21 @@ di peramban harus menunggu komponen menempel:
 - Penanda `{dalamKurungKurawal}` wajib ada juga di sisi Inggris. Nama penanda tidak boleh memakai
   tanda hubung: `{ rata-rata: … }` dibaca sebagai pengurangan dan menggagalkan kompilasi.
 - Kunci yang dioper sebagai prop (judul dan kepala tabel `ChartFrame`, kepala tabel lembar cetak)
-  tidak terdeteksi pemindai `test:bahasa`, jadi dijaga manual di bagian akhir `teks.js`.
+  tidak terdeteksi pemindai `test:bahasa`, jadi dijaga manual di bagian akhir `teks.js`. Kalimat yang datang
+  dari modul data juga didaftarkan di `scripts/bahasa.mjs`: `DARI_DATA` untuk kontak layanan, judul grafik,
+  label `ingest.js`, dan jenis penilaian, `DARI_ATURAN` untuk kalimat `rules.js`. Kata tunggal berhuruf kecil
+  dilewati pemindai kecuali ada di daftar kata yang tetap diperiksa (siap, belum, sementara, pada, draft,
+  usulan).
+- Kalimat berisian disusun dengan penanda, bukan disambung: `ChartFrame` menerima `subtitleNilai` untuk
+  isian `subtitle`, dan syarat sertifikat (`kelayakanSertifikat` di `rules.js`) membawa `labelT`, `alasanT`,
+  dan `ringkasT` berupa pasangan `[kunci, isian]` di samping `label`, `alasan`, dan `ringkas` yang lama.
+  Layar memakai pasangan itu (`t(...s.labelT)`).
+- `KartuAngka` tidak memanggil `t()`; pemanggilnya mengirim teks yang sudah diterjemahkan. Dulu Overview
+  menerjemahkan kalimat yang sudah diterjemahkan, dan kamus memperingatkan kalimat Inggris yang tidak
+  dikenalnya.
+- Isi data (nama fakultas, program studi, angkatan) tidak dilewatkan ke `t()`. `FilterBar` hanya
+  menerjemahkan pilihan "Semua"; dulu seluruh pilihan dilewatkan ke `t()` dan memicu peringatan "belum ada
+  padanan Inggris" untuk nama fakultas seperti "Teknik & Informatika".
 - Pilihan dropdown ditampilkan dalam bahasa aktif, tetapi nilai yang dikirim tetap kalimat
   Indonesianya, karena penyaringnya membandingkan dengan data.
 - Menu admin memakai kata "Penilaian", bukan "Nilai": kunci `'Nilai'` sudah berarti kepala
@@ -1235,9 +1472,17 @@ panah kiri/kanan). Bagian yang mudah rusak:
   dilepas dan isinya `inert`, jadi bagi pembaca layar, Tab, dan uji, semester itu sudah tertutup.
 - Di halaman masuk, logo PDP ada di pita kertas yang kakinya tergulung ke luar (gulungan di depan
   kertas), dengan tongkat berkenop toska (`--warna-kenop` `#14b8a6`, lebih pekat dari `--accent` supaya
-  gradasi kenopnya terbaca) di kedua ujung gulungan. Saat halaman dibuka, pita digelar sekali dari tepi atas panel kiri: gulungan turun dan
-  kertas terbuka mengikutinya (`transform` dan `clip-path` dengan durasi dan kurva yang sama), lalu
-  pita memantul kecil. Jarak tempuh gulungan diambil dari
+  gradasi kenopnya terbaca) di kedua ujung gulungan. Saat halaman dibuka, pita digelar sekali dari tepi
+  atas panel kiri: gulungan turun dan kertas terbuka mengikutinya, lalu pita memantul kecil. Kertas
+  dibuka oleh "jendela" ber-`overflow: clip` (`.pita-jendela`) yang turun bersama gulungan (keyframe
+  `pita-gulung` yang sama), sementara kertas di dalamnya digeser balik sejauh yang sama
+  (`pita-kertas-buka`), jadi kertas tampak diam. Semuanya `transform`, digeser compositor tanpa raster
+  ulang. Dulu kertasnya dibuka dengan `clip-path` beranimasi, dan Chrome menjalankannya lewat paint
+  worklet yang me-raster ulang kertas, bayangan, dan logonya di setiap bingkai. Hasil uji A/B di halaman
+  yang sama: 110 tugas raster dalam 0,8 detik (kini 0), utas compositor 1,6 kali lebih sibuk, dan ada
+  bingkai yang tampil tanpa seluruh pembaruannya, sehingga gerak turunnya terasa patah-patah. Rupanya
+  tidak berubah: potret di sembilan titik waktu animasi sama persis. Jangan menganimasikan `clip-path`
+  atau `mask` pada pita ini. Jarak tempuh gulungan diambil dari
   `--tinggi-kertas` (194px: ruang atas 76 + logo 84 + ruang bawah 34), jadi ubah bersama bila
   ukuran logo atau ruangnya diganti. Pita menjorok 24px ke balik tepi atas supaya tetap menempel
   saat memantul. Saat kurangi gerak aktif, animasinya dilepas sama sekali (`animation: none`),
@@ -1314,7 +1559,7 @@ panah kiri/kanan). Bagian yang mudah rusak:
 | 5 | Sertifikat | selesai: halaman mahasiswa dan cetak dari panel Kemahasiswaan |
 | 6 | Admin: panel input nilai | selesai (lihat fase 7) |
 | 7 | Input & Import Nilai: gerbang semester, input manual, import CSV, rollback, koreksi | selesai |
-| 8 | Kurikulum, Angkatan & Sertifikat, Log | sebagian: halaman Angkatan, ubah bobot di halaman Kurikulum, aturan data terkunci, pencatatan dan pembacaan log, serta kurikulum yang dibaca dari basis data sudah ada; halaman Log masih "Segera Hadir" |
+| 8 | Kurikulum, Angkatan & Sertifikat, Log | sebagian: halaman Angkatan, ubah bobot di halaman Kurikulum, aturan data terkunci, pencatatan dan pembacaan log, halaman Log Aktivitas, serta kurikulum yang dibaca dari basis data sudah ada |
 | 9 | Poles cetak, responsif, aksesibilitas | sebagian (cetak & reduced-motion sudah) |
 | — | Panel Kemahasiswaan lainnya: Overview, Data Mahasiswa beserta detailnya, Program Studi, Persetujuan Nilai Dosen | selesai |
 | — | Panel dosen: Data Masuk, Input & Import Nilai sebagai usulan, Status Usulan | selesai |
@@ -1324,7 +1569,6 @@ panah kiri/kanan). Bagian yang mudah rusak:
 
 Yang belum dikerjakan:
 
-- tampilan halaman `/admin/log` (kini masih "Segera Hadir"; pintu API-nya sudah ada);
 - mengubah indikator perilaku dan pengaturan selain bobot (ambang sertifikat, mode penguncian,
   mode agregasi, dan lain-lain) dari layar; menambah aspek baru atau mengubah struktur aspek
   (semester, cluster). Teks aspek, komponen, dan bobot sudah bisa diubah;

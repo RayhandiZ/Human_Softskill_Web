@@ -11,7 +11,9 @@
    permintaan dan catatan log-nya ikut dihapus di akhir.
    Bagian periode memindahkan periode akademik satu semester maju lalu kembali; baris Konfigurasi PERIODE_AKTIF
    dikembalikan persis seperti sebelumnya (atau dihapus bila dulu belum ada) dan catatan log-nya dihapus.
-   Bagian akses hanya mencabut lalu memulihkan akses akun mahasiswa sementara; log-nya ikut dihapus. */
+   Bagian akses mencabut lalu memulihkan akses akun mahasiswa sementara, lalu membuat tiga akun sementara tanpa
+   data (admin, dosen, mahasiswa) lewat /api/akses/tambah dan menghapusnya lewat /api/akses/hapus; log-nya ikut
+   dihapus, begitu juga akunnya bila uji berhenti sebelum sempat menghapus. */
 
 import 'dotenv/config'
 import bcrypt from 'bcryptjs'
@@ -39,6 +41,8 @@ import * as penilaian from '../app/api/kurikulum/penilaian/route.js'
 import * as periode from '../app/api/periode/route.js'
 import * as akses from '../app/api/akses/route.js'
 import * as ubahAkses from '../app/api/akses/ubah/route.js'
+import * as tambahAkses from '../app/api/akses/tambah/route.js'
+import * as hapusAkses from '../app/api/akses/hapus/route.js'
 import {
   KOMPONEN,
   KOMPONEN_BAWAAN,
@@ -83,7 +87,13 @@ const PINTU = {
   '/api/periode': periode,
   '/api/akses': akses,
   '/api/akses/ubah': ubahAkses,
+  '/api/akses/tambah': tambahAkses,
+  '/api/akses/hapus': hapusAkses,
 }
+
+/* Akun Kemahasiswaan untuk uji. Bawaannya akun dari npm run db:seed; basis data yang akunnya sudah diganti
+   bisa memakai yang lain, misalnya: UJI_ADMIN_EMAIL=admin1@umn.ac.id npm run test:db (sandi tetap umn12345). */
+const EMAIL_ADMIN = process.env.UJI_ADMIN_EMAIL || 'admin@umn.ac.id'
 
 let gagal = 0
 const cek = (nama, ok, rinci = '') => {
@@ -140,8 +150,21 @@ const logPenilaianUji = []
 /* Bagian "periode": baris Konfigurasi PERIODE_AKTIF sebelum disentuh uji (null = belum ada), dan log-nya. */
 let periodeAsli
 const logPeriodeUji = []
+/* Bagian "hapus akun": tiga akun sementara tanpa data. NIM wajib angka, jadi berawalan 99999, bukan UJI. */
+const HAPUS_UJI = {
+  admin: { email: 'uji.hapus.admin.' + SUF + '@umn.ac.id' },
+  dosen: { email: 'uji.hapus.dosen.' + SUF + '@lecturer.umn.ac.id', nip: 'UJIHAPUS' + SUF },
+  mahasiswa: { email: 'uji.hapus.mhs.' + SUF + '@student.umn.ac.id', nim: '99999' + SUF },
+}
 /** Target baris LogAktivitas yang dibuat uji ini; ditambah id batch begitu diketahui. */
-const targetLog = ['angkatan ' + ANG_A, 'angkatan ' + ANG_B, 'mahasiswa ' + NIM, 'mahasiswa ' + NIM2, 'akun ' + EMAIL]
+const targetLog = [
+  'angkatan ' + ANG_A,
+  'angkatan ' + ANG_B,
+  'mahasiswa ' + NIM,
+  'mahasiswa ' + NIM2,
+  'akun ' + EMAIL,
+  ...Object.values(HAPUS_UJI).map((a) => 'akun ' + a.email),
+]
 
 async function bersihkanMahasiswa(email) {
   const p = await db.pengguna.findUnique({ where: { email }, include: { mahasiswa: true } })
@@ -239,6 +262,12 @@ async function bersihkan() {
   await bersihkanMahasiswa(EMAIL)
   await bersihkanMahasiswa(EMAIL2)
   await bersihkanMahasiswa(EMAIL3)
+  // Akun bagian hapus akun yang belum sempat terhapus (uji berhenti di tengah).
+  for (const { email } of Object.values(HAPUS_UJI)) {
+    const p = await db.pengguna.findUnique({ where: { email } })
+    if (p) await db.dosen.deleteMany({ where: { penggunaId: p.id } })
+    await bersihkanMahasiswa(email)
+  }
   await db.logAktivitas.deleteMany({ where: { target: { in: targetLog } } })
   await db.angkatan.deleteMany({ where: { id: { in: [ANG_A, ANG_B, ANG_C] } } })
 }
@@ -272,7 +301,7 @@ try {
   garis('1. MASUK, SESI, DAN WEWENANG')
   cek('tanpa cookie: /api/data ditolak 401', (await tamu('/api/data')).status === 401)
   cek('sandi salah ditolak', (await tamu('/api/masuk', { metode: 'POST', isi: { email: EMAIL, password: 'salah' } })).status === 401)
-  cek('admin masuk', (await admin('/api/masuk', { metode: 'POST', isi: { email: 'admin@umn.ac.id', password: 'umn12345' } })).status === 200)
+  cek('admin masuk', (await admin('/api/masuk', { metode: 'POST', isi: { email: EMAIL_ADMIN, password: 'umn12345' } })).status === 200)
   const masukSA = await sa('/api/masuk', { metode: 'POST', isi: { email: 'super.admin@umn.ac.id', password: 'umn12345' } })
   cek('super admin masuk', masukSA.status === 200)
   cek('mahasiswa uji masuk', (await mhs('/api/masuk', { metode: 'POST', isi: { email: EMAIL, password: 'umn12345' } })).status === 200)
@@ -366,7 +395,7 @@ try {
   const setuju = await admin('/api/usulan/keputusan', { metode: 'POST', isi: { id: u1.isi.id, keputusan: 'disetujui' } })
   cek('admin menyetujui', setuju.isi.ok === true, JSON.stringify(setuju.isi))
   const uas = await selUas()
-  cek('nilai masuk atas nama dosen pengusul', uas?.nilai === 88 && uas.penilaiId !== (await db.pengguna.findUnique({ where: { email: 'admin@umn.ac.id' } })).id)
+  cek('nilai masuk atas nama dosen pengusul', uas?.nilai === 88 && uas.penilaiId !== (await db.pengguna.findUnique({ where: { email: EMAIL_ADMIN } })).id)
   const uDosen = (await dosen('/api/data')).isi.usulan.find((x) => x.id === u1.isi.id)
   cek('dosen melihat usulannya disetujui beserta batch-nya', uDosen?.status === 'disetujui' && uDosen.batchId && uDosen.keputusan?.oleh === 'Biro Kemahasiswaan', JSON.stringify(uDosen))
   const u2 = await dosen('/api/usulan', { metode: 'POST', isi: { entri: [{ nim: NIM, komponenId: 'A2-MK-UTS', nilai: 75 }] } })
@@ -405,7 +434,7 @@ try {
     include: { mahasiswa: true },
   })
   const mahasiswaId2 = akunUji2.mahasiswa.id
-  const adminId = (await db.pengguna.findUnique({ where: { email: 'admin@umn.ac.id' } })).id
+  const adminId = (await db.pengguna.findUnique({ where: { email: EMAIL_ADMIN } })).id
   const saId = (await db.pengguna.findUnique({ where: { email: 'super.admin@umn.ac.id' } })).id
   // ANG_A sudah lewat Semester 3: perubahan datanya oleh admin biasa menjadi permintaan (bagian 14). Aturan
   // penguncian dan data terkunci di bawah diuji lewat super admin, yang tidak pernah tertahan.
@@ -762,7 +791,7 @@ try {
     return (await tangani(r, peran, async () => ({ ok: true }))).status
   }
   cek("pintu ['superadmin']: super admin lolos", (await coba('super.admin@umn.ac.id', ['superadmin'])) === 200)
-  cek("pintu ['superadmin']: admin biasa ditolak 403", (await coba('admin@umn.ac.id', ['superadmin'])) === 403)
+  cek("pintu ['superadmin']: admin biasa ditolak 403", (await coba(EMAIL_ADMIN, ['superadmin'])) === 403)
   cek("pintu ['superadmin']: dosen ditolak 403", (await coba('simon.petrus@lecturer.umn.ac.id', ['superadmin'])) === 403)
   cek("pintu ['superadmin']: mahasiswa ditolak 403", (await coba(EMAIL, ['superadmin'])) === 403)
 
@@ -1024,10 +1053,62 @@ try {
     (await ubah(sa, { id: akunUji.id, aktif: false, alasan: ALASAN_AKSES })).status === 200 && (await logAkses()) === logSebelumSama,
   )
 
+  // Akun mahasiswa sementara sudah punya nilai dari bagian sebelumnya, jadi tidak boleh terhapus walau dicabut.
+  const hapus = (pelaku, isi) => pelaku('/api/akses/hapus', { metode: 'POST', isi })
+  const ditolakData = await hapus(sa, { id: akunUji.id, alasan: ALASAN_AKSES })
+  cek(
+    'akun yang masih punya nilai tidak bisa dihapus (409) dan pesannya menyebut nilainya',
+    ditolakData.status === 409 && /\d+ nilai/.test(ditolakData.isi.galat ?? ''),
+    JSON.stringify(ditolakData.isi),
+  )
+  cek(
+    'akun dan nilainya tetap utuh sesudah ditolak',
+    Boolean(await db.pengguna.findUnique({ where: { id: akunUji.id } })) && (await db.nilai.count({ where: { mahasiswaId } })) > 0,
+  )
+
   const pulih = await ubah(sa, { id: akunUji.id, aktif: true, alasan: ALASAN_AKSES })
   cek('super admin memulihkan akses mahasiswa', pulih.status === 200 && pulih.isi.akun?.aktif === true)
   cek('mahasiswa bisa masuk lagi', (await mhs('/api/masuk', { metode: 'POST', isi: { email: EMAIL, password: 'umn12345' } })).status === 200)
   cek('data mahasiswa tetap utuh sesudah dipulihkan', (await mhs('/api/data')).isi.mahasiswa?.[0]?.nim === NIM)
+
+  /* Hapus akun sampai benar-benar hilang dari basis data. Tiga akun sementara tanpa data dibuat lewat
+     /api/akses/tambah; log TAMBAH_AKUN, UBAH_AKSES, dan HAPUS_AKUN-nya bertarget 'akun <email>' (targetLog). */
+  const ALASAN_HAPUS = 'Uji otomatis hapus akun'
+  cek('hapus akun oleh admin biasa ditolak 403', (await hapus(admin, { id: akunUji.id, alasan: ALASAN_HAPUS })).status === 403)
+  cek('hapus akun sendiri ditolak 403', (await hapus(sa, { id: idSA, alasan: ALASAN_HAPUS })).status === 403)
+  cek('hapus akun yang tidak ada ditolak 404', (await hapus(sa, { id: 0, alasan: ALASAN_HAPUS })).status === 404)
+  const isianHapus = {
+    admin: {},
+    dosen: { nama: 'Dosen Uji Hapus', nip: HAPUS_UJI.dosen.nip, jabatan: 'Dosen', prodi: prodi.nama, sumber: 'MK', semester: '1' },
+    mahasiswa: { nama: 'Mahasiswa Uji Hapus', nim: HAPUS_UJI.mahasiswa.nim, prodi: prodi.nama, angkatanId: angkatan.id },
+  }
+  for (const [peran, isi] of Object.entries(isianHapus)) {
+    const { email } = HAPUS_UJI[peran]
+    const baru = await sa('/api/akses/tambah', { metode: 'POST', isi: { ...isi, peran, email, sandi: 'umn12345' } })
+    const id = baru.isi.akun?.id
+    cek('akun ' + peran + ' sementara dibuat', baru.status === 200 && Number.isInteger(id), JSON.stringify(baru.isi))
+    cek('akun ' + peran + ' yang masih aktif tidak bisa dihapus (409)', (await hapus(sa, { id, alasan: ALASAN_HAPUS })).status === 409)
+    cek('alasan hapus kurang dari 10 karakter ditolak 400', (await hapus(sa, { id, alasan: 'pendek' })).status === 400)
+    await ubah(sa, { id, aktif: false, alasan: ALASAN_HAPUS })
+    const r = await hapus(sa, { id, alasan: ALASAN_HAPUS })
+    const [sisaAkun, sisaMhs, sisaDosen] = await Promise.all([
+      db.pengguna.findUnique({ where: { id } }),
+      db.mahasiswa.findFirst({ where: { penggunaId: id } }),
+      db.dosen.findFirst({ where: { penggunaId: id } }),
+    ])
+    cek(
+      'akun ' + peran + ' tanpa data hilang dari basis data, termasuk baris mahasiswa/dosennya',
+      r.status === 200 && r.isi.id === id && !sisaAkun && !sisaMhs && !sisaDosen,
+      JSON.stringify(r.isi),
+    )
+    const logHapus = await db.logAktivitas.findFirst({ where: { aksi: 'HAPUS_AKUN', target: 'akun ' + email } })
+    cek(
+      'log HAPUS_AKUN ' + peran + ' mencatat email, peran, dan alasan',
+      logHapus?.aktorId === idSA && logHapus.rincian?.email === email && logHapus.rincian.peran === peran && logHapus.rincian.alasan === ALASAN_HAPUS,
+      JSON.stringify(logHapus?.rincian ?? null),
+    )
+    cek('akun ' + peran + ' yang sudah dihapus tidak ditemukan lagi (404)', (await hapus(sa, { id, alasan: ALASAN_HAPUS })).status === 404)
+  }
 
   /* ------------------------------ keluar ------------------------------ */
   garis('18. KELUAR')

@@ -115,6 +115,10 @@
 
 html, body, #root { height: 100%; }
 
+/* Bilah atas panel menempel (sticky, 72px). Tanpa jarak ini, unsur yang difokus dengan Tab digulir tepat ke
+   tepi atas layar dan tertutup bilah itu (WCAG 2.4.11). 88px = tinggi bilah + 16px. */
+html { scroll-padding-top: 88px; }
+
 body {
   margin: 0;
   background: var(--bg);
@@ -256,6 +260,153 @@ body {
 .animate-halaman { animation: halaman .22s cubic-bezier(.22,.68,.35,1) backwards; }
 @keyframes halaman { from { opacity: 0; transform: translateY(4px); } }
 @media print { .animate-halaman { animation: none; } }
+
+/* ------------------------- gerak panel Kemahasiswaan ------------------------ */
+/* Sedikit gerak supaya panel tidak terasa kaku, tanpa mengganggu kerja: semuanya pendek (paling lama 0,7 dtk),
+   hanya transform dan opacity, sekali jalan saat sesuatu muncul atau ditekan, dan dilepas saat kurangi gerak aktif
+   (blok di bawah). Lihat README.md › Panel Kemahasiswaan › Gerak. */
+
+/* Bagian halaman (anak langsung isi halaman) naik berurutan, berselang 50 md. Bagian yang muncul belakangan,
+   misalnya area kerja Input Nilai sesudah semester dipilih, ikut naik saat dipasang. backwards, bukan both. */
+.panel-admin .animate-halaman > * > * { animation: muncul .4s cubic-bezier(.22,.68,.35,1) backwards; }
+.panel-admin .animate-halaman > * > :nth-child(2) { animation-delay: .05s; }
+.panel-admin .animate-halaman > * > :nth-child(3) { animation-delay: .1s; }
+.panel-admin .animate-halaman > * > :nth-child(4) { animation-delay: .15s; }
+.panel-admin .animate-halaman > * > :nth-child(5) { animation-delay: .2s; }
+.panel-admin .animate-halaman > * > :nth-child(n + 6) { animation-delay: .25s; }
+@keyframes muncul { from { opacity: 0; transform: translateY(8px); } }
+@media print { .panel-admin .animate-halaman > * > * { animation: none; } }
+
+/* Bilah persentase tumbuh dari kiri, batang grafik dari dasarnya, saat pertama tampil. */
+.panel-admin .bilah-tumbuh { transform-origin: left center; animation: tumbuh-samping .7s cubic-bezier(.22,.68,.35,1) .15s backwards; }
+@keyframes tumbuh-samping { from { transform: scaleX(0); } }
+.panel-admin .batang-tumbuh { transform-origin: bottom center; animation: tumbuh-atas .6s cubic-bezier(.22,.68,.35,1) backwards; }
+@keyframes tumbuh-atas { from { transform: scaleY(0); } }
+
+/* Kurangi gerak: animasi di atas dilepas sama sekali, seperti pita logo di halaman masuk. Blok global di akhir berkas
+   hanya memendekkan durasi; jedanya (50 sampai 360 md) tetap berjalan, dan karena isinya backwards, bagian halaman
+   serta batang grafik tidak terlihat selama jeda itu lalu muncul tiba-tiba. */
+@media (prefers-reduced-motion: reduce) {
+  .panel-admin .animate-halaman > * > *,
+  .panel-admin .bilah-tumbuh,
+  .panel-admin .batang-tumbuh { animation: none; }
+}
+
+/* Tombol sedikit mengecil saat ditekan, umpan balik yang terasa juga di HP. */
+.panel-admin :is(.btn, .btn-primary, .btn-ghost):active:not(:disabled) { transform: scale(.97); }
+
+/* -------------------- pilihan (select) panel Kemahasiswaan -------------------- */
+/* Daftar pilihan setiap <select> muncul dengan gerak dan rupa yang sama dengan menu akun dan pemilih periode super
+   admin (rise, kartu bersudut 16px, centang di kanan), dan panahnya berputar saat terbuka. Memakai <select> yang bisa
+   diberi gaya (appearance: base-select, Chrome dan Edge 135 ke atas); peramban lain tetap memakai daftar bawaannya
+   tanpa animasi, jadi semuanya di dalam @supports. Lihat README.md › Panel Kemahasiswaan › Gerak.
+   Pengurai CSS Turbopack menolak pseudo-class yang ditulis sesudah ::picker(select) (misalnya
+   ::picker(select):popover-open) dan galatnya menggagalkan seluruh berkas ini, jadi animasinya dipasang langsung di
+   ::picker(select). Daftar itu display: none saat tertutup, sehingga animasinya diputar ulang setiap kali dibuka. */
+@supports (appearance: base-select) {
+  .panel-admin select,
+  .panel-admin select::picker(select) {
+    appearance: base-select;
+  }
+
+  /* Kotak tertutup. Di base-select teks terpilih ada di elemen bawaan yang tidak bisa menyempit, sehingga truncate
+     milik <select> tidak berlaku dan teks panjang menimpa panah. Diganti potong satu baris per huruf yang dipotong di
+     tepi isi: hasilnya "Desain Ko…", sama dengan select bawaan. */
+  .panel-admin select {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    white-space: normal;
+    word-break: break-all;
+    overflow: clip;
+    overflow-clip-margin: content-box;
+  }
+
+  /* Setiap select di panel ini punya panah sendiri tepat sesudahnya (Select di Ui.jsx, angkatan dan pemetaan Import
+     CSV di Nilai.jsx, PilihanSel di EditorPenilaian.jsx). Panah bawaan base-select disembunyikan. */
+  .panel-admin select::picker-icon {
+    display: none;
+  }
+  .panel-admin select + svg {
+    transition: rotate 0.2s ease;
+  }
+  .panel-admin select:open + svg {
+    rotate: 180deg;
+  }
+  /* Select bawaan digambar peramban dengan warna nonaktifnya sendiri; base-select memakai warna dari CSS ini, jadi
+     tanpa aturan ini select yang dikunci (misalnya Sumber yang "sudah dinilai") tampak sama dengan yang aktif. */
+  .panel-admin select:disabled {
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+  .panel-admin select:disabled + svg {
+    opacity: 0.5;
+  }
+
+  .panel-admin select::picker(select) {
+    margin-block: 8px;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    color: var(--text-primary);
+    box-shadow: 0 12px 32px -8px rgba(16, 20, 50, 0.28);
+    max-block-size: min(320px, 100dvh - 32px);
+    max-inline-size: calc(100vw - 32px);
+    /* Bawaan Chrome most-block-size: daftar membuka ke sisi yang paling lega, jadi daftar pendek di dekat dasar layar
+       (Baris per halaman) membuka ke atas walau muat di bawah. normal: ke bawah selama muat, baru membalik ke atas. */
+    position-try-order: normal;
+    animation: rise 0.35s cubic-bezier(0.22, 0.68, 0.35, 1) both;
+  }
+
+  /* Select ringkas: labelnya di dalam kotak, jadi <select> baru mulai sesudah label. Daftarnya ditempelkan ke tepi
+     kotak (anchor-scope memisahkan jangkar tiap kotak bila ada beberapa di satu halaman). */
+  .panel-admin .pilihan-ringkas {
+    anchor-scope: --kotak-pilihan;
+    anchor-name: --kotak-pilihan;
+  }
+  .panel-admin .pilihan-ringkas select::picker(select) {
+    position-anchor: --kotak-pilihan;
+  }
+
+  .panel-admin select option {
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: normal;
+  }
+  .panel-admin select option:hover {
+    background: var(--surface-2);
+  }
+  /* Pilihan yang difokus dengan papan ketik: latar sorot seperti pemilih periode super admin, menggantikan cincin
+     fokus global. Bila daftar dibuka dengan tetikus, pilihan itu tidak :focus-visible dan tidak disorot. */
+  .panel-admin select option:focus-visible {
+    outline: none;
+    background: var(--brand-soft);
+  }
+  .panel-admin select option:checked {
+    color: var(--brand-ink);
+    font-weight: 700;
+  }
+  .panel-admin select option::checkmark {
+    order: 1;
+    margin-inline-start: auto;
+    content: '';
+    inline-size: 15px;
+    block-size: 15px;
+    background-color: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel-admin select::picker(select) {
+      animation: none;
+    }
+  }
+}
 
 /* Sertifikat A4 lanskap; halaman lain tetap potret. */
 @page sertifikat {
@@ -452,6 +603,19 @@ body {
     pita-mantul 0.4s ease-out 0.85s backwards,
     pita-angin 8s ease-in-out 1.3s infinite;
 }
+/* Jendela yang membuka kertas dari atas ke bawah mengikuti gulungan. Dulu yang dianimasikan clip-path kertas, dan
+   Chrome menjalankannya lewat paint worklet yang me-raster ulang kertas (beserta bayangan dan logonya) di setiap
+   bingkai. Di jejak performa: 110 tugas raster dalam 0,8 detik gulungan turun, utas compositor 1,6 kali lebih sibuk,
+   dan ada bingkai yang tampil tanpa seluruh pembaruannya. Itulah yang terasa patah-patah. Kini jendela ber-overflow:
+   clip ini turun bersama gulungan (keyframe pita-gulung yang sama), sementara kertas di dalamnya digeser balik sejauh
+   yang sama (pita-kertas-buka), jadi kertas tampak diam dan tepi bawahnya terbuka. Keduanya hanya transform, digeser
+   compositor tanpa raster ulang. Kiri dan kanan dilebihkan 20px supaya bayangan kertas tidak ikut terpotong. */
+.pita-jendela {
+  margin-inline: -20px;
+  padding-inline: 20px;
+  overflow: clip;
+  animation: pita-gulung 0.8s cubic-bezier(0.4, 0.1, 0.3, 1) 0.1s backwards;
+}
 .pita-kertas {
   position: relative;
   height: var(--tinggi-kertas);
@@ -461,7 +625,7 @@ body {
   background: linear-gradient(#ffffff 0 0) center / calc(100% - 8px) 100% no-repeat;
   /* Bukan box-shadow: bayangannya harus ikut tepi yang bergelombang. */
   filter: drop-shadow(0 2px 8px rgb(0 0 0 / 0.25));
-  animation: pita-buka 0.8s cubic-bezier(0.4, 0.1, 0.3, 1) 0.1s backwards;
+  animation: pita-kertas-buka 0.8s cubic-bezier(0.4, 0.1, 0.3, 1) 0.1s backwards;
 }
 /* Angin hanya menggerakkan transform, translate, dan opacity supaya dikerjakan GPU tanpa menggambar
    ulang kertas tiap bingkai; topeng atau latar yang dianimasikan memakan sekitar seperempat utas
@@ -606,13 +770,11 @@ body {
 .pita-tongkat::after {
   right: -5px;
 }
-/* Kiri dan kanan dilebihkan 20px supaya bayangan kertas tidak ikut terpotong. */
-@keyframes pita-buka {
+/* Kebalikan pita-gulung: selama jendelanya turun, kertas di dalamnya tetap di tempat. Awalnya hanya 32px teratas
+   kertas yang terlihat, sama dengan inset clip-path yang dulu. */
+@keyframes pita-kertas-buka {
   from {
-    clip-path: inset(0 -20px calc(100% - 32px) -20px);
-  }
-  to {
-    clip-path: inset(0 -20px 0 -20px);
+    transform: translateY(calc(var(--tinggi-kertas) - 32px));
   }
 }
 @keyframes pita-gulung {
@@ -660,6 +822,7 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .pita-logo,
+  .pita-jendela,
   .pita-kertas,
   .pita-tepi::before,
   .pita-lipat::before,
@@ -1079,11 +1242,23 @@ body {
    (catatan kaki, label EN yang tidak aktif, keterangan tabel) dipertebal: 5,6:1 di kartu putih, 5,1:1 di
    latar halaman, 4,8:1 di --brand-soft. Versi gelapnya (#7b869e) hanya 4,2:1 di --surface-2, jadi
    dinaikkan juga: 5,3:1 di --surface-2, 5,7:1 di kartu. */
-.panel-super {
+/* Panel Kemahasiswaan (.panel-admin) ikut memakai teks redup yang lebih tegas ini sejak tampilannya diperbarui. */
+.panel-super,
+.panel-admin {
   --text-muted: #63677f;
+  /* Warna tulisan status yang lolos 4,5:1 di latar lencananya sendiri (lihat .teks-baik di bawah). Dipakai
+     nada good/critical/warning milik Badge dan pesan "tersimpan" di dalam kedua panel ini; panel lain tetap
+     memakai --good/--critical lewat cadangan var(). */
+  --teks-baik: #15731a;
+  --teks-kritis: #b42318;
+  --teks-tunggu: #7a5208;
 }
-.dark .panel-super {
+.dark .panel-super,
+.dark .panel-admin {
   --text-muted: #8b96ad;
+  --teks-baik: #22c55e;
+  --teks-kritis: var(--critical);
+  --teks-tunggu: var(--warning-ink);
 }
 /* Tulisan lencana "Menunggu konfirmasi" di Aturan Sistem: warna nada warning milik Badge hanya 2,8:1 di
    latarnya sendiri; amber tua ini 6:1. Tema gelap memakai --warning-ink yang sudah lolos. */

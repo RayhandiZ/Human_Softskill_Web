@@ -30,7 +30,7 @@ export function PesanMenunggu({ hasil, keterangan = null }) {
   return (
     <div
       role="status"
-      className="rounded-xl border border-line bg-[color-mix(in_srgb,var(--warning)_12%,transparent)] px-4 py-3.5"
+      className="animate-rise rounded-xl border border-line bg-[color-mix(in_srgb,var(--warning)_12%,transparent)] px-4 py-3.5"
     >
       <p className="flex items-start gap-2 text-[13px] font-bold text-ink">
         <IconClock size={16} className="mt-px shrink-0" />

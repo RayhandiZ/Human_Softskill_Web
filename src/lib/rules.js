@@ -78,25 +78,35 @@ export function kelayakanSertifikat(student) {
     return nama.join(' dan ') + (sisa > 0 ? ' serta ' + sisa + ' aspek lain' : '')
   }
 
+  /* labelT/alasanT/ringkasT: [kunci kamus, isian] untuk t(), karena label/alasan/ringkas dirakit dengan angka dan
+     nama di dalamnya sehingga tidak bisa dicari di kamus. Yang lama dibiarkan untuk pemakai yang sudah ada. */
+  const kode = (daftar, n) => daftar.slice(0, n).map((a) => a.aspek.kode.replace(/\.$/, '')).join(', ')
   const syarat = [
     {
       id: 'semester',
       label: 'Sudah menempuh Semester ' + CONFIG.TOTAL_SEMESTER_PROGRAM,
+      labelT: ['Sudah menempuh Semester {n}', { n: CONFIG.TOTAL_SEMESTER_PROGRAM }],
       lolos: student.semesterAktif >= CONFIG.TOTAL_SEMESTER_PROGRAM,
       alasan:
         'Baru menempuh Semester ' + student.semesterAktif + ' dari ' + CONFIG.TOTAL_SEMESTER_PROGRAM,
+      alasanT: ['Baru menempuh Semester {n} dari {total}', { n: student.semesterAktif, total: CONFIG.TOTAL_SEMESTER_PROGRAM }],
       ringkas: 'program baru sampai Semester ' + student.semesterAktif,
+      ringkasT: ['program baru sampai Semester {n}', { n: student.semesterAktif }],
     },
     {
       id: 'final',
       label: 'Seluruh ' + t.akhir.aspekTotal + ' aspek berstatus final',
+      labelT: ['Seluruh {n} aspek berstatus final', { n: t.akhir.aspekTotal }],
       lolos: belumFinal.length === 0,
       alasan: belumFinal.length ? 'Belum final: ' + sebut(belumFinal) : null,
+      alasanT: belumFinal.length ? ['Belum final: {daftar}', { daftar: kode(belumFinal, 4) }] : null,
       ringkas: belumFinal.length ? 'aspek ' + sebut(belumFinal, 1) + ' belum final' : null,
+      ringkasT: belumFinal.length ? ['aspek {daftar} belum final', { daftar: kode(belumFinal, 2) }] : null,
     },
     {
       id: 'lengkap',
       label: 'Tidak ada komponen asesmen yang kosong',
+      labelT: ['Tidak ada komponen asesmen yang kosong', null],
       lolos: adaKosong.length === 0,
       alasan: adaKosong.length
         ? 'Komponen kosong pada ' +
@@ -105,29 +115,45 @@ export function kelayakanSertifikat(student) {
             .map((a) => a.aspek.kode + ' (' + a.komponenKosong.map((x) => x.label).join(', ') + ')')
             .join('; ')
         : null,
+      alasanT: adaKosong.length ? ['Komponen kosong pada {daftar}', { daftar: kode(adaKosong, 4) }] : null,
       ringkas: adaKosong.length
         ? 'komponen ' + adaKosong[0].komponenKosong[0].label + ' pada ' + adaKosong[0].aspek.kode + ' belum dinilai'
+        : null,
+      ringkasT: adaKosong.length
+        ? ['komponen {komponen} pada {kode} belum dinilai', { komponen: adaKosong[0].komponenKosong[0].label, kode: kode(adaKosong, 1) }]
         : null,
     },
     {
       id: 'ambang',
       label: 'Nilai akhir minimal ' + CONFIG.AMBANG_SERTIFIKAT,
+      labelT: ['Nilai akhir minimal {n}', { n: CONFIG.AMBANG_SERTIFIKAT }],
       lolos: t.akhir.nilai != null && t.akhir.nilai >= CONFIG.AMBANG_SERTIFIKAT,
       alasan:
         t.akhir.nilai == null
           ? 'Nilai akhir belum bisa dihitung'
           : 'Nilai akhir ' + t.akhir.nilai + ', di bawah rata-rata minimal ' + CONFIG.AMBANG_SERTIFIKAT,
+      alasanT:
+        t.akhir.nilai == null
+          ? ['Nilai akhir belum bisa dihitung', null]
+          : ['Nilai akhir {nilai}, di bawah rata-rata minimal {n}', { nilai: t.akhir.nilai, n: CONFIG.AMBANG_SERTIFIKAT }],
       ringkas:
         t.akhir.nilai == null
           ? 'nilai akhir belum bisa dihitung'
           : 'nilai akhir ' + t.akhir.nilai + ' di bawah rata-rata minimal ' + CONFIG.AMBANG_SERTIFIKAT,
+      ringkasT:
+        t.akhir.nilai == null
+          ? ['nilai akhir belum bisa dihitung', null]
+          : ['nilai akhir {nilai} di bawah rata-rata minimal {n}', { nilai: t.akhir.nilai, n: CONFIG.AMBANG_SERTIFIKAT }],
     },
     {
       id: 'terkunci',
       label: 'Angkatan sudah dikunci oleh Kemahasiswaan',
+      labelT: ['Angkatan sudah dikunci oleh Kemahasiswaan', null],
       lolos: student.statusAngkatan === 'terkunci',
       alasan: 'Angkatan ' + student.angkatanLabel + ' belum dikunci',
+      alasanT: ['Angkatan {label} belum dikunci', { label: student.angkatanLabel }],
       ringkas: 'angkatan ' + student.angkatanLabel + ' belum dikunci',
+      ringkasT: ['angkatan {label} belum dikunci', { label: student.angkatanLabel }],
     },
   ]
 

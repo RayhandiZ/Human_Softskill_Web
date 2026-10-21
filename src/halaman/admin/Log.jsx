@@ -1,11 +1,13 @@
 import { Fragment, useEffect, useState } from 'react'
-import { Badge, Card, EmptyState, Select, Tabs } from '../../components/Ui'
-import { IconAlert, IconChevronDown, IconInfo } from '../../components/Icons'
+import { Badge, Card, EmptyState, GulirTabel, JUDUL_KOLOM, JudulHalaman, Paginasi, Select, Tabs } from '../../components/Ui'
+import { IconAlert, IconChevronDown, IconInfo, IconSearch } from '../../components/Icons'
 import { bacaLog } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
 
 /* Jejak tindakan admin dan perubahan nilai dari /api/log (src/server/log.js), satu halaman per permintaan.
-   Hanya dibaca; dipakai panel Kemahasiswaan dan panel Super Admin. Lihat README.md › Log Aktivitas. */
+   Hanya dibaca; dipakai panel Kemahasiswaan dan panel Super Admin. Lihat README.md › Log Aktivitas.
+   Susunannya mengikuti halaman daftar lain: kepala halaman, lalu satu kartu berisi jenis catatan, alat saring
+   ringkas (label di dalam kotak), tabel, dan kaki bernomor halaman. */
 
 export const LABEL_LOG = {
   KUNCI_ANGKATAN: 'Kunci angkatan',
@@ -67,15 +69,19 @@ function Rincian({ rincian }) {
   )
 }
 
-function Tanggal({ label, value, onChange }) {
+/* Kotak tanggal dengan label di dalamnya, serupa Select ringkas. min/max menjaga rentangnya: tanggal awal tidak
+   bisa melewati tanggal akhir (dulu rentang terbalik hanya berakhir di "Tidak ada catatan"). */
+function TanggalRingkas({ label, value, onChange, min, max }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 block label">{label}</span>
+    <label className="flex min-w-0 items-center rounded-xl border border-line bg-surface transition hover:border-line-strong focus-within:border-brand-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-ink">
+      <span className="shrink-0 whitespace-nowrap pl-3.5 text-[12.5px] font-semibold text-ink-2">{label}</span>
       <input
         type="date"
         value={value}
+        min={min || undefined}
+        max={max || undefined}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition hover:border-line-strong"
+        className="min-w-0 flex-1 bg-transparent py-2.5 pl-2 pr-3 text-sm font-semibold text-ink focus-visible:outline-none"
       />
     </label>
   )
@@ -138,18 +144,17 @@ export default function Log() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-[22px] font-extrabold tracking-tight text-ink">{t('Log Aktivitas')}</h1>
-        <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-2">
-          {t(
-            'Jejak setiap tindakan untuk menelusuri siapa mengubah apa dan kapan. Log hanya bisa dibaca, tidak bisa diubah atau dihapus dari website.',
-          )}
-        </p>
-      </div>
+      <JudulHalaman
+        judul={t('Log Aktivitas')}
+        keterangan={t(
+          'Jejak setiap tindakan untuk menelusuri siapa mengubah apa dan kapan. Log hanya bisa dibaca, tidak bisa diubah atau dihapus dari website.',
+        )}
+      />
 
       <Card className="overflow-hidden">
-        <div className="space-y-4 border-b border-line px-5 py-4 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
           <Tabs
+            label={t('Jenis catatan')}
             value={jenis}
             onChange={gantiJenis}
             items={[
@@ -157,9 +162,16 @@ export default function Log() {
               { value: 'nilai', label: t('Perubahan nilai') },
             ]}
           />
+          <span className="text-[13px] font-semibold tabular-nums text-ink-2" role="status">
+            {memuat ? t('Memuat…') : t('{n} catatan', { n: (hasil?.total ?? 0).toLocaleString('id-ID') })}
+          </span>
+        </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-3 border-b border-line px-4 py-4 sm:px-5">
+          {/* Empat kolom baru mulai 1440px: di bawahnya 'Jenis tindakan' dan nilainya tidak muat dalam seperempat lebar. */}
+          <div className="grid gap-2.5 sm:grid-cols-2 min-[1440px]:grid-cols-4">
             <Select
+              ringkas
               label={t('Pelaku')}
               value={saring.aktorId}
               onChange={(v) => ubah({ aktorId: v })}
@@ -168,6 +180,7 @@ export default function Log() {
             />
             {jenis === 'aktivitas' ? (
               <Select
+                ringkas
                 label={t('Jenis tindakan')}
                 value={saring.aksi}
                 onChange={(v) => ubah({ aksi: v })}
@@ -181,22 +194,23 @@ export default function Log() {
                   ubah({ nim: nimKetik.trim() })
                 }}
               >
-                <label className="block">
-                  <span className="mb-1.5 block label">{t('NIM mahasiswa')}</span>
+                <label className="relative block">
+                  <span className="sr-only">{t('NIM mahasiswa')}</span>
+                  <IconSearch size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3" />
                   <input
                     type="search"
                     inputMode="numeric"
                     value={nimKetik}
                     onChange={(e) => setNimKetik(e.target.value)}
                     onBlur={() => nimKetik.trim() !== saring.nim && ubah({ nim: nimKetik.trim() })}
-                    placeholder={t('Tekan Enter untuk mencari')}
-                    className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-3 transition hover:border-line-strong"
+                    placeholder={t('Cari NIM, lalu tekan Enter')}
+                    className="w-full rounded-xl border border-line bg-surface py-2.5 pl-10 pr-3.5 text-sm text-ink placeholder:text-ink-3 transition hover:border-line-strong"
                   />
                 </label>
               </form>
             )}
-            <Tanggal label={t('Dari tanggal')} value={saring.dari} onChange={(v) => ubah({ dari: v })} />
-            <Tanggal label={t('Sampai tanggal')} value={saring.sampai} onChange={(v) => ubah({ sampai: v })} />
+            <TanggalRingkas label={t('Dari')} value={saring.dari} max={saring.sampai} onChange={(v) => ubah({ dari: v })} />
+            <TanggalRingkas label={t('Sampai')} value={saring.sampai} min={saring.dari} onChange={(v) => ubah({ sampai: v })} />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -209,8 +223,8 @@ export default function Log() {
                   aria-pressed={aktif}
                   onClick={() => ubah({ dari: p.dari, sampai: p.sampai })}
                   className={
-                    'rounded-lg border px-3 py-1.5 text-[12.5px] font-bold transition ' +
-                    (aktif ? 'border-brand-ink bg-brand-soft text-brand-ink' : 'border-line text-ink-2 hover:text-ink')
+                    'rounded-full border px-3 py-1.5 text-[12.5px] font-bold transition ' +
+                    (aktif ? 'border-brand-ink bg-brand-soft text-brand-ink' : 'border-line text-ink-2 hover:border-line-strong hover:text-ink')
                   }
                 >
                   {t(p.label)}
@@ -224,14 +238,11 @@ export default function Log() {
                   setNimKetik('')
                   ubah(KOSONG)
                 }}
-                className="ml-1 text-[12.5px] font-bold text-brand-ink underline underline-offset-4"
+                className="ml-1 inline-flex min-h-[36px] items-center text-[13px] font-bold text-brand-ink underline-offset-4 hover:underline"
               >
-                {t('Hapus semua penyaring')}
+                {t('Atur ulang filter')}
               </button>
             ) : null}
-            <span className="ml-auto text-[12.5px] font-semibold tabular-nums text-ink-3" role="status">
-              {memuat ? t('Memuat…') : t('{n} catatan', { n: hasil?.total ?? 0 })}
-            </span>
           </div>
         </div>
 
@@ -252,25 +263,27 @@ export default function Log() {
             {adaSaring ? t('Coba longgarkan penyaringnya.') : t('Belum ada yang tercatat.')}
           </EmptyState>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left">
+          /* GulirTabel: dulu label sr-only "Rincian" lolos dari wadah ini dan melebarkan halaman HP ke 680px, juga di
+             /super/log yang memakai halaman ini. */
+          <GulirTabel>
+            <table className="w-full min-w-[720px] border-separate border-spacing-0 text-left">
               <thead>
-                <tr className="border-b border-line text-[12px] font-bold uppercase tracking-[.06em] text-ink-3">
-                  <th className="px-5 py-3 sm:px-6">{t('Waktu (WIB)')}</th>
-                  <th className="px-3 py-3">{t('Pelaku')}</th>
+                <tr className="bg-surface-2 [&>th]:border-b [&>th]:border-line">
+                  <th className={JUDUL_KOLOM + ' pl-4 sm:pl-5'}>{t('Waktu (WIB)')}</th>
+                  <th className={JUDUL_KOLOM}>{t('Pelaku')}</th>
                   {jenis === 'aktivitas' ? (
                     <>
-                      <th className="px-3 py-3">{t('Tindakan')}</th>
-                      <th className="px-3 py-3">{t('Sasaran')}</th>
-                      <th className="px-5 py-3 sm:px-6">
+                      <th className={JUDUL_KOLOM}>{t('Tindakan')}</th>
+                      <th className={JUDUL_KOLOM}>{t('Sasaran')}</th>
+                      <th className={JUDUL_KOLOM + ' pr-4 sm:pr-5'}>
                         <span className="sr-only">{t('Rincian')}</span>
                       </th>
                     </>
                   ) : (
                     <>
-                      <th className="px-3 py-3">{t('Mahasiswa')}</th>
-                      <th className="px-3 py-3">{t('Komponen')}</th>
-                      <th className="px-5 py-3 text-right sm:px-6">{t('Lama → baru')}</th>
+                      <th className={JUDUL_KOLOM}>{t('Mahasiswa')}</th>
+                      <th className={JUDUL_KOLOM}>{t('Komponen')}</th>
+                      <th className={JUDUL_KOLOM + ' pr-4 text-right sm:pr-5'}>{t('Lama → baru')}</th>
                     </>
                   )}
                 </tr>
@@ -279,12 +292,12 @@ export default function Log() {
                 {baris.map((b) =>
                   jenis === 'aktivitas' ? (
                     <Fragment key={b.id}>
-                      <tr className="border-b border-line align-top">
-                        <td className="whitespace-nowrap px-5 py-3 text-[13px] tabular-nums text-ink-2 sm:px-6">{b.waktu}</td>
+                      <tr className="align-top transition-colors hover:bg-surface-2 [&>td]:border-b [&>td]:border-line">
+                        <td className="whitespace-nowrap py-3 pl-4 pr-3 text-[13px] tabular-nums text-ink-2 sm:pl-5">{b.waktu}</td>
                         <td className="px-3 py-3 text-[13.5px] font-semibold text-ink">{b.aktor ?? '—'}</td>
                         <td className="px-3 py-3 text-[13.5px] text-ink">{t(LABEL_LOG[b.aksi] ?? b.aksi)}</td>
                         <td className="px-3 py-3 text-[13px] text-ink-2">{b.target ?? '—'}</td>
-                        <td className="px-5 py-2 text-right sm:px-6">
+                        <td className="py-2 pl-3 pr-4 text-right sm:pr-5">
                           <button
                             type="button"
                             onClick={() => setTerbuka((x) => (x === b.id ? null : b.id))}
@@ -297,16 +310,16 @@ export default function Log() {
                         </td>
                       </tr>
                       {terbuka === b.id ? (
-                        <tr className="border-b border-line bg-surface-2">
-                          <td colSpan={5} className="px-5 py-4 sm:px-6">
+                        <tr className="bg-surface-2 [&>td]:border-b [&>td]:border-line">
+                          <td colSpan={5} className="animate-rise px-5 py-4 sm:px-6">
                             <Rincian rincian={b.rincian} />
                           </td>
                         </tr>
                       ) : null}
                     </Fragment>
                   ) : (
-                    <tr key={b.id} className="border-b border-line align-top">
-                      <td className="whitespace-nowrap px-5 py-3 text-[13px] tabular-nums text-ink-2 sm:px-6">{b.waktu}</td>
+                    <tr key={b.id} className="align-top transition-colors hover:bg-surface-2 [&>td]:border-b [&>td]:border-line">
+                      <td className="whitespace-nowrap py-3 pl-4 pr-3 text-[13px] tabular-nums text-ink-2 sm:pl-5">{b.waktu}</td>
                       <td className="px-3 py-3 text-[13.5px] font-semibold text-ink">{b.aktor ?? '—'}</td>
                       <td className="px-3 py-3 text-[13.5px] text-ink">
                         {b.nama || '—'}
@@ -320,7 +333,7 @@ export default function Log() {
                           </Badge>
                         ) : null}
                       </td>
-                      <td className="whitespace-nowrap px-5 py-3 text-right text-[13.5px] tabular-nums sm:px-6">
+                      <td className="whitespace-nowrap py-3 pl-3 pr-4 text-right text-[13.5px] tabular-nums sm:pr-5">
                         <span className="text-ink-3">{b.nilaiLama ?? '—'}</span>
                         <span className="px-1.5 text-ink-3" aria-hidden="true">→</span>
                         <span className="sr-only"> {t('menjadi')} </span>
@@ -331,31 +344,17 @@ export default function Log() {
                 )}
               </tbody>
             </table>
-          </div>
+          </GulirTabel>
         )}
 
-        {hasil && hasil.jumlahHalaman > 1 ? (
-          <div className="flex items-center justify-between gap-3 px-5 py-3 sm:px-6">
-            <button
-              type="button"
-              disabled={halaman <= 1 || memuat}
-              onClick={() => setHalaman((h) => h - 1)}
-              className="btn-ghost !py-2"
-            >
-              {t('Sebelumnya')}
-            </button>
-            <span className="text-[13px] tabular-nums text-ink-2">
-              {t('Halaman {n} dari {total}', { n: hasil.halaman, total: hasil.jumlahHalaman })}
-            </span>
-            <button
-              type="button"
-              disabled={halaman >= hasil.jumlahHalaman || memuat}
-              onClick={() => setHalaman((h) => h + 1)}
-              className="btn-ghost !py-2"
-            >
-              {t('Berikutnya')}
-            </button>
-          </div>
+        {hasil && baris.length ? (
+          <Paginasi
+            halaman={halaman}
+            jumlahHalaman={Math.max(1, hasil.jumlahHalaman ?? 1)}
+            total={hasil.total ?? baris.length}
+            ukuran={UKURAN}
+            onHalaman={setHalaman}
+          />
         ) : null}
       </Card>
     </div>

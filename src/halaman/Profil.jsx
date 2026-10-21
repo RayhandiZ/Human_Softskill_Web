@@ -23,7 +23,9 @@ function Seksi({ judul, terbuka, onToggle, children }) {
           type="button"
           onClick={onToggle}
           aria-expanded={terbuka}
-          className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-surface-2 sm:px-6"
+          // Cincin fokus digambar ke dalam: kartunya overflow-hidden, jadi cincin bawaan (offset 2px ke luar)
+          // terpotong dan hanya garis bawahnya yang terlihat.
+          className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-surface-2 focus-visible:outline-offset-[-3px] sm:px-6"
         >
           <span className="text-[17px] font-extrabold text-ink">{judul}</span>
           <IconChevronDown
@@ -283,7 +285,7 @@ export default function Profil() {
                     className="inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold text-ink-2 transition hover:border-brand-ink hover:text-brand-ink"
                   >
                     <IconPencil size={14} />
-                    Edit
+                    {t('Edit')}
                   </button>
                 </span>
               ) : null}
@@ -343,7 +345,7 @@ export default function Profil() {
           >
             <IconUpload size={26} className="text-ink-2" />
             <span className="text-[14.5px] leading-relaxed text-ink-2">
-              Seret berkas ke sini, atau <span className="font-bold text-brand-ink">pilih berkas</span>
+              {t('Seret berkas ke sini, atau')} <span className="font-bold text-brand-ink">{t('pilih berkas')}</span>
             </span>
           </button>
           )}
@@ -353,7 +355,7 @@ export default function Profil() {
               {form.foto ? (
                 <img
                   src={form.foto}
-                  alt="Pratinjau foto baru"
+                  alt={t('Pratinjau foto baru')}
                   className="h-12 w-12 rounded-full object-cover"
                 />
               ) : null}
@@ -367,7 +369,7 @@ export default function Profil() {
                   className="inline-flex items-center gap-1 text-[14px] font-bold text-brand-ink hover:underline"
                 >
                   <IconPencil size={14} />
-                  Atur lagi
+                  {t('Atur lagi')}
                 </button>
               ) : null}
               <button
@@ -377,16 +379,16 @@ export default function Profil() {
                 }
                 className="text-[14px] font-bold text-brand-ink underline underline-offset-4"
               >
-                Batalkan pilihan
+                {t('Batalkan pilihan')}
               </button>
             </div>
           ) : tersimpan.foto ? (
             <button
               type="button"
               onClick={() => setForm((f) => ({ ...f, foto: null }))}
-              className="mt-3 text-[14px] font-bold text-[var(--critical)] underline underline-offset-4"
+              className="mt-3 text-[14px] font-bold text-[color:var(--teks-kritis,var(--critical))] underline underline-offset-4"
             >
-              Hapus foto
+              {t('Hapus foto')}
             </button>
           ) : null}
         </Baris>
@@ -413,7 +415,7 @@ export default function Profil() {
             </Baris>
             <Baris label={t('Semester berjalan')}>
               <Tetap>
-                Semester {student.semesterAktif} dari {CONFIG.TOTAL_SEMESTER_PROGRAM}
+                {t('Semester {n} dari {total}', { n: student.semesterAktif, total: CONFIG.TOTAL_SEMESTER_PROGRAM })}
               </Tetap>
             </Baris>
           </>
@@ -427,7 +429,7 @@ export default function Profil() {
               catatan={t('Menentukan pengumpulan mana yang masuk ke antrean Anda dan komponen mana yang boleh Anda nilai.')}
             >
               <Tetap>
-                Semester {dosen.semester} · {dosen.prodi}
+                {t('Semester {n}', { n: dosen.semester })} · {dosen.prodi}
               </Tetap>
             </Baris>
             <Baris label={t('Fakultas')}>
@@ -531,7 +533,7 @@ export default function Profil() {
         {tersimpanPesan ? (
           <span
             role="status"
-            className="inline-flex items-center gap-1.5 text-[14.5px] font-bold text-[var(--good)]"
+            className="inline-flex animate-rise items-center gap-1.5 text-[14.5px] font-bold text-[color:var(--teks-baik,var(--good))]"
           >
             <IconCheck size={17} />
             {t('Perubahan tersimpan')}

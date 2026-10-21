@@ -17,15 +17,37 @@ export default function Laci({ buka, onTutup, label = 'Menu navigasi', nada = 't
   useEffect(() => {
     if (!buka) return
     const asal = document.body.style.overflow
+    // Laci ini aria-modal: Tab dikurung di dalamnya, dan saat ditutup fokus kembali ke tombol pembukanya.
+    // Dulu Tab bisa keluar ke halaman di belakang tirai, dan fokus hilang ke <body> setelah laci ditutup.
+    const asalFokus = document.activeElement
     document.body.style.overflow = 'hidden'
     panelRef.current?.focus()
     const onKey = (e) => {
       if (e.key === 'Escape') tutupRef.current()
+      if (e.key !== 'Tab' || !panelRef.current) return
+      const bisa = [...panelRef.current.querySelectorAll('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter(
+        (el) => el.getClientRects().length,
+      )
+      if (!bisa.length) return
+      const pertama = bisa[0]
+      const terakhir = bisa[bisa.length - 1]
+      const di = document.activeElement
+      if (e.shiftKey && (di === pertama || di === panelRef.current)) {
+        e.preventDefault()
+        terakhir.focus()
+      } else if (!e.shiftKey && di === terakhir) {
+        e.preventDefault()
+        pertama.focus()
+      } else if (!panelRef.current.contains(di)) {
+        e.preventDefault()
+        pertama.focus()
+      }
     }
     document.addEventListener('keydown', onKey)
     return () => {
       document.body.style.overflow = asal
       document.removeEventListener('keydown', onKey)
+      if (asalFokus && asalFokus !== document.body && asalFokus.isConnected) asalFokus.focus?.()
     }
   }, [buka])
 

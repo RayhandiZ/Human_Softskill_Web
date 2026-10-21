@@ -90,7 +90,7 @@ function kunciDi(sumber) {
       /* Nama properti dan potongan kode ikut tertangkap; yang diambil hanya
          yang benar-benar terbaca sebagai kalimat. */
       if (k && /[A-Za-z]/.test(k) && !/^[a-z]+$/.test(k.trim())) hasil.add(k)
-      else if (['siap', 'belum', 'sementara', 'pada', 'draft'].includes(k)) hasil.add(k)
+      else if (['siap', 'belum', 'sementara', 'pada', 'draft', 'usulan'].includes(k)) hasil.add(k)
     }
   }
   return hasil
@@ -105,9 +105,30 @@ const DARI_DATA = [
   'Hubungi lewat telepon pada jam kerja',
   'Untuk pertanyaan yang butuh lampiran',
   'Senin sampai Jumat, 08.00 hingga 17.00 WIB',
+  /* Judul grafik: prop title/subtitle diterjemahkan di dalam ChartFrame. */
+  'Grafik Sebaran Aspek', 'Dari {n} mahasiswa yang sudah punya nilai',
+  'Profil enam cluster', 'Rata-rata aspek CPMK di tiap cluster',
+  'Nilai per aspek CPMK', 'Sepuluh aspek, dikelompokkan menurut area pengembangan',
+  'Perkembangan nilai per semester',
+  /* src/lib/ingest.js: label keyakinan, skala, dan cara menggabung kolom di Import CSV. */
+  'Yakin', 'Perlu dicek', 'Tebakan lemah', 'Tidak cocok',
+  '0–100 (tanpa konversi)', '0–10 (dikali 10)', '0–4 (dikali 25)',
+  'Rata-rata', 'Ambil tertinggi', 'Pakai kolom terakhir', '— Abaikan kolom ini —',
+  /* Jenis penilaian MK (LABEL_JENIS di Kurikulum dan EditorPenilaian). */
+  'Tugas', 'Sikap', 'UTS', 'UAS',
 ]
-/* Sama, tetapi dari src/lib/rules.js: catatan kaki transkrip sementara. */
-const DARI_ATURAN = ['Dokumen ini bukan bukti kelulusan pembinaan skill.']
+/* Sama, tetapi dari src/lib/rules.js: catatan kaki transkrip sementara, dan labelT/alasanT/ringkasT syarat
+   sertifikat. */
+const DARI_ATURAN = [
+  'Dokumen ini bukan bukti kelulusan pembinaan skill.',
+  'Sudah menempuh Semester {n}', 'Baru menempuh Semester {n} dari {total}', 'program baru sampai Semester {n}',
+  'Seluruh {n} aspek berstatus final', 'Belum final: {daftar}', 'aspek {daftar} belum final',
+  'Tidak ada komponen asesmen yang kosong', 'Komponen kosong pada {daftar}',
+  'komponen {komponen} pada {kode} belum dinilai',
+  'Nilai akhir minimal {n}', 'Nilai akhir belum bisa dihitung', 'Nilai akhir {nilai}, di bawah rata-rata minimal {n}',
+  'nilai akhir belum bisa dihitung', 'nilai akhir {nilai} di bawah rata-rata minimal {n}',
+  'Angkatan sudah dikunci oleh Kemahasiswaan', 'Angkatan {label} belum dikunci', 'angkatan {label} belum dikunci',
+]
 
 /* kunci rapi -> { asli, berkas } */
 const dipakai = new Map()

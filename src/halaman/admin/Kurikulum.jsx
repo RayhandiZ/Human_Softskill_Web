@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
-import { Card, CardHeader, CatatanKaki, StatusTeks, TandaDraft } from '../../components/Ui'
+import { Card, CardHeader, CatatanKaki, GulirTabel, JUDUL_KOLOM, JudulHalaman, StatusTeks, TandaDraft } from '../../components/Ui'
 import { IconAlert, IconCheck, IconLock, IconUndo } from '../../components/Icons'
 import { SUMBER, getAspek, getAspekList, getKomponen } from '../../lib/curriculum'
 import { ISI_PENGATURAN, bedaBobot, dampakBobot, periksaBobot, porsiBobot, susunanBobot } from '../../lib/bobot'
@@ -9,6 +9,7 @@ import { menungguPersetujuan, simpanBobot, useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 import { CatatanPersetujuan, PesanMenunggu } from './PermintaanTerkirim'
+import { daftarKode } from './LoncengKemahasiswaan'
 
 /* Bobot komponen per aspek dan cara membagi bobot otomatis; lihat README.md › Mengubah bobot dari halaman Kurikulum. */
 
@@ -166,12 +167,10 @@ export default function Kurikulum({ tertanam = false, aspekAwal, onPilihAspek, o
           {t('Atur bobot komponen asesmen di setiap aspek. Bobot berlaku untuk semua angkatan, dan nilai yang sudah masuk langsung dihitung ulang dengannya.')}
         </p>
       ) : (
-        <div>
-          <h1 className="text-[22px] font-extrabold tracking-tight text-ink">{t('Kurikulum CPMK')}</h1>
-          <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-2">
-            {t('Atur bobot komponen asesmen di setiap aspek. Bobot berlaku untuk semua angkatan, dan nilai yang sudah masuk langsung dihitung ulang dengannya.')}
-          </p>
-        </div>
+        <JudulHalaman
+          judul={t('Kurikulum CPMK')}
+          keterangan={t('Atur bobot komponen asesmen di setiap aspek. Bobot berlaku untuk semua angkatan, dan nilai yang sudah masuk langsung dihitung ulang dengannya.')}
+        />
       )}
 
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -188,7 +187,9 @@ export default function Kurikulum({ tertanam = false, aspekAwal, onPilihAspek, o
                 }}
                 aria-pressed={a.id === aspek?.id}
                 className={
-                  'card block h-full w-full p-3.5 text-left transition hover:border-brand-ink ' +
+                  // flex-col, bukan block: isi <button> diletakkan di tengah secara vertikal, jadi kartu berisi
+                  // satu baris nama tampak turun dibanding kartu bernama dua baris di sebelahnya.
+                  'card flex h-full w-full flex-col p-3.5 text-left transition hover:border-brand-ink hover:shadow-pop motion-safe:hover:-translate-y-0.5 ' +
                   (a.id === aspek?.id ? 'border-brand-ink bg-brand-soft' : '')
                 }
               >
@@ -244,7 +245,7 @@ export default function Kurikulum({ tertanam = false, aspekAwal, onPilihAspek, o
             menunggu ? (
               <PesanMenunggu hasil={menunggu} />
             ) : pesan ? (
-              <p role="status" className="text-[14.5px] font-bold text-ink">
+              <p role="status" className="animate-rise text-[14.5px] font-bold text-ink">
                 {pesan}
               </p>
             ) : (
@@ -322,7 +323,8 @@ function PesanGalat({ children }) {
 
 /* ------------------------------ bobot satu aspek --------------------------- */
 
-const TH = 'px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[.07em] text-ink-3'
+// Judul kolom huruf biasa (JUDUL_KOLOM), sama dengan tabel lain di panel ini; dulu huruf kapital kecil 11px.
+const TH = JUDUL_KOLOM + ' px-4 text-left'
 
 function EditorAspek({ aspek, isian, usulan, mode, salah, onUbah }) {
   const t = useTeks()
@@ -374,7 +376,7 @@ function EditorAspek({ aspek, isian, usulan, mode, salah, onUbah }) {
         </p>
       </div>
 
-      <div className="mt-4 overflow-x-auto">
+      <GulirTabel className="mt-4">
         <table className="w-full min-w-[640px] border-collapse">
           <thead>
             <tr className="border-y border-line bg-surface-2">
@@ -439,7 +441,7 @@ function EditorAspek({ aspek, isian, usulan, mode, salah, onUbah }) {
             </tr>
           </tfoot>
         </table>
-      </div>
+      </GulirTabel>
       {salah ? (
         <div className="px-5 pb-4 pt-3 sm:px-6">
           <PesanGalat>
@@ -614,7 +616,7 @@ function Dampak({ dampak }) {
         </p>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-line">
+      <GulirTabel className="rounded-xl border border-line">
         <table className="w-full min-w-[640px] border-collapse">
           <thead>
             <tr className="border-b border-line bg-surface-2">
@@ -640,7 +642,7 @@ function Dampak({ dampak }) {
                 </td>
                 <td className="px-4 py-3 text-[13px] text-ink-2">{x.angkatan}</td>
                 <td className="px-4 py-3 text-[13px] text-ink-2">
-                  {x.aspek.map((id) => getAspek(id)?.kode ?? id).join(' ') || '–'}
+                  {daftarKode(x.aspek.map((id) => getAspek(id) ?? id)) || '–'}
                 </td>
                 <td className="px-4 py-3 text-[13.5px] tabular-nums text-ink">
                   {(x.nilaiSebelum ?? '–') + ' → '}
@@ -655,7 +657,7 @@ function Dampak({ dampak }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </GulirTabel>
       {dampak.berubah > dampak.daftar.length ? (
         <p className="text-[12.5px] text-ink-2">
           {t('Ditampilkan {n} dari {total} mahasiswa yang berubah.', { n: dampak.daftar.length, total: dampak.berubah })}

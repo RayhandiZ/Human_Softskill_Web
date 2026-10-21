@@ -85,12 +85,15 @@ export default function Login() {
         {/* Pita kertas menggantung dari tepi atas panel, kakinya tergulung ke luar; lihat README.md › Gerak. */}
         <div className="-mt-12 mb-8 self-start">
           <div className="pita-logo">
-            <div className="pita-kertas">
-              {/* Tepi bergelombang dan bayangan lipatan saat diterpa angin. */}
-              <span aria-hidden="true" className="pita-tepi pita-tepi-kiri" />
-              <span aria-hidden="true" className="pita-tepi pita-tepi-kanan" />
-              <span aria-hidden="true" className="pita-lipat" />
-              <LogoPdp className="h-[84px] w-auto text-brand-deep" />
+            {/* Jendela yang membuka kertas mengikuti gulungan; lihat index.css › pita logo masuk. */}
+            <div className="pita-jendela">
+              <div className="pita-kertas">
+                {/* Tepi bergelombang dan bayangan lipatan saat diterpa angin. */}
+                <span aria-hidden="true" className="pita-tepi pita-tepi-kiri" />
+                <span aria-hidden="true" className="pita-tepi pita-tepi-kanan" />
+                <span aria-hidden="true" className="pita-lipat" />
+                <LogoPdp className="h-[84px] w-auto text-brand-deep" />
+              </div>
             </div>
             <span aria-hidden="true" className="pita-tongkat" />
             <span aria-hidden="true" className="pita-gulungan" />

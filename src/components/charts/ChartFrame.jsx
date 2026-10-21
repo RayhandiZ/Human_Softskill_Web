@@ -3,9 +3,12 @@ import { IconDocument } from '../Icons'
 import { Pill } from '../Ui'
 import { useTeks } from '../../lib/bahasa'
 
+/* title dan subtitle adalah kunci kamus mentah; diterjemahkan di sini, sekali. Kalimat berisian ({n}) memakai
+   subtitleNilai. Dulu MutuDonut mengirim subjudul yang sudah diterjemahkan, lalu diterjemahkan lagi di sini. */
 export default function ChartFrame({
   title,
   subtitle,
+  subtitleNilai,
   legend = [],
   table,
   height = 280,
@@ -20,7 +23,7 @@ export default function ChartFrame({
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4 sm:px-6">
         <div>
           <h2 className="text-[15px] font-bold leading-tight text-ink">{t(title)}</h2>
-          {subtitle ? <p className="mt-1 text-[13px] leading-snug text-ink-2">{t(subtitle)}</p> : null}
+          {subtitle ? <p className="mt-1 text-[13px] leading-snug text-ink-2">{t(subtitle, subtitleNilai)}</p> : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {action}

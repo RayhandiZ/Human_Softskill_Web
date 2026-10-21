@@ -2,8 +2,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import Transkrip from '../student/Transkrip'
-import { Badge, Card, CardHeader, CatatanKaki, EmptyState } from '../../components/Ui'
-import { IconAlert, IconArrowLeft, IconCheck, IconList, IconLock, IconPrint, IconUndo } from '../../components/Icons'
+import { Badge, Card, CardHeader, CatatanKaki, EmptyState, GulirTabel, JUDUL_KOLOM } from '../../components/Ui'
+import { IconAlert, IconArrowLeft, IconCheck, IconList, IconLock, IconPencil, IconPrint, IconUndo } from '../../components/Icons'
 import { bolehTandaiFinal, kelayakanSertifikat } from '../../lib/rules'
 import { auditUntuk, getAngkatan, getStudent, transkripOf } from '../../lib/data'
 import { menungguPersetujuan, setPenguncian } from '../../lib/store'
@@ -12,6 +12,7 @@ import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 import { useStore } from '../../lib/store'
 import { CatatanPersetujuan, PesanMenunggu, usePerluPersetujuan } from './PermintaanTerkirim'
+import { tautanInput } from './LoncengKemahasiswaan'
 
 export default function StudentDetail() {
   const teks = useTeks()
@@ -32,69 +33,103 @@ export default function StudentDetail() {
     )
   }
 
-  const log = auditUntuk(student.nim)
-
   return (
     <div className="space-y-6">
-      <Link
-        href="/admin/mahasiswa"
-        className="inline-flex items-center gap-2 text-[13.5px] font-bold text-ink-2 hover:text-brand-ink print:hidden"
-      >
-        <IconArrowLeft size={16} />
-        {teks('Kembali ke data mahasiswa')}
-      </Link>
+      {/* Kembali dan pintasan kerja untuk mahasiswa ini: mengisi nilai semester berjalannya. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <Link
+          href="/admin/mahasiswa"
+          className="inline-flex min-h-[40px] items-center gap-2 text-[13.5px] font-bold text-ink-2 hover:text-brand-ink"
+        >
+          <IconArrowLeft size={16} />
+          {teks('Kembali ke data mahasiswa')}
+        </Link>
+        <Link
+          href={tautanInput({ semester: student.semesterAktif, angkatanId: student.angkatanId, nim: student.nim })}
+          className="btn-ghost !py-2 text-[13.5px]"
+        >
+          <IconPencil size={16} />
+          {teks('Masukkan nilai')}
+        </Link>
+      </div>
 
-      <Transkrip student={student} />
+      <Transkrip student={student} untukAdmin />
 
       <KartuSertifikat student={student} />
 
-      <Card className="print:hidden">
-        <CardHeader
-          title={teks('Riwayat perubahan nilai')}
-          subtitle={teks('Setiap perubahan tercatat beserta aktornya')}
-          icon={IconList}
-        />
-        {log.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px] border-collapse">
+      <RiwayatPerubahan nim={student.nim} />
+
+      <PanelStatusAspek student={student} />
+    </div>
+  )
+}
+
+/* ------------------------ riwayat perubahan nilai ------------------------ */
+
+const RIWAYAT_AWAL = 10
+
+/* Dulu seluruh riwayat ditampilkan sekaligus, sehingga halaman mahasiswa dengan banyak batch memanjang ribuan
+   piksel. Sepuluh yang terbaru dulu; sisanya dibuka bila memang dicari. */
+function RiwayatPerubahan({ nim }) {
+  const teks = useTeks()
+  const log = auditUntuk(nim)
+  const [semua, setSemua] = useState(false)
+  const tampil = semua ? log : log.slice(0, RIWAYAT_AWAL)
+
+  return (
+    <Card className="overflow-hidden print:hidden">
+      <CardHeader
+        title={teks('Riwayat perubahan nilai')}
+        subtitle={teks('Setiap perubahan tercatat beserta aktornya')}
+        icon={IconList}
+      />
+      {log.length ? (
+        <>
+          <GulirTabel>
+            <table className="w-full min-w-[700px] border-separate border-spacing-0">
               <thead>
-                <tr className="border-b border-line bg-surface-2">
-                  {['Waktu', 'Komponen', 'Lama', 'Baru', 'Aktor', 'Batch'].map((h, i) => (
-                    <th
-                      key={h}
-                      className={
-                        'px-4 py-3 text-[11px] font-bold uppercase tracking-[.07em] text-ink-3 ' +
-                        (i === 2 || i === 3 ? 'text-right' : 'text-left')
-                      }
-                    >
-                      {teks(h)}
-                    </th>
-                  ))}
+                <tr className="bg-surface-2 [&>th]:border-b [&>th]:border-line">
+                  {/* Ditulis sebagai teks('…') langsung supaya npm run test:bahasa melihatnya; dulu larik ini lolos
+                      dari pemindai dan judul kolomnya tetap berbahasa Indonesia di mode Inggris. */}
+                  <th className={JUDUL_KOLOM + ' pl-5 text-left sm:pl-6'}>{teks('Waktu')}</th>
+                  <th className={JUDUL_KOLOM + ' text-left'}>{teks('Komponen')}</th>
+                  <th className={JUDUL_KOLOM + ' text-right'}>{teks('Nilai lama')}</th>
+                  <th className={JUDUL_KOLOM + ' text-right'}>{teks('Nilai baru')}</th>
+                  <th className={JUDUL_KOLOM + ' text-left'}>{teks('Aktor')}</th>
+                  <th className={JUDUL_KOLOM + ' pr-5 text-left sm:pr-6'}>{teks('Batch')}</th>
                 </tr>
               </thead>
               <tbody>
-                {log.map((l) => (
-                  <tr key={l.id} className="border-b border-line last:border-0">
-                    <td className="px-4 py-2.5 text-[12.5px] tabular-nums text-ink-3">{l.waktu}</td>
-                    <td className="px-4 py-2.5 text-[13px] text-ink">{l.komponen}</td>
-                    <td className="px-4 py-2.5 text-right text-[13px] tabular-nums text-ink-3">{l.nilaiLama}</td>
-                    <td className="px-4 py-2.5 text-right text-[13px] font-bold tabular-nums text-ink">{l.nilaiBaru}</td>
-                    <td className="px-4 py-2.5 text-[12.5px] text-ink-2">{l.aktor}</td>
-                    <td className="px-4 py-2.5 text-[12px] tabular-nums text-ink-3">{l.batchId}</td>
+                {tampil.map((l) => (
+                  <tr key={l.id} className="transition-colors hover:bg-surface-2 [&>td]:border-b [&>td]:border-line">
+                    <td className="whitespace-nowrap py-2.5 pl-5 pr-3 text-[12.5px] tabular-nums text-ink-2 sm:pl-6">{l.waktu}</td>
+                    <td className="px-3 py-2.5 text-[13px] text-ink">{l.komponen}</td>
+                    <td className="px-3 py-2.5 text-right text-[13px] tabular-nums text-ink-2">{l.nilaiLama ?? '–'}</td>
+                    <td className="px-3 py-2.5 text-right text-[13px] font-bold tabular-nums text-ink">{l.nilaiBaru}</td>
+                    <td className="px-3 py-2.5 text-[12.5px] text-ink-2">{l.aktor}</td>
+                    <td className="py-2.5 pl-3 pr-5 font-mono text-[12px] text-ink-2 sm:pr-6">{l.batchId}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        ) : (
-          <EmptyState title={teks('Belum ada perubahan tercatat')}>
-            {teks('Nilai mahasiswa ini masuk sekali lewat batch import dan belum pernah diperbaiki.')}
-          </EmptyState>
-        )}
-      </Card>
-
-      <PanelStatusAspek student={student} />
-    </div>
+          </GulirTabel>
+          {log.length > RIWAYAT_AWAL ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 sm:px-6">
+              <p className="text-[13.5px] text-ink-2">
+                {teks('Menampilkan {n} dari {total} perubahan', { n: tampil.length, total: log.length })}
+              </p>
+              <button type="button" className="btn-ghost !py-2 text-[13.5px]" aria-expanded={semua} onClick={() => setSemua((v) => !v)}>
+                {teks(semua ? 'Tampilkan 10 terbaru' : 'Tampilkan semua')}
+              </button>
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <EmptyState title={teks('Belum ada perubahan tercatat')}>
+          {teks('Nilai mahasiswa ini masuk sekali lewat batch import dan belum pernah diperbaiki.')}
+        </EmptyState>
+      )}
+    </Card>
   )
 }
 
@@ -117,10 +152,12 @@ function KartuSertifikat({ student }) {
             <Badge tone={s.lolos ? 'good' : 'critical'}>
               {teks(s.lolos ? 'Terpenuhi' : 'Belum')}
             </Badge>
+            {/* labelT/alasanT: kunci kamus + isian. label/alasan dirakit dengan angka di dalamnya, jadi dulu tidak
+                pernah ditemukan di kamus dan tetap berbahasa Indonesia di mode Inggris. */}
             <span className="min-w-[220px] flex-1 text-[13.5px] font-semibold text-ink">
-              {teks(s.label)}
+              {teks(...s.labelT)}
             </span>
-            {s.lolos ? null : <span className="text-[12.5px] text-ink-2">{teks(s.alasan)}</span>}
+            {s.lolos || !s.alasanT ? null : <span className="text-[12.5px] text-ink-2">{teks(...s.alasanT)}</span>}
           </li>
         ))}
       </ul>

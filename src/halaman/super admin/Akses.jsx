@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Avatar, Badge, Card, CatatanKaki, EmptyState, SearchInput, Select, Tabs } from '../../components/Ui'
-import { IconAlert, IconCheck, IconLock, IconPlus, IconRefresh, IconUndo } from '../../components/Icons'
-import { ALASAN_AKSES_MIN, SANDI_AWAL_MIN, muatAkses, tambahAkun, ubahAkses } from '../../lib/store'
+import { IconAlert, IconCheck, IconHapus, IconLock, IconPlus, IconRefresh, IconUndo } from '../../components/Icons'
+import { ALASAN_AKSES_MIN, SANDI_AWAL_MIN, hapusAkun, muatAkses, tambahAkun, ubahAkses } from '../../lib/store'
 import { COHORTS, PROGRAMS, getAngkatan } from '../../lib/data'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
@@ -16,6 +16,8 @@ const KELOMPOK = {
   mahasiswa: { label: 'Mahasiswa', peran: ['mahasiswa'], kosong: 'Belum ada akun mahasiswa.', cari: 'Cari nama, email, atau NIM', tambah: 'Tambah mahasiswa' },
 }
 const LABEL_STATUS = { semua: 'Semua status', aktif: 'Punya akses', dicabut: 'Akses dicabut' }
+const TOMBOL_BAHAYA =
+  'btn border border-[color-mix(in_srgb,var(--critical)_45%,transparent)] text-[var(--critical)] hover:bg-[color-mix(in_srgb,var(--critical)_10%,transparent)]'
 
 const urut = (a, b) => (a.nama || a.email).localeCompare(b.nama || b.email, 'id')
 
@@ -35,6 +37,7 @@ export default function Akses() {
   const [status, setStatus] = useState('semua')
   const [terbuka, setTerbuka] = useState(null)
   const [tambah, setTambah] = useState(false)
+  const [pesan, setPesan] = useState('')
 
 
   async function ambil() {
@@ -100,6 +103,7 @@ export default function Akses() {
                   setKelompok(k)
                   setTerbuka(null)
                   setTambah(false)
+                  setPesan('')
                 }}
                 items={Object.entries(KELOMPOK).map(([value, k]) => ({
                   value,
@@ -131,6 +135,11 @@ export default function Akses() {
                   {t('{n} akun · {m} aksesnya dicabut', { n: anggota(kelompok).length, m: dicabut })}
                 </p>
               ) : null}
+              {/* Selalu terpasang supaya pembaca layar mengumumkan isinya begitu terisi. */}
+              <p role="status" className={pesan ? 'teks-baik flex items-center gap-2 text-[13px] font-semibold' : 'sr-only'}>
+                {pesan ? <IconCheck size={16} className="shrink-0" /> : null}
+                {pesan}
+              </p>
               {tambah ? (
   <FormTambah
     kelompok={kelompok}
@@ -157,6 +166,11 @@ export default function Akses() {
                     onBuka={() => setTerbuka(a.id)}
                     onTutup={() => setTerbuka(null)}
                     onGanti={ganti}
+                    onHapus={(akun) => {
+                      setMuat((m) => ({ ...m, akun: m.akun.filter((x) => x.id !== akun.id) }))
+                      setTerbuka(null)
+                      setPesan(t('Akun {nama} sudah dihapus dari basis data.', { nama: akun.nama || akun.email }))
+                    }}
                   />
                 ))}
               </ul>
@@ -170,24 +184,39 @@ export default function Akses() {
       </Card>
 
       <CatatanKaki>
-        {t('Akses Super Admin tidak bisa dicabut dari sini, termasuk akun Anda sendiri; itu diatur langsung di basis data. Setiap perubahan akses tercatat di Log Aktivitas beserta alasannya.')}
+        {t('Akses Super Admin tidak bisa dicabut atau dihapus dari sini, termasuk akun Anda sendiri; itu diatur langsung di basis data. Hanya akun yang aksesnya sudah dicabut dan belum punya data yang bisa dihapus. Setiap perubahan akses dan penghapusan akun tercatat di Log Aktivitas beserta alasannya.')}
       </CatatanKaki>
     </div>
   )
 }
 
-function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti }) {
+function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus }) {
   const t = useTeks()
+  // Panel baris ini berisi ubah akses ('akses') atau hapus akun ('hapus').
+  const [mode, setMode] = useState('akses')
   const [alasan, setAlasan] = useState('')
   const [sibuk, setSibuk] = useState(false)
   const [galat, setGalat] = useState('')
   const bisaDiubah = a.peran !== 'superadmin' && !milikSaya
   const cabut = Boolean(a.aktif)
+  // Hanya akun yang aksesnya sudah dicabut; server juga menolak akun yang masih punya data.
+  const bisaDihapus = bisaDiubah && !a.aktif
+  const hapus = mode === 'hapus'
+  const panel = terbuka && bisaDiubah && (!hapus || bisaDihapus)
 
   function tutup() {
     setAlasan('')
     setGalat('')
     onTutup()
+  }
+
+  /* Tombol yang sama menutup panelnya; tombol lain mengganti isi panel. */
+  function buka(baru) {
+    if (terbuka && mode === baru) return tutup()
+    setMode(baru)
+    setAlasan('')
+    setGalat('')
+    onBuka()
   }
 
   async function simpan(e) {
@@ -196,6 +225,11 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti }) {
     setSibuk(true)
     setGalat('')
     try {
+      if (hapus) {
+        await hapusAkun({ id: a.id, alasan: alasan.trim() })
+        onHapus(a)
+        return
+      }
       const { akun } = await ubahAkses({ id: a.id, aktif: !cabut, alasan: alasan.trim() })
       onGanti(akun)
       tutup()
@@ -236,28 +270,43 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti }) {
             {t(a.aktif ? 'Punya akses' : 'Akses dicabut')}
           </Badge>
           {bisaDiubah ? (
-            <button
-              type="button"
-              className="btn-ghost !px-3 !py-2 text-[13px]"
-              aria-expanded={terbuka}
-              onClick={terbuka ? tutup : onBuka}
-            >
-              {cabut ? <IconLock size={15} /> : <IconUndo size={15} />}
-              {t(cabut ? 'Cabut akses' : 'Pulihkan akses')}
-            </button>
+            <>
+              <button
+                type="button"
+                className="btn-ghost !px-3 !py-2 text-[13px]"
+                aria-expanded={panel && !hapus}
+                onClick={() => buka('akses')}
+              >
+                {cabut ? <IconLock size={15} /> : <IconUndo size={15} />}
+                {t(cabut ? 'Cabut akses' : 'Pulihkan akses')}
+              </button>
+              {bisaDihapus ? (
+                <button
+                  type="button"
+                  className="btn-ghost teks-kritis !px-3 !py-2 text-[13px]"
+                  aria-expanded={panel && hapus}
+                  onClick={() => buka('hapus')}
+                >
+                  <IconHapus size={15} />
+                  {t('Hapus akun')}
+                </button>
+              ) : null}
+            </>
           ) : (
             <span className="text-[12.5px] text-ink-3">{t(milikSaya ? 'Akun Anda' : 'Diatur di basis data')}</span>
           )}
         </div>
       </div>
 
-      {terbuka && bisaDiubah ? (
-        <form onSubmit={simpan} className="mt-3 space-y-3 rounded-xl border border-line bg-surface-2/60 p-4">
+      {panel ? (
+        <form key={mode} onSubmit={simpan} className="mt-3 space-y-3 rounded-xl border border-line bg-surface-2/60 p-4">
           <p className="text-[13px] leading-relaxed text-ink">
             {t(
-              cabut
-                ? 'Akun ini tidak bisa masuk lagi, dan sesi yang sedang terbuka langsung berakhir. Datanya tetap tersimpan.'
-                : 'Akun ini bisa masuk lagi seperti semula.',
+              hapus
+                ? 'Akun ini dihapus permanen dari basis data beserta profilnya, dan tidak bisa dikembalikan. Akun yang masih punya nilai, pengumpulan, atau riwayat tindakan tidak bisa dihapus; biarkan aksesnya tetap dicabut.'
+                : cabut
+                  ? 'Akun ini tidak bisa masuk lagi, dan sesi yang sedang terbuka langsung berakhir. Datanya tetap tersimpan.'
+                  : 'Akun ini bisa masuk lagi seperti semula.',
             )}
           </p>
           <label className="block max-w-xl">
@@ -267,15 +316,11 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti }) {
           <div className="flex flex-wrap gap-2.5">
             <button
               type="submit"
-              className={
-                cabut
-                  ? 'btn border border-[color-mix(in_srgb,var(--critical)_45%,transparent)] text-[var(--critical)] hover:bg-[color-mix(in_srgb,var(--critical)_10%,transparent)]'
-                  : 'btn-primary'
-              }
+              className={hapus || cabut ? TOMBOL_BAHAYA : 'btn-primary'}
               disabled={sibuk || alasan.trim().length < ALASAN_AKSES_MIN}
             >
-              {cabut ? <IconLock size={16} /> : <IconUndo size={16} />}
-              {t(cabut ? 'Cabut akses' : 'Pulihkan akses')}
+              {hapus ? <IconHapus size={16} /> : cabut ? <IconLock size={16} /> : <IconUndo size={16} />}
+              {t(hapus ? 'Hapus permanen' : cabut ? 'Cabut akses' : 'Pulihkan akses')}
             </button>
             <button type="button" className="btn-ghost" disabled={sibuk} onClick={tutup}>
               {t('Batal')}

@@ -1,68 +1,24 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Card } from '../../components/Ui'
+import { JudulHalaman, KartuAngka } from '../../components/Ui'
 import MutuDonut from '../../components/charts/MutuDonut'
 import PerkembanganAngkatan from '../../components/charts/PerkembanganAngkatan'
-import {
-  IconBuilding,
-  IconCertificate,
-  IconCheckShield,
-  IconChevronDown,
-  IconChevronRight,
-  IconDocument,
-  IconList,
-  IconUpload,
-  IconUsers,
-} from '../../components/Icons'
+import { IconCheck, IconCheckShield, IconChevronDown, IconChevronRight, IconPencil, IconUndo } from '../../components/Icons'
 import { CONFIG } from '../../lib/config'
+import { SUMBER } from '../../lib/curriculum'
 import { useTeks } from '../../lib/bahasa'
-import {
-  PERIODE_AKTIF,
-  STUDENTS,
-  kelengkapanMatriks,
-  labelPeriode,
-  ringkas,
-} from '../../lib/data'
+import { STUDENTS, kelengkapanMatriks, ringkas } from '../../lib/data'
 import { useStore } from '../../lib/store'
-import { useAuth } from '../../lib/auth'
+import { daftarKode, tautanInput, tautanKoreksi, usePekerjaanKemahasiswaan } from './LoncengKemahasiswaan'
 
-/* Sengaja tenang; lihat README.md › Ringkasan admin sengaja dibuat tenang. */
+/* Sengaja tenang; lihat README.md › Ringkasan admin sengaja dibuat tenang. Pekerjaan yang menunggu dibuka
+   paling atas, lalu tiga angka dan dua grafik. Navigasi ada di menu samping, jadi tidak ada lagi kartu
+   "Halaman lain". */
 
-function Angka({ nilai, satuan, judul, keterangan, persen, persenLabel, kaki }) {
-  const t = useTeks()
-  return (
-    <Card className="px-6 py-7">
-      <p className="text-[15px] font-semibold text-ink-2">{t(judul)}</p>
-      <p className="mt-2 flex items-baseline gap-2">
-        <span className="text-[46px] font-extrabold leading-none tracking-tight text-ink tabular-nums">
-          {nilai}
-        </span>
-        {satuan ? <span className="text-[18px] font-semibold text-ink-2">{t(satuan)}</span> : null}
-      </p>
+const PEKERJAAN_TAMPIL = 3
 
-      {typeof persen === 'number' ? (
-        <div className="mt-4">
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="text-[14px] text-ink-2">{t(persenLabel)}</span>
-            <span className="text-[18px] font-extrabold tabular-nums text-ink">{persen}%</span>
-          </div>
-          <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-[var(--grid)]">
-            <div
-              className="h-full rounded-full bg-brand-ink"
-              style={{ width: Math.max(2, Math.min(100, persen)) + '%' }}
-            />
-          </div>
-        </div>
-      ) : null}
-
-      {keterangan ? (
-        <p className="mt-3 text-[14.5px] leading-relaxed text-ink-2">{t(keterangan)}</p>
-      ) : null}
-
-      {kaki}
-    </Card>
-  )
-}
+// Kartu angka kini KartuAngka di components/Ui.jsx, dipakai juga Program Studi dan Persetujuan Nilai Dosen.
+const Angka = KartuAngka
 
 function KakiLipat({ buka, onToggle, idIsi, ringkas }) {
   const t = useTeks()
@@ -86,40 +42,144 @@ function KakiLipat({ buka, onToggle, idIsi, ringkas }) {
   )
 }
 
-function Pintu({ ke, judul, keterangan, icon: Icon, sembunyi = false }) {
+/** Nama pertama dan kedua, lalu "dan n lainnya". */
+function namaRingkas(t, nama) {
+  if (nama.length <= 2) return nama.join(', ')
+  return nama.slice(0, 2).join(', ') + ' ' + t('dan {n} lainnya', { n: nama.length - 2 })
+}
+
+/* Pekerjaan yang menunggu, ditulis sebagai kalimat utuh dengan tautan yang menyebut tujuannya. Sumbernya sama
+   dengan lonceng di bilah atas (usePekerjaanKemahasiswaan); bila tidak ada apa-apa, satu baris tenang saja. */
+function PerluDikerjakan() {
   const t = useTeks()
+  const { usulan, koreksi, pekerjaan, tinjauan } = usePekerjaanKemahasiswaan()
+
+  const baris = [
+    usulan.length
+      ? {
+          id: 'usulan',
+          ikon: IconCheckShield,
+          ke: '/admin/usulan',
+          judul: t('{n} usulan nilai dari dosen menunggu persetujuan', { n: usulan.length }),
+          rinci: namaRingkas(t, usulan.map((u) => u.dosenNama)),
+          aksi: t('Tinjau usulan'),
+        }
+      : null,
+    koreksi.length
+      ? {
+          id: 'koreksi',
+          ikon: IconUndo,
+          ke: tautanKoreksi(koreksi[0]),
+          judul: t('{n} pengajuan koreksi nilai dari mahasiswa belum diputuskan', { n: koreksi.length }),
+          rinci: namaRingkas(t, koreksi.map((k) => k.nama)),
+          aksi: t('Tinjau koreksi'),
+        }
+      : null,
+    ...tinjauan.map((x) => ({
+      id: x.id,
+      ikon: x.ikon,
+      ke: x.href,
+      judul: x.judul,
+      rinci: x.rinci,
+      aksi: t(x.id === 'kunci' ? 'Buka Angkatan' : 'Lihat mahasiswa'),
+    })),
+    ...pekerjaan.slice(0, PEKERJAAN_TAMPIL).map((p) => ({
+      id: p.id,
+      ikon: IconPencil,
+      ke: tautanInput({
+        semester: p.semester,
+        sumber: p.sumber,
+        angkatanId: p.angkatan.id,
+        aspekId: p.aspek[0]?.id,
+        nim: p.nimTunggal,
+      }),
+      judul: t('{n} nilai {sumber} Semester {semester} belum diisi', {
+        n: p.kosong.toLocaleString('id-ID'),
+        sumber: SUMBER[p.sumber]?.label ?? p.sumber,
+        semester: p.semester,
+      }),
+      rinci:
+        t('Angkatan {label}', { label: p.angkatan.label }) +
+        ', ' +
+        t('{n} mahasiswa', { n: p.mahasiswa }) +
+        ' · ' +
+        daftarKode(p.aspek),
+      aksi: t('Masukkan nilai'),
+    })),
+  ].filter(Boolean)
+  const sisa = Math.max(0, pekerjaan.length - PEKERJAAN_TAMPIL)
+
+  if (!baris.length) {
+    return (
+      <section aria-labelledby="judul-perlu" className="kartu flex items-center gap-4 px-5 py-4 sm:px-6">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-ink">
+          <IconCheck size={20} />
+        </span>
+        <div>
+          <h2 id="judul-perlu" className="text-[16px] font-extrabold text-ink">
+            {t('Tidak ada pekerjaan yang menunggu')}
+          </h2>
+          <p className="mt-0.5 text-[14.5px] text-ink-2">
+            {t('Usulan dosen, koreksi mahasiswa, dan nilai yang wajib diisi sudah tertangani.')}
+          </p>
+        </div>
+      </section>
+    )
+  }
+
   return (
-    /* Kelas sembunyi dipasang di <li> sendiri: <li> di dalam <li> tidak sah. */
-    <li className={sembunyi ? 'hidden sm:block' : undefined}>
-      <Link
-        href={ke}
-        className="flex h-full flex-col rounded-2xl border border-line bg-surface px-6 py-6 transition hover:border-brand-ink hover:bg-surface-2"
-      >
-        <span className="grid h-12 w-12 place-items-center rounded-xl bg-brand-soft text-brand-ink">
-          <Icon size={24} />
+    <section aria-labelledby="judul-perlu" className="kartu overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4 sm:px-6">
+        <div>
+          <h2 id="judul-perlu" className="text-[18px] font-extrabold text-ink">
+            {t('Perlu dikerjakan')}
+          </h2>
+          <p className="mt-0.5 text-[14px] text-ink-2">
+            {t('Urut dari yang menunggu keputusan Anda, lalu nilai yang belum diisi.')}
+          </p>
+        </div>
+        <span className="rounded-full bg-brand-soft px-3 py-1 text-[13px] font-bold text-brand-ink">
+          {t('{n} hal', { n: baris.length + sisa })}
         </span>
-        <span className="mt-4 text-[17px] font-bold text-ink">{t(judul)}</span>
-        <span className="mt-1.5 text-[14.5px] leading-relaxed text-ink-2">{t(keterangan)}</span>
-        <span className="mt-4 inline-flex items-center gap-1.5 text-[15px] font-bold text-brand-ink underline underline-offset-4">
-          {t('Lihat selengkapnya')}
-          <IconChevronRight size={17} />
-        </span>
-      </Link>
-    </li>
+      </div>
+      <ul className="divide-y divide-line">
+        {baris.map((b) => (
+          <li key={b.id}>
+            <Link
+              href={b.ke}
+              className="group flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 transition hover:bg-surface-2 sm:flex-nowrap sm:px-6"
+            >
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-ink">
+                <b.ikon size={19} />
+              </span>
+              <span className="min-w-0 flex-1 basis-[200px]">
+                <span className="block text-[15.5px] font-bold leading-snug text-ink">{b.judul}</span>
+                {b.rinci ? <span className="mt-0.5 block text-[14px] leading-snug text-ink-2">{b.rinci}</span> : null}
+              </span>
+              <span className="inline-flex shrink-0 items-center gap-1 pl-14 text-[14.5px] font-bold text-brand-ink underline underline-offset-4 sm:pl-0">
+                {b.aksi}
+                <IconChevronRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {sisa ? (
+        <p className="border-t border-line bg-surface-2 px-5 py-3 text-[14px] text-ink-2 sm:px-6">
+          {t('{n} kelompok nilai lain juga belum lengkap; semuanya ada di lonceng di kanan atas.', { n: sisa })}
+        </p>
+      ) : null}
+    </section>
   )
 }
 
 export default function Overview() {
   const teks = useTeks()
   const versi = useStore()
-  const { admin } = useAuth()
 
   const rows = useMemo(() => [...STUDENTS], [versi])
-
   const angka = useMemo(() => ringkas(rows), [rows])
-
   const [bukaAngka, setBukaAngka] = useState(false)
-  const [bukaHalaman, setBukaHalaman] = useState(false)
 
   const bagi = (n) => (angka.total ? Math.round((n / angka.total) * 100) : 0)
   const persenLengkap = useMemo(() => {
@@ -135,19 +195,19 @@ export default function Overview() {
   }, [rows])
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       {/* --------------------------------- kepala -------------------------------- */}
-      <header>
-        <h1 className="text-[25px] font-extrabold leading-tight tracking-tight text-ink">Overview</h1>
-      </header>
+      <JudulHalaman judul="Overview" keterangan={teks('Pekerjaan yang menunggu Anda dan capaian mahasiswa periode ini.')} />
+
+      <PerluDikerjakan />
 
       {/* --------------------------------- angka --------------------------------- */}
-      <section className="grid gap-5 md:grid-cols-3">
+      <section aria-label={teks('Ringkasan angka')} className="grid gap-5 md:grid-cols-3">
         <Angka
-          judul="Mahasiswa terpantau"
+          judul={teks('Mahasiswa terpantau')}
           nilai={angka.total.toLocaleString('id-ID')}
           persen={persenLengkap}
-          persenLabel="Nilai yang sudah masuk"
+          persenLabel={teks('Nilai yang sudah masuk')}
           kaki={
             <KakiLipat
               buka={bukaAngka}
@@ -163,24 +223,21 @@ export default function Overview() {
         />
 
         {/* sm:contents melebur pembungkus ini di layar lebar. */}
-        <div
-          id="angka-lain"
-          className={(bukaAngka ? 'grid ' : 'hidden ') + 'gap-5 sm:contents'}
-        >
-        <Angka
-          judul="Rata-rata nilai"
-          nilai={angka.rata ?? '—'}
-          satuan="dari 100"
-          persen={bagi(angka.diAtasAmbang)}
-          persenLabel={teks('Di atas batas {ambang}', { ambang: CONFIG.AMBANG_SERTIFIKAT })}
-        />
-        <Angka
-          judul="Nilai sudah final"
-          nilai={angka.final.toLocaleString('id-ID')}
-          satuan={teks('dari {n}', { n: angka.total.toLocaleString('id-ID') })}
-          persen={bagi(angka.final)}
-          persenLabel="Sudah dikunci"
-        />
+        <div id="angka-lain" className={(bukaAngka ? 'grid ' : 'hidden ') + 'gap-5 sm:contents'}>
+          <Angka
+            judul={teks('Rata-rata nilai')}
+            nilai={angka.rata ?? '-'}
+            satuan={teks('dari 100')}
+            persen={bagi(angka.diAtasAmbang)}
+            persenLabel={teks('Di atas batas {ambang}', { ambang: CONFIG.AMBANG_SERTIFIKAT })}
+          />
+          <Angka
+            judul={teks('Nilai sudah final')}
+            nilai={angka.final.toLocaleString('id-ID')}
+            satuan={teks('dari {n}', { n: angka.total.toLocaleString('id-ID') })}
+            persen={bagi(angka.final)}
+            persenLabel={teks('Sudah dikunci')}
+          />
         </div>
       </section>
 
@@ -191,78 +248,6 @@ export default function Overview() {
       {/* -------------------------------- sebaran -------------------------------- */}
       <section>
         <MutuDonut huruf={angka.huruf} totalMahasiswa={angka.total} />
-      </section>
-
-      {/* ------------------------------ halaman lain ----------------------------- */}
-      <section>
-        <h2 className="mb-3 text-[25px] font-extrabold tracking-tight text-ink">
-          {teks('Halaman lain')}
-        </h2>
-        <ul id="halaman-lain" className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          <Pintu
-            ke="/admin/nilai"
-            icon={IconUpload}
-            judul="Input &amp; Import Nilai"
-            keterangan="Masukkan nilai satu per satu, atau unggah rekap dari Excel."
-          />
-          <Pintu
-            sembunyi={!bukaHalaman}
-            ke="/admin/usulan"
-            icon={IconCheckShield}
-            judul="Persetujuan Nilai Dosen"
-            keterangan="Setujui atau tolak nilai yang dikirim dosen pengampu."
-          />
-          <Pintu
-            sembunyi={!bukaHalaman}
-            ke="/admin/mahasiswa"
-            icon={IconUsers}
-            judul="Data Mahasiswa"
-            keterangan="Cari mahasiswa, lihat nilainya, dan buka transkrip lengkapnya."
-          />
-          <Pintu
-            sembunyi={!bukaHalaman}
-            ke="/admin/program-studi"
-            icon={IconBuilding}
-            judul="Program Studi"
-            keterangan="Bandingkan capaian antar program studi, fakultas, dan angkatan."
-          />
-          <Pintu
-            sembunyi={!bukaHalaman}
-            ke="/admin/angkatan"
-            icon={IconCertificate}
-            judul="Angkatan &amp; Sertifikat"
-            keterangan="Kunci angkatan yang sudah selesai, lalu terbitkan sertifikatnya."
-          />
-          <Pintu
-            sembunyi={!bukaHalaman}
-            ke="/admin/kurikulum"
-            icon={IconDocument}
-            judul="Kurikulum CPMK"
-            keterangan="Sepuluh aspek penilaian, komponen asesmen, dan bobotnya."
-          />
-          <Pintu
-            sembunyi={!bukaHalaman}
-            ke="/admin/log"
-            icon={IconList}
-            judul="Log Aktivitas"
-            keterangan="Catatan setiap perubahan nilai beserta siapa yang mengubahnya."
-          />
-          <li className="sm:hidden">
-            <button
-              type="button"
-              onClick={() => setBukaHalaman((v) => !v)}
-              aria-expanded={bukaHalaman}
-              aria-controls="halaman-lain"
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-line px-6 py-4 text-[14px] font-bold text-brand-ink transition hover:border-brand-ink"
-            >
-              {teks(bukaHalaman ? 'Sembunyikan' : 'Tampilkan 6 halaman lainnya')}
-              <IconChevronDown
-                size={17}
-                className={'transition-transform ' + (bukaHalaman ? 'rotate-180' : '')}
-              />
-            </button>
-          </li>
-        </ul>
       </section>
     </div>
   )

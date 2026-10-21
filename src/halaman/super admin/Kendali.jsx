@@ -10,6 +10,7 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconDocument,
+  IconHapus,
   IconInbox,
   IconInfo,
   IconList,
@@ -54,6 +55,7 @@ const IKON_LOG = {
   UBAH_PENILAIAN: IconDocument,
   UBAH_AKSES: IconUsers,
   TAMBAH_AKUN: IconUsers,
+  HAPUS_AKUN: IconHapus,
 }
 
 const LABEL_KEPUTUSAN = { disetujui: 'Disetujui', ditolak: 'Ditolak', gagal: 'Gagal dijalankan' }

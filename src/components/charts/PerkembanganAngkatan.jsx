@@ -186,14 +186,17 @@ function Batang({ kelompok }) {
                   ref={(el) => {
                     batangRef.current[i] = el
                   }}
+                  // batang-tumbuh: tumbuh dari dasarnya saat grafik pertama tampil, bergiliran tiap batang
+                  // (hanya di panel Kemahasiswaan; lihat index.css › gerak panel Kemahasiswaan).
                   className={
-                    'block w-8 rounded-t-[4px] group-focus-visible:ring-2 group-focus-visible:ring-brand-ink group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-surface sm:w-10 ' +
+                    'batang-tumbuh block w-8 rounded-t-[4px] group-focus-visible:ring-2 group-focus-visible:ring-brand-ink group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-surface sm:w-10 ' +
                     (i === aktif ? 'brightness-110' : '')
                   }
                   style={{
                     height: tinggi(x.nilai),
                     background: 'var(--semester-' + x.sem + ', var(--brand-ink))',
                     transition: 'height .32s ' + LENGKUNG + ', filter .15s ' + LENGKUNG,
+                    animationDelay: 0.2 + i * 0.08 + 's',
                   }}
                 />
               </div>

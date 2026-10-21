@@ -1,7 +1,17 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Badge, Card, CardHeader, CatatanKaki, EmptyState, Tabs } from '../../components/Ui'
+import {
+  Badge,
+  Card,
+  CatatanKaki,
+  EmptyState,
+  GulirTabel,
+  JUDUL_KOLOM,
+  JudulHalaman,
+  KartuAngka,
+  TabSaring,
+} from '../../components/Ui'
 import {
   IconAlert,
   IconCheck,
@@ -20,7 +30,8 @@ import { PesanMenunggu } from './PermintaanTerkirim'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 
-/* Dua lapis konfirmasi: sistem lalu orang; lihat README.md › Usulan nilai dosen. */
+/* Dua lapis konfirmasi: sistem lalu orang; lihat README.md › Usulan nilai dosen. Susunannya mengikuti halaman
+   daftar lain di panel ini: kepala halaman, tiga angka, lalu satu kartu antrean dengan tab berjumlah. */
 
 const RUPA = {
   menunggu: { label: 'Menunggu keputusan', tone: 'warning', icon: IconClock },
@@ -46,55 +57,51 @@ export default function Usulan() {
   const dosenTerlibat = new Set(menunggu.map((u) => u.dosenNip)).size
 
   return (
-    <div className="space-y-5">
-      <header>
-        <h1 className="text-[26px] font-extrabold tracking-tight text-ink">
-          {t('Persetujuan nilai dosen')}
-        </h1>
-        <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-2">
-          {t('Nilai yang dikirim dosen tertahan di sini sampai disetujui. Sebelum Anda memutuskan, sistem sudah memeriksa tiap barisnya lebih dulu.')}
-        </p>
-      </header>
+    <div className="space-y-6">
+      <JudulHalaman
+        judul={t('Persetujuan Nilai Dosen')}
+        keterangan={t('Nilai yang dikirim dosen tertahan di sini sampai disetujui. Sebelum Anda memutuskan, sistem sudah memeriksa tiap barisnya lebih dulu.')}
+      />
 
-      <Card className="px-6 py-7">
-        <p className="text-[15px] font-semibold text-ink-2">{t('Usulan menunggu keputusan')}</p>
-        <p className="mt-2 flex items-baseline gap-2">
-          <span className="text-[46px] font-extrabold leading-none tracking-tight text-ink tabular-nums">
-            {menunggu.length}
-          </span>
-          <span className="text-[18px] font-semibold text-ink-2">
-            {t('berisi {n} nilai', { n: nilaiMenunggu.toLocaleString('id-ID') })}
-          </span>
-        </p>
-        <p className="mt-3 text-[14.5px] leading-relaxed text-ink-2">
-          {menunggu.length
-            ? t('Dari {n} dosen pengampu.', { n: dosenTerlibat }) +
-              ' ' +
-              t('Tidak satu pun sudah masuk transkrip.')
-            : semua.length
-              ? t('Tidak ada yang tertahan. Seluruh usulan dosen sudah diputuskan.')
-              : t('Belum ada usulan dari dosen.')}
-        </p>
-      </Card>
-
-      <Card>
-        <CardHeader
-          title={t('Antrean usulan')}
-          subtitle={t('Buka satu usulan untuk melihat nilainya dan hasil pemeriksaan sistem')}
-          icon={IconCheckShield}
-          action={
-            <Tabs
-              items={[
-                { value: 'menunggu', label: t('Menunggu'), count: menunggu.length },
-                { value: 'riwayat', label: t('Sudah diputuskan'), count: diputuskan.length },
-              ]}
-              value={tab}
-              onChange={(v) => {
-                setTab(v)
-                setBuka(null)
-              }}
-            />
+      <section aria-label={t('Ringkasan angka')} className="grid gap-5 md:grid-cols-3">
+        <KartuAngka
+          judul={t('Usulan menunggu keputusan')}
+          nilai={menunggu.length.toLocaleString('id-ID')}
+          satuan={t('berisi {n} nilai', { n: nilaiMenunggu.toLocaleString('id-ID') })}
+          keterangan={
+            menunggu.length
+              ? t('Dari {n} dosen pengampu.', { n: dosenTerlibat }) + ' ' + t('Tidak satu pun sudah masuk transkrip.')
+              : semua.length
+                ? t('Tidak ada yang tertahan. Seluruh usulan dosen sudah diputuskan.')
+                : t('Belum ada usulan dari dosen.')
           }
+        />
+        <KartuAngka
+          judul={t('Disetujui')}
+          nilai={diputuskan.filter((u) => u.status === 'disetujui').length.toLocaleString('id-ID')}
+          satuan={t('usulan')}
+          keterangan={t('Masuk sebagai batch di Riwayat Batch halaman Input Nilai.')}
+        />
+        <KartuAngka
+          judul={t('Ditolak')}
+          nilai={diputuskan.filter((u) => u.status === 'ditolak').length.toLocaleString('id-ID')}
+          satuan={t('usulan')}
+          keterangan={t('Dikembalikan ke dosen beserta alasannya.')}
+        />
+      </section>
+
+      <Card className="overflow-hidden">
+        <TabSaring
+          label={t('Antrean usulan')}
+          nilai={tab}
+          onPilih={(v) => {
+            setTab(v)
+            setBuka(null)
+          }}
+          pilihan={[
+            { nilai: 'menunggu', label: t('Menunggu'), n: menunggu.length },
+            { nilai: 'riwayat', label: t('Sudah diputuskan'), n: diputuskan.length },
+          ]}
         />
 
         {daftar.length ? (
@@ -125,7 +132,7 @@ export default function Usulan() {
           </EmptyState>
         )}
 
-        <div className="px-5 pb-5 sm:px-6">
+        <div className="border-t border-line px-5 pb-4 sm:px-6">
           <CatatanKaki>
             {t('Usulan yang disetujui masuk sebagai satu batch di Riwayat Batch halaman Input Nilai. Bila ternyata keliru, seluruh nilainya masih bisa dibatalkan sekaligus.')}
           </CatatanKaki>
@@ -175,22 +182,24 @@ function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
         onClick={onToggle}
         aria-expanded={terbuka}
         aria-controls={'u-' + u.id}
-        className="flex w-full flex-wrap items-center gap-x-3 gap-y-2 px-5 py-4 text-left transition hover:bg-surface-2 sm:px-6"
+        className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 text-left transition-colors hover:bg-surface-2 focus-visible:outline-offset-[-3px] sm:px-6"
       >
-        <span className="font-mono text-[12.5px] font-bold text-ink">{u.id}</span>
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand-ink">
+          <IconCheckShield size={18} />
+        </span>
         <span className="min-w-[220px] flex-1">
-          <span className="block text-[14px] font-bold leading-snug text-ink">{u.dosenNama}</span>
-          <span className="block text-[12.5px] leading-snug text-ink-2">
+          <span className="block text-[14.5px] font-bold leading-snug text-ink">{u.dosenNama}</span>
+          <span className="mt-0.5 block text-[12.5px] leading-snug text-ink-2">
+            <span className="font-mono">{u.id}</span> ·{' '}
             {t('{n} nilai, {unit} Semester {semester}', {
               n: u.entri.length,
               unit: SUMBER[u.sumber]?.label ?? u.sumber,
               semester: u.semester,
             })}
-            {u.prodi ? ', ' + u.prodi : ''} ·{' '}
-            {t(u.cara === 'manual' ? 'input manual' : 'unggah berkas')}
+            {u.prodi ? ', ' + u.prodi : ''} · {t(u.cara === 'manual' ? 'input manual' : 'unggah berkas')}
           </span>
         </span>
-        <span className="text-[12.5px] tabular-nums text-ink-3">{u.waktu}</span>
+        <span className="text-[12.5px] tabular-nums text-ink-2">{u.waktu}</span>
         {gagal.length && u.status === 'menunggu' ? (
           <Badge tone="critical" icon={IconAlert}>
             {t('{n} ditolak sistem', { n: gagal.length })}
@@ -206,7 +215,7 @@ function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
       </button>
 
       {terbuka ? (
-        <div id={'u-' + u.id} className="bg-surface-2 px-5 pb-5 pt-1 sm:px-6">
+        <div id={'u-' + u.id} className="animate-rise border-t border-line bg-surface-2 px-5 pb-5 pt-4 sm:px-6">
           {u.catatan ? (
             <p className="mb-3 text-[13px] leading-relaxed text-ink-2">
               <span className="font-bold text-ink">{t('Catatan dosen')}:</span> {u.catatan}
@@ -231,11 +240,11 @@ function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
                 {gagal.slice(0, 6).map((x) => (
                   <li
                     key={x.nim + x.komponenId + x.nomor}
-                    className="flex items-start gap-1.5 text-[12.5px] leading-snug text-[var(--critical)]"
+                    className="flex items-start gap-1.5 text-[12.5px] leading-snug text-[color:var(--teks-kritis,var(--critical))]"
                   >
                     <IconX size={13} className="mt-0.5 shrink-0" />
                     <span>
-                      <span className="font-mono">{x.nim || '(kosong)'}</span>: {x.alasan.join('; ')}
+                      <span className="font-mono">{x.nim || t('(kosong)')}</span>: {x.alasan.join('; ')}
                     </span>
                   </li>
                 ))}
@@ -249,39 +258,29 @@ function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
           </div>
 
           {/* ----------------------------- isi usulan --------------------------- */}
-          <div className="overflow-x-auto rounded-xl border border-line bg-surface">
-            <table className="w-full min-w-[480px] border-collapse">
+          <GulirTabel className="rounded-xl border border-line bg-surface">
+            <table className="w-full min-w-[480px] border-separate border-spacing-0">
               <thead>
-                <tr className="border-b border-line">
-                  <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-[.07em] text-ink-3">
-                    {t('Mahasiswa')}
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-[.07em] text-ink-3">
-                    {t('Komponen')}
-                  </th>
-                  <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-[.07em] text-ink-3">
-                    {t('Nilai')}
-                  </th>
+                <tr className="[&>th]:border-b [&>th]:border-line">
+                  <th className={JUDUL_KOLOM + ' pl-4 text-left'}>{t('Mahasiswa')}</th>
+                  <th className={JUDUL_KOLOM + ' text-left'}>{t('Komponen')}</th>
+                  <th className={JUDUL_KOLOM + ' pr-4 text-right'}>{t('Nilai')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line">
+              <tbody className="[&>tr:not(:last-child)>td]:border-b [&>tr>td]:border-line">
                 {u.entri.slice(0, 30).map((e) => (
                   <tr key={e.nim + e.komponenId}>
-                    <td className="px-4 py-2.5">
+                    <td className="py-2.5 pl-4 pr-3">
                       <span className="block text-[13.5px] font-semibold text-ink">{e.nama}</span>
                       <span className="block font-mono text-[12px] text-ink-3">{e.nim}</span>
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-[12.5px] text-ink-2">
-                      {e.komponenId}
-                    </td>
-                    <td className="px-4 py-2.5 text-right text-[14px] font-bold tabular-nums text-ink">
-                      {e.nilai}
-                    </td>
+                    <td className="px-3 py-2.5 font-mono text-[12.5px] text-ink-2">{e.komponenId}</td>
+                    <td className="py-2.5 pl-3 pr-4 text-right text-[14px] font-bold tabular-nums text-ink">{e.nilai}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </GulirTabel>
           {u.entri.length > 30 ? (
             <p className="mt-2 text-[12.5px] text-ink-3">
               {t('Menampilkan 30 dari {n} baris. Seluruhnya tetap ikut diproses.', {
@@ -292,9 +291,9 @@ function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
 
           {/* ------------------------------ keputusan --------------------------- */}
           {u.status === 'menunggu' ? (
-            <div className="mt-4">
-              <label className="block">
-                <span className="mb-1.5 block label">
+            <div className="mt-4 space-y-3">
+              <label className="block max-w-2xl">
+                <span className="mb-1.5 block text-[13px] font-semibold text-ink">
                   {t('Catatan keputusan (wajib bila menolak)')}
                 </span>
                 <input
@@ -302,29 +301,25 @@ function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
                   value={catatan}
                   onChange={(e) => setCatatan(e.target.value)}
                   placeholder={t('Misalnya: nilai UAS belum termasuk komponen presentasi.')}
-                  className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-3 transition hover:border-line-strong"
+                  className="field !py-2.5"
                 />
               </label>
               {galat ? (
-          <p
-            role="alert"
-            className="mb-3 flex items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--critical)_10%,transparent)] px-3.5 py-3 text-[13px] font-semibold text-[var(--critical)]"
-          >
-            <IconAlert size={16} className="mt-px shrink-0" />
-            {galat}
-          </p>
-        ) : null}
-              {menunggu ? (
-                <div className="mb-3">
-                  <PesanMenunggu hasil={menunggu} />
-                </div>
+                <p
+                  role="alert"
+                  className="flex animate-rise items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--critical)_10%,transparent)] px-3.5 py-3 text-[13px] font-semibold text-[color:var(--teks-kritis,var(--critical))]"
+                >
+                  <IconAlert size={16} className="mt-px shrink-0" />
+                  {galat}
+                </p>
               ) : null}
-              <div className="mt-3 flex flex-wrap gap-2.5">
+              {menunggu ? <PesanMenunggu hasil={menunggu} /> : null}
+              <div className="flex flex-wrap gap-2.5">
                 <button
                   type="button"
                   onClick={() => putuskan('disetujui')}
                   disabled={!periksa.diterima.length}
-                  className="btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-[13.5px] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="btn-primary"
                 >
                   <IconCheck size={16} />
                   {t('Setujui {n} nilai', { n: periksa.diterima.length })}
@@ -332,14 +327,14 @@ function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
                 <button
                   type="button"
                   onClick={() => putuskan('ditolak')}
-                  className="inline-flex items-center gap-2 rounded-lg border border-line px-4 py-2.5 text-[13.5px] font-bold text-ink-2 transition hover:border-[var(--critical)] hover:text-[var(--critical)]"
+                  className="btn-ghost hover:border-[var(--critical)] hover:text-[color:var(--teks-kritis,var(--critical))]"
                 >
                   <IconUndo size={15} />
                   {t('Tolak usulan')}
                 </button>
               </div>
               {!periksa.diterima.length ? (
-                <p className="mt-2.5 flex items-start gap-1.5 text-[12.5px] leading-snug text-ink-3">
+                <p className="flex items-start gap-1.5 text-[12.5px] leading-snug text-ink-3">
                   <IconInfo size={13} className="mt-px shrink-0" />
                   {t('Tidak ada baris yang lolos pemeriksaan sistem, jadi tidak ada yang bisa disetujui. Tolak usulannya dengan alasan agar dosen bisa mengirim ulang.')}
                 </p>
@@ -348,8 +343,7 @@ function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
           ) : (
             <p className="mt-4 text-[13px] leading-relaxed text-ink-2">
               <span className="font-bold text-ink">
-                {t(u.status === 'disetujui' ? 'Disetujui oleh' : 'Ditolak oleh')}{' '}
-                {u.keputusan?.oleh}
+                {t(u.status === 'disetujui' ? 'Disetujui oleh' : 'Ditolak oleh')} {u.keputusan?.oleh}
               </span>{' '}
               {t('pada')} {u.keputusan?.tanggal}
               {u.keputusan?.catatan ? '. ' + u.keputusan.catatan : ''}

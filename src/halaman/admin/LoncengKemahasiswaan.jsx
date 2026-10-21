@@ -18,6 +18,7 @@ import {
   getStudentByNim,
   pekerjaanPenilaian,
   perluDitinjau,
+  semesterKalender,
 } from '../../lib/data'
 import { CONFIG } from '../../lib/config'
 import { useStore, usulanMenunggu } from '../../lib/store'
@@ -37,7 +38,21 @@ export function tautanInput({ semester, sumber, angkatanId, prodi, aspekId, nim,
   return '/admin/nilai?' + q.toString()
 }
 
-function tautanKoreksi(k) {
+/** Kode aspek tanpa titik penutup, dipisah koma: "A.1, A.2, A.3". Satu bentuk untuk seluruh panel. */
+export const daftarKode = (aspek) => aspek.map((a) => String(a?.kode ?? a).replace(/\.$/, '')).join(', ')
+
+/**
+ * Posisi angkatan dalam program, dari semester kalender. semesterAktif tidak dipakai di sini karena dibatasi
+ * 1 sampai 3: angkatan yang semester pertamanya belum tiba terbaca "Semester 1".
+ */
+export function labelSemesterAngkatan(t, intake) {
+  const n = semesterKalender(intake)
+  if (n < 1) return t('Belum mulai')
+  if (n > CONFIG.TOTAL_SEMESTER_PROGRAM) return t('Program selesai')
+  return t('Semester {n} dari {total}', { n, total: CONFIG.TOTAL_SEMESTER_PROGRAM })
+}
+
+export function tautanKoreksi(k) {
   const komponen = getKomponenById(k.komponenId)
   const aspek = getAspek(k.aspekId)
   const mhs = getStudentByNim(k.nim)
@@ -76,11 +91,10 @@ function Baris({ href, onPilih, ikon: Ikon, judul, rinci, jumlah }) {
   )
 }
 
-export default function LoncengKemahasiswaan() {
+/** Pekerjaan Kemahasiswaan yang menunggu; dipakai lonceng ini dan blok Perlu dikerjakan di Overview. */
+export function usePekerjaanKemahasiswaan() {
   const t = useTeks()
   const versi = useStore()
-  const [buka, setBuka] = useState(false)
-  const ref = useRef(null)
 
   const koreksi = PENGAJUAN_KOREKSI.filter((k) => k.status === 'menunggu')
   const usulan = usulanMenunggu()
@@ -107,19 +121,38 @@ export default function LoncengKemahasiswaan() {
     },
   ].filter(Boolean)
 
-  const jumlah = usulan.length + koreksi.length + pekerjaan.length + tinjauan.length
+  return { koreksi, usulan, pekerjaan, tinjauan, jumlah: usulan.length + koreksi.length + pekerjaan.length + tinjauan.length }
+}
+
+/* nada 'onbrand' untuk bilah biru, 'terang' untuk bilah atas terang panel Kemahasiswaan. */
+export default function LoncengKemahasiswaan({ nada = 'onbrand' }) {
+  const t = useTeks()
+  const [buka, setBuka] = useState(false)
+  const ref = useRef(null)
+  const tombol = useRef(null)
+  const { koreksi, usulan, pekerjaan, tinjauan, jumlah } = usePekerjaanKemahasiswaan()
 
   useEffect(() => {
     if (!buka) return
     const onDown = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setBuka(false)
     }
-    const onKey = (e) => e.key === 'Escape' && setBuka(false)
+    // Esc mengembalikan fokus ke lonceng; tanpa itu fokus yang ada di dalam panel hilang ke <body>.
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      setBuka(false)
+      tombol.current?.focus()
+    }
+    const onFokus = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setBuka(false)
+    }
     document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)
+    document.addEventListener('focusin', onFokus)
     return () => {
       document.removeEventListener('mousedown', onDown)
       document.removeEventListener('keydown', onKey)
+      document.removeEventListener('focusin', onFokus)
     }
   }, [buka])
 
@@ -130,11 +163,16 @@ export default function LoncengKemahasiswaan() {
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={tombol}
         type="button"
         onClick={() => setBuka((v) => !v)}
         aria-expanded={buka}
         aria-label={t('{n} hal menunggu ditangani', { n: jumlah })}
-        className="relative grid h-9 w-9 place-items-center rounded-lg text-white/80 transition hover:bg-white/10 hover:text-white"
+        className={
+          nada === 'terang'
+            ? 'relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-ink-2 transition hover:bg-surface hover:text-ink'
+            : 'relative grid h-9 w-9 place-items-center rounded-lg text-white/80 transition hover:bg-white/10 hover:text-white'
+        }
       >
         <IconBell size={19} />
         <span className="absolute right-1.5 top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full isi-toska px-1 text-[10px] font-extrabold text-[var(--accent-on)]">
@@ -203,20 +241,22 @@ export default function LoncengKemahasiswaan() {
                   {t('Perlu ditinjau')}
                 </h3>
                 <ul>
-                  {tinjauan.map((t) => (
+                  {tinjauan.map((x) => (
                     <Baris
-                      key={t.id}
-                      href={t.href}
+                      key={x.id}
+                      href={x.href}
                       onPilih={tutup}
-                      ikon={t.ikon}
-                      judul={t.judul}
-                      rinci={t.rinci}
+                      ikon={x.ikon}
+                      judul={x.judul}
+                      rinci={x.rinci}
                     />
                   ))}
                 </ul>
               </section>
             ) : null}
 
+            {/* Dulu judul ini selalu tampil, juga saat yang menunggu hanya koreksi atau usulan. */}
+            {pekerjaan.length ? (
             <section>
               <h3 className="px-2 pb-1 pt-2 text-[11.5px] font-bold uppercase tracking-[.06em] text-ink-3">
                 {t('Belum dinilai')}
@@ -244,21 +284,25 @@ export default function LoncengKemahasiswaan() {
                       ', ' +
                       t('{n} mahasiswa', { n: p.mahasiswa }) +
                       ' · ' +
-                      p.aspek.map((a) => a.kode).join(' ')
+                      daftarKode(p.aspek)
                     }
                     jumlah={p.kosong.toLocaleString('id-ID')}
                   />
                 ))}
               </ul>
             </section>
+            ) : null}
           </div>
 
-          <div className="border-t border-line bg-surface-2 px-4 py-3">
-            <p className="flex items-start gap-1.5 text-[12.5px] leading-snug text-ink-3">
-              <IconInfo size={13} className="mt-px shrink-0" />
-              {t('Angka di kanan adalah banyaknya nilai komponen yang masih kosong pada kelompok itu.')}
-            </p>
-          </div>
+          {usulan.length || pekerjaan.length ? (
+            <div className="border-t border-line bg-surface-2 px-4 py-3">
+              <p className="flex items-start gap-1.5 text-[12.5px] leading-snug text-ink-3">
+                <IconInfo size={13} className="mt-px shrink-0" />
+                {/* Dulu hanya menyebut nilai kosong, padahal angka di baris usulan adalah banyaknya nilai yang diusulkan. */}
+                {t('Angka di kanan: banyaknya nilai dalam usulan dosen, atau nilai komponen yang masih kosong pada kelompok itu.')}
+              </p>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

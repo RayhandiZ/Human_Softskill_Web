@@ -263,6 +263,32 @@ export const IconLock = (p) => (
   </Svg>
 )
 
+/* Tiga titik: pembuka menu aksi satu baris tabel. */
+export const IconLainnya = (p) => (
+  <Svg {...p}>
+    <circle cx="5.6" cy="12" r="1.3" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.3" fill="currentColor" />
+    <circle cx="18.4" cy="12" r="1.3" fill="currentColor" />
+  </Svg>
+)
+
+/* Panah atas-bawah: kolom tabel yang bisa diurutkan tetapi belum dipakai untuk mengurutkan. */
+export const IconUrut = (p) => (
+  <Svg {...p}>
+    <path d="m8 9.2 4-4 4 4" />
+    <path d="m8 14.8 4 4 4-4" />
+  </Svg>
+)
+
+export const IconHapus = (p) => (
+  <Svg {...p}>
+    <path d="M4.4 6.8h15.2" />
+    <path d="M9.4 6.8V5.3a1.7 1.7 0 0 1 1.7-1.7h1.8a1.7 1.7 0 0 1 1.7 1.7v1.5" />
+    <path d="m6.4 6.8.9 12.1a1.8 1.8 0 0 0 1.8 1.7h5.8a1.8 1.8 0 0 0 1.8-1.7l.9-12.1" />
+    <path d="M10.3 10.8v5.6M13.7 10.8v5.6" />
+  </Svg>
+)
+
 export const IconInbox = (p) => (
   <Svg {...p}>
     <path d="M3.4 13.2 6 5.6A2 2 0 0 1 7.9 4.2h8.2A2 2 0 0 1 18 5.6l2.6 7.6" />

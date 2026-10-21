@@ -6,12 +6,15 @@ import { useTeks } from '../lib/bahasa'
 import { Avatar } from './Ui'
 import { IconChevronDown, IconChevronRight, IconLogout, IconUsers } from './Icons'
 
-export default function MenuAkun({ foto = null, tone = 'onbrand', rinci = null }) {
+/* `rinciDari`: kelas titik mulai nama dan email tampil di samping avatar. Bawaannya sm:block; panel
+   Kemahasiswaan memakai min-[1440px]:block karena di bawah lebar itu teks ini menghimpit lokasi halaman. */
+export default function MenuAkun({ foto = null, tone = 'onbrand', rinci = null, rinciDari = 'sm:block' }) {
   const { user, logout } = useAuth()
   const t = useTeks()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const tombol = useRef(null)
 
   const profilKe = panelPengguna(user) + '/profil'
   const terang = tone === 'terang'
@@ -21,18 +24,30 @@ export default function MenuAkun({ foto = null, tone = 'onbrand', rinci = null }
     const onDown = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false)
     }
-    const onKey = (e) => e.key === 'Escape' && setOpen(false)
+    // Esc mengembalikan fokus ke tombolnya; tanpa itu fokus yang ada di dalam menu hilang ke <body>.
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      setOpen(false)
+      tombol.current?.focus()
+    }
+    // Tab keluar dari menu menutupnya, supaya menu tidak tertinggal terbuka di belakang fokus.
+    const onFokus = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
     document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)
+    document.addEventListener('focusin', onFokus)
     return () => {
       document.removeEventListener('mousedown', onDown)
       document.removeEventListener('keydown', onKey)
+      document.removeEventListener('focusin', onFokus)
     }
   }, [open])
 
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={tombol}
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
@@ -50,7 +65,7 @@ export default function MenuAkun({ foto = null, tone = 'onbrand', rinci = null }
           alt=""
         />
         {rinci ? (
-          <span className="hidden min-w-0 text-left sm:block">
+          <span className={'hidden min-w-0 text-left ' + rinciDari}>
             <span className="block max-w-[200px] truncate text-[14px] font-bold leading-tight text-ink">
               {rinci.judul}
             </span>

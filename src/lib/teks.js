@@ -377,7 +377,6 @@ export const EN = {
   'Kurikulum CPMK': 'CPMK Curriculum',
   'Log Aktivitas': 'Activity Log',
   'Data Mahasiswa': 'Student Data',
-  'Data mahasiswa': 'Student data',
   'Input & Import Nilai': 'Enter & Import Scores',
   'Persetujuan Nilai Dosen': 'Lecturer Score Approval',
   'Data Masuk': 'Incoming Submissions',
@@ -443,10 +442,8 @@ export const EN = {
   'batch {id}': 'batch {id}',
   'Buka transkrip {nama}': 'Open {nama}’s transcript',
   'Ekspor CSV': 'Export CSV',
-  'Segarkan data': 'Refresh data',
   Segarkan: 'Refresh',
   'Segarkan data sekarang': 'Refresh data now',
-  'Terakhir disegarkan {jam}': 'Last refreshed {jam}',
   'Terakhir diperbarui {tanggal}, {jam} WIB': 'Last updated {tanggal}, {jam} WIB',
   'baru saja': 'just now',
   '{n} menit lalu': '{n} minutes ago',
@@ -475,7 +472,6 @@ export const EN = {
     'A record of every score change and who made it.',
 
   /* --------------------------- capaian per unit -------------------------- */
-  'Capaian per unit': 'Achievement by unit',
   'Bandingkan capaian CPMK antar program studi, fakultas, dan angkatan.':
     'Compare CPMK achievement across study programmes, faculties, and cohorts.',
   'Unduh rekap': 'Download summary',
@@ -484,8 +480,6 @@ export const EN = {
   'Rata-rata gabungan': 'Combined average',
   'Transkrip final': 'Final transcripts',
   'Tabel perbandingan': 'Comparison table',
-  'Pilih satuan analisis lewat tab di sebelah kanan':
-    'Choose the unit of analysis with the tabs on the right',
   'Tidak ada data pada filter ini': 'No data under this filter',
   'Ubah pilihan fakultas, angkatan, atau semester.':
     'Change the faculty, cohort, or semester selection.',
@@ -597,8 +591,6 @@ export const EN = {
   'Semester yang diisi': 'Semester being filled',
   'Belum dipilih': 'Not chosen yet',
   '{n} aspek CPMK berada di semester ini': '{n} CPMK aspects sit in this semester',
-  'Kini di Semester {n}': 'Now in Semester {n}',
-  'periode {periode}': 'period {periode}',
   'mengikuti program studi': 'follows the study programme',
   '{n} fakultas': '{n} faculties',
   '{n} program studi': '{n} study programmes',
@@ -740,11 +732,8 @@ export const EN = {
   '{n} angkatan siap dikunci': '{n} cohorts ready to lock',
   'Tiga semester sudah tuntas, sertifikatnya bisa diterbitkan':
     'Three semesters are complete, the certificates can be issued',
-  'Angka di kanan adalah banyaknya nilai komponen yang masih kosong pada kelompok itu.':
-    'The number on the right is how many component scores are still empty in that group.',
 
   /* ------------------------- persetujuan nilai dosen --------------------- */
-  'Persetujuan nilai dosen': 'Lecturer score approval',
   'Nilai yang dikirim dosen tertahan di sini sampai disetujui. Sebelum Anda memutuskan, sistem sudah memeriksa tiap barisnya lebih dulu.':
     'Scores sent by lecturers are held here until approved. Before you decide, the system has already checked every row.',
   'Usulan menunggu keputusan': 'Proposals awaiting a decision',
@@ -1274,10 +1263,24 @@ export const EN = {
   'Belum ada akun dosen.': 'No lecturer accounts yet.',
   'Belum ada akun admin.': 'No admin accounts yet.',
   'Belum ada akun mahasiswa.': 'No student accounts yet.',
-  'Akses Super Admin tidak bisa dicabut dari sini, termasuk akun Anda sendiri; itu diatur langsung di basis data. Setiap perubahan akses tercatat di Log Aktivitas beserta alasannya.':
-    'Super Admin access cannot be revoked here, including your own account; it is managed directly in the database. Every access change is recorded in the Activity Log with its reason.',
+  'Akses Super Admin tidak bisa dicabut atau dihapus dari sini, termasuk akun Anda sendiri; itu diatur langsung di basis data. Hanya akun yang aksesnya sudah dicabut dan belum punya data yang bisa dihapus. Setiap perubahan akses dan penghapusan akun tercatat di Log Aktivitas beserta alasannya.':
+    'Super Admin accounts cannot be revoked or deleted here, including your own; they are managed directly in the database. Only accounts whose access is revoked and that have no data can be deleted. Every access change and account deletion is recorded in the Activity Log with its reason.',
   'Cabut akses': 'Revoke access',
   'Pulihkan akses': 'Restore access',
+  // Hapus akun; juga label HAPUS_AKUN di Log Aktivitas, bersama dua label akun lain yang dibaca lewat LABEL_LOG.
+  'Hapus akun': 'Delete account',
+  'Tambah akun': 'Add account',
+  'Ubah akun': 'Edit account',
+  'Hapus permanen': 'Delete permanently',
+  'Akun ini dihapus permanen dari basis data beserta profilnya, dan tidak bisa dikembalikan. Akun yang masih punya nilai, pengumpulan, atau riwayat tindakan tidak bisa dihapus; biarkan aksesnya tetap dicabut.':
+    'This account and its profile are permanently deleted from the database and cannot be restored. Accounts that still have scores, submissions, or an action history cannot be deleted; keep their access revoked instead.',
+  'Akun {nama} sudah dihapus dari basis data.': 'Account {nama} was deleted from the database.',
+  // Formulir tambah akun.
+  'Nama lengkap': 'Full name',
+  Jabatan: 'Position',
+  'Sandi awal (minimal {n} karakter)': 'Initial password (at least {n} characters)',
+  'Semester yang diampu': 'Semester taught',
+  'Simpan akun': 'Save account',
   'Tambah dosen': 'Add lecturer',
   'Tambah admin': 'Add admin',
   'Tambah mahasiswa': 'Add student',
@@ -1389,13 +1392,9 @@ export const EN = {
   'Jenis tindakan': 'Action type',
   'Semua tindakan': 'All actions',
   'NIM mahasiswa': 'Student ID (NIM)',
-  'Tekan Enter untuk mencari': 'Press Enter to search',
-  'Dari tanggal': 'From date',
-  'Sampai tanggal': 'To date',
   'Hari ini': 'Today',
   '7 hari terakhir': 'Last 7 days',
   'Semua waktu': 'All time',
-  'Hapus semua penyaring': 'Clear all filters',
   '{n} catatan': '{n} entries',
   'Tidak ada catatan': 'No entries',
   'Coba longgarkan penyaringnya.': 'Try loosening the filters.',
@@ -1406,25 +1405,167 @@ export const EN = {
   'Batch dibatalkan': 'Batch rolled back',
   menjadi: 'to',
 
-  /* ----------------------------------------------------------------------
-     BELUM DITERJEMAHKAN — ditulis otomatis oleh `npm run bahasa:sync`.
-     Isi sisi kanannya, lalu pindahkan barisnya ke bagian yang sesuai di
-     atas. Selama masih kosong, kalimatnya tampil dalam bahasa Indonesia.
-     ---------------------------------------------------------------------- */
-  'Jabatan': '',
-  'Nama lengkap': '',
-  'Sandi awal (minimal {n} karakter)': '',
-  'Semester yang diampu': '',
-  'Simpan akun': '',
+  /* ---------------- panel Kemahasiswaan: kerangka dan pencarian cepat ---------------- */
+  // 'Kerja harian' dan 'Detail mahasiswa' dibaca lewat data menu dan lokasi halaman, jadi tidak terlihat pemindai.
+  'Kerja harian': 'Daily work',
+  'Detail mahasiswa': 'Student details',
+  'Menu Kemahasiswaan': 'Student Affairs menu',
+  'Lokasi halaman': 'Breadcrumb',
+  'Cari mahasiswa atau halaman': 'Search students or pages',
+  'Pencarian cepat': 'Quick search',
+  'Ketik nama, NIM, atau nama halaman': 'Type a name, student ID, or page name',
+  'Hasil pencarian': 'Search results',
+  Halaman: 'Pages',
+  'Ketik minimal 2 huruf untuk mencari mahasiswa.': 'Type at least 2 letters to search for students.',
+  'Tidak ada mahasiswa atau halaman yang cocok dengan "{kata}".': 'No students or pages match "{kata}".',
+  'Panah atas/bawah untuk memilih, Enter untuk membuka, Esc untuk menutup.':
+    'Use the up and down arrows to choose, Enter to open, Esc to close.',
 
-  /* ----------------------------------------------------------------------
-     BELUM DITERJEMAHKAN — ditulis otomatis oleh `npm run bahasa:sync`.
-     Isi sisi kanannya, lalu pindahkan barisnya ke bagian yang sesuai di
-     atas. Selama masih kosong, kalimatnya tampil dalam bahasa Indonesia.
-     ---------------------------------------------------------------------- */
-  'Jabatan': '',
-  'Nama lengkap': '',
-  'Sandi awal (minimal {n} karakter)': '',
-  'Semester yang diampu': '',
-  'Simpan akun': '',
+  /* ------------------------------- Overview ------------------------------- */
+  'Pekerjaan yang menunggu Anda dan capaian mahasiswa periode ini.': 'Work waiting for you and student achievement this period.',
+  'Perlu dikerjakan': 'To do',
+  'Urut dari yang menunggu keputusan Anda, lalu nilai yang belum diisi.':
+    'Items awaiting your decision come first, then scores not yet filled in.',
+  '{n} hal': '{n} items',
+  '{n} usulan nilai dari dosen menunggu persetujuan': '{n} score proposals from lecturers await approval',
+  '{n} pengajuan koreksi nilai dari mahasiswa belum diputuskan': '{n} score correction requests from students await a decision',
+  '{n} nilai {sumber} Semester {semester} belum diisi': '{n} {sumber} scores for Semester {semester} are not filled in yet',
+  'dan {n} lainnya': 'and {n} more',
+  'Tinjau usulan': 'Review proposals',
+  'Tinjau koreksi': 'Review corrections',
+  'Buka Angkatan': 'Open Cohorts',
+  'Lihat mahasiswa': 'View students',
+  '{n} kelompok nilai lain juga belum lengkap; semuanya ada di lonceng di kanan atas.':
+    '{n} more score groups are incomplete; all of them are listed under the bell at the top right.',
+  'Tidak ada pekerjaan yang menunggu': 'Nothing is waiting for you',
+  'Usulan dosen, koreksi mahasiswa, dan nilai yang wajib diisi sudah tertangani.':
+    'Lecturer proposals, student corrections, and required scores are all handled.',
+  'Ringkasan angka': 'Key figures',
+
+  /* ---------------------------- Data Mahasiswa ---------------------------- */
+  'Cari nama, NIM, atau prodi': 'Search name, student ID, or programme',
+  'Atur ulang filter': 'Reset filters',
+  'Baris per halaman': 'Rows per page',
+  'Aksi untuk {nama}': 'Actions for {nama}',
+  'Lihat detail & transkrip': 'View details & transcript',
+  Lengkap: 'Complete',
+  'Belum lengkap': 'Incomplete',
+  Filter: 'Filters',
+  '{n} aktif': '{n} active',
+  'Tidak ada nilai yang kosong': 'No missing scores',
+  'Semua {n} mahasiswa pada saringan ini sudah lengkap nilainya.': 'All {n} students in this filter have complete scores.',
+
+  /* ------------------------------ Input Nilai ----------------------------- */
+  'Pilih semester, sumber penilaian, dan angkatan, lalu isi nilai satu per satu atau unggah rekapnya.':
+    'Choose a semester, assessment source, and cohort, then enter scores one by one or upload a recap.',
+  '1. Semester yang diisi': '1. Semester to fill in',
+  '2. Sumber penilaian': '2. Assessment source',
+  '3. Angkatan': '3. Cohort',
+  'mahasiswa pada pilihan ini': 'students in this selection',
+
+  /* -------- perbaikan bug panel Kemahasiswaan -------- */
+  '{n} baris siap diproses': '{n} rows ready to process',
+  '{n} pengajuan koreksi dari mahasiswa menunggu keputusan.': '{n} score correction requests from students are waiting for a decision.',
+  '{terisi} terisi · {kosong} kosong': '{terisi} filled · {kosong} empty',
+  'Aktor': 'Actor',
+  'Angka di kanan: banyaknya nilai dalam usulan dosen, atau nilai komponen yang masih kosong pada kelompok itu.': 'Number on the right: how many scores a lecturer proposal contains, or how many component scores are still empty in that group.',
+  'Angkatan {label} belum mulai': 'Cohort {label} has not started',
+  'Angkatan ini belum mulai; Semester 1-nya dimulai {periode}. Penguncian bisa dilakukan setelah Semester {total} berakhir.': 'This cohort has not started; its Semester 1 begins in {periode}. It can be locked after Semester {total} ends.',
+  'Atur lagi': 'Adjust again',
+  'Batalkan batch {id}? Semua nilai di batch ini dikembalikan ke nilai sebelumnya.': 'Roll back batch {id}? Every score in this batch returns to its previous value.',
+  'Batalkan pilihan': 'Cancel selection',
+  'Batch': 'Batch',
+  'belum mulai': 'not started yet',
+  'belum punya mahasiswa terdaftar. Pilih angkatan lain di langkah 3.': 'has no registered students yet. Choose another cohort in step 3.',
+  'dan {n} nilai lain': 'and {n} more scores',
+  'dari 100': 'out of 100',
+  'Edit': 'Edit',
+  'Fakultas {nama}': 'Faculty of {nama}',
+  'Hapus foto': 'Remove photo',
+  'Komponen tujuan kolom {nama}': 'Target component for column {nama}',
+  'Nilai baru': 'New score',
+  'Nilai lama': 'Previous score',
+  'pilih berkas': 'choose a file',
+  'Pilih satuan analisis: program studi, fakultas, atau angkatan.': 'Choose the unit of analysis: study programme, faculty, or cohort.',
+  'Pratinjau foto baru': 'New photo preview',
+  'Rata-rata nilai': 'Average score',
+  'Rincian aspek {kode}': 'Details for aspect {kode}',
+  'Semester {n}: {periode}': 'Semester {n}: {periode}',
+  'Semester 1 angkatan ini dimulai {periode}. Nilainya belum boleh dimasukkan sebelum semesternya tiba.': 'This cohort\'s Semester 1 begins in {periode}. Scores cannot be entered before that semester starts.',
+  'Seret berkas ke sini, atau': 'Drag a file here, or',
+  'Skala kolom {nama}': 'Scale for column {nama}',
+  'tertinggi {n}': 'highest {n}',
+  'tidak dipakai': 'not used',
+  'Tinjau pengajuan': 'Review requests',
+  'Waktu': 'Time',
+  'Grafik Sebaran Aspek': 'Aspect Distribution Chart',
+  'Profil enam cluster': 'Six-cluster profile',
+  'Rata-rata aspek CPMK di tiap cluster': 'Average CPMK aspect score in each cluster',
+  'Yakin': 'Confident',
+  'Perlu dicek': 'Needs checking',
+  'Tebakan lemah': 'Weak guess',
+  'Tidak cocok': 'No match',
+  '0–100 (tanpa konversi)': '0–100 (no conversion)',
+  '0–10 (dikali 10)': '0–10 (multiplied by 10)',
+  '0–4 (dikali 25)': '0–4 (multiplied by 25)',
+  'Rata-rata': 'Average',
+  'Ambil tertinggi': 'Take the highest',
+  'Pakai kolom terakhir': 'Use the last column',
+  '— Abaikan kolom ini —': 'Ignore this column',
+  'UTS': 'Midterm',
+  'UAS': 'Final exam',
+  'Sem': 'Sem',
+  'Cluster': 'Cluster',
+  'Final': 'Final',
+  'final': 'final',
+  'Status': 'Status',
+  'Semester {n}': 'Semester {n}',
+  'Sudah menempuh Semester {n}': 'Has completed Semester {n}',
+  'Baru menempuh Semester {n} dari {total}': 'Only at Semester {n} of {total}',
+  'program baru sampai Semester {n}': 'programme only up to Semester {n}',
+  'Seluruh {n} aspek berstatus final': 'All {n} aspects are final',
+  'Belum final: {daftar}': 'Not final yet: {daftar}',
+  'aspek {daftar} belum final': 'aspect {daftar} not final yet',
+  'Tidak ada komponen asesmen yang kosong': 'No assessment component is empty',
+  'Komponen kosong pada {daftar}': 'Empty components in {daftar}',
+  'komponen {komponen} pada {kode} belum dinilai': 'component {komponen} in {kode} not graded yet',
+  'Nilai akhir minimal {n}': 'Final score of at least {n}',
+  'Nilai akhir belum bisa dihitung': 'Final score cannot be calculated yet',
+  'nilai akhir belum bisa dihitung': 'final score cannot be calculated yet',
+  'nilai akhir {nilai} di bawah rata-rata minimal {n}': 'final score {nilai} below the minimum average of {n}',
+  'Angkatan sudah dikunci oleh Kemahasiswaan': 'Cohort has been locked by Student Affairs',
+  'Angkatan {label} belum dikunci': 'Cohort {label} is not locked yet',
+  'angkatan {label} belum dikunci': 'cohort {label} not locked yet',
+
+  /* -------- label predikat (sama di kedua bahasa) -------- */
+  'Professional & Competent': 'Professional & Competent',
+  'Emerging Professional': 'Emerging Professional',
+  'Developing Professional Skills': 'Developing Professional Skills',
+  'Basic Professional Awareness': 'Basic Professional Awareness',
+
+  /* -------- nama area (sama di kedua bahasa) -------- */
+  'Personal Development': 'Personal Development',
+  'Interpersonal Development': 'Interpersonal Development',
+  'Professional Career Development': 'Professional Career Development',
+
+  /* -------- desain ulang halaman Kemahasiswaan -------- */
+  '(kosong)': '(empty)',
+  'Cari NIM, lalu tekan Enter': 'Search a student ID, then press Enter',
+  'Dari': 'From',
+  'Dikembalikan ke dosen beserta alasannya.': 'Returned to the lecturer with the reason.',
+  'Jenis catatan': 'Record type',
+  'Jenis tindak lanjut': 'Follow-up type',
+  'Masuk sebagai batch di Riwayat Batch halaman Input Nilai.': 'Entered as a batch in the Batch History of the Score Input page.',
+  'Menampilkan {n} dari {total} perubahan': 'Showing {n} of {total} changes',
+  'Permintaan baru muncul di sini begitu perubahan pada mahasiswa yang sudah lewat Semester 3 diajukan.': 'New requests appear here as soon as a change to students past Semester 3 is submitted.',
+  'Permintaan yang sudah diputuskan atau ditarik tercatat di sini.': 'Requests that were decided or withdrawn are recorded here.',
+  'program studi': 'study programmes',
+  'Program studi yang punya mahasiswa pada saringan ini.': 'Study programmes with students under this filter.',
+  'Sampai': 'To',
+  'Satuan analisis': 'Unit of analysis',
+  'Tampilkan 10 terbaru': 'Show the 10 latest',
+  'Tampilkan semua': 'Show all',
+
+  /* -------- satuan kartu angka -------- */
+  'usulan': 'proposals',
 }

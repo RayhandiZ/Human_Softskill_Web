@@ -170,3 +170,108 @@ export async function tambahAkun(pengguna, isi) {
     throw e
   }
 }
+
+/* ------------------------------- hapus akun ------------------------------- */
+
+// Super admin menghapus permanen akun yang aksesnya sudah dicabut, hanya bila akun itu belum punya data. Data
+// mahasiswa (nilai, pengumpulan, koreksi, penguncian) dan riwayat dosen tidak boleh ikut hilang. Jejak tindakan
+// juga dihitung sebagai data: kolom pelaku di log menyimpan id akun tanpa relasi, dan Log Aktivitas membaca nama
+// pelakunya dari akun itu (petaNama di muat.js). Akun yang punya data cukup dibiarkan dicabut.
+
+/** Gabungan daftar untuk kalimat: "a", "a dan b", "a, b, dan c". */
+function gabung(daftar) {
+  if (daftar.length < 2) return daftar.join('')
+  return daftar.slice(0, -1).join(', ') + (daftar.length > 2 ? ', dan ' : ' dan ') + daftar.at(-1)
+}
+
+/** Data yang masih bergantung pada akun ini, sebagai [keterangan, jumlah] yang jumlahnya lebih dari nol. */
+async function dataTerkait(akun) {
+  const id = akun.id
+  const hitung = []
+  if (akun.mahasiswa) {
+    const m = akun.mahasiswa
+    hitung.push(
+      ['nilai', db.nilai.count({ where: { mahasiswaId: m.id } })],
+      ['pengumpulan', db.pengumpulan.count({ where: { mahasiswaId: m.id } })],
+      ['pengajuan koreksi', db.pengajuanKoreksi.count({ where: { mahasiswaId: m.id } })],
+      ['penguncian aspek', db.penguncian.count({ where: { mahasiswaId: m.id } })],
+      ['riwayat perubahan nilai', db.auditLog.count({ where: { mahasiswaId: m.id } })],
+      ['entri usulan dosen', db.usulanEntri.count({ where: { nim: m.nim } })],
+    )
+  }
+  if (akun.dosen) {
+    const d = akun.dosen
+    hitung.push(
+      ['usulan nilai', db.usulan.count({ where: { dosenId: d.id } })],
+      ['pengumpulan yang diterima', db.pengumpulan.count({ where: { dosenId: d.id } })],
+    )
+  }
+  hitung.push([
+    'riwayat tindakan',
+    Promise.all([
+      db.auditLog.count({ where: { aktorId: id } }),
+      db.logAktivitas.count({ where: { aktorId: id } }),
+      db.batch.count({ where: { aktorId: id } }),
+      db.nilai.count({ where: { penilaiId: id } }),
+      db.penguncian.count({ where: { olehId: id } }),
+      db.angkatan.count({ where: { dikunciOleh: id } }),
+      db.komponen.count({ where: { diubahOleh: id } }),
+      db.aspek.count({ where: { diubahOleh: id } }),
+      db.indikator.count({ where: { diubahOleh: id } }),
+      db.pengajuanKoreksi.count({ where: { diputuskanOleh: id } }),
+      db.usulan.count({ where: { diputuskanOleh: id } }),
+      db.permintaanAdmin.count({ where: { OR: [{ diajukanOleh: id }, { diputuskanOleh: id }] } }),
+    ]).then((jumlah) => jumlah.reduce((a, b) => a + b, 0)),
+  ])
+  const jumlah = await Promise.all(hitung.map(([, n]) => n))
+  return hitung.map(([ket], i) => [ket, jumlah[i]]).filter(([, n]) => n > 0)
+}
+
+/** Menghapus permanen satu akun beserta data mahasiswa/dosen dan profilnya; jawabannya { id } akun yang dihapus. */
+export async function hapusAkun(pengguna, { id, alasan }) {
+  const target = Number(id)
+  if (!Number.isInteger(target)) throw new GalatApi('Akun tidak valid.')
+  const teksAlasan = String(alasan ?? '').trim()
+  if (teksAlasan.length < ALASAN_MIN) throw new GalatApi('Alasan wajib diisi, minimal 10 karakter.')
+
+  const akun = await db.pengguna.findUnique({ where: { id: target }, include: SERTA })
+  if (!akun) throw new GalatApi('Akun tidak ditemukan. Mungkin sudah dihapus.', 404)
+  if (akun.id === pengguna.id) throw new GalatApi('Akun sendiri tidak bisa dihapus.', 403)
+  if (akun.peran === 'SUPER_ADMIN') throw new GalatApi('Akun Super Admin diatur langsung di basis data.', 403)
+  if (akun.aktif) throw new GalatApi('Cabut dulu akses akun ini sebelum menghapusnya.', 409)
+
+  const terkait = await dataTerkait(akun)
+  if (terkait.length) {
+    throw new GalatApi(
+      'Akun ini tidak bisa dihapus karena masih punya ' +
+        gabung(terkait.map(([ket, n]) => n + ' ' + ket)) +
+        '. Biarkan aksesnya tetap dicabut supaya datanya utuh.',
+      409,
+    )
+  }
+
+  const { id: _id, aktif: _aktif, ...ringkas } = susunAkun(akun)
+  try {
+    // Profil, data mahasiswa/dosen, akun, dan catatan log dalam satu transaksi: terhapus semua atau tidak sama sekali.
+    await db.$transaction(async (tx) => {
+      await tx.profil.deleteMany({ where: { penggunaId: akun.id } })
+      if (akun.mahasiswa) await tx.mahasiswa.delete({ where: { id: akun.mahasiswa.id } })
+      if (akun.dosen) await tx.dosen.delete({ where: { id: akun.dosen.id } })
+      await tx.pengguna.delete({ where: { id: akun.id } })
+      await catatLog(tx, {
+        aktorId: pengguna.id,
+        aksi: 'HAPUS_AKUN',
+        target: 'akun ' + akun.email,
+        rincian: { ...ringkas, alasan: teksAlasan },
+      })
+    })
+  } catch (e) {
+    // Data bisa masuk di antara pemeriksaan dan penghapusan; relasi di basis data tetap menolak penghapusannya.
+    if (e?.code === 'P2003') {
+      throw new GalatApi('Akun ini baru saja mendapat data, jadi tidak jadi dihapus. Muat ulang halaman ini.', 409)
+    }
+    if (e?.code === 'P2025') throw new GalatApi('Akun tidak ditemukan. Mungkin sudah dihapus.', 404)
+    throw e
+  }
+  return { id: akun.id }
+}

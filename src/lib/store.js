@@ -631,6 +631,22 @@ export async function tambahAkun(isi) {
   return kirim('/api/akses/tambah', { isi })
 }
 
+/**
+ * Menghapus permanen akun yang aksesnya sudah dicabut; jawabannya { id }. Server menolak akun yang masih punya
+ * data (nilai, pengumpulan, riwayat tindakan) dengan pesan yang menyebut datanya; lihat hapusAkun() di
+ * src/server/akses.js.
+ */
+export async function hapusAkun({ id, alasan }) {
+  if (!modeLokal()) return kirim('/api/akses/hapus', { isi: { id, alasan } })
+  const i = AKUN_LOKAL.findIndex((x) => x.id === id)
+  if (i < 0) throw new Error('Akun tidak ditemukan. Mungkin sudah dihapus.')
+  if (AKUN_LOKAL[i].peran === 'superadmin') throw new Error('Akun Super Admin diatur langsung di basis data.')
+  if (AKUN_LOKAL[i].aktif) throw new Error('Cabut dulu akses akun ini sebelum menghapusnya.')
+  if (String(alasan ?? '').trim().length < ALASAN_AKSES_MIN) throw new Error('Alasan wajib diisi, minimal 10 karakter.')
+  AKUN_LOKAL.splice(i, 1)
+  return { id }
+}
+
 /* ---------------------------------- nilai --------------------------------- */
 
 /** Batch yang tersimpan, atau { menunggu, permintaan } bila menunggu persetujuan super admin. */
