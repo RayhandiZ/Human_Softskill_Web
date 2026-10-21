@@ -85,10 +85,10 @@ export default function Masuk() {
 
   return (
     <div className="space-y-5">
+      {/* Judul sama dengan nama menunya. Isi halaman ini didesain ulang di tahap berikutnya; lihat README.md › Panel Dosen. */}
       <header>
-        <h1 className="text-[26px] font-extrabold tracking-tight text-ink">
-          {t('Data masuk')}
-        </h1>
+        <h1 className="text-[26px] font-extrabold tracking-tight text-ink">{t('Beranda')}</h1>
+        <p className="mt-1.5 text-[15px] text-ink-2">{t('Pengumpulan tugas dari mahasiswa kelas Anda.')}</p>
       </header>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,2fr)]">

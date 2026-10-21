@@ -39,7 +39,7 @@ const BERKAS = [
   ...readdirSync('src/halaman/student').map((f) => join('src/halaman/student', f)),
   ...readdirSync('src/halaman/dosen').map((f) => join('src/halaman/dosen', f)),
   ...readdirSync('src/halaman/admin').map((f) => join('src/halaman/admin', f)),
-  ...readdirSync('src/halaman/super').map((f) => join('src/halaman/super', f)),
+  ...readdirSync('src/halaman/super-admin').map((f) => join('src/halaman/super-admin', f)),
   ...readdirSync('src/components').map((f) => join('src/components', f)),
   ...readdirSync('src/components/charts').map((f) => join('src/components/charts', f)),
   'src/halaman/Login.jsx',
@@ -116,6 +116,16 @@ const DARI_DATA = [
   'Rata-rata', 'Ambil tertinggi', 'Pakai kolom terakhir', '— Abaikan kolom ini —',
   /* Jenis penilaian MK (LABEL_JENIS di Kurikulum dan EditorPenilaian). */
   'Tugas', 'Sikap', 'UTS', 'UAS',
+  /* Panel dosen: label menu (DosenLayout, diterjemahkan MenuSamping dan BilahBawah) dan pesan salah isi nilai
+     (bacaNilai di dosen/Nilai.jsx, diterjemahkan lewat t(h.salah)). */
+  'Beranda', 'Penilaian', 'Riwayat Pengiriman', 'Riwayat', 'Profil',
+  'Tulis angka saja, misalnya 85 atau 85,5.', 'Nilai paling tinggi 100.',
+  /* Label langkah penilaian (larik di komponen Langkah, diterjemahkan lewat t(l.label)). */
+  'Pilih tugas', 'Isi nilai', 'Periksa & kirim',
+  /* Alat di menu aksesibilitas panel dosen (larik KONTEN, WARNA, ALAT di MenuAksesibilitas.jsx). */
+  'Sorot judul', 'Sorot tautan', 'Huruf ramah disleksia', 'Jarak huruf', 'Jarak baris', 'Huruf tebal',
+  'Kontras gelap', 'Kontras terang', 'Kontras tinggi', 'Saturasi tinggi', 'Saturasi rendah', 'Monokrom',
+  'Pemandu baca', 'Hentikan animasi', 'Kursor besar',
 ]
 /* Sama, tetapi dari src/lib/rules.js: catatan kaki transkrip sementara, dan labelT/alasanT/ringkasT syarat
    sertifikat. */

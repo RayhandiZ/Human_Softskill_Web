@@ -2,7 +2,7 @@ import { IconMoon, IconSun } from './Icons'
 import { useTheme } from '../lib/theme'
 import { useTeks } from '../lib/bahasa'
 
-/* Tombol terang/gelap di bilah atas panel bersisi menu samping (mahasiswa, super admin). */
+/* Tombol terang/gelap di bilah atas panel bersisi menu samping (mahasiswa, Kemahasiswaan, dosen, super admin). */
 export default function TombolTema() {
   const { theme, toggle } = useTheme()
   const t = useTeks()

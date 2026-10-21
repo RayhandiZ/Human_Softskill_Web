@@ -125,7 +125,10 @@ export const SKALA_PILIHAN = [
   { nilai: 4, label: '0–4 (dikali 25)' },
 ]
 
-export const konversi = (n, skala) => (n == null ? null : Math.round((n / skala) * 100))
+/** `desimal`: Import CSV Kemahasiswaan membulatkan ke bilangan bulat (0); unggahan dosen menyimpan dua desimal, sama
+    dengan isian manualnya, supaya 92,5 tidak diam-diam menjadi 93. */
+export const konversi = (n, skala, desimal = 0) =>
+  n == null ? null : Math.round((n / skala) * 100 * 10 ** desimal) / 10 ** desimal
 
 /* ------------------------------ analisa berkas ---------------------------- */
 

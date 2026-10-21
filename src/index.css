@@ -295,7 +295,7 @@ body {
 /* Tombol sedikit mengecil saat ditekan, umpan balik yang terasa juga di HP. */
 .panel-admin :is(.btn, .btn-primary, .btn-ghost):active:not(:disabled) { transform: scale(.97); }
 
-/* -------------------- pilihan (select) panel Kemahasiswaan -------------------- */
+/* --------------- pilihan (select) panel Kemahasiswaan dan panel dosen --------------- */
 /* Daftar pilihan setiap <select> muncul dengan gerak dan rupa yang sama dengan menu akun dan pemilih periode super
    admin (rise, kartu bersudut 16px, centang di kanan), dan panahnya berputar saat terbuka. Memakai <select> yang bisa
    diberi gaya (appearance: base-select, Chrome dan Edge 135 ke atas); peramban lain tetap memakai daftar bawaannya
@@ -304,15 +304,15 @@ body {
    ::picker(select):popover-open) dan galatnya menggagalkan seluruh berkas ini, jadi animasinya dipasang langsung di
    ::picker(select). Daftar itu display: none saat tertutup, sehingga animasinya diputar ulang setiap kali dibuka. */
 @supports (appearance: base-select) {
-  .panel-admin select,
-  .panel-admin select::picker(select) {
+  :is(.panel-admin, .panel-dosen) select,
+  :is(.panel-admin, .panel-dosen) select::picker(select) {
     appearance: base-select;
   }
 
   /* Kotak tertutup. Di base-select teks terpilih ada di elemen bawaan yang tidak bisa menyempit, sehingga truncate
      milik <select> tidak berlaku dan teks panjang menimpa panah. Diganti potong satu baris per huruf yang dipotong di
      tepi isi: hasilnya "Desain Ko…", sama dengan select bawaan. */
-  .panel-admin select {
+  :is(.panel-admin, .panel-dosen) select {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
@@ -325,26 +325,26 @@ body {
 
   /* Setiap select di panel ini punya panah sendiri tepat sesudahnya (Select di Ui.jsx, angkatan dan pemetaan Import
      CSV di Nilai.jsx, PilihanSel di EditorPenilaian.jsx). Panah bawaan base-select disembunyikan. */
-  .panel-admin select::picker-icon {
+  :is(.panel-admin, .panel-dosen) select::picker-icon {
     display: none;
   }
-  .panel-admin select + svg {
+  :is(.panel-admin, .panel-dosen) select + svg {
     transition: rotate 0.2s ease;
   }
-  .panel-admin select:open + svg {
+  :is(.panel-admin, .panel-dosen) select:open + svg {
     rotate: 180deg;
   }
   /* Select bawaan digambar peramban dengan warna nonaktifnya sendiri; base-select memakai warna dari CSS ini, jadi
      tanpa aturan ini select yang dikunci (misalnya Sumber yang "sudah dinilai") tampak sama dengan yang aktif. */
-  .panel-admin select:disabled {
+  :is(.panel-admin, .panel-dosen) select:disabled {
     color: var(--text-muted);
     cursor: not-allowed;
   }
-  .panel-admin select:disabled + svg {
+  :is(.panel-admin, .panel-dosen) select:disabled + svg {
     opacity: 0.5;
   }
 
-  .panel-admin select::picker(select) {
+  :is(.panel-admin, .panel-dosen) select::picker(select) {
     margin-block: 8px;
     padding: 6px;
     border: 1px solid var(--border);
@@ -352,46 +352,55 @@ body {
     background: var(--surface);
     color: var(--text-primary);
     box-shadow: 0 12px 32px -8px rgba(16, 20, 50, 0.28);
-    max-block-size: min(320px, 100dvh - 32px);
-    max-inline-size: calc(100vw - 32px);
-    /* Bawaan Chrome most-block-size: daftar membuka ke sisi yang paling lega, jadi daftar pendek di dekat dasar layar
-       (Baris per halaman) membuka ke atas walau muat di bawah. normal: ke bawah selama muat, baru membalik ke atas. */
+    /* 100% di sini adalah area dari tepi kiri kotak sampai tepi kanan layar: daftar yang lebih lebar dari kotaknya
+       (di HP) berhenti 16px sebelum tepi layar, tidak menempel. */
+    max-inline-size: min(100vw - 32px, 100% - 16px);
+    /* Semua daftar membuka ke bawah. Bawaan Chrome most-block-size membuka ke sisi yang paling lega, jadi di satu baris
+       saringan daftar panjang (Tugas) bisa ke atas sementara daftar pendek (Status) ke bawah. normal: coba bawah dulu.
+       Tingginya dibatasi ruang di bawah kotak (100% di sini adalah area di bawah kotak, minus margin 8px atas-bawah,
+       minus bilah bawah HP panel dosen), jadi daftar panjang tetap muat di bawah dan bisa digulir. Baru bila ruang itu
+       kurang dari 160px daftar membalik ke atas, karena daftar setipis itu tidak terpakai. */
+    max-block-size: max(160px, min(320px, 100% - 16px - var(--tinggi-bilah-bawah, 0px)));
     position-try-order: normal;
     animation: rise 0.35s cubic-bezier(0.22, 0.68, 0.35, 1) both;
   }
 
   /* Select ringkas: labelnya di dalam kotak, jadi <select> baru mulai sesudah label. Daftarnya ditempelkan ke tepi
      kotak (anchor-scope memisahkan jangkar tiap kotak bila ada beberapa di satu halaman). */
-  .panel-admin .pilihan-ringkas {
+  :is(.panel-admin, .panel-dosen) .pilihan-ringkas {
     anchor-scope: --kotak-pilihan;
     anchor-name: --kotak-pilihan;
   }
-  .panel-admin .pilihan-ringkas select::picker(select) {
+  :is(.panel-admin, .panel-dosen) .pilihan-ringkas select::picker(select) {
     position-anchor: --kotak-pilihan;
   }
 
-  .panel-admin select option {
+  :is(.panel-admin, .panel-dosen) select option {
     gap: 12px;
     padding: 8px 10px;
     border-radius: 10px;
     font-size: 13.5px;
     font-weight: 600;
     white-space: normal;
+    /* <select> memotong per huruf (word-break: break-all, lihat kotak tertutup di atas) dan nilai itu terwariskan.
+       Pilihan yang terlipat di HP dipatahkan di antara kata, bukan "SL H" atau "revie w". */
+    word-break: normal;
+    overflow-wrap: anywhere;
   }
-  .panel-admin select option:hover {
+  :is(.panel-admin, .panel-dosen) select option:hover {
     background: var(--surface-2);
   }
   /* Pilihan yang difokus dengan papan ketik: latar sorot seperti pemilih periode super admin, menggantikan cincin
      fokus global. Bila daftar dibuka dengan tetikus, pilihan itu tidak :focus-visible dan tidak disorot. */
-  .panel-admin select option:focus-visible {
+  :is(.panel-admin, .panel-dosen) select option:focus-visible {
     outline: none;
     background: var(--brand-soft);
   }
-  .panel-admin select option:checked {
+  :is(.panel-admin, .panel-dosen) select option:checked {
     color: var(--brand-ink);
     font-weight: 700;
   }
-  .panel-admin select option::checkmark {
+  :is(.panel-admin, .panel-dosen) select option::checkmark {
     order: 1;
     margin-inline-start: auto;
     content: '';
@@ -402,9 +411,13 @@ body {
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .panel-admin select::picker(select) {
+    :is(.panel-admin, .panel-dosen) select::picker(select) {
       animation: none;
     }
+  }
+  /* Menu aksesibilitas › Hentikan animasi: aturan a11y-diam memakai *, dan * tidak mengenai pseudo-elemen ::picker. */
+  .panel-dosen.a11y-diam select::picker(select) {
+    animation: none;
   }
 }
 
@@ -1242,9 +1255,11 @@ body {
    (catatan kaki, label EN yang tidak aktif, keterangan tabel) dipertebal: 5,6:1 di kartu putih, 5,1:1 di
    latar halaman, 4,8:1 di --brand-soft. Versi gelapnya (#7b869e) hanya 4,2:1 di --surface-2, jadi
    dinaikkan juga: 5,3:1 di --surface-2, 5,7:1 di kartu. */
-/* Panel Kemahasiswaan (.panel-admin) ikut memakai teks redup yang lebih tegas ini sejak tampilannya diperbarui. */
+/* Panel Kemahasiswaan (.panel-admin) dan panel dosen (.panel-dosen) ikut memakai teks redup yang lebih tegas ini
+   sejak tampilannya diperbarui. */
 .panel-super,
-.panel-admin {
+.panel-admin,
+.panel-dosen {
   --text-muted: #63677f;
   /* Warna tulisan status yang lolos 4,5:1 di latar lencananya sendiri (lihat .teks-baik di bawah). Dipakai
      nada good/critical/warning milik Badge dan pesan "tersimpan" di dalam kedua panel ini; panel lain tetap
@@ -1254,11 +1269,199 @@ body {
   --teks-tunggu: #7a5208;
 }
 .dark .panel-super,
-.dark .panel-admin {
+.dark .panel-admin,
+.dark .panel-dosen {
   --text-muted: #8b96ad;
   --teks-baik: #22c55e;
   --teks-kritis: var(--critical);
   --teks-tunggu: var(--warning-ink);
+}
+
+/* ------------------------------- panel dosen -------------------------------- */
+/* Tinggi bilah bawah HP, supaya isi halaman, footer, bilah aksi yang menempel, dan tombol bantuan mengambang tidak
+   saling menutupi. Lihat README.md › Panel Dosen. */
+.panel-dosen {
+  /* 68px tautan + 1px garis atas bilah bawah. */
+  --tinggi-bilah-bawah: calc(69px + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 1024px) {
+  .panel-dosen {
+    --tinggi-bilah-bawah: 0px;
+  }
+}
+.bilah-bawah {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+/* Kolom isi (halaman dan footer) berakhir di atas bilah bawah HP, supaya baris hak cipta footer tidak tertutup. */
+.kolom-dosen {
+  padding-bottom: var(--tinggi-bilah-bawah);
+}
+@media print {
+  .kolom-dosen {
+    padding-bottom: 0;
+  }
+}
+/* --naik-bantuan: diisi Nilai.jsx (useBantuanDiAtasBilah) selama bilah aksi menempel atau baru lepas, supaya tombol
+   bantuan melayang di atas bilah itu; selebihnya 0. */
+.bantuan-dosen {
+  bottom: calc(var(--tinggi-bilah-bawah) + var(--naik-bantuan, 0px) + 20px);
+}
+/* Bilah aksi menempel di dasar layar (di atas bilah bawah HP), latarnya pekat supaya terbaca di atas tabel. Ia
+   berada di dalam .isi-zoom, sedangkan bilah bawah tidak; jarak menempelnya dibagi --skala supaya tetap tepat di
+   atas bilah bawah saat "Ukuran tulisan" diubah. */
+.bilah-aksi-dosen {
+  position: sticky;
+  bottom: calc(var(--tinggi-bilah-bawah) / var(--skala, 1));
+  z-index: 20;
+}
+
+/* ---------------------------- menu aksesibilitas ----------------------------- */
+/* Setelan dari src/lib/aksesibilitas.js, dipasang sebagai kelas di akar .panel-dosen (lihat MenuAksesibilitas.jsx).
+   Ukuran tulisan memakai zoom pada .isi-zoom; filter warna (kontras tinggi, saturasi, monokrom) dipasang di <html>.
+   Aturan di sini sengaja memakai !important: ia harus menang atas kelas utilitas yang menetapkan hal yang sama.
+   Lihat README.md › Panel Dosen › Menu aksesibilitas. */
+
+/* Menunya ada di dalam bilah atas (sticky, z-20), jadi z-index menu hanya berlaku di dalam bilah itu. Selama menu
+   terbuka bilah atas dinaikkan, supaya tombol bantuan (z-40) dan bilah bawah (z-30) tidak menutupi menu. */
+.panel-dosen header:has([role='dialog']) {
+  z-index: 50;
+}
+
+.panel-dosen.a11y-sorot-judul :is(h1, h2, h3) {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+  border-radius: 6px;
+  background-color: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+/* Bayangan, bukan outline, supaya cincin fokus papan ketik (*:focus-visible) tetap terlihat di atasnya. */
+.panel-dosen.a11y-sorot-tautan a {
+  text-decoration: underline !important;
+  text-decoration-thickness: 2px !important;
+  text-underline-offset: 3px !important;
+  border-radius: 6px;
+  box-shadow: 0 0 0 2px var(--accent-ink);
+}
+.panel-dosen.a11y-sorot-tautan footer a {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.panel-dosen.a11y-disleksia,
+.panel-dosen.a11y-disleksia * {
+  font-family: var(--font-disleksia), Verdana, Tahoma, sans-serif !important;
+}
+/* Nilai jarak dari WCAG 1.4.12 (Text Spacing). */
+.panel-dosen.a11y-jarak-huruf * {
+  letter-spacing: 0.12em !important;
+  word-spacing: 0.16em !important;
+}
+.panel-dosen.a11y-jarak-baris :is(p, li, dd, dt, td, th, label, address, h1, h2, h3, h4, span, a, output) {
+  line-height: 1.8 !important;
+}
+.panel-dosen.a11y-tebal * {
+  font-weight: 700 !important;
+}
+.panel-dosen.a11y-diam *,
+.panel-dosen.a11y-diam *::before,
+.panel-dosen.a11y-diam *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+/* Kursor 48px: panah untuk bidang biasa, tangan untuk yang bisa ditekan, garis ketik tetap untuk kotak isian. */
+.panel-dosen.a11y-kursor,
+.panel-dosen.a11y-kursor * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24'%3E%3Cpath d='M5 2.6v16.9l4.2-4 3 6.9 3-1.3-3-6.8h5.8z' fill='%23000' stroke='%23fff' stroke-width='1.3' stroke-linejoin='round'/%3E%3C/svg%3E") 10 5, auto !important;
+}
+.panel-dosen.a11y-kursor :is(a, button, [role='button'], label, select, summary),
+.panel-dosen.a11y-kursor :is(a, button, label) * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24'%3E%3Cpath d='M9.2 15.2V5a1.6 1.6 0 0 1 3.2 0v5.4V9.2a1.6 1.6 0 0 1 3.2 0v1.6V10a1.6 1.6 0 0 1 3.2 0v6.2c0 3.7-2.6 6.4-6.2 6.4h-1.4c-2.1 0-3.5-.9-4.7-2.7l-3-4.6a1.6 1.6 0 0 1 2.6-1.9z' fill='%23000' stroke='%23fff' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 22 7, pointer !important;
+}
+.panel-dosen.a11y-kursor :is(input:not([type='checkbox']):not([type='radio']), textarea) {
+  cursor: text !important;
+}
+
+/* Kontras gelap dan terang: palet token yang lebih tegas, terlepas dari tema terang/gelap yang dipilih. Panel dosen
+   tidak memakai utilitas dark:, jadi cukup tokennya ditimpa, ditambah beberapa permukaan kaca dan gradasi yang
+   dibuat padat. */
+.panel-dosen.a11y-kontras-gelap {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #0a0a0a;
+  --surface-2: #181818;
+  --border: #8c8c8c;
+  --border-strong: #d4d4d4;
+  --text-primary: #ffffff;
+  --text-secondary: #f0f0f0;
+  --text-muted: #d9d9d9;
+  --brand: #0b4a8f;
+  --brand-ink: #9cd0ff;
+  --brand-soft: #0d2848;
+  --accent-ink: #5eead4;
+  --good: #6ee77a;
+  --critical: #ff8a8a;
+  --warning-ink: #ffd166;
+  --teks-baik: #6ee77a;
+  --teks-kritis: #ff8a8a;
+  --teks-tunggu: #ffd166;
+}
+.panel-dosen.a11y-kontras-terang {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f2f2f2;
+  --border: #595959;
+  --border-strong: #1f1f1f;
+  --text-primary: #000000;
+  --text-secondary: #1a1a1a;
+  --text-muted: #333333;
+  --brand: #0a3a75;
+  --brand-ink: #0a3a75;
+  --brand-soft: #e3ecf8;
+  --accent-ink: #0b5c55;
+  --good: #0a5c0a;
+  --critical: #a10e0e;
+  --warning-ink: #5e3d00;
+  --teks-baik: #0a5c0a;
+  --teks-kritis: #a10e0e;
+  --teks-tunggu: #5e3d00;
+}
+.panel-dosen:is(.a11y-kontras-gelap, .a11y-kontras-terang) :is(.bilah-kaca, .kaca, .layanan-panel, .pil-kaca) {
+  background: var(--surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: var(--border-strong);
+}
+.panel-dosen:is(.a11y-kontras-gelap, .a11y-kontras-terang) .bilah-kaca {
+  border-bottom: 1px solid var(--border-strong);
+}
+.panel-dosen:is(.a11y-kontras-gelap, .a11y-kontras-terang) .pil-kaca {
+  background: var(--brand-soft);
+  border: 2px solid var(--brand-ink);
+}
+.panel-dosen:is(.a11y-kontras-gelap, .a11y-kontras-terang) .teks-vibe {
+  background-image: none;
+  -webkit-text-fill-color: currentColor;
+}
+/* Ubin menu yang tidak aktif hanya dibedakan dari latarnya oleh warna permukaan; di mode kontras diberi garis tepi. */
+.panel-dosen:is(.a11y-kontras-gelap, .a11y-kontras-terang) .ubin-a11y[aria-pressed='false'] {
+  border-color: var(--border);
+}
+
+/* Pemandu baca: pita mendatar mengikuti penunjuk (PemanduBaca, dipasang di <body>). */
+.pemandu-baca {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  height: 14px;
+  margin-top: -7px;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  border-block: 2px solid var(--accent-ink);
+}
+@media print {
+  .pemandu-baca {
+    display: none;
+  }
 }
 /* Tulisan lencana "Menunggu konfirmasi" di Aturan Sistem: warna nada warning milik Badge hanya 2,8:1 di
    latarnya sendiri; amber tua ini 6:1. Tema gelap memakai --warning-ink yang sudah lolos. */

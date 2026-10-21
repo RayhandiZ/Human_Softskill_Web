@@ -32,12 +32,12 @@ import Angkatan from '../src/halaman/admin/Angkatan'
 import Kurikulum from '../src/halaman/admin/Kurikulum'
 import PersetujuanAdmin from '../src/halaman/admin/PersetujuanAdmin'
 import Log from '../src/halaman/admin/Log'
-import SuperLayout from '../src/halaman/super/SuperLayout'
-import Kendali from '../src/halaman/super/Kendali'
-import Wewenang from '../src/halaman/super/Wewenang'
-import Aturan from '../src/halaman/super/Aturan'
-import PenilaianSuper from '../src/halaman/super/Penilaian'
-import Akses from '../src/halaman/super/Akses'
+import SuperLayout from '../src/halaman/super-admin/SuperLayout'
+import Kendali from '../src/halaman/super-admin/Kendali'
+import Wewenang from '../src/halaman/super-admin/Wewenang'
+import Aturan from '../src/halaman/super-admin/Aturan'
+import PenilaianSuper from '../src/halaman/super-admin/Penilaian'
+import Akses from '../src/halaman/super-admin/Akses'
 import DosenLayout from '../src/halaman/dosen/DosenLayout'
 import Masuk from '../src/halaman/dosen/Masuk'
 import NilaiDosen from '../src/halaman/dosen/Nilai'
@@ -261,6 +261,22 @@ export async function ujiMenuHp(rute) {
   hasil.laciTertutupSetelahPilih = !cariLaci()
   hasil.gulirPulih = document.body.style.overflow !== 'hidden'
 
+  lepas()
+  return hasil
+}
+
+/** Bilah bawah panel dosen di ponsel: selalu ada di DOM (disembunyikan CSS di layar lebar), berlabel teks, dan
+    menandai halaman yang terbuka dengan aria-current. */
+export async function ujiBilahBawah(rute) {
+  const { el, lepas } = await pasang(rute)
+  const nav = el.querySelector('nav.bilah-bawah')
+  const tautan = nav ? [...nav.querySelectorAll('a')] : []
+  const hasil = {
+    adaHamburger: Boolean(el.querySelector('[aria-label="Buka menu navigasi"]')),
+    ada: Boolean(nav),
+    tautan: tautan.map((a) => a.textContent.trim()),
+    aktif: tautan.find((a) => a.getAttribute('aria-current') === 'page')?.textContent.trim() ?? null,
+  }
   lepas()
   return hasil
 }

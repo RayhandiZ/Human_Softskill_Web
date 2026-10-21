@@ -24,12 +24,6 @@ function Pintasan({ ke, label, icon: Icon }) {
   )
 }
 
-/**
- * `melayang`: mulai layar laptop (lg, saat sidebar tampil), kartu bersudut bulat berjarak 16px dari tepi
- * layar, sepasang dengan sidebar panel mahasiswa yang juga kartu melayang. Di HP dan tablet sidebar
- * tersembunyi, jadi footer tetap selebar layar. Panel dengan bilah atas penuh (Kemahasiswaan, dosen) selalu
- * memakai footer selebar layar.
- */
 export default function Footer({ pintasan = [], melayang = false }) {
   const t = useTeks()
   return (
@@ -39,7 +33,7 @@ export default function Footer({ pintasan = [], melayang = false }) {
         (melayang ? 'lg:mx-4 lg:mb-4 lg:overflow-hidden lg:rounded-3xl' : '')
       }
     >
-      {/* Kartu melayang 32px lebih sempit; jarak antarkolom dirapatkan supaya alamat Helpdesk tidak makin terlipat. */}
+
       <div
         className={
           'mx-auto grid max-w-shell gap-y-9 px-5 py-10 sm:px-6 lg:grid-cols-[auto_1fr_auto_auto] ' +
@@ -59,7 +53,7 @@ export default function Footer({ pintasan = [], melayang = false }) {
 
         <section>
           <h2 className="text-[13.5px] font-bold">{t('Helpdesk')}</h2>
-          <address className="mt-3 space-y-1 text-[13.5px] not-italic leading-relaxed text-white/80">
+          <address className="mt-3 space-y-1 text-[13.5px] not-italic leading-relaxed text-white/100">
             <p>Gedung B, Lantai 3 Ruang B315</p>
             <p>Jl. Scientia Boulevard, Gading Serpong,</p>
             <p>kel. Curug Sangereng, Kec. Kelapa Dua,</p>
@@ -68,10 +62,10 @@ export default function Footer({ pintasan = [], melayang = false }) {
         </section>
 
         <section className="lg:pt-7">
-          <ul className="space-y-3 text-[13.5px] text-white/85">
+          <ul className="space-y-3 text-[13.5px] text-white/100">
             {KONTAK.map(({ icon: Icon, teks, href }) => (
               <li key={teks} className="flex items-center gap-3">
-                <Icon size={18} className="shrink-0 text-white/70" />
+                <Icon size={18} className="shrink-0 text-white/100" />
                 {href ? (
                   <a href={href} className="underline-offset-4 hover:text-white hover:underline">
                     {teks}
@@ -93,7 +87,7 @@ export default function Footer({ pintasan = [], melayang = false }) {
           <p className="teks-vibe mt-3 w-fit text-[20px] font-extrabold tracking-tight text-[var(--accent)]">
             VIBE
           </p>
-          <p className="mt-1.5 max-w-[220px] text-[13px] leading-relaxed text-white/70">
+          <p className="mt-1.5 max-w-[220px] text-[13px] leading-relaxed text-white/100">
             {t('Biro Kemahasiswaan & Humaniora')}
             <br />
             Universitas Multimedia Nusantara
@@ -101,8 +95,9 @@ export default function Footer({ pintasan = [], melayang = false }) {
         </section>
       </div>
 
-      <div className="border-t border-white/15 py-4 text-center text-[13px] text-white/70">
-        © Universitas Multimedia Nusantara. Design by Rayhandi Zulmi
+      <div className="border-t border-white/15 py-4 text-center text-[13px] text-white/100 max-sm:pb-[84px]">
+        <b>© Universitas Multimedia Nusantara. <br>
+        </br>Design by Rayhandi Zulmi</b>
       </div>
     </footer>
   )

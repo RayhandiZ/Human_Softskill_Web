@@ -115,7 +115,8 @@ const ISI = {
   ],
 
   '/dosen': [
-    [/Data masuk/, 'judul halaman pengumpulan'],
+    /* Judulnya kini sama dengan nama menunya (Beranda); lihat README.md › Panel Dosen. */
+    [/<h1[^>]*>Beranda<\/h1>/, 'judul halaman Beranda, sama dengan menunya', true, true],
     [/Menunggu dinilai/, 'angka utama: yang belum dinilai'],
     [/Nilai tidak pernah datang dari mahasiswa/, 'R8 dinyatakan di halaman dosen'],
     [/MK Humaniora Semester 1, Sistem Informasi/, 'kelas yang dipegang disebut di kerangka'],
@@ -123,21 +124,39 @@ const ISI = {
     [/Belum dinilai/, 'status pengumpulan berlabel, bukan warna saja'],
     [/tidak langsung masuk transkrip/, 'dijelaskan bahwa nilainya perlu disetujui'],
     [/aria-label="Nilai untuk /, 'tidak ada kolom nilai di daftar pengumpulan', false, true],
+    /* Footer melayang seperti panel mahasiswa; pintasannya keempat halaman dosen. */
+    [/<footer[\s\S]*?Penilaian[\s\S]{0,900}Riwayat Pengiriman/, 'footer punya pintasan berikon', true, true],
+    [/Helpdesk[\s\S]{0,300}vibe@umn\.ac\.id/, 'helpdesk dan kontak tercantum'],
+    /* Ukuran panel seperti super admin; tulisan besar, kontras, dan alat lain lewat menu aksesibilitas. */
+    [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
   ],
 
+  /* Penilaian dosen kini tiga langkah (README.md › Panel Dosen › Penilaian). Langkah 1 memilih tugas; langkah 2
+     (?komponen=) mengisi nilai. Janji lamanya tetap dijaga: tidak ada tombol simpan langsung, akibat pengiriman
+     dijelaskan, dan setiap kotak nilai berlabel. */
   '/dosen/nilai': [
-    [/Pilih tugas yang dinilai/, 'langkah pertama: memilih tugas'],
-    [/Isi nilainya/, 'langkah kedua: mengisi nilai'],
-    [/Manual/, 'ada cara manual'],
-    [/Otomatis/, 'ada cara otomatis'],
-    [/Kirim untuk disetujui/, 'tombolnya berbunyi kirim, bukan simpan'],
+    [/Pilih tugas yang ingin Anda nilai/, 'langkah pertama: memilih tugas'],
+    [/aria-label="Langkah penilaian"/, 'langkah-langkah penilaian tertulis', true, true],
+    [/Pilih tugas[\s\S]*Isi nilai[\s\S]*Periksa &amp; kirim/, 'tiga langkah: pilih tugas, isi nilai, periksa & kirim'],
+    [/Nilai tugas ini/, 'tiap tugas punya tombol untuk mulai menilai'],
+    [/Simpan nilai/, 'tidak ada tombol simpan langsung', false],
+    [/Nilai baru masuk transkrip setelah disetujui/, 'dijelaskan bahwa nilainya perlu disetujui'],
+  ],
+
+  '/dosen/nilai?komponen=A1-MK-T1': [
+    [/Tugas yang sedang dinilai/, 'langkah kedua: tugas yang dinilai disebut'],
+    [/Ketik nilai satu per satu/, 'ada cara mengetik'],
+    [/Unggah dari berkas CSV/, 'ada cara mengunggah'],
+    [/Periksa &amp; kirim/, 'tombolnya menuju periksa dan kirim, bukan simpan'],
     [/Simpan nilai/, 'tidak ada tombol simpan langsung', false],
     [/belum terlihat oleh mahasiswa/, 'akibat pengiriman dijelaskan'],
     [/aria-label="Nilai untuk /, 'tiap kotak nilai punya label untuk pembaca layar', true, true],
+    [/inputmode="decimal"/, 'kotak nilai menerima koma desimal', true, true],
+    [/type="number"/, 'tidak ada kotak type=number (roda tetikus bisa mengubah angkanya)', false, true],
   ],
 
   '/dosen/usulan': [
-    [/Status usulan/, 'judul halaman status'],
+    [/Riwayat pengiriman/, 'judul halaman Riwayat pengiriman, sama dengan menunya'],
     [/Menunggu keputusan/, 'angka utama: yang menunggu diputuskan'],
   ],
 
@@ -252,16 +271,17 @@ const RUTE = [
   ['super', '/super/wewenang', 'Peran & wewenang'],
   ['super', '/super/aturan', 'Aturan sistem'],
   ['super', '/super/profil', 'Profil super admin'],
-  ['dosen', '/dosen', 'Data masuk'],
-  ['dosen', '/dosen/nilai', 'Input nilai dosen'],
-  ['dosen', '/dosen/usulan', 'Status usulan dosen'],
+  ['dosen', '/dosen', 'Beranda dosen'],
+  ['dosen', '/dosen/nilai', 'Penilaian dosen: pilih tugas'],
+  ['dosen', '/dosen/nilai?komponen=A1-MK-T1', 'Penilaian dosen: isi nilai'],
+  ['dosen', '/dosen/usulan', 'Riwayat pengiriman dosen'],
   ['dosen', '/dosen/profil', 'Profil dosen'],
 ]
 
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiBilahBawah, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -422,7 +442,7 @@ const RUTE = [
 
   /* ------------------------------ menu di ponsel --------------------------- */
   console.log('')
-  for (const [peran, rute, harapTautan] of [['student', '/mahasiswa', 6], ['admin', '/admin', 11], ['dosen', '/dosen', 4]]) {
+  for (const [peran, rute, harapTautan] of [['student', '/mahasiswa', 6], ['admin', '/admin', 11]]) {
     w.localStorage.setItem('sk5c.session', SESI[peran])
     const h = await ujiMenuHp(rute)
 
@@ -438,6 +458,25 @@ const RUTE = [
     const rusak = wajib.filter(([, ok]) => !ok)
     if (rusak.length) gagal += rusak.length
     console.log((rusak.length ? 'GAGAL  ' : 'OK     ') + 'menu ponsel ' + rute)
+    for (const [ket, ok, rinci] of wajib) {
+      console.log('       ' + (ok ? 'v ' : 'x ') + ket + (ok || rinci === undefined ? '' : '  → ' + rinci))
+    }
+  }
+
+  /* Panel dosen di ponsel memakai bilah bawah berlabel, bukan tombol garis tiga; lihat README.md › Panel Dosen. */
+  {
+    w.localStorage.setItem('sk5c.session', SESI.dosen)
+    const b = await ujiBilahBawah('/dosen')
+    const wajib = [
+      ['tidak ada tombol garis tiga', !b.adaHamburger],
+      ['bilah bawah ada', b.ada],
+      ['bilah bawah memuat 4 tautan', b.tautan.length === 4, b.tautan.join(', ')],
+      ['setiap tautan berlabel teks', b.tautan.every((x) => x.length > 0), b.tautan.join(', ')],
+      ['halaman yang terbuka ditandai aria-current', b.aktif === 'Beranda', b.aktif],
+    ]
+    const rusak = wajib.filter(([, ok]) => !ok)
+    if (rusak.length) gagal += rusak.length
+    console.log((rusak.length ? 'GAGAL  ' : 'OK     ') + 'menu ponsel /dosen (bilah bawah)')
     for (const [ket, ok, rinci] of wajib) {
       console.log('       ' + (ok ? 'v ' : 'x ') + ket + (ok || rinci === undefined ? '' : '  → ' + rinci))
     }

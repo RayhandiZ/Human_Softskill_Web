@@ -49,9 +49,8 @@ export default function UsulanDosen() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-[26px] font-extrabold tracking-tight text-ink">
-          {t('Status usulan')}
-        </h1>
+        {/* Judul sama dengan nama menunya; isi halaman ini didesain ulang di tahap berikutnya. */}
+        <h1 className="text-[26px] font-extrabold tracking-tight text-ink">{t('Riwayat pengiriman')}</h1>
         <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-2">
           {t(
             'Setiap pengiriman nilai tercatat sebagai satu usulan. Di sini terlihat mana yang masih menunggu, mana yang sudah masuk transkrip, dan mana yang ditolak beserta alasannya.',
@@ -89,7 +88,7 @@ export default function UsulanDosen() {
               className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-[12.5px] font-bold text-ink-2 transition hover:border-brand-ink hover:text-brand-ink"
             >
               <IconPencil size={14} />
-              {t('Usulkan nilai')}
+              {t('Ke Penilaian')}
             </Link>
           }
         />

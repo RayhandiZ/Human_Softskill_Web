@@ -1,3 +1,3 @@
 'use client'
 
-export { default } from '../../../src/halaman/super/Wewenang'
+export { default } from '../../../src/halaman/super-admin/Wewenang'

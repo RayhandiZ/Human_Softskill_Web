@@ -205,6 +205,7 @@ src/lib/
   values5c.js     5C sebagai materi Mentoring — tidak dipakai untuk menghitung apa pun
   auth.jsx        masuk lewat /api/masuk, sesi dari cookie lewat /api/sesi, penjaga rute per peran
   theme.jsx       mode terang/gelap
+  aksesibilitas.js setelan menu aksesibilitas panel dosen, useAksesibilitas() (lihat Panel Dosen)
   bahasa.jsx      pilihan bahasa dan useTeks()
   teks.js         kamus Indonesia → Inggris — lihat Kamus dan terjemahan
   terjemahOtomatis.js  penerjemah bawaan peramban untuk kalimat yang belum ada di kamus
@@ -252,19 +253,22 @@ scripts/          skrip uji; dataContoh.js berisi data contoh (290 mahasiswa, 5 
 src/components/   Ui (termasuk pola halaman Kemahasiswaan: JudulHalaman, KartuAngka, TabSaring,
                   Paginasi, GulirTabel, JUDUL_KOLOM), Icons, Navbar, Laci, MenuAkun, Footer, FilterBar, ErrorBoundary,
                   TombolBahasa, PilihanMengambang, PenyuntingFoto, LihatFoto, LayananTambahan,
-                  LogoPdp, Lipat, MenuSamping (menu samping mahasiswa, Kemahasiswaan, dan super
-                  admin), TombolTema, CariCepat (pencarian cepat Ctrl+K panel Kemahasiswaan)
+                  LogoPdp, Lipat, MenuSamping (menu samping mahasiswa, dosen, Kemahasiswaan, dan
+                  super admin), BilahBawah (menu bawah HP panel dosen), MenuAksesibilitas (panel dosen),
+                  TombolTema, CariCepat
+                  (pencarian cepat Ctrl+K panel Kemahasiswaan)
 src/components/charts/  ChartFrame, RadarCluster (6 sumbu), AspectBars (10 aspek), MutuDonut,
                   PerkembanganAngkatan
 src/halaman/      Login, Profil (satu halaman profil untuk tiga peran)
 src/halaman/student/  StudentLayout, Dashboard, Transkrip, Peta, Riwayat, Sertifikat,
                     LembarCetak, LembarSertifikat, LoncengBelumDinilai
-src/halaman/dosen/    DosenLayout, Masuk (Data Masuk), Nilai, Usulan, status
+src/halaman/dosen/    DosenLayout, Masuk (Beranda), Nilai (Penilaian tiga langkah), Usulan (Riwayat Pengiriman),
+                    status (lihat Panel Dosen)
 src/halaman/admin/    AdminLayout, Overview, Students, StudentDetail, Programs, Nilai, Usulan,
                     LoncengKemahasiswaan, StatusData, Kurikulum (bobot), Angkatan, CetakSertifikat,
                     PersetujuanAdmin, PermintaanTerkirim (bagian layar bersama),
                     EditorPenilaian (di Input Manual), Log (juga dipakai panel super admin)
-src/halaman/super/    SuperLayout, Kendali, Wewenang, Aturan (lihat Panel Super Admin)
+src/halaman/super-admin/  SuperLayout, Kendali, Wewenang, Aturan (lihat Panel Super Admin)
 ```
 
 Arah ketergantungan satu arah: `curriculum → scoring → rules → UI`.
@@ -401,7 +405,7 @@ aspek dan cara membagi bobot otomatis). Keduanya sudah membedakan super admin, j
 `UBAH_PENILAIAN`/`UBAH_BOBOT` yang masih menunggu diberi peringatan di atas halaman, karena
 permintaan yang datanya sudah berubah akan gagal dijalankan.
 
-**Akses Pengguna** (`src/halaman/super/Akses.jsx`) mengubah `Pengguna.aktif` akun mahasiswa, dosen,
+**Akses Pengguna** (`src/halaman/super-admin/Akses.jsx`) mengubah `Pengguna.aktif` akun mahasiswa, dosen,
 dan admin, dalam tiga tab: Dosen, Admin Kemahasiswaan, dan Mahasiswa. Server menolak akun nonaktif di
 setiap permintaan (`penggunaDari()` di `src/server/api.js`) dan saat masuk (`masuk.js`, "Akun ini
 dinonaktifkan"), jadi mencabut akses langsung mengakhiri sesinya. Datanya tidak disentuh: nilai dan
@@ -519,7 +523,8 @@ Seluruh panel memakai satu bahasa yang sama, mengikuti gaya E-Learning UMN:
   menunjuk ke halaman yang benar-benar ada** (di panel mahasiswa: Transkrip, Peta
   Perjalanan, Riwayat, Sertifikat). Panel Kemahasiswaan tidak lagi memakai footer
   sejak tampilannya diperbarui: semua tujuannya ada di menu samping (lihat Panel
-  Kemahasiswaan › Tampilan).
+  Kemahasiswaan › Tampilan). Panel dosen memakai footer melayang yang sama dengan
+  panel mahasiswa (lihat Panel Dosen › Kerangka).
 
 ## Panel Kemahasiswaan
 
@@ -661,7 +666,9 @@ hanya `transform` dan `opacity`, dan sekali jalan saat sesuatu muncul atau ditek
   pilihan terpilih dan panah yang berputar saat terbuka. Caranya memakai `<select>` yang bisa diberi gaya
   (`appearance: base-select`, Chrome dan Edge 135 ke atas), jadi tetap select bawaan: papan ketik, pembaca layar,
   dan `onChange` tidak berubah. Peramban lain memakai daftar bawaannya tanpa animasi; karena itu semua aturannya
-  ada di dalam `@supports` (`index.css` › pilihan (select) panel Kemahasiswaan). Hal yang sudah terbukti di sini:
+  ada di dalam `@supports` (`index.css` › pilihan (select) panel Kemahasiswaan dan panel dosen). Panel dosen memakai
+  aturan yang sama (`:is(.panel-admin, .panel-dosen)`): saringan Tugas dan Status di Beranda, dan pemetaan kolom
+  unggah CSV di Penilaian. Hal yang sudah terbukti di sini:
   - Pengurai CSS Turbopack menolak pseudo-class sesudah `::picker(select)` (misalnya `:popover-open`), dan
     galatnya membuat seluruh `index.css` gagal dimuat. Animasinya dipasang langsung di `::picker(select)`: daftar
     itu `display: none` saat tertutup, jadi animasinya diputar ulang setiap kali dibuka. Uji dulu sintaks CSS
@@ -679,8 +686,19 @@ hanya `transform` dan `opacity`, dan sekali jalan saat sesuatu muncul atau ditek
     di `Ui.jsx` atau `PilihanSel` di `EditorPenilaian.jsx`).
   - Select ringkas (label di dalam kotak): daftarnya menempel ke tepi kotak (`.pilihan-ringkas` dengan
     `anchor-scope`), bukan ke `<select>` yang baru mulai sesudah label.
-  - Daftar membuka ke bawah selama muat (`position-try-order: normal`). Bawaan Chrome memilih sisi yang paling
-    lega, sehingga daftar pendek di dekat dasar layar membuka ke atas.
+  - Semua daftar membuka ke bawah. Bawaan Chrome memilih sisi yang paling lega, sehingga dalam satu baris saringan
+    daftar panjang (Tugas) bisa membuka ke atas sementara daftar pendek (Status) ke bawah. Dua aturan menyamakannya:
+    `position-try-order: normal` (coba bawah dulu), dan tinggi yang dibatasi ruang di bawah kotak,
+    `max(160px, min(320px, 100% - 16px - var(--tinggi-bilah-bawah, 0px)))`. Dengan `position-area`, `100%` di
+    sini adalah area di bawah kotak (terukur: dengan ruang 240px daftar Tugas tetap di bawah, dipendekkan, dan bisa
+    digulir), dan di panel dosen bilah bawah HP ikut dikurangkan. Daftar baru membalik ke atas bila ruang itu kurang
+    dari 160px, karena daftar setipis itu tidak terpakai.
+  - Lebar daftar dibatasi `min(100vw - 32px, 100% - 16px)`; `100%` di sini adalah area dari tepi kiri kotak sampai
+    tepi kanan layar, jadi daftar yang lebih lebar dari kotaknya (di HP) berhenti 16px sebelum tepi layar.
+  - Pilihan memakai `word-break: normal` dan `overflow-wrap: anywhere`. Nilai `break-all` dari kotak tertutup
+    terwariskan ke `<option>`, sehingga pilihan yang terlipat di HP dulu patah di tengah kata ("SL H", "revie w").
+  - Menu aksesibilitas › Hentikan animasi memakai `*`, yang tidak mengenai pseudo-elemen; animasi
+    `::picker(select)` dimatikan dengan aturan sendiri (`.panel-dosen.a11y-diam`).
   - Select yang nonaktif diberi warna redup sendiri. Base-select tidak lagi memakai warna nonaktif bawaan
     peramban, jadi tanpa aturan ini Sumber yang "sudah dinilai" tampak bisa dipilih.
   - Pilihan yang difokus dengan papan ketik diberi latar `--brand-soft`, seperti pemilih periode, bukan cincin
@@ -691,6 +709,135 @@ hanya `transform` dan `opacity`, dan sekali jalan saat sesuatu muncul atau ditek
   sempat tidak terlihat selama jeda itu lalu muncul tiba-tiba. Transisi garis tab dan efek tekan tombol
   cukup dipendekkan blok global, dan kartu hanya terangkat bila gerak diizinkan (`motion-safe:`). Saat
   mencetak, bagian halaman tidak dianimasikan.
+
+## Panel Dosen
+
+Penggunanya dosen yang datang sesekali untuk menilai, banyak di antaranya berusia 40 tahun ke atas. Ukuran
+tampilannya sama dengan panel super admin, atas arahan pemilik produk. Kebutuhan yang berbeda-beda, misalnya
+tulisan lebih besar atau kontras lebih tegas, dipenuhi lewat menu aksesibilitas yang dinyalakan sendiri oleh
+pemakainya (lihat Menu aksesibilitas di bawah). Susunan dan alur halamannya diambil dari riset dan panduan
+berikut, lalu disesuaikan dengan pola LMS yang sudah dikenal dosen (Moodle, Google Classroom, Canvas):
+
+- NN/g (123 peserta berusia 65+): pengguna lansia sekitar 43% lebih lambat. Masalah yang terus berulang adalah
+  huruf kecil dan pucat, tombol serta dropdown yang kecil, pesan galat yang terlewat, dan isian yang hanya
+  menerima satu format. Menu yang disembunyikan di balik tombol garis tiga hampir separuh lebih sulit ditemukan.
+- W3C WAI: kepekaan kontras, ketangkasan tangan, daya ingat jangka pendek, dan pemusatan perhatian menurun.
+  Tinjauan WAI-AGE mencatat informasi yang berlebihan sebagai salah satu masalah yang paling sering.
+- WCAG 2.2: sasaran klik minimal 24px (AA). Kendalinya berukuran standar seperti panel super admin (tombol
+  sekitar 40px); ukuran tulisan sampai 150% dan jarak teks (WCAG 1.4.12) tersedia di menu aksesibilitas.
+- GOV.UK: satu hal per layar, dan halaman periksa sebelum mengirim.
+
+Pekerjaan dibagi dua tahap. Tahap 1 (kerangka dan Penilaian) sudah selesai. Tahap 2 (Beranda, Riwayat
+Pengiriman, serta Profil dan bantuan) menyusul; judul Beranda dan Riwayat Pengiriman sudah disamakan dengan
+nama menunya.
+
+### Kerangka
+
+- **Menu samping putih** seperti panel Kemahasiswaan (`DosenLayout.jsx`, selebar 264px seperti panel super admin
+  dan mahasiswa) berisi Beranda, Penilaian, Riwayat Pengiriman, dan Profil. Satu lencana saja, di Penilaian:
+  jumlah pengumpulan yang belum dinilai atau ditolak. Di atas menu ada kotak *Kelas Anda* (unit penilai,
+  semester, dan program studi).
+- **Bilah bawah berlabel di HP** (`BilahBawah.jsx`), bukan tombol garis tiga.
+- **Bilah atas**: pemilih bahasa, tema, menu aksesibilitas, dan menu akun dalam ukuran bawaannya. Di HP logonya
+  hanya logo PDP, supaya semuanya muat sampai lebar 360px.
+- **Footer melayang seperti panel mahasiswa** (`<Footer pintasan melayang />`, komponen dan ukurannya sama):
+  pintasan berikon ke empat halaman dosen, alamat Helpdesk, telepon dan surel, identitas unit, dan baris hak
+  cipta. Mulai layar laptop ia menjadi kartu bersudut bulat berjarak 16px, sepasang dengan menu samping. Di HP
+  baris hak cipta diberi ruang 84px di bawahnya, supaya tidak tertutup tombol bantuan saat halaman digulir ke
+  ujung; ini berlaku juga di panel mahasiswa, yang sebelumnya tertutup.
+- **Kontras**: teks redup memakai warna panel admin (`--text-muted` #63677f, 5,6:1 di kartu putih; sebelumnya
+  #8a8ea9, 3,2:1), begitu juga nada `Badge`. Ikon di atas isian `--brand-ink` (langkah yang selesai, pilihan cara
+  isi yang aktif) memakai warna `--surface`, bukan putih: di tema gelap `--brand-ink` biru muda, dan centang putih
+  di atasnya hanya 1,8:1.
+- **Bilah bawah, bilah aksi, footer, dan tombol bantuan tidak saling menutupi**: tinggi bilah bawah disimpan
+  sebagai `--tinggi-bilah-bawah` (68px tautan + 1px garis atas). Kolom isi (`.kolom-dosen`) berakhir setinggi bilah
+  bawah di atas dasar layar, supaya baris hak cipta footer tidak tertutup. Tombol bantuan (`posisi="bantuan-dosen"`,
+  prop `posisi` milik `LayananTambahan`) melayang 8px di atas bilah aksi Penilaian selama bilah itu menempel atau
+  baru lepas, lalu kembali ke tempatnya: `useBantuanDiAtasBilah` di `Nilai.jsx` menulis `--naik-bantuan`, jadi di
+  ujung halaman tombol itu tidak menutupi footer.
+
+### Menu aksesibilitas
+
+Tombol bergambar orang di bilah atas membuka menu alat yang dinyalakan sendiri oleh pemakainya. Susunannya
+mengikuti contoh dari pemilik produk (`src/components/MenuAksesibilitas.jsx`). Setelannya ada di
+`src/lib/aksesibilitas.js` (kunci `sk5c.aksesibilitas`): disamakan antartab, dan tetap berlaku di memori bila
+peramban menolak menyimpan. Selama ada setelan yang menyala, tombolnya bertanda titik toska; tombol putar di kepala
+menu mengembalikan semuanya.
+
+| Bagian | Alat | Cara kerjanya |
+|---|---|---|
+| Penyesuaian konten | Ukuran tulisan 90 sampai 150% | `zoom` pada `.isi-zoom` (isi halaman dan footer). Bilah atas, menu samping, dan bilah bawah tidak ikut, supaya kendalinya tidak terdorong keluar layar HP. Bilah aksi membagi jarak menempelnya dengan `--skala`. |
+| | Sorot judul, Sorot tautan | garis tepi pada h1 sampai h3; garis bawah tebal dan bingkai `box-shadow` pada tautan (bukan outline, supaya cincin fokus papan ketik tetap terlihat) |
+| | Huruf ramah disleksia | Lexend lewat `next/font` dengan `preload: false`, jadi baru diunduh saat dinyalakan |
+| | Jarak huruf, Jarak baris, Huruf tebal | 0,12em huruf dan 0,16em kata (WCAG 1.4.12), tinggi baris 1,8, tebal 700 |
+| Penyesuaian warna | Kontras gelap, Kontras terang, Kontras tinggi | gelap dan terang: palet token hitam/putih yang lebih tegas, terlepas dari tema, dengan permukaan kaca dan tulisan bergradasi dibuat padat; tinggi: `filter: contrast(1.35)`. Ketiganya saling menggantikan. |
+| | Saturasi tinggi, Saturasi rendah, Monokrom | `filter` saturate atau grayscale, saling menggantikan. Filter dipasang di `<html>`, bukan di panel: filter pada elemen lain menjadi bingkai bagi elemen fixed di dalamnya (menu samping, bilah bawah, tombol bantuan). |
+| Alat | Pemandu baca, Hentikan animasi, Kursor besar | pita mendatar yang mengikuti penunjuk (portal ke `<body>`, di luar zoom); semua animasi dan transisi dimatikan; kursor SVG 48px (panah, dan tangan untuk yang bisa ditekan) |
+
+- Menu ini dialog nonmodal. Saat dibuka, fokus pindah ke judulnya; Esc menutup dan mengembalikan fokus ke
+  tombolnya; klik atau Tab ke luar menutupnya. Setiap alat adalah tombol `aria-pressed`, dan keadaan nyala
+  ditandai garis tepi, latar, dan centang, bukan warna saja.
+- Menu ada di dalam bilah atas (sticky, z-20). Selama menu terbuka bilah atas dinaikkan ke z-50
+  (`header:has([role='dialog'])`), supaya tombol bantuan dan bilah bawah tidak menutupinya. Di HP menu menjadi
+  lembar selebar layar yang berhenti di atas bilah bawah.
+- Uji smoke membundel komponen dengan esbuild, di luar kompiler Next. Di sana modul `next/font/google` kosong, jadi
+  diarahkan ke tiruan `scripts/palsu-next-font.js` (lihat `scripts/bundle.cjs`).
+
+### Penilaian
+
+`/dosen/nilai` terdiri dari tiga langkah yang selalu terlihat di bagian atas (*Pilih tugas*, *Isi nilai*,
+*Periksa & kirim*). Setiap langkah punya alamatnya sendiri, jadi tombol Kembali peramban bekerja:
+
+| Alamat | Langkah |
+|---|---|
+| `/dosen/nilai` | kartu per tugas dengan jumlah belum dinilai, menunggu persetujuan, dan tercatat, serta bilah progres. Tugas yang masih punya pekerjaan ditaruh paling atas. |
+| `?komponen=<id>` (opsional `&cari=<NIM>`, dipakai tautan dari Beranda) | isi nilai |
+| `?komponen=<id>&periksa=1` | periksa lalu kirim |
+| `?komponen=<id>&terkirim=<id usulan>` | layar berhasil dan langkah berikutnya |
+
+Saat langkah berganti, fokus pindah ke judul langkah, supaya pembaca layar dan pengguna papan ketik ikut
+berpindah. Penandanya disimpan di `sessionStorage`, yang dibungkus `try/catch` karena bisa ditolak peramban.
+
+**Isi nilai**
+
+- Kotak nilai berupa `<input type="text" inputmode="decimal">` setinggi 40px, bukan `type="number"`. Diuji di
+  Chrome: pada `type="number"` yang sedang fokus, tiga putaran roda tetikus mengubah 85 menjadi 82, dan "85,5"
+  dibaca menurut bahasa peramban (85,5 di Chrome berbahasa Indonesia, 855 di Chrome berbahasa Inggris).
+- `bacaNilai()` menerima "85", "85,5", dan "85.5" (paling banyak dua angka desimal, 0 sampai 100). "85," dibaca
+  85, supaya tanda salah tidak berkedip di tengah mengetik.
+- Galat muncul di bawah kotaknya setelah kotak ditinggalkan, beserta cara membetulkannya.
+- Enter dan panah bawah pindah ke baris berikutnya, Shift+Enter dan panah atas ke baris sebelumnya, seperti
+  lembar kerja.
+- **Draf tersimpan otomatis** di peramban, per dosen dan per tugas (`sk5c.draf-nilai.<nip>.<komponenId>`). Setiap
+  kotak yang benar bertanda "Tersimpan sebagai draf", dan pukul terakhir tersimpan ditulis. Draf dihapus setelah
+  terkirim. Draf hanya ada di perangkat itu; menyimpannya di server butuh dukungan back-end.
+- **Bila peramban menolak menyimpan** (penyimpanan penuh atau diblokir), tanda "Tersimpan sebagai draf" tidak
+  muncul dan bilah info meminta dosen mengirim sebelum menutup halaman. Drafnya dipegang di memori (`cadangan`),
+  karena setiap langkah membaca drafnya sendiri. Tanpa cadangan ini, nilai yang diketik hilang saat pindah ke
+  *Periksa & kirim*.
+- **Bilah aksi** menempel di dasar layar, berisi "N dari M nilai sudah diisi" dan tombol *Periksa & kirim*. Bila
+  masih ada nilai yang salah, tombol itu menahan langkah, mengosongkan pencarian bila baris yang salah
+  tersaring, dan memindah fokus ke kotak yang salah.
+- **Unggah CSV** (cara kedua): templat berisi NIM dan nama yang belum dinilai, dengan kode tugas sebagai judul
+  kolom nilainya, sehingga kolom itu tertebak sendiri saat berkasnya diunggah kembali. Kolom NIM, kolom nilai,
+  dan skala tetap bisa dibetulkan. Hasilnya dimasukkan ke tabel yang sama untuk diperiksa, tidak langsung
+  terkirim. Usulannya tercatat `cara: 'import'` bila nilainya berasal dari berkas.
+  - Sel nilai yang kosong dilewati dan hanya disebut jumlahnya ("2 baris tanpa nilai dilewati"), seperti Import
+    CSV Kemahasiswaan. Yang disebut bermasalah hanya baris yang sungguh tidak bisa dipakai, beserta sebabnya.
+  - Nilai disimpan sampai dua desimal (`konversi(n, skala, 2)`), sama dengan isian manual: 92,5 tetap 92,5.
+    Import CSV Kemahasiswaan tetap membulatkan ke bilangan bulat seperti sebelumnya.
+- Baris yang menunggu persetujuan atau sudah tercatat tampil sebagai bacaan saja. Waktu kumpul dan pukul draf
+  mengikuti bahasa aktif: "6 Sep 2026, 16.35" atau "6 Sept 2026, 16:35".
+
+**Periksa & kirim** menampilkan ringkasan nama, NIM, dan nilai, kolom catatan opsional, dan penjelasan bahwa
+nilai belum terlihat mahasiswa sampai disetujui. Pengirimannya tetap `usulkanNilai()` seperti sebelumnya (lihat
+Catatan kode › Usulan nilai dosen).
+
+**Uji**: `scripts/smoke.run.cjs` memeriksa langkah 1 dan langkah 2 (`/dosen/nilai?komponen=A1-MK-T1`). Setiap
+kotak nilai berlabel, `inputmode="decimal"`, tidak ada `type="number"`, dan tidak ada tombol "Simpan nilai".
+`ujiBilahBawah` memastikan bilah bawah berisi 4 tautan berlabel, menandai halaman aktif, dan tanpa tombol garis
+tiga. Halaman Beranda dosen juga diperiksa: footer berpintasan, Helpdesk, dan tombol menu aksesibilitas di bilah
+atas.
 
 ## Ringkasan admin sengaja dibuat tenang
 
@@ -1375,6 +1522,7 @@ panah kiri/kanan). Bagian yang mudah rusak:
 - Pemilih juga ada di pojok kanan atas halaman masuk (`nada="onbrand"`), di atas alas gelap
   `--surface` 62% supaya label yang tidak aktif tetap minimal 4,5:1 saat cahaya sian aurora lewat
   di belakangnya (terukur paling rendah 5,98:1; tanpa alas hanya 4,50:1 di HP).
+
 ### Grafik
 
 - **Kartu nilai akhir mahasiswa**: tren dua garis (nilai semester dan kumulatif) baru tampil bila
@@ -1562,7 +1710,7 @@ panah kiri/kanan). Bagian yang mudah rusak:
 | 8 | Kurikulum, Angkatan & Sertifikat, Log | sebagian: halaman Angkatan, ubah bobot di halaman Kurikulum, aturan data terkunci, pencatatan dan pembacaan log, halaman Log Aktivitas, serta kurikulum yang dibaca dari basis data sudah ada |
 | 9 | Poles cetak, responsif, aksesibilitas | sebagian (cetak & reduced-motion sudah) |
 | — | Panel Kemahasiswaan lainnya: Overview, Data Mahasiswa beserta detailnya, Program Studi, Persetujuan Nilai Dosen | selesai |
-| — | Panel dosen: Data Masuk, Input & Import Nilai sebagai usulan, Status Usulan | selesai |
+| — | Panel dosen: Beranda, Penilaian (usulan nilai), Riwayat Pengiriman | selesai; tampilan baru: kerangka, Penilaian, footer, dan menu aksesibilitas selesai, Beranda dan Riwayat Pengiriman menyusul (lihat Panel Dosen) |
 | — | Basis data MySQL: 21 tabel, 9 migrasi, 23 pintu API, sesi cookie | selesai |
 | — | Penilaian per aspek dari Input Manual (teks aspek, komponen, arsip, bobot) | selesai; super admin langsung, admin biasa lewat persetujuan |
 | — | Super admin | sebagian: Tahap 1 (akun berperan `SUPER_ADMIN`, penjaga `'superadmin'`) dan Tahap 2 (persetujuan perubahan data mahasiswa yang sudah lewat Semester 3, halaman Persetujuan Admin, dosen lepas tangan) selesai; halaman pengawasan selesai di panel `/super` (Pusat Kendali, Persetujuan, Log Aktivitas, Peran & Wewenang, Aturan Sistem) |

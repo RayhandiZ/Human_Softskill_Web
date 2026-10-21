@@ -372,3 +372,104 @@ export const IconMail = (p) => (
     <path d="m3.8 7 8.2 5.6L20.2 7" />
   </Svg>
 )
+
+/* ----------------------- menu aksesibilitas (panel dosen) ----------------------- */
+
+export const IconAksesibilitas = (p) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9.2" />
+    <circle cx="12" cy="7.3" r="1.3" />
+    <path d="M7.4 10.1 12 11.2l4.6-1.1M12 11.2v3.1l-2.3 4.1M12 14.3l2.3 4.1" />
+  </Svg>
+)
+
+export const IconUkuranHuruf = (p) => (
+  <Svg {...p}>
+    <path d="M3.4 10h6.2M6.5 10v8.6M11.6 5.4h9M16.1 5.4v13.2" />
+  </Svg>
+)
+
+export const IconJudul = (p) => (
+  <Svg {...p}>
+    <path d="M5.6 4.6h12.8M12 4.6v11.2M8 19.6h8" />
+  </Svg>
+)
+
+export const IconTautan = (p) => (
+  <Svg {...p}>
+    <path d="M10.2 13.8a3.6 3.6 0 0 0 5.1 0l3-3a3.6 3.6 0 0 0-5.1-5.1l-1.1 1.1" />
+    <path d="M13.8 10.2a3.6 3.6 0 0 0-5.1 0l-3 3a3.6 3.6 0 0 0 5.1 5.1l1.1-1.1" />
+  </Svg>
+)
+
+export const IconHurufCek = (p) => (
+  <Svg {...p}>
+    <path d="m3.4 17 4.3-11.8h.6L12.6 17M5 12.8h5.9M14 15.6l2.4 2.4 4.4-5.2" />
+  </Svg>
+)
+
+export const IconJarakHuruf = (p) => (
+  <Svg {...p}>
+    <path d="M3.6 5.2v13.6M20.4 5.2v13.6M7.6 17.4l4.1-10.8h.6l4.1 10.8M9.2 13.4h5.6" />
+  </Svg>
+)
+
+export const IconJarakBaris = (p) => (
+  <Svg {...p}>
+    <path d="M5.4 3.8h13.2M5.4 20.2h13.2M8.2 16.6l3.5-9.2h.6l3.5 9.2M9.6 13.2h4.8" />
+  </Svg>
+)
+
+export const IconTebal = (p) => (
+  <Svg {...p} strokeWidth={2.5}>
+    <path d="M7.6 4.8h5.2a3.4 3.4 0 0 1 0 6.8H7.6zM7.6 11.6h6a3.8 3.8 0 0 1 0 7.6h-6z" />
+  </Svg>
+)
+
+export const IconKontras = (p) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.4" />
+    <path d="M12 3.6a8.4 8.4 0 0 1 0 16.8z" fill="currentColor" stroke="none" />
+  </Svg>
+)
+
+export const IconKontrasTinggi = (p) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.4" />
+    <path d="M12 3.6v16.8M15.2 4.3v15.4M18.3 6.4v11.2" />
+  </Svg>
+)
+
+const TETES = 'M12 3.6c3.3 4.1 5.7 7.1 5.7 10.1a5.7 5.7 0 0 1-11.4 0c0-3 2.4-6 5.7-10.1z'
+
+export const IconTetes = (p) => (
+  <Svg {...p}>
+    <path d={TETES} fill="currentColor" />
+  </Svg>
+)
+
+export const IconTetesKosong = (p) => (
+  <Svg {...p}>
+    <path d={TETES} />
+  </Svg>
+)
+
+export const IconMonokrom = (p) => (
+  <Svg {...p}>
+    <rect x="4" y="4" width="16" height="16" rx="2.2" />
+    <path d="M4.6 19.4 19.4 4.6v13a1.8 1.8 0 0 1-1.8 1.8z" fill="currentColor" stroke="none" />
+  </Svg>
+)
+
+export const IconHentikan = (p) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.4" />
+    <rect x="9.1" y="9.1" width="5.8" height="5.8" rx="1" fill="currentColor" />
+  </Svg>
+)
+
+export const IconKursor = (p) => (
+  <Svg {...p}>
+    <path d="M5.4 3.6v14.6l3.7-3.5 2.6 6 2.5-1.1-2.6-5.9h5.1z" />
+  </Svg>
+)

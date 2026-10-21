@@ -1,3 +1,3 @@
 'use client'
 
-export { default } from '../../../src/halaman/super/Aturan'
+export { default } from '../../../src/halaman/super-admin/Aturan'
