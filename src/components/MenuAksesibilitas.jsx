@@ -27,17 +27,42 @@ import {
   IconUkuranHuruf,
   IconX,
 } from './Icons'
-import { SKALA, useAksesibilitas } from '../lib/aksesibilitas'
+import { SKALA, kelasAksesibilitas, saringanAksesibilitas, useAksesibilitas } from '../lib/aksesibilitas'
 import { useTeks } from '../lib/bahasa'
 
-/* Menu aksesibilitas panel dosen: tulisan, warna, dan alat bantu yang bisa dinyalakan sendiri oleh pemakainya,
-   menggantikan tampilan yang serba besar. Susunannya mengikuti contoh dari pemilik produk (Penyesuaian konten,
-   Penyesuaian warna, Alat). Setelannya di src/lib/aksesibilitas.js, penerapannya di DosenLayout dan index.css ›
-   menu aksesibilitas. Lihat README.md › Panel Dosen › Menu aksesibilitas. */
+/* Menu aksesibilitas di keempat panel (mahasiswa, dosen, Kemahasiswaan, super admin): tulisan, warna, dan alat bantu
+   yang bisa dinyalakan sendiri oleh pemakainya. Susunannya mengikuti contoh dari pemilik produk (Penyesuaian konten,
+   Penyesuaian warna, Alat). Setelannya di src/lib/aksesibilitas.js dan berlaku di semua panel; penerapannya lewat
+   useAkarAksesibilitas() di bawah dan index.css › menu aksesibilitas. Lihat README.md › Menu aksesibilitas. */
 
 /* Huruf ramah disleksia: Lexend, dirancang untuk mengurangi beban visual saat membaca. preload: false, jadi baru
-   diunduh ketika setelan ini dinyalakan. --font-disleksia dipasang di akar panel dosen. */
+   diunduh ketika setelan ini dinyalakan. --font-disleksia dipasang di akar panel lewat useAkarAksesibilitas(). */
 export const hurufDisleksia = Lexend({ subsets: ['latin'], variable: '--font-disleksia', display: 'swap', preload: false })
+
+/**
+ * Penerapan setelan di satu panel. kelasAkar untuk div akar panel (penanda akar-a11y, variabel huruf, dan kelas
+ * a11y-*), gayaIsi untuk pembungkus .isi-zoom di sekeliling isi halaman (dan footer bila ada), pemandu untuk
+ * memasang <PemanduBaca />. Filter warna dipasang di <html> dan dilepas lagi saat panel ditutup; lihat
+ * saringanAksesibilitas() untuk alasannya.
+ */
+export function useAkarAksesibilitas() {
+  const { setelan } = useAksesibilitas()
+  const saringan = saringanAksesibilitas(setelan)
+  useEffect(() => {
+    const akar = document.documentElement
+    akar.style.filter = saringan
+    return () => {
+      akar.style.filter = ''
+    }
+  }, [saringan])
+  const skala = setelan.skala / 100
+  const kelas = kelasAksesibilitas(setelan)
+  return {
+    kelasAkar: 'akar-a11y ' + hurufDisleksia.variable + (kelas ? ' ' + kelas : ''),
+    gayaIsi: skala !== 1 ? { zoom: skala, '--skala': skala } : undefined,
+    pemandu: setelan.pemandu,
+  }
+}
 
 const KONTEN = [
   { kunci: 'sorotJudul', label: 'Sorot judul', icon: IconJudul },

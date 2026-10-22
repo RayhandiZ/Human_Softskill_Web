@@ -5,6 +5,7 @@ import Footer from '../../components/Footer'
 import Laci from '../../components/Laci'
 import LogoPdp from '../../components/LogoPdp'
 import MenuAkun from '../../components/MenuAkun'
+import MenuAksesibilitas, { PemanduBaca, useAkarAksesibilitas } from '../../components/MenuAksesibilitas'
 import MenuSamping from '../../components/MenuSamping'
 import TombolBahasa from '../../components/TombolBahasa'
 import TombolTema from '../../components/TombolTema'
@@ -49,9 +50,11 @@ export default function StudentLayout({ children }) {
   const student = useMemo(() => mahasiswaSesi(user), [user, versi])
   const { foto } = useProfil(kunciSesi(user, student.nim))
   const t = transkripOf(student)
+  const a11y = useAkarAksesibilitas()
 
   return (
-    <div className="min-h-screen bg-bg lg:pl-[264px] print:pl-0">
+    // kelasAkar: setelan menu aksesibilitas; lihat index.css › menu aksesibilitas.
+    <div className={'min-h-screen bg-bg lg:pl-[264px] print:pl-0 ' + a11y.kelasAkar}>
       {/* print:pl-0 wajib: sidebar disembunyikan saat mencetak. */}
       {/* -------------------------------- sidebar ------------------------------- */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] p-4 pr-0 lg:block print:hidden">
@@ -94,8 +97,13 @@ export default function StudentLayout({ children }) {
 
             <div className="ml-auto flex items-center gap-2">
               <LoncengBelumDinilai t={t} />
-              <TombolBahasa nada="terang" />
+              {/* Di HP pemilih bahasa pindah ke laci, seperti panel Kemahasiswaan, supaya tombol menu aksesibilitas
+                  muat sampai lebar 360px. */}
+              <span className="hidden sm:block">
+                <TombolBahasa nada="terang" />
+              </span>
               <TombolTema />
+              <MenuAksesibilitas />
               <MenuAkun
                 foto={foto}
                 tone="terang"
@@ -105,20 +113,25 @@ export default function StudentLayout({ children }) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 pb-4 pt-2 sm:px-6 lg:px-8">
-          <KonteksMahasiswa.Provider value={student}>
-            {/* Dikunci per jalur supaya animasi masuknya berjalan lagi setiap pindah menu. */}
-            <div key={jalurHalaman} className="animate-halaman">
-              {children}
-            </div>
-          </KonteksMahasiswa.Provider>
-        </main>
+        {/* isi-zoom: "Ukuran tulisan" di menu aksesibilitas memperbesar isi halaman dan footer saja; bilah atas dan
+            menu samping tetap, supaya kendalinya tidak terdorong keluar layar HP. */}
+        <div className="isi-zoom flex flex-1 flex-col" style={a11y.gayaIsi}>
+          <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 pb-4 pt-2 sm:px-6 lg:px-8">
+            <KonteksMahasiswa.Provider value={student}>
+              {/* Dikunci per jalur supaya animasi masuknya berjalan lagi setiap pindah menu. */}
+              <div key={jalurHalaman} className="animate-halaman">
+                {children}
+              </div>
+            </KonteksMahasiswa.Provider>
+          </main>
 
-        {/* Mulai layar laptop: kartu melayang sepasang dengan sidebar (sudut dan jarak 16px yang sama). */}
-        <Footer pintasan={PINTASAN} melayang />
+          {/* Mulai layar laptop: kartu melayang sepasang dengan sidebar (sudut dan jarak 16px yang sama). */}
+          <Footer pintasan={PINTASAN} melayang />
+        </div>
       </div>
 
       <LayananTambahan />
+      {a11y.pemandu ? <PemanduBaca /> : null}
 
       {/* --------------------------- laci layar kecil -------------------------- */}
       <Laci buka={laci} onTutup={() => setLaci(false)}>
@@ -145,6 +158,9 @@ export default function StudentLayout({ children }) {
           >
             {teks('Keluar')}
           </button>
+          <div className="mt-3 px-3.5 sm:hidden">
+            <TombolBahasa nada="terang" />
+          </div>
         </nav>
       </Laci>
     </div>

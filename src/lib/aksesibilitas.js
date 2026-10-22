@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from 'react'
 
-/* Setelan menu aksesibilitas panel dosen, diingat di peramban ini (kunci sk5c.aksesibilitas) dan disamakan antartab.
-   Bila peramban menolak menyimpan, setelan tetap berlaku selama halaman terbuka. Penerapannya: kelasAksesibilitas()
-   untuk akar .panel-dosen, saringanAksesibilitas() untuk filter <html>, dan skala untuk zoom isi halaman. Lihat
-   README.md › Panel Dosen › Menu aksesibilitas. */
+/* Setelan menu aksesibilitas, satu untuk semua panel, diingat di peramban ini (kunci sk5c.aksesibilitas) dan disamakan
+   antartab. Bila peramban menolak menyimpan, setelan tetap berlaku selama halaman terbuka. Penerapannya lewat
+   useAkarAksesibilitas() di MenuAksesibilitas.jsx: kelasAksesibilitas() untuk akar panel, saringanAksesibilitas()
+   untuk filter <html>, dan skala untuk zoom isi halaman. Lihat README.md › Menu aksesibilitas. */
 
 const KUNCI = 'sk5c.aksesibilitas'
 
@@ -81,7 +81,7 @@ export function useAksesibilitas() {
   }
 }
 
-/** Kelas untuk akar .panel-dosen; aturannya di index.css › menu aksesibilitas. */
+/** Kelas untuk akar panel (di samping penanda .akar-a11y); aturannya di index.css › menu aksesibilitas. */
 export function kelasAksesibilitas(s) {
   return [
     s.sorotJudul && 'a11y-sorot-judul',

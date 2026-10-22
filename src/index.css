@@ -295,7 +295,7 @@ body {
 /* Tombol sedikit mengecil saat ditekan, umpan balik yang terasa juga di HP. */
 .panel-admin :is(.btn, .btn-primary, .btn-ghost):active:not(:disabled) { transform: scale(.97); }
 
-/* --------------- pilihan (select) panel Kemahasiswaan dan panel dosen --------------- */
+/* ---------- pilihan (select) panel Kemahasiswaan, panel dosen, dan panel super admin ---------- */
 /* Daftar pilihan setiap <select> muncul dengan gerak dan rupa yang sama dengan menu akun dan pemilih periode super
    admin (rise, kartu bersudut 16px, centang di kanan), dan panahnya berputar saat terbuka. Memakai <select> yang bisa
    diberi gaya (appearance: base-select, Chrome dan Edge 135 ke atas); peramban lain tetap memakai daftar bawaannya
@@ -304,15 +304,15 @@ body {
    ::picker(select):popover-open) dan galatnya menggagalkan seluruh berkas ini, jadi animasinya dipasang langsung di
    ::picker(select). Daftar itu display: none saat tertutup, sehingga animasinya diputar ulang setiap kali dibuka. */
 @supports (appearance: base-select) {
-  :is(.panel-admin, .panel-dosen) select,
-  :is(.panel-admin, .panel-dosen) select::picker(select) {
+  :is(.panel-admin, .panel-dosen, .panel-super) select,
+  :is(.panel-admin, .panel-dosen, .panel-super) select::picker(select) {
     appearance: base-select;
   }
 
   /* Kotak tertutup. Di base-select teks terpilih ada di elemen bawaan yang tidak bisa menyempit, sehingga truncate
      milik <select> tidak berlaku dan teks panjang menimpa panah. Diganti potong satu baris per huruf yang dipotong di
      tepi isi: hasilnya "Desain Ko…", sama dengan select bawaan. */
-  :is(.panel-admin, .panel-dosen) select {
+  :is(.panel-admin, .panel-dosen, .panel-super) select {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
@@ -325,26 +325,26 @@ body {
 
   /* Setiap select di panel ini punya panah sendiri tepat sesudahnya (Select di Ui.jsx, angkatan dan pemetaan Import
      CSV di Nilai.jsx, PilihanSel di EditorPenilaian.jsx). Panah bawaan base-select disembunyikan. */
-  :is(.panel-admin, .panel-dosen) select::picker-icon {
+  :is(.panel-admin, .panel-dosen, .panel-super) select::picker-icon {
     display: none;
   }
-  :is(.panel-admin, .panel-dosen) select + svg {
+  :is(.panel-admin, .panel-dosen, .panel-super) select + svg {
     transition: rotate 0.2s ease;
   }
-  :is(.panel-admin, .panel-dosen) select:open + svg {
+  :is(.panel-admin, .panel-dosen, .panel-super) select:open + svg {
     rotate: 180deg;
   }
   /* Select bawaan digambar peramban dengan warna nonaktifnya sendiri; base-select memakai warna dari CSS ini, jadi
      tanpa aturan ini select yang dikunci (misalnya Sumber yang "sudah dinilai") tampak sama dengan yang aktif. */
-  :is(.panel-admin, .panel-dosen) select:disabled {
+  :is(.panel-admin, .panel-dosen, .panel-super) select:disabled {
     color: var(--text-muted);
     cursor: not-allowed;
   }
-  :is(.panel-admin, .panel-dosen) select:disabled + svg {
+  :is(.panel-admin, .panel-dosen, .panel-super) select:disabled + svg {
     opacity: 0.5;
   }
 
-  :is(.panel-admin, .panel-dosen) select::picker(select) {
+  :is(.panel-admin, .panel-dosen, .panel-super) select::picker(select) {
     margin-block: 8px;
     padding: 6px;
     border: 1px solid var(--border);
@@ -367,15 +367,15 @@ body {
 
   /* Select ringkas: labelnya di dalam kotak, jadi <select> baru mulai sesudah label. Daftarnya ditempelkan ke tepi
      kotak (anchor-scope memisahkan jangkar tiap kotak bila ada beberapa di satu halaman). */
-  :is(.panel-admin, .panel-dosen) .pilihan-ringkas {
+  :is(.panel-admin, .panel-dosen, .panel-super) .pilihan-ringkas {
     anchor-scope: --kotak-pilihan;
     anchor-name: --kotak-pilihan;
   }
-  :is(.panel-admin, .panel-dosen) .pilihan-ringkas select::picker(select) {
+  :is(.panel-admin, .panel-dosen, .panel-super) .pilihan-ringkas select::picker(select) {
     position-anchor: --kotak-pilihan;
   }
 
-  :is(.panel-admin, .panel-dosen) select option {
+  :is(.panel-admin, .panel-dosen, .panel-super) select option {
     gap: 12px;
     padding: 8px 10px;
     border-radius: 10px;
@@ -387,20 +387,20 @@ body {
     word-break: normal;
     overflow-wrap: anywhere;
   }
-  :is(.panel-admin, .panel-dosen) select option:hover {
+  :is(.panel-admin, .panel-dosen, .panel-super) select option:hover {
     background: var(--surface-2);
   }
   /* Pilihan yang difokus dengan papan ketik: latar sorot seperti pemilih periode super admin, menggantikan cincin
      fokus global. Bila daftar dibuka dengan tetikus, pilihan itu tidak :focus-visible dan tidak disorot. */
-  :is(.panel-admin, .panel-dosen) select option:focus-visible {
+  :is(.panel-admin, .panel-dosen, .panel-super) select option:focus-visible {
     outline: none;
     background: var(--brand-soft);
   }
-  :is(.panel-admin, .panel-dosen) select option:checked {
+  :is(.panel-admin, .panel-dosen, .panel-super) select option:checked {
     color: var(--brand-ink);
     font-weight: 700;
   }
-  :is(.panel-admin, .panel-dosen) select option::checkmark {
+  :is(.panel-admin, .panel-dosen, .panel-super) select option::checkmark {
     order: 1;
     margin-inline-start: auto;
     content: '';
@@ -411,12 +411,12 @@ body {
   }
 
   @media (prefers-reduced-motion: reduce) {
-    :is(.panel-admin, .panel-dosen) select::picker(select) {
+    :is(.panel-admin, .panel-dosen, .panel-super) select::picker(select) {
       animation: none;
     }
   }
   /* Menu aksesibilitas › Hentikan animasi: aturan a11y-diam memakai *, dan * tidak mengenai pseudo-elemen ::picker. */
-  .panel-dosen.a11y-diam select::picker(select) {
+  .akar-a11y.a11y-diam select::picker(select) {
     animation: none;
   }
 }
@@ -1316,134 +1316,162 @@ body {
 }
 
 /* ---------------------------- menu aksesibilitas ----------------------------- */
-/* Setelan dari src/lib/aksesibilitas.js, dipasang sebagai kelas di akar .panel-dosen (lihat MenuAksesibilitas.jsx).
-   Ukuran tulisan memakai zoom pada .isi-zoom; filter warna (kontras tinggi, saturasi, monokrom) dipasang di <html>.
-   Aturan di sini sengaja memakai !important: ia harus menang atas kelas utilitas yang menetapkan hal yang sama.
-   Lihat README.md › Panel Dosen › Menu aksesibilitas. */
+/* Berlaku di keempat panel (mahasiswa, dosen, Kemahasiswaan, super admin). Setelan dari src/lib/aksesibilitas.js;
+   useAkarAksesibilitas() (MenuAksesibilitas.jsx) memasang penanda .akar-a11y dan kelas a11y-* di akar panel. Ukuran
+   tulisan memakai zoom pada .isi-zoom; filter warna (kontras tinggi, saturasi, monokrom) dipasang di <html>. Aturan
+   di sini sengaja memakai !important: ia harus menang atas kelas utilitas yang menetapkan hal yang sama. Semuanya
+   hanya untuk layar: transkrip dan sertifikat tetap tercetak seperti aslinya (lihat @media print di bawah).
+   Lihat README.md › Menu aksesibilitas. */
+@media screen {
+  /* Menunya ada di dalam bilah atas (sticky, z-20), jadi z-index menu hanya berlaku di dalam bilah itu. Selama menu
+     terbuka bilah atas dinaikkan, supaya tombol bantuan (z-40) dan bilah bawah (z-30) tidak menutupi menu. */
+  .akar-a11y header:has([role='dialog']) {
+    z-index: 50;
+  }
 
-/* Menunya ada di dalam bilah atas (sticky, z-20), jadi z-index menu hanya berlaku di dalam bilah itu. Selama menu
-   terbuka bilah atas dinaikkan, supaya tombol bantuan (z-40) dan bilah bawah (z-30) tidak menutupi menu. */
-.panel-dosen header:has([role='dialog']) {
-  z-index: 50;
-}
+  .akar-a11y.a11y-sorot-judul :is(h1, h2, h3) {
+    outline: 2px solid currentColor;
+    outline-offset: 4px;
+    border-radius: 6px;
+    background-color: color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  /* Bayangan, bukan outline, supaya cincin fokus papan ketik (*:focus-visible) tetap terlihat di atasnya. */
+  .akar-a11y.a11y-sorot-tautan a {
+    text-decoration: underline !important;
+    text-decoration-thickness: 2px !important;
+    text-underline-offset: 3px !important;
+    border-radius: 6px;
+    box-shadow: 0 0 0 2px var(--accent-ink);
+  }
+  /* Permukaan gelap (footer, menu samping dan laci super admin): toska terang, karena --accent-ink tidak terbaca di sana. */
+  .akar-a11y.a11y-sorot-tautan :is(footer, .kartu-aurora) a {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  .akar-a11y.a11y-disleksia,
+  .akar-a11y.a11y-disleksia * {
+    font-family: var(--font-disleksia), Verdana, Tahoma, sans-serif !important;
+  }
+  /* Nilai jarak dari WCAG 1.4.12 (Text Spacing). */
+  .akar-a11y.a11y-jarak-huruf * {
+    letter-spacing: 0.12em !important;
+    word-spacing: 0.16em !important;
+  }
+  .akar-a11y.a11y-jarak-baris :is(p, li, dd, dt, td, th, label, address, h1, h2, h3, h4, span, a, output) {
+    line-height: 1.8 !important;
+  }
+  .akar-a11y.a11y-tebal * {
+    font-weight: 700 !important;
+  }
+  .akar-a11y.a11y-diam *,
+  .akar-a11y.a11y-diam *::before,
+  .akar-a11y.a11y-diam *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  /* Kursor 48px: panah untuk bidang biasa, tangan untuk yang bisa ditekan, garis ketik tetap untuk kotak isian. */
+  .akar-a11y.a11y-kursor,
+  .akar-a11y.a11y-kursor * {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24'%3E%3Cpath d='M5 2.6v16.9l4.2-4 3 6.9 3-1.3-3-6.8h5.8z' fill='%23000' stroke='%23fff' stroke-width='1.3' stroke-linejoin='round'/%3E%3C/svg%3E") 10 5, auto !important;
+  }
+  .akar-a11y.a11y-kursor :is(a, button, [role='button'], label, select, summary),
+  .akar-a11y.a11y-kursor :is(a, button, label) * {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24'%3E%3Cpath d='M9.2 15.2V5a1.6 1.6 0 0 1 3.2 0v5.4V9.2a1.6 1.6 0 0 1 3.2 0v1.6V10a1.6 1.6 0 0 1 3.2 0v6.2c0 3.7-2.6 6.4-6.2 6.4h-1.4c-2.1 0-3.5-.9-4.7-2.7l-3-4.6a1.6 1.6 0 0 1 2.6-1.9z' fill='%23000' stroke='%23fff' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 22 7, pointer !important;
+  }
+  .akar-a11y.a11y-kursor :is(input:not([type='checkbox']):not([type='radio']), textarea) {
+    cursor: text !important;
+  }
 
-.panel-dosen.a11y-sorot-judul :is(h1, h2, h3) {
-  outline: 2px solid currentColor;
-  outline-offset: 4px;
-  border-radius: 6px;
-  background-color: color-mix(in srgb, var(--accent) 22%, transparent);
+  /* Kontras gelap dan terang: palet token yang lebih tegas, terlepas dari tema terang/gelap yang dipilih. Panel dosen
+     tidak memakai utilitas dark:, jadi cukup tokennya ditimpa, ditambah beberapa permukaan kaca dan gradasi yang
+     dibuat padat. */
+  /* color: warna teks yang diwariskan dihitung di <body> dengan token tema biasa, jadi akar panel menetapkannya ulang.
+     Tanpa ini teks dan ikon (currentColor) yang tidak punya kelas warna sendiri tetap #14162f di atas latar hitam. */
+  .akar-a11y.a11y-kontras-gelap {
+    color-scheme: dark;
+    color: var(--text-primary);
+    --bg: #000000;
+    --surface: #0a0a0a;
+    --surface-2: #181818;
+    --border: #8c8c8c;
+    --border-strong: #d4d4d4;
+    --text-primary: #ffffff;
+    --text-secondary: #f0f0f0;
+    --text-muted: #d9d9d9;
+    --brand: #0b4a8f;
+    --brand-ink: #9cd0ff;
+    --brand-soft: #0d2848;
+    --accent-ink: #5eead4;
+    --good: #6ee77a;
+    --critical: #ff8a8a;
+    --warning-ink: #ffd166;
+    --teks-baik: #6ee77a;
+    --teks-kritis: #ff8a8a;
+    --teks-tunggu: #ffd166;
+  }
+  .akar-a11y.a11y-kontras-terang {
+    color-scheme: light;
+    color: var(--text-primary);
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f2f2f2;
+    --border: #595959;
+    --border-strong: #1f1f1f;
+    --text-primary: #000000;
+    --text-secondary: #1a1a1a;
+    --text-muted: #333333;
+    --brand: #0a3a75;
+    --brand-ink: #0a3a75;
+    --brand-soft: #e3ecf8;
+    --accent-ink: #0b5c55;
+    --good: #0a5c0a;
+    --critical: #a10e0e;
+    --warning-ink: #5e3d00;
+    --teks-baik: #0a5c0a;
+    --teks-kritis: #a10e0e;
+    --teks-tunggu: #5e3d00;
+  }
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) :is(.bilah-kaca, .kaca, .layanan-panel, .pil-kaca) {
+    background: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: var(--border-strong);
+  }
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .bilah-kaca {
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .pil-kaca {
+    background: var(--brand-soft);
+    border: 2px solid var(--brand-ink);
+  }
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .teks-vibe {
+    background-image: none;
+    -webkit-text-fill-color: currentColor;
+  }
+  /* Tulisan status yang warnanya dipatok (.teks-baik, .teks-kritis, .teks-tunggu di bawah, misalnya lencana "Berhak"):
+     di mode kontras mengikuti palet. Hijau tua #15731a di latar kontras gelap hanya 2,55:1. */
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .teks-baik {
+    color: var(--teks-baik);
+  }
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .teks-kritis {
+    color: var(--teks-kritis);
+  }
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .teks-tunggu {
+    color: var(--teks-tunggu);
+  }
+  /* Ubin menu yang tidak aktif hanya dibedakan dari latarnya oleh warna permukaan; di mode kontras diberi garis tepi. */
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .ubin-a11y[aria-pressed='false'] {
+    border-color: var(--border);
+  }
 }
-/* Bayangan, bukan outline, supaya cincin fokus papan ketik (*:focus-visible) tetap terlihat di atasnya. */
-.panel-dosen.a11y-sorot-tautan a {
-  text-decoration: underline !important;
-  text-decoration-thickness: 2px !important;
-  text-underline-offset: 3px !important;
-  border-radius: 6px;
-  box-shadow: 0 0 0 2px var(--accent-ink);
-}
-.panel-dosen.a11y-sorot-tautan footer a {
-  box-shadow: 0 0 0 2px var(--accent);
-}
-.panel-dosen.a11y-disleksia,
-.panel-dosen.a11y-disleksia * {
-  font-family: var(--font-disleksia), Verdana, Tahoma, sans-serif !important;
-}
-/* Nilai jarak dari WCAG 1.4.12 (Text Spacing). */
-.panel-dosen.a11y-jarak-huruf * {
-  letter-spacing: 0.12em !important;
-  word-spacing: 0.16em !important;
-}
-.panel-dosen.a11y-jarak-baris :is(p, li, dd, dt, td, th, label, address, h1, h2, h3, h4, span, a, output) {
-  line-height: 1.8 !important;
-}
-.panel-dosen.a11y-tebal * {
-  font-weight: 700 !important;
-}
-.panel-dosen.a11y-diam *,
-.panel-dosen.a11y-diam *::before,
-.panel-dosen.a11y-diam *::after {
-  animation: none !important;
-  transition: none !important;
-  scroll-behavior: auto !important;
-}
-/* Kursor 48px: panah untuk bidang biasa, tangan untuk yang bisa ditekan, garis ketik tetap untuk kotak isian. */
-.panel-dosen.a11y-kursor,
-.panel-dosen.a11y-kursor * {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24'%3E%3Cpath d='M5 2.6v16.9l4.2-4 3 6.9 3-1.3-3-6.8h5.8z' fill='%23000' stroke='%23fff' stroke-width='1.3' stroke-linejoin='round'/%3E%3C/svg%3E") 10 5, auto !important;
-}
-.panel-dosen.a11y-kursor :is(a, button, [role='button'], label, select, summary),
-.panel-dosen.a11y-kursor :is(a, button, label) * {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24'%3E%3Cpath d='M9.2 15.2V5a1.6 1.6 0 0 1 3.2 0v5.4V9.2a1.6 1.6 0 0 1 3.2 0v1.6V10a1.6 1.6 0 0 1 3.2 0v6.2c0 3.7-2.6 6.4-6.2 6.4h-1.4c-2.1 0-3.5-.9-4.7-2.7l-3-4.6a1.6 1.6 0 0 1 2.6-1.9z' fill='%23000' stroke='%23fff' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 22 7, pointer !important;
-}
-.panel-dosen.a11y-kursor :is(input:not([type='checkbox']):not([type='radio']), textarea) {
-  cursor: text !important;
-}
-
-/* Kontras gelap dan terang: palet token yang lebih tegas, terlepas dari tema terang/gelap yang dipilih. Panel dosen
-   tidak memakai utilitas dark:, jadi cukup tokennya ditimpa, ditambah beberapa permukaan kaca dan gradasi yang
-   dibuat padat. */
-.panel-dosen.a11y-kontras-gelap {
-  color-scheme: dark;
-  --bg: #000000;
-  --surface: #0a0a0a;
-  --surface-2: #181818;
-  --border: #8c8c8c;
-  --border-strong: #d4d4d4;
-  --text-primary: #ffffff;
-  --text-secondary: #f0f0f0;
-  --text-muted: #d9d9d9;
-  --brand: #0b4a8f;
-  --brand-ink: #9cd0ff;
-  --brand-soft: #0d2848;
-  --accent-ink: #5eead4;
-  --good: #6ee77a;
-  --critical: #ff8a8a;
-  --warning-ink: #ffd166;
-  --teks-baik: #6ee77a;
-  --teks-kritis: #ff8a8a;
-  --teks-tunggu: #ffd166;
-}
-.panel-dosen.a11y-kontras-terang {
-  color-scheme: light;
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --surface-2: #f2f2f2;
-  --border: #595959;
-  --border-strong: #1f1f1f;
-  --text-primary: #000000;
-  --text-secondary: #1a1a1a;
-  --text-muted: #333333;
-  --brand: #0a3a75;
-  --brand-ink: #0a3a75;
-  --brand-soft: #e3ecf8;
-  --accent-ink: #0b5c55;
-  --good: #0a5c0a;
-  --critical: #a10e0e;
-  --warning-ink: #5e3d00;
-  --teks-baik: #0a5c0a;
-  --teks-kritis: #a10e0e;
-  --teks-tunggu: #5e3d00;
-}
-.panel-dosen:is(.a11y-kontras-gelap, .a11y-kontras-terang) :is(.bilah-kaca, .kaca, .layanan-panel, .pil-kaca) {
-  background: var(--surface);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  border-color: var(--border-strong);
-}
-.panel-dosen:is(.a11y-kontras-gelap, .a11y-kontras-terang) .bilah-kaca {
-  border-bottom: 1px solid var(--border-strong);
-}
-.panel-dosen:is(.a11y-kontras-gelap, .a11y-kontras-terang) .pil-kaca {
-  background: var(--brand-soft);
-  border: 2px solid var(--brand-ink);
-}
-.panel-dosen:is(.a11y-kontras-gelap, .a11y-kontras-terang) .teks-vibe {
-  background-image: none;
-  -webkit-text-fill-color: currentColor;
-}
-/* Ubin menu yang tidak aktif hanya dibedakan dari latarnya oleh warna permukaan; di mode kontras diberi garis tepi. */
-.panel-dosen:is(.a11y-kontras-gelap, .a11y-kontras-terang) .ubin-a11y[aria-pressed='false'] {
-  border-color: var(--border);
+/* Cetak: zoom isi dan filter <html> (gaya sebaris dari useAkarAksesibilitas) dilepas. */
+@media print {
+  .isi-zoom {
+    zoom: 1 !important;
+  }
+  html {
+    filter: none !important;
+  }
 }
 
 /* Pemandu baca: pita mendatar mengikuti penunjuk (PemanduBaca, dipasang di <body>). */

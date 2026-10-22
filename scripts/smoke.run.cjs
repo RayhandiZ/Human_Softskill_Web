@@ -18,6 +18,7 @@ const SESI = { student: JSON.stringify({ role:'student', studentId:'DEMO-2', ema
 
 const ISI = {
   '/mahasiswa': [
+    [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
     [/Nilai akhir/, 'ubin nilai akhir ada'],
     [/(Sementara|Final)[\s\S]{0,40}berdasarkan \d+ dari \d+ aspek/, 'nilai akhir disertai status dan dasar hitungnya (R3)'],
     [/Aspek dinilai[\s\S]{0,80}\/ \d+/, 'ubin jumlah aspek dinilai'],
@@ -42,6 +43,8 @@ const ISI = {
     [/Upgrade|Kalender/, 'tidak ada kartu promosi atau kalender kosong', false],
   ],
   '/admin': [
+    /* Menu aksesibilitas ada di keempat panel (README.md › Menu aksesibilitas). */
+    [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
     /* Kartu "Requires Review" dilebur ke lonceng — isinya mengulang angka yang
        sama dengan daftar "Belum dinilai" di sana. */
     [/Requires Review/, 'kartu Requires Review sudah tidak ada di Ringkasan', false],
@@ -191,6 +194,7 @@ const ISI = {
     [/Tindakan admin[\s\S]{0,40}Perubahan nilai/, 'tab tindakan admin dan perubahan nilai'],
   ],
   '/super': [
+    [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
     [/Pusat Kendali/, 'judul Pusat Kendali'],
     [/permintaan menunggu/, 'jumlah permintaan yang menunggu di kartu keputusan'],
     [/Perlu keputusan Anda/, 'daftar yang perlu diputuskan'],

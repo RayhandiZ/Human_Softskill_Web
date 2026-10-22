@@ -95,9 +95,9 @@ export default function Footer({ pintasan = [], melayang = false }) {
         </section>
       </div>
 
-      <div className="border-t border-white/15 py-4 text-center text-[13px] text-white/100 max-sm:pb-[84px]">
-        <b>© Universitas Multimedia Nusantara. <br>
-        </br>Design by Rayhandi Zulmi</b>
+      <div className="border-t border-white/15 py-4 text-center text-[13px] text-white/100 max-sm:pb-[25px]">
+      <b> © Universitas Multimedia Nusantara. <br>
+      </br>Design by Rayhandi Zulmi</b>
       </div>
     </footer>
   )

@@ -122,7 +122,7 @@ const DARI_DATA = [
   'Tulis angka saja, misalnya 85 atau 85,5.', 'Nilai paling tinggi 100.',
   /* Label langkah penilaian (larik di komponen Langkah, diterjemahkan lewat t(l.label)). */
   'Pilih tugas', 'Isi nilai', 'Periksa & kirim',
-  /* Alat di menu aksesibilitas panel dosen (larik KONTEN, WARNA, ALAT di MenuAksesibilitas.jsx). */
+  /* Alat di menu aksesibilitas semua panel (larik KONTEN, WARNA, ALAT di MenuAksesibilitas.jsx). */
   'Sorot judul', 'Sorot tautan', 'Huruf ramah disleksia', 'Jarak huruf', 'Jarak baris', 'Huruf tebal',
   'Kontras gelap', 'Kontras terang', 'Kontras tinggi', 'Saturasi tinggi', 'Saturasi rendah', 'Monokrom',
   'Pemandu baca', 'Hentikan animasi', 'Kursor besar',

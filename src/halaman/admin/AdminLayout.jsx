@@ -5,6 +5,7 @@ import CariCepat from '../../components/CariCepat'
 import Laci from '../../components/Laci'
 import LogoPdp from '../../components/LogoPdp'
 import MenuAkun from '../../components/MenuAkun'
+import MenuAksesibilitas, { PemanduBaca, useAkarAksesibilitas } from '../../components/MenuAksesibilitas'
 import MenuSamping from '../../components/MenuSamping'
 import TombolBahasa from '../../components/TombolBahasa'
 import TombolTema from '../../components/TombolTema'
@@ -136,6 +137,7 @@ export default function AdminLayout({ children }) {
   const [laci, setLaci] = useState(false)
   const { foto } = useProfil(kunciSesi(user))
   const superAdmin = Boolean(user?.superAdmin)
+  const a11y = useAkarAksesibilitas()
 
   const menu = menuAdmin({
     koreksi: PENGAJUAN_KOREKSI.filter((k) => k.status === 'menunggu').length,
@@ -146,7 +148,8 @@ export default function AdminLayout({ children }) {
 
   return (
     // panel-admin: teks redup dipertebal seperti panel super admin; lihat index.css › teks redup panel kerja.
-    <div className="panel-admin min-h-screen bg-bg lg:pl-[280px] print:pl-0">
+    // kelasAkar: setelan menu aksesibilitas; lihat index.css › menu aksesibilitas.
+    <div className={'panel-admin min-h-screen bg-bg lg:pl-[280px] print:pl-0 ' + a11y.kelasAkar}>
       {/* -------------------------------- sidebar ------------------------------- */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[280px] p-4 pr-0 lg:block print:hidden">
         <div className="kartu flex h-full flex-col overflow-y-auto px-3 py-5">
@@ -209,6 +212,7 @@ export default function AdminLayout({ children }) {
                 <TombolBahasa nada="terang" />
               </span>
               <TombolTema />
+              <MenuAksesibilitas />
               <MenuAkun
                 foto={foto}
                 tone="terang"
@@ -219,21 +223,27 @@ export default function AdminLayout({ children }) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 pb-12 pt-2 sm:px-6 lg:px-8">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-            <p className="text-[13.5px] text-ink-2">
-              Universitas Multimedia Nusantara ·{' '}
-              {t('Periode {periode}', { periode: labelPeriode(PERIODE_AKTIF) })}
-            </p>
-            <StatusData />
-          </div>
+        {/* isi-zoom: "Ukuran tulisan" di menu aksesibilitas memperbesar isi halaman saja; bilah atas dan menu samping
+            tetap, supaya kendalinya tidak terdorong keluar layar HP. */}
+        <div className="isi-zoom flex flex-1 flex-col" style={a11y.gayaIsi}>
+          <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 pb-12 pt-2 sm:px-6 lg:px-8">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+              <p className="text-[13.5px] text-ink-2">
+                Universitas Multimedia Nusantara ·{' '}
+                {t('Periode {periode}', { periode: labelPeriode(PERIODE_AKTIF) })}
+              </p>
+              <StatusData />
+            </div>
 
-          {/* Dikunci per jalur supaya animasi masuknya berjalan lagi setiap pindah menu. */}
-          <div key={jalur} className="min-w-0 animate-halaman">
-            {children}
-          </div>
-        </main>
+            {/* Dikunci per jalur supaya animasi masuknya berjalan lagi setiap pindah menu. */}
+            <div key={jalur} className="min-w-0 animate-halaman">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
+
+      {a11y.pemandu ? <PemanduBaca /> : null}
 
       {/* --------------------------- laci layar kecil -------------------------- */}
       <Laci buka={laci} onTutup={() => setLaci(false)}>

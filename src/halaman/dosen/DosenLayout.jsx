@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import BilahBawah from '../../components/BilahBawah'
@@ -6,13 +5,12 @@ import Footer from '../../components/Footer'
 import LayananTambahan from '../../components/LayananTambahan'
 import LogoPdp from '../../components/LogoPdp'
 import MenuAkun from '../../components/MenuAkun'
-import MenuAksesibilitas, { PemanduBaca, hurufDisleksia } from '../../components/MenuAksesibilitas'
+import MenuAksesibilitas, { PemanduBaca, useAkarAksesibilitas } from '../../components/MenuAksesibilitas'
 import MenuSamping from '../../components/MenuSamping'
 import TombolBahasa from '../../components/TombolBahasa'
 import TombolTema from '../../components/TombolTema'
 import { IconChevronRight, IconClock, IconGauge, IconPencil, IconUsers } from '../../components/Icons'
 import { useAuth } from '../../lib/auth'
-import { kelasAksesibilitas, saringanAksesibilitas, useAksesibilitas } from '../../lib/aksesibilitas'
 import { SUMBER } from '../../lib/curriculum'
 import { PERIODE_AKTIF, dosenSesi, labelPeriode, pengumpulanDosen } from '../../lib/data'
 import { statusPengumpulan, useStore } from '../../lib/store'
@@ -98,17 +96,7 @@ export default function DosenLayout({ children }) {
   const { user } = useAuth()
   const jalur = usePathname() ?? '/dosen'
   const { foto } = useProfil(kunciSesi(user))
-  const { setelan } = useAksesibilitas()
-
-  // Filter warna di <html>; lihat saringanAksesibilitas() untuk alasannya. Dilepas lagi saat keluar dari panel dosen.
-  const saringan = saringanAksesibilitas(setelan)
-  useEffect(() => {
-    const akar = document.documentElement
-    akar.style.filter = saringan
-    return () => {
-      akar.style.filter = ''
-    }
-  }, [saringan])
+  const a11y = useAkarAksesibilitas()
 
   const dosen = dosenSesi(user)
   const perluDinilai = dosen
@@ -124,13 +112,11 @@ export default function DosenLayout({ children }) {
       })
     : null
   const periode = t('Periode {periode}', { periode: labelPeriode(PERIODE_AKTIF) })
-  const skala = setelan.skala / 100
-  const kelasA11y = kelasAksesibilitas(setelan)
 
   return (
-    // panel-dosen: teks redup dipertebal seperti panel admin dan tinggi bilah bawah; kelasA11y: setelan menu
+    // panel-dosen: teks redup dipertebal seperti panel admin dan tinggi bilah bawah; kelasAkar: setelan menu
     // aksesibilitas. Lihat index.css › panel dosen dan › menu aksesibilitas.
-    <div className={'panel-dosen min-h-screen bg-bg lg:pl-[264px] print:pl-0 ' + hurufDisleksia.variable + (kelasA11y ? ' ' + kelasA11y : '')}>
+    <div className={'panel-dosen min-h-screen bg-bg lg:pl-[264px] print:pl-0 ' + a11y.kelasAkar}>
       {/* -------------------------------- sidebar ------------------------------- */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] p-4 pr-0 lg:block print:hidden">
         <div className="kartu flex h-full flex-col overflow-y-auto px-3 py-5">
@@ -177,7 +163,7 @@ export default function DosenLayout({ children }) {
         {/* isi-zoom: "Ukuran tulisan" di menu aksesibilitas memperbesar isi halaman dan footer saja. Bilah atas, menu
             samping, dan bilah bawah tetap, supaya kendalinya tidak terdorong keluar layar HP. --skala dipakai bilah
             aksi Penilaian untuk tetap menempel tepat di atas bilah bawah. */}
-        <div className="isi-zoom flex flex-1 flex-col" style={skala !== 1 ? { zoom: skala, '--skala': skala } : undefined}>
+        <div className="isi-zoom flex flex-1 flex-col" style={a11y.gayaIsi}>
           <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 pb-4 pt-2 sm:px-6 lg:px-8">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
               <p className="text-[13.5px] text-ink-2">{kelas ? kelas + ' · ' + periode : periode}</p>
@@ -197,7 +183,7 @@ export default function DosenLayout({ children }) {
 
       <BilahBawah items={menu} label={t('Menu dosen')} />
       <LayananTambahan posisi="bantuan-dosen right-5 sm:right-6" />
-      {setelan.pemandu ? <PemanduBaca /> : null}
+      {a11y.pemandu ? <PemanduBaca /> : null}
     </div>
   )
 }

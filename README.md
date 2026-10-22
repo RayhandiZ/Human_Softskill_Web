@@ -205,7 +205,7 @@ src/lib/
   values5c.js     5C sebagai materi Mentoring — tidak dipakai untuk menghitung apa pun
   auth.jsx        masuk lewat /api/masuk, sesi dari cookie lewat /api/sesi, penjaga rute per peran
   theme.jsx       mode terang/gelap
-  aksesibilitas.js setelan menu aksesibilitas panel dosen, useAksesibilitas() (lihat Panel Dosen)
+  aksesibilitas.js setelan menu aksesibilitas semua panel, useAksesibilitas() (lihat Menu aksesibilitas)
   bahasa.jsx      pilihan bahasa dan useTeks()
   teks.js         kamus Indonesia → Inggris — lihat Kamus dan terjemahan
   terjemahOtomatis.js  penerjemah bawaan peramban untuk kalimat yang belum ada di kamus
@@ -254,7 +254,7 @@ src/components/   Ui (termasuk pola halaman Kemahasiswaan: JudulHalaman, KartuAn
                   Paginasi, GulirTabel, JUDUL_KOLOM), Icons, Navbar, Laci, MenuAkun, Footer, FilterBar, ErrorBoundary,
                   TombolBahasa, PilihanMengambang, PenyuntingFoto, LihatFoto, LayananTambahan,
                   LogoPdp, Lipat, MenuSamping (menu samping mahasiswa, dosen, Kemahasiswaan, dan
-                  super admin), BilahBawah (menu bawah HP panel dosen), MenuAksesibilitas (panel dosen),
+                  super admin), BilahBawah (menu bawah HP panel dosen), MenuAksesibilitas (semua panel),
                   TombolTema, CariCepat
                   (pencarian cepat Ctrl+K panel Kemahasiswaan)
 src/components/charts/  ChartFrame, RadarCluster (6 sumbu), AspectBars (10 aspek), MutuDonut,
@@ -666,9 +666,13 @@ hanya `transform` dan `opacity`, dan sekali jalan saat sesuatu muncul atau ditek
   pilihan terpilih dan panah yang berputar saat terbuka. Caranya memakai `<select>` yang bisa diberi gaya
   (`appearance: base-select`, Chrome dan Edge 135 ke atas), jadi tetap select bawaan: papan ketik, pembaca layar,
   dan `onChange` tidak berubah. Peramban lain memakai daftar bawaannya tanpa animasi; karena itu semua aturannya
-  ada di dalam `@supports` (`index.css` › pilihan (select) panel Kemahasiswaan dan panel dosen). Panel dosen memakai
-  aturan yang sama (`:is(.panel-admin, .panel-dosen)`): saringan Tugas dan Status di Beranda, dan pemetaan kolom
-  unggah CSV di Penilaian. Hal yang sudah terbukti di sini:
+  ada di dalam `@supports` (`index.css` › pilihan (select) panel Kemahasiswaan, panel dosen, dan panel super admin).
+  Panel dosen dan super admin memakai aturan yang sama (`:is(.panel-admin, .panel-dosen, .panel-super)`). Di panel
+  dosen: saringan Tugas dan Status di Beranda, dan pemetaan kolom unggah CSV di Penilaian. Di super admin: saringan
+  Pelaku dan Jenis tindakan di Log, saringan status dan formulir Tambah akun di Akses Pengguna, dan Sumber, Jenis,
+  Ranah, serta Status di tabel komponen Penilaian & Bobot. Pemilih periode di Pusat Kendali bukan `<select>`; ia sudah
+  memakai `animate-rise` dan membuka ke bawah. Kalender `<input type="date">` di Log digambar sistem operasi dan
+  tidak bisa diberi animasi. Hal yang sudah terbukti di sini:
   - Pengurai CSS Turbopack menolak pseudo-class sesudah `::picker(select)` (misalnya `:popover-open`), dan
     galatnya membuat seluruh `index.css` gagal dimuat. Animasinya dipasang langsung di `::picker(select)`: daftar
     itu `display: none` saat tertutup, jadi animasinya diputar ulang setiap kali dibuka. Uji dulu sintaks CSS
@@ -715,7 +719,7 @@ hanya `transform` dan `opacity`, dan sekali jalan saat sesuatu muncul atau ditek
 Penggunanya dosen yang datang sesekali untuk menilai, banyak di antaranya berusia 40 tahun ke atas. Ukuran
 tampilannya sama dengan panel super admin, atas arahan pemilik produk. Kebutuhan yang berbeda-beda, misalnya
 tulisan lebih besar atau kontras lebih tegas, dipenuhi lewat menu aksesibilitas yang dinyalakan sendiri oleh
-pemakainya (lihat Menu aksesibilitas di bawah). Susunan dan alur halamannya diambil dari riset dan panduan
+pemakainya (lihat Menu aksesibilitas). Susunan dan alur halamannya diambil dari riset dan panduan
 berikut, lalu disesuaikan dengan pola LMS yang sudah dikenal dosen (Moodle, Google Classroom, Canvas):
 
 - NN/g (123 peserta berusia 65+): pengguna lansia sekitar 43% lebih lambat. Masalah yang terus berulang adalah
@@ -755,33 +759,6 @@ nama menunya.
   prop `posisi` milik `LayananTambahan`) melayang 8px di atas bilah aksi Penilaian selama bilah itu menempel atau
   baru lepas, lalu kembali ke tempatnya: `useBantuanDiAtasBilah` di `Nilai.jsx` menulis `--naik-bantuan`, jadi di
   ujung halaman tombol itu tidak menutupi footer.
-
-### Menu aksesibilitas
-
-Tombol bergambar orang di bilah atas membuka menu alat yang dinyalakan sendiri oleh pemakainya. Susunannya
-mengikuti contoh dari pemilik produk (`src/components/MenuAksesibilitas.jsx`). Setelannya ada di
-`src/lib/aksesibilitas.js` (kunci `sk5c.aksesibilitas`): disamakan antartab, dan tetap berlaku di memori bila
-peramban menolak menyimpan. Selama ada setelan yang menyala, tombolnya bertanda titik toska; tombol putar di kepala
-menu mengembalikan semuanya.
-
-| Bagian | Alat | Cara kerjanya |
-|---|---|---|
-| Penyesuaian konten | Ukuran tulisan 90 sampai 150% | `zoom` pada `.isi-zoom` (isi halaman dan footer). Bilah atas, menu samping, dan bilah bawah tidak ikut, supaya kendalinya tidak terdorong keluar layar HP. Bilah aksi membagi jarak menempelnya dengan `--skala`. |
-| | Sorot judul, Sorot tautan | garis tepi pada h1 sampai h3; garis bawah tebal dan bingkai `box-shadow` pada tautan (bukan outline, supaya cincin fokus papan ketik tetap terlihat) |
-| | Huruf ramah disleksia | Lexend lewat `next/font` dengan `preload: false`, jadi baru diunduh saat dinyalakan |
-| | Jarak huruf, Jarak baris, Huruf tebal | 0,12em huruf dan 0,16em kata (WCAG 1.4.12), tinggi baris 1,8, tebal 700 |
-| Penyesuaian warna | Kontras gelap, Kontras terang, Kontras tinggi | gelap dan terang: palet token hitam/putih yang lebih tegas, terlepas dari tema, dengan permukaan kaca dan tulisan bergradasi dibuat padat; tinggi: `filter: contrast(1.35)`. Ketiganya saling menggantikan. |
-| | Saturasi tinggi, Saturasi rendah, Monokrom | `filter` saturate atau grayscale, saling menggantikan. Filter dipasang di `<html>`, bukan di panel: filter pada elemen lain menjadi bingkai bagi elemen fixed di dalamnya (menu samping, bilah bawah, tombol bantuan). |
-| Alat | Pemandu baca, Hentikan animasi, Kursor besar | pita mendatar yang mengikuti penunjuk (portal ke `<body>`, di luar zoom); semua animasi dan transisi dimatikan; kursor SVG 48px (panah, dan tangan untuk yang bisa ditekan) |
-
-- Menu ini dialog nonmodal. Saat dibuka, fokus pindah ke judulnya; Esc menutup dan mengembalikan fokus ke
-  tombolnya; klik atau Tab ke luar menutupnya. Setiap alat adalah tombol `aria-pressed`, dan keadaan nyala
-  ditandai garis tepi, latar, dan centang, bukan warna saja.
-- Menu ada di dalam bilah atas (sticky, z-20). Selama menu terbuka bilah atas dinaikkan ke z-50
-  (`header:has([role='dialog'])`), supaya tombol bantuan dan bilah bawah tidak menutupinya. Di HP menu menjadi
-  lembar selebar layar yang berhenti di atas bilah bawah.
-- Uji smoke membundel komponen dengan esbuild, di luar kompiler Next. Di sana modul `next/font/google` kosong, jadi
-  diarahkan ke tiruan `scripts/palsu-next-font.js` (lihat `scripts/bundle.cjs`).
 
 ### Penilaian
 
@@ -838,6 +815,56 @@ kotak nilai berlabel, `inputmode="decimal"`, tidak ada `type="number"`, dan tida
 `ujiBilahBawah` memastikan bilah bawah berisi 4 tautan berlabel, menandai halaman aktif, dan tanpa tombol garis
 tiga. Halaman Beranda dosen juga diperiksa: footer berpintasan, Helpdesk, dan tombol menu aksesibilitas di bilah
 atas.
+
+## Menu aksesibilitas
+
+Ada di keempat panel: mahasiswa, dosen, Kemahasiswaan, dan super admin. Tombol bergambar orang di bilah atas
+(di samping tombol tema) membuka menu alat yang dinyalakan sendiri oleh pemakainya. Susunannya mengikuti contoh dari
+pemilik produk (`src/components/MenuAksesibilitas.jsx`). Setelannya ada di `src/lib/aksesibilitas.js` (kunci
+`sk5c.aksesibilitas`): satu setelan untuk semua panel di peramban itu, disamakan antartab, dan tetap berlaku di
+memori bila peramban menolak menyimpan. Selama ada setelan yang menyala, tombolnya bertanda titik toska; tombol
+putar di kepala menu mengembalikan semuanya.
+
+Setiap kerangka panel memakai `useAkarAksesibilitas()` dari komponen yang sama, yang memberi tiga hal:
+
+- `kelasAkar` untuk div akar panel: penanda `.akar-a11y`, variabel huruf Lexend, dan kelas `a11y-*` setelan yang
+  menyala. Semua aturan di `index.css` › menu aksesibilitas ditulis `.akar-a11y.a11y-…`.
+- `gayaIsi` (zoom dan `--skala`) untuk pembungkus `.isi-zoom` di sekeliling isi halaman, ditambah footer di panel
+  mahasiswa dan dosen.
+- `pemandu` untuk memasang `<PemanduBaca />`. Filter warna dipasang di `<html>` dan dilepas lagi saat panel
+  ditutup, misalnya saat keluar ke halaman masuk.
+
+Di HP, panel berlaci (Kemahasiswaan, super admin, mahasiswa) memindahkan pemilih bahasa ke laci di bawah 640px,
+supaya tombol menu aksesibilitas muat sampai lebar 360px. Panel Kemahasiswaan sudah begitu sejak awal; panel dosen
+tidak berlaci dan tetap memuat semuanya di bilah atas.
+
+| Bagian | Alat | Cara kerjanya |
+|---|---|---|
+| Penyesuaian konten | Ukuran tulisan 90 sampai 150% | `zoom` pada `.isi-zoom` (isi halaman dan footer). Bilah atas, menu samping, dan bilah bawah tidak ikut, supaya kendalinya tidak terdorong keluar layar HP. Bilah aksi membagi jarak menempelnya dengan `--skala`. |
+| | Sorot judul, Sorot tautan | garis tepi pada h1 sampai h3; garis bawah tebal dan bingkai `box-shadow` pada tautan (bukan outline, supaya cincin fokus papan ketik tetap terlihat) |
+| | Huruf ramah disleksia | Lexend lewat `next/font` dengan `preload: false`, jadi baru diunduh saat dinyalakan |
+| | Jarak huruf, Jarak baris, Huruf tebal | 0,12em huruf dan 0,16em kata (WCAG 1.4.12), tinggi baris 1,8, tebal 700 |
+| Penyesuaian warna | Kontras gelap, Kontras terang, Kontras tinggi | gelap dan terang: palet token hitam/putih yang lebih tegas, terlepas dari tema, dengan permukaan kaca dan tulisan bergradasi dibuat padat; tinggi: `filter: contrast(1.35)`. Ketiganya saling menggantikan. |
+| | Saturasi tinggi, Saturasi rendah, Monokrom | `filter` saturate atau grayscale, saling menggantikan. Filter dipasang di `<html>`, bukan di panel: filter pada elemen lain menjadi bingkai bagi elemen fixed di dalamnya (menu samping, bilah bawah, tombol bantuan). |
+| Alat | Pemandu baca, Hentikan animasi, Kursor besar | pita mendatar yang mengikuti penunjuk (portal ke `<body>`, di luar zoom); semua animasi dan transisi dimatikan; kursor SVG 48px (panah, dan tangan untuk yang bisa ditekan) |
+
+- Menu ini dialog nonmodal. Saat dibuka, fokus pindah ke judulnya; Esc menutup dan mengembalikan fokus ke
+  tombolnya; klik atau Tab ke luar menutupnya. Setiap alat adalah tombol `aria-pressed`, dan keadaan nyala
+  ditandai garis tepi, latar, dan centang, bukan warna saja.
+- Menu ada di dalam bilah atas (sticky, z-20). Selama menu terbuka bilah atas dinaikkan ke z-50
+  (`header:has([role='dialog'])`), supaya tombol bantuan dan bilah bawah tidak menutupinya. Di HP menu menjadi
+  lembar selebar layar yang berhenti di atas bilah bawah.
+- Semua aturan aksesibilitas ada di dalam `@media screen`, dan `@media print` melepas zoom `.isi-zoom` serta filter
+  `<html>`. Transkrip dan sertifikat tetap tercetak seperti aslinya walau pemakainya sedang memakai kontras gelap
+  atau tulisan 150%.
+- Mode kontras: akar panel menetapkan ulang `color: var(--text-primary)`. Warna teks yang diwariskan dihitung di
+  `<body>` dengan token tema biasa, jadi tanpa ini teks dan ikon yang tidak punya kelas warna sendiri tetap #14162f
+  di atas latar hitam. Kelas warna status yang dipatok (`.teks-baik`, `.teks-kritis`, `.teks-tunggu`, misalnya
+  lencana "Berhak") juga diarahkan ke token palet; hijau tua #15731a di latar kontras gelap hanya 2,55:1.
+- Sorot tautan di permukaan gelap (footer, menu samping dan laci super admin `.kartu-aurora`) memakai `--accent`,
+  karena `--accent-ink` tidak terbaca di sana.
+- Uji smoke membundel komponen dengan esbuild, di luar kompiler Next. Di sana modul `next/font/google` kosong, jadi
+  diarahkan ke tiruan `scripts/palsu-next-font.js` (lihat `scripts/bundle.cjs`).
 
 ## Ringkasan admin sengaja dibuat tenang
 
