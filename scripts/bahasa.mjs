@@ -108,7 +108,7 @@ const DARI_DATA = [
   /* Judul grafik: prop title/subtitle diterjemahkan di dalam ChartFrame. */
   'Grafik Sebaran Aspek', 'Dari {n} mahasiswa yang sudah punya nilai',
   'Profil enam cluster', 'Rata-rata aspek CPMK di tiap cluster',
-  'Nilai per aspek CPMK', 'Sepuluh aspek, dikelompokkan menurut area pengembangan',
+  'Nilai per aspek CPMK', 'Aspek CPMK, dikelompokkan menurut area pengembangan',
   'Perkembangan nilai per semester',
   /* src/lib/ingest.js: label keyakinan, skala, dan cara menggabung kolom di Import CSV. */
   'Yakin', 'Perlu dicek', 'Tebakan lemah', 'Tidak cocok',

@@ -211,6 +211,10 @@ const ISI = {
     [/Tambah komponen/, 'komponen bisa ditambah manual'],
     [/Ajukan ke Super Admin/, 'super admin tidak diminta mengajukan', false],
   ],
+  '/admin/data-master': [
+    [/Halaman ini butuh izin dari Super Admin/, 'admin tanpa izin hanya melihat penjelasan'],
+    [/Simpan angkatan/, 'formulir data master tidak tampil tanpa izin', false],
+  ],
   '/super/akses': [
     [/Akses Pengguna/, 'judul Akses Pengguna'],
     [/Tentukan mahasiswa, dosen, dan admin Kemahasiswaan/, 'penjelasan siapa yang diatur'],
@@ -267,6 +271,7 @@ const RUTE = [
   ['admin', '/admin/kurikulum', 'Kurikulum CPMK'],
   ['admin', '/admin/persetujuan', 'Permintaan Saya'],
   ['admin', '/admin/log', 'Log aktivitas'],
+  ['admin', '/admin/data-master', 'Data master (admin tanpa izin)'],
   ['super', '/super', 'Pusat Kendali'],
   ['super', '/super/persetujuan', 'Persetujuan (super admin)'],
   ['super', '/super/penilaian', 'Penilaian & bobot'],
@@ -1149,12 +1154,18 @@ const RUTE = [
     ['Penilaian & Bobot: super admin menyimpan langsung, tanpa mengajukan', ps.simpanLangsung],
     ['draf yang belum disimpan ditanyakan sebelum berganti aspek', ps.drafDitanyakan],
     ['tab Bobot memasang halaman Kurikulum tanpa judulnya, aspek terpilih ikut', ps.bobotTertanam],
+    ['kelola aspek: struktur aspek terpilih, pratinjau dampak arsip (alasan wajib), formulir tambah aspek C.3.', ps.kelolaAspek],
+    ['kelola aspek: cluster bisa dipilih ulang, area ikut, tombol simpan aktif sesudah alasan', ps.pindahCluster],
+    ['Input & Import Nilai: aspek Semester 1 bisa ditambah (area A, kode A.5.), diedit, diubah, dan dihapus', ps.aspekSemester],
     ['Akses Pengguna: daftar dosen beserta status aksesnya', ps.aksesDaftarDosen],
     ['mencabut akses butuh alasan, lalu statusnya berubah', ps.cabutAkses],
     ['hapus akun hanya untuk akses yang dicabut, butuh alasan, lalu barisnya hilang', ps.hapusAkun],
     ['pencarian NIP menyisakan dosen itu', ps.cariAkun],
     ['akun super admin (milik sendiri) tidak bisa dicabut', ps.superTidakBisaDicabut],
     ['tab Mahasiswa: NIM, prodi, dan angkatan tampil, pencarian NIM jalan, akses bisa dicabut', ps.aksesMahasiswa],
+    ['izin data master: hanya di baris admin biasa, butuh alasan, lalu lencananya muncul', ps.beriIzinMaster],
+    ['Data Master: admin tanpa izin hanya melihat penjelasan, tanpa menu', ps.dataMasterTanpaIzin],
+    ['Data Master: super admin melihat menu, tiga tab, pratinjau angkatan, dan catatan NIM', ps.dataMasterSuper],
     ['pintu API yang belum dibuat (404) dikenali', ps.apiBelumAdaDikenali],
   ]
   const rusakPs = cekPs.filter(([, ok]) => !ok)

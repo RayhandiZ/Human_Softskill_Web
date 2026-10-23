@@ -29,15 +29,27 @@ export async function penggunaDariId(id) {
     // Peran SUPER_ADMIN dibaca sebagai admin bertanda superAdmin, jadi semua pintu admin tetap
     // terbuka untuknya.
     superAdmin: p.peran === 'SUPER_ADMIN',
+    // Izin menambah/mengubah data master: super admin selalu punya, admin biasa hanya bila diberi super admin
+    // (aturIzinMaster di src/server/akses.js). Dibaca ulang setiap permintaan, jadi pencabutan langsung berlaku.
+    kelolaMaster: punyaIzinMaster(p),
     email: p.email,
     mahasiswa: p.mahasiswa,
     dosen: p.dosen,
   }
 }
 
-/** Apakah `pengguna` memenuhi salah satu `peran`. 'superadmin' hanya dipenuhi akun berperan SUPER_ADMIN. */
+/** Izin kelola data master dari baris Pengguna (basis data); sama dengan yang dikirim ke sesi oleh masuk.js. */
+export const punyaIzinMaster = (p) => p.peran === 'SUPER_ADMIN' || (p.peran === 'ADMIN' && p.kelolaMaster === true)
+
+/**
+ * Apakah `pengguna` memenuhi salah satu `peran`. 'superadmin' hanya dipenuhi akun berperan SUPER_ADMIN;
+ * 'master' dipenuhi akun yang punya izin kelola data master (super admin, atau admin yang diberi izin).
+ */
 export const bolehPeran = (pengguna, peran) =>
-  !peran || peran.some((p) => (p === 'superadmin' ? pengguna.superAdmin : p === pengguna.peran))
+  !peran ||
+  peran.some((p) =>
+    p === 'superadmin' ? pengguna.superAdmin : p === 'master' ? pengguna.kelolaMaster : p === pengguna.peran,
+  )
 
 export function jawabGalat(e) {
   if (e instanceof GalatApi || Number.isInteger(e?.status)) {
@@ -54,7 +66,8 @@ export function jawabGalat(e) {
 /**
  * Kerangka setiap pintu API yang butuh sesi: membaca pemilik cookie, memeriksa perannya,
  * lalu menjalankan `kerja(pengguna, isi)`. `peran` null berarti semua peran boleh; ['admin']
- * juga meloloskan super admin; ['superadmin'] hanya super admin.
+ * juga meloloskan super admin; ['superadmin'] hanya super admin; ['master'] super admin dan admin
+ * yang diberi izin kelola data master.
  */
 export async function tangani(request, peran, kerja) {
   try {

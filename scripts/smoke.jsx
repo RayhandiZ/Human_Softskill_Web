@@ -32,6 +32,7 @@ import Angkatan from '../src/halaman/admin/Angkatan'
 import Kurikulum from '../src/halaman/admin/Kurikulum'
 import PersetujuanAdmin from '../src/halaman/admin/PersetujuanAdmin'
 import Log from '../src/halaman/admin/Log'
+import DataMaster from '../src/halaman/admin/DataMaster'
 import SuperLayout from '../src/halaman/super-admin/SuperLayout'
 import Kendali from '../src/halaman/super-admin/Kendali'
 import Wewenang from '../src/halaman/super-admin/Wewenang'
@@ -164,6 +165,7 @@ const RUTE = {
   '/admin/profil': { pohon: () => admin(<Profil />) },
   '/admin/usulan': { pohon: () => admin(<UsulanAdmin />) },
   '/admin/log': { pohon: () => admin(<Log />) },
+  '/admin/data-master': { pohon: () => admin(<DataMaster />) },
   '/super': { pohon: () => superAdmin(<Kendali />) },
   '/super/persetujuan': { pohon: () => superAdmin(<PersetujuanAdmin />) },
   '/super/penilaian': { pohon: () => superAdmin(<PenilaianSuper />) },
@@ -1752,6 +1754,31 @@ export async function ujiPanelSuper() {
   await klik(kartuAspek()[1])
   hasil.drafDitanyakan = tetap && ditanya === 2 && editorUntuk(aspek2)
   window.confirm = konfirmasiLama
+  // Kelola aspek: struktur aspek terpilih, pratinjau dampak sebelum mengarsipkan (alasan wajib), dan formulir tambah.
+  const adaStruktur = el.textContent.includes('Struktur aspek ' + aspek2 + '.') && /Simpan struktur/.test(el.textContent)
+  // Pindah cluster: area ikut berubah, dan sesudah alasan diisi tombol simpan aktif.
+  const pilihCluster = [...el.querySelectorAll('select')].find((s) => [...s.options].some((o) => o.value === 'CL4'))
+  await pilih(pilihCluster, 'CL4')
+  await tunggu()
+  const formStruktur = pilihCluster?.closest('form')
+  const areaIkut = /Area Interpersonal Development/.test(formStruktur?.textContent ?? '')
+  await ketik([...(formStruktur?.querySelectorAll('input') ?? [])].at(-1), 'Uji pindah cluster')
+  await tunggu()
+  const simpanStrukturAktif =
+    pilihCluster?.value === 'CL4' && formStruktur?.querySelector('button[type="submit"]')?.disabled === false
+  hasil.pindahCluster = areaIkut && simpanStrukturAktif
+  await klik([...el.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Arsipkan aspek'))
+  await tunggu()
+  const pratinjauArsip = /Bila disimpan, nilai \d+ dari \d+ mahasiswa berubah/.test(el.textContent)
+  const tombolArsip = [...el.querySelectorAll('button[type="submit"]')].find((b) => /Arsipkan aspek/.test(b.textContent))
+  await klik([...el.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Tambah aspek'))
+  await tunggu()
+  hasil.kelolaAspek =
+    adaStruktur &&
+    pratinjauArsip &&
+    tombolArsip?.disabled === true &&
+    /Komponen pertama/.test(el.textContent) &&
+    [...el.querySelectorAll('input')].some((i) => i.value === 'C.3.')
   await klik([...el.querySelectorAll('[role="tab"]')].find((b) => b.textContent === 'Bobot'))
   const kartuBobot = [...el.querySelectorAll('ul > li > button[aria-pressed="true"]')]
   hasil.bobotTertanam =
@@ -1759,6 +1786,33 @@ export async function ujiPanelSuper() {
     !/Kurikulum CPMK/.test(el.textContent) &&
     kartuBobot.length === 1 &&
     kartuBobot[0].textContent.includes(aspek2)
+  lepas()
+
+  // Input & Import Nilai: aspek CPMK Semester 1 bisa ditambah, diedit, diubah, dan dihapus dari halaman itu.
+  ;({ el, lepas } = await pasang('/admin/nilai?semester=1'))
+  const kartuSemester = () => [...el.querySelectorAll('section.card')].find((c) => /Aspek CPMK Semester 1/.test(c.textContent))
+  const tombolKartu = (teks) => [...(kartuSemester()?.querySelectorAll('button') ?? [])].filter((b) => b.textContent.trim() === teks)
+  const kodeSemester1 = getAspekList().filter((a) => a.semester === 1).map((a) => a.kode)
+  const barisLengkap =
+    kodeSemester1.length > 0 &&
+    kodeSemester1.every((kode) => kartuSemester()?.textContent.includes(kode)) &&
+    ['Edit', 'Ubah', 'Hapus'].every((x) => tombolKartu(x).length === kodeSemester1.length)
+  await klik(tombolKartu('Tambah aspek')[0])
+  await tunggu()
+  const pilihArea = [...kartuSemester().querySelectorAll('select')].find((s) => [...s.options].some((o) => o.value === 'B'))
+  const tambahDiSemester =
+    pilihArea?.value === 'A' &&
+    [...kartuSemester().querySelectorAll('input')].some((i) => i.value === 'A.5.') &&
+    !/Semester 2/.test([...kartuSemester().querySelectorAll('form select')].map((s) => s.textContent).join(' '))
+  await klik(tombolKartu('Hapus')[1])
+  await tunggu()
+  const hapusPratinjau =
+    /Bila disimpan, nilai \d+ dari \d+ mahasiswa berubah/.test(kartuSemester().textContent) &&
+    [...kartuSemester().querySelectorAll('button[type="submit"]')].some((b) => /Arsipkan aspek/.test(b.textContent) && b.disabled)
+  await klik(tombolKartu('Edit')[0])
+  await tunggu()
+  hasil.aspekSemester =
+    barisLengkap && tambahDiSemester && hapusPratinjau && kartuSemester().textContent.includes('Penilaian ' + kodeSemester1[0].replace(/\.$/, ''))
   lepas()
 
   // Akses Pengguna (tanpa server: daftar dari AKUN_LOKAL).
@@ -1822,6 +1876,22 @@ export async function ujiPanelSuper() {
   const barisSuper = barisAkun().find((li) => li.textContent.includes('super.admin@umn.ac.id'))
   hasil.superTidakBisaDicabut =
     barisAkun().length === 2 && Boolean(barisSuper) && !barisSuper.querySelector('button') && /Akun Anda/.test(barisSuper.textContent)
+  // Izin kelola data master: tombolnya hanya di baris admin biasa, butuh alasan, lalu lencananya muncul.
+  const barisAdmin = () => barisAkun().find((li) => li.textContent.includes('admin@umn.ac.id') && !li.textContent.includes('super.admin'))
+  await klik([...barisAdmin().querySelectorAll('button')].find((b) => /Beri izin data master/.test(b.textContent)))
+  const formIzin = barisAdmin().querySelector('form')
+  const izinMatiTanpaAlasan = formIzin?.querySelector('button[type="submit"]')?.disabled === true
+  await ketik(formIzin.querySelector('input'), 'Membantu menyiapkan angkatan 2027')
+  await act(async () => {
+    formIzin.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }))
+  })
+  await tunggu()
+  hasil.beriIzinMaster =
+    izinMatiTanpaAlasan &&
+    AKUN_LOKAL.find((a) => a.id === 21)?.kelolaMaster === true &&
+    /Izin data master/.test(barisAdmin()?.textContent ?? '') &&
+    /Cabut izin data master/.test(barisAdmin()?.textContent ?? '') &&
+    !/izin data master/i.test(barisSuper.textContent)
   await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /Mahasiswa/.test(b.textContent)))
   const semuaMhs = barisAkun().length
   const rincianMhs = /NIM 00000100001[\s\S]*Sistem Informasi[\s\S]*Angkatan 2025/.test(
@@ -1845,6 +1915,31 @@ export async function ujiPanelSuper() {
     /Akses dicabut/.test(barisMhs()?.textContent ?? '')
   lepas()
   AKUN_LOKAL.length = 0
+
+  // Data Master: admin tanpa izin hanya melihat penjelasan dan tidak punya menunya; super admin melihat ketiga bagian.
+  const menuDataMaster = () => [...el.querySelectorAll('a')].some((a) => a.getAttribute('href') === '/admin/data-master')
+  sesi(false)
+  ;({ el, lepas } = await pasang('/admin/data-master'))
+  hasil.dataMasterTanpaIzin =
+    /butuh izin dari Super Admin/.test(el.textContent) && !/Tambah angkatan/.test(el.textContent) && !menuDataMaster()
+  lepas()
+  sesi(true)
+  ;({ el, lepas } = await pasang('/admin/data-master'))
+  const tabDataMaster = [...el.querySelectorAll('[role="tab"]')].map((b) => b.textContent)
+  const adaMenuDataMaster = menuDataMaster()
+  await klik([...el.querySelectorAll('button')].find((b) => /Tambah angkatan/.test(b.textContent)))
+  const pratinjauAngkatan = /Akan dibuat: [0-9]{4} \(kode [0-9]{4}\)/.test(el.textContent)
+  await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /Fakultas & Prodi/.test(b.textContent)))
+  const bagianProdi = /Tambah fakultas/.test(el.textContent) && /Tambah program studi/.test(el.textContent)
+  await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /^Mahasiswa/.test(b.textContent)))
+  hasil.dataMasterSuper =
+    tabDataMaster.length === 3 &&
+    adaMenuDataMaster &&
+    pratinjauAngkatan &&
+    bagianProdi &&
+    Boolean(el.querySelector('input[type="search"]')) &&
+    /NIM tidak bisa diubah/.test(el.textContent)
+  lepas()
 
   // Pintu API yang belum dibuat (404) dikenali, supaya halaman bisa menjelaskannya.
   const lokalLama = globalThis.__SK5C_LOKAL__

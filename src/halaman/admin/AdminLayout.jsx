@@ -17,6 +17,7 @@ import {
   IconChevronRight,
   IconDocument,
   IconGauge,
+  IconGrid,
   IconInbox,
   IconList,
   IconMenu,
@@ -39,7 +40,8 @@ const RUJUKAN = 'Rujukan & catatan'
 
 // Halaman tempat bekerja sehari-hari di atas, bahan rujukan yang lebih jarang dibuka di bawah. Lencana hanya
 // untuk pekerjaan yang menunggu; angka ringkasan tidak diulang di menu.
-const menuAdmin = ({ koreksi, usulan, permintaan, superAdmin }) => [
+// Data Master hanya untuk super admin dan admin yang diberi izin olehnya (Akses Pengguna); server tetap memeriksa.
+const menuAdmin = ({ koreksi, usulan, permintaan, superAdmin, kelolaMaster }) => [
   { to: '/admin', label: 'Overview', icon: IconGauge, end: true, kelompok: KERJA },
   { to: '/admin/mahasiswa', label: 'Data Mahasiswa', icon: IconUsers, kelompok: KERJA },
   { to: '/admin/nilai', label: 'Input & Import Nilai', icon: IconUpload, lencana: koreksi || null, kelompok: KERJA },
@@ -56,6 +58,7 @@ const menuAdmin = ({ koreksi, usulan, permintaan, superAdmin }) => [
   { to: '/admin/angkatan', label: 'Angkatan', icon: IconCalendar, kelompok: KERJA },
   { to: '/admin/kurikulum', label: 'Kurikulum CPMK', icon: IconDocument, kelompok: RUJUKAN },
   { to: '/admin/program-studi', label: 'Program Studi', icon: IconBuilding, kelompok: RUJUKAN },
+  ...(kelolaMaster ? [{ to: '/admin/data-master', label: 'Data Master', icon: IconGrid, kelompok: RUJUKAN }] : []),
   { to: '/admin/log', label: 'Log Aktivitas', icon: IconList, kelompok: RUJUKAN },
 ]
 
@@ -144,6 +147,7 @@ export default function AdminLayout({ children }) {
     usulan: usulanMenunggu().length,
     permintaan: permintaanMenunggu().length,
     superAdmin,
+    kelolaMaster: superAdmin || user?.kelolaMaster === true,
   })
 
   return (

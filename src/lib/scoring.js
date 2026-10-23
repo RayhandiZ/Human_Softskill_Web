@@ -4,8 +4,8 @@ import {
   CLUSTER,
   FASE,
   aspekPunyaDraft,
+  aspekUntuk,
   getAspek,
-  getAspekList,
   getKomponen,
 } from './curriculum.js'
 
@@ -293,11 +293,13 @@ export function nilaiKumulatif(transkrip, sampai) {
 /* ------------------------------ transkrip utuh ---------------------------- */
 
 export function hitungTranskrip(student) {
-  const semua = getAspekList().map((a) => hitungAspek(student, a.id))
+  // Angkatan terkunci memakai susunan aspek saat ia dikunci; lihat aspekUntuk() di curriculum.js.
+  const semua = aspekUntuk(student).map((a) => hitungAspek(student, a.id))
   const perId = Object.fromEntries(semua.map((a) => [a.aspekId, a]))
 
+  // Anggota cluster diambil dari aspek mahasiswa ini, sama seperti area dan fase di bawah.
   const cluster = Object.fromEntries(
-    CLUSTER.map((c) => [c.id, { ...agregat(c.aspek.map((id) => perId[id])), cluster: c }]),
+    CLUSTER.map((c) => [c.id, { ...agregat(semua.filter((x) => x.aspek?.cluster === c.id)), cluster: c }]),
   )
   const area = Object.fromEntries(
     AREA.map((a) => [a.id, { ...agregat(semua.filter((x) => x.aspek?.area === a.id)), area: a }]),

@@ -576,17 +576,20 @@ function GrupAngka({ judul, kunci, label, isian, salah, onUbah }) {
 
 /* ---------------------------------- dampak --------------------------------- */
 
-function Dampak({ dampak }) {
+/** Dipakai juga KelolaAspek.jsx; `kosong` = kalimat bila tidak ada nilai yang berubah. */
+export function Dampak({ dampak, kosong = null }) {
   const t = useTeks()
   if (!dampak.berubah) {
     return (
       <p className="text-[13.5px] leading-relaxed text-ink-2">
-        {t('Tidak ada nilai mahasiswa yang berubah, karena aspek yang diubah belum punya nilai yang masuk. Bobot baru berlaku untuk nilai yang masuk berikutnya.')}
+        {kosong ??
+          t('Tidak ada nilai mahasiswa yang berubah, karena aspek yang diubah belum punya nilai yang masuk. Bobot baru berlaku untuk nilai yang masuk berikutnya.')}
       </p>
     )
   }
 
   const rincian = [
+    dampak.jadiBelumLengkap ? t('{n} menjadi belum lengkap', { n: dampak.jadiBelumLengkap }) : null,
     dampak.naik ? t('{n} naik huruf mutu', { n: dampak.naik }) : null,
     dampak.turun ? t('{n} turun huruf mutu', { n: dampak.turun }) : null,
     dampak.jadiLayak ? t('{n} menjadi berhak atas sertifikat', { n: dampak.jadiLayak }) : null,

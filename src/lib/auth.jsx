@@ -62,6 +62,7 @@ function sesiDari(akun) {
     return {
       role: 'admin',
       superAdmin: true,
+      kelolaMaster: true,
       email: akun.email,
       name: SUPER_ADMIN_PROFILE.name,
       initials: 'SA',
@@ -72,6 +73,8 @@ function sesiDari(akun) {
   if (akun.peran === 'admin') {
     return {
       role: 'admin',
+      // Izin kelola data master dari super admin; hanya menentukan tombol yang tampil, server tetap memeriksa.
+      kelolaMaster: akun.kelolaMaster === true,
       email: akun.email,
       name: ADMIN_PROFILE.name,
       initials: 'KH',

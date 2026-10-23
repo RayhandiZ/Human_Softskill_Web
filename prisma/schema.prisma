@@ -65,6 +65,7 @@ model Pengguna {
   passwordHash String
   peran        Peran
   aktif        Boolean    @default(true)
+  kelolaMaster Boolean    @default(false) // izin dari super admin untuk menambah/mengubah data master (src/server/akses.js)
   dibuat       DateTime   @default(now())
   mahasiswa    Mahasiswa?
   dosen        Dosen?
@@ -106,6 +107,7 @@ model Angkatan {
   status          StatusAngkatan @default(AKTIF)
   dikunciOleh     Int?                        // pengguna admin yang mengunci
   dikunciPada     DateTime?
+  aspekSaatKunci  Json?                       // ID aspek aktif saat dikunci; transkrip angkatan terkunci memakai daftar ini
   mahasiswa       Mahasiswa[]
 }
 
@@ -155,13 +157,17 @@ model Komponen {                // sumber daftar tugas tiap aspek; isi awalnya d
   nilai      Nilai[]
 }
 
-model Aspek {                   // teks aspek CPMK yang diubah dari layar; aspek tanpa baris memakai teks di curriculum.js
-  id         String    @id @db.VarChar(10)   // 'A1' ... 'C2'; struktur (kode, fase, area, cluster, semester) tetap di kode
+model Aspek {                   // aspek CPMK yang diubah atau ditambah dari layar; aspek tanpa baris memakai isi curriculum.js
+  id         String    @id @db.VarChar(10)   // 'A1' ... 'C2', atau aspek baru ('C3'); tidak pernah diganti
   nama       String
   deskripsi  String    @db.Text
   pdp        String?
   mk         String?
   engagement String?
+  kode       String?   @db.VarChar(10)       // kode tampilan 'A.1.'; kosong = bawaan curriculum.js
+  cluster    String?   @db.VarChar(10)       // 'CL1' ... 'CL6'; area dan fase ikut cluster; kosong = bawaan
+  semester   Int?                            // 1 ... 3; kosong = bawaan (A3/C1 dari config.js)
+  aktif      Boolean   @default(true)        // false = diarsipkan: tidak tampil, tidak dihitung, nilainya tetap
   diubahOleh Int?
   diubahPada DateTime?
 }

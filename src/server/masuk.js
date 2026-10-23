@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import { db } from './db.js'
 import { turunkanSemesterAktif } from '../lib/data.js'
 import { siapkanPeriode } from './kurikulum.js'
+import { punyaIzinMaster } from './api.js'
 
 const HASH_PENGGANTI = bcrypt.hashSync('bukan-kata-sandi-siapa-pun', 10)
 
@@ -62,6 +63,8 @@ function susunAkun(akun) {
     // Sama dengan penggunaDari() di api.js. Dibandingkan dengan akun.peran (nilai basis data),
     // karena `peran` di atas sudah diterjemahkan menjadi 'admin'.
     superAdmin: akun.peran === 'SUPER_ADMIN',
+    // Hanya untuk menampilkan atau menyembunyikan tombol data master; pintu API tetap memeriksanya sendiri.
+    kelolaMaster: punyaIzinMaster(akun),
     email: akun.email,
     mahasiswa: m
       ? {

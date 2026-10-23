@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js'
-import { KOMPONEN, aspekPunyaDraft, getAspek, getAspekList, getKomponenById } from './curriculum.js'
+import { KOMPONEN, aspekPunyaDraft, aspekUntuk, getAspek, getKomponenById } from './curriculum.js'
 import { hitungTranskrip, semesterDitutup } from './scoring.js'
 
 /* Aturan bisnis sebagai fungsi murni; halaman tidak boleh menyimpulkan sendiri. */
@@ -7,7 +7,7 @@ import { hitungTranskrip, semesterDitutup } from './scoring.js'
 /* ---- R1 & R2: gating semester, aspek terkunci tetap terlihat ------------- */
 
 export function aspekTerlihat(student) {
-  return getAspekList().map((a) => {
+  return aspekUntuk(student).map((a) => {
     const terkunci = a.semester > student.semesterAktif
     return {
       ...a,
@@ -188,8 +188,9 @@ export function statusDokumenTranskrip(student) {
 
 /* ---- 9.4: validasi import nilai ------------------------------------------ */
 
+/** Komponen aspek aktif dari satu sumber; komponen aspek yang diarsipkan tidak lagi menerima nilai. */
 export function komponenUntukSumber(sumber) {
-  return KOMPONEN.filter((x) => x.sumber === sumber)
+  return KOMPONEN.filter((x) => x.sumber === sumber && getAspek(x.aspekId)?.aktif !== false)
 }
 
 /** Penjaga utama R1: aspek dari semester yang belum tiba ditolak; semester lampau tetap diterima. */
@@ -209,6 +210,10 @@ export function validasiBarisImport(baris, { cariMahasiswa, sumber, semester = n
   else if (!komponen) alasan.push('Komponen ' + komponenId + ' tidak dikenal')
   else if (komponen.sumber !== sumber) {
     alasan.push('Komponen ' + komponenId + ' bukan milik sumber ' + sumber)
+  }
+
+  if (komponen && getAspek(komponen.aspekId)?.aktif === false) {
+    alasan.push('Aspek ' + getAspek(komponen.aspekId).kode + ' sudah diarsipkan, jadi komponen ' + komponenId + ' tidak menerima nilai')
   }
 
   if (mahasiswa && komponen) {

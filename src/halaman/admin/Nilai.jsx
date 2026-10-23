@@ -67,6 +67,7 @@ import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 import { CatatanPersetujuan, PesanMenunggu, usePerluPersetujuan } from './PermintaanTerkirim'
 import EditorPenilaian from './EditorPenilaian'
+import { AspekSemester } from './KelolaAspek'
 
 const PAGE_SIZE = 10
 const SEMESTER_KOSONG = '— Pilih semester —'
@@ -197,16 +198,18 @@ export default function Nilai() {
   const semester = semesterPilihan === SEMESTER_KOSONG ? null : Number(semesterPilihan.replace(/\D/g, ''))
   const angkatan = getAngkatan(angkatanId)
 
-  const aspekSemester = useMemo(() => (semester ? getAspekSemester(semester) : []), [semester])
+  // `versi` ikut supaya daftar aspek dan komponennya dihitung ulang sesudah aspek ditambah, diubah, atau dihapus
+  // (AspekSemester di bawah) atau penilaiannya diubah.
+  const aspekSemester = useMemo(() => (semester ? getAspekSemester(semester) : []), [semester, versi])
 
   const komponenSumber = useMemo(
     () => aspekSemester.flatMap((a) => getKomponen(a.id).filter((k) => k.sumber === sumber)),
-    [aspekSemester, sumber],
+    [aspekSemester, sumber, versi],
   )
 
   const aspekBerkomponen = useMemo(
     () => aspekSemester.filter((a) => getKomponen(a.id).some((k) => k.sumber === sumber)),
-    [aspekSemester, sumber],
+    [aspekSemester, sumber, versi],
   )
 
   const mahasiswa = useMemo(
@@ -357,6 +360,10 @@ export default function Nilai() {
           </p>
         </div>
       </Card>
+
+      {/* Aspek CPMK semester terpilih: tambah, edit, ubah, hapus (arsip). Tidak bergantung pada angkatan, jadi tampil
+          walau area kerja belum terbuka. Lihat src/halaman/admin/KelolaAspek.jsx dan README.md › Mengelola aspek CPMK. */}
+      {semester ? <AspekSemester semester={semester} /> : null}
 
       {/* Antrean koreksi bersifat global, tetapi tab-nya ada di area kerja yang bergantung pada semester dan
           angkatan. Dulu, dengan pilihan yang tidak membuka area kerja, antrean itu tidak bisa dicapai sama sekali. */}

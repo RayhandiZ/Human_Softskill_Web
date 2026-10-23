@@ -13,7 +13,13 @@
    dikembalikan persis seperti sebelumnya (atau dihapus bila dulu belum ada) dan catatan log-nya dihapus.
    Bagian akses mencabut lalu memulihkan akses akun mahasiswa sementara, lalu membuat tiga akun sementara tanpa
    data (admin, dosen, mahasiswa) lewat /api/akses/tambah dan menghapusnya lewat /api/akses/hapus; log-nya ikut
-   dihapus, begitu juga akunnya bila uji berhenti sebelum sempat menghapus. */
+   dihapus, begitu juga akunnya bila uji berhenti sebelum sempat menghapus.
+   Bagian data master memberi lalu mencabut izin kelola data master akun admin uji (nilai kolomnya dikembalikan
+   seperti semula), lalu membuat satu angkatan, satu fakultas, satu prodi, dan satu mahasiswa sementara lewat
+   /api/master/*; semuanya beserta catatan log-nya dihapus di akhir.
+   Bagian aspek CPMK menambah aspek sementara, mengubah strukturnya, dan mengarsipkan lalu memulihkan aspek B4 lewat
+   /api/kurikulum/aspek; tabel Aspek dikembalikan persis seperti sebelum bagian itu, komponen aspek sementara dan
+   catatan log-nya dihapus, dan penanda VERSI_KURIKULUM dinaikkan. */
 
 import 'dotenv/config'
 import bcrypt from 'bcryptjs'
@@ -43,11 +49,19 @@ import * as akses from '../app/api/akses/route.js'
 import * as ubahAkses from '../app/api/akses/ubah/route.js'
 import * as tambahAkses from '../app/api/akses/tambah/route.js'
 import * as hapusAkses from '../app/api/akses/hapus/route.js'
+import * as izinAkses from '../app/api/akses/izin/route.js'
+import * as masterAngkatan from '../app/api/master/angkatan/route.js'
+import * as masterProdi from '../app/api/master/prodi/route.js'
+import * as masterMahasiswa from '../app/api/master/mahasiswa/route.js'
+import * as aspekRoute from '../app/api/kurikulum/aspek/route.js'
+import { idAspekBaru } from '../src/lib/aspek.js'
+import { hitungTranskrip } from '../src/lib/scoring.js'
 import {
   KOMPONEN,
   KOMPONEN_BAWAAN,
   KUNCI_VERSI_KURIKULUM,
   KURIKULUM_TERPASANG,
+  getAspek,
   getAspekList,
   getIndikator,
   getKomponen,
@@ -89,6 +103,11 @@ const PINTU = {
   '/api/akses/ubah': ubahAkses,
   '/api/akses/tambah': tambahAkses,
   '/api/akses/hapus': hapusAkses,
+  '/api/akses/izin': izinAkses,
+  '/api/master/angkatan': masterAngkatan,
+  '/api/master/prodi': masterProdi,
+  '/api/master/mahasiswa': masterMahasiswa,
+  '/api/kurikulum/aspek': aspekRoute,
 }
 
 /* Akun Kemahasiswaan untuk uji. Bawaannya akun dari npm run db:seed; basis data yang akunnya sudah diganti
@@ -156,8 +175,29 @@ const HAPUS_UJI = {
   dosen: { email: 'uji.hapus.dosen.' + SUF + '@lecturer.umn.ac.id', nip: 'UJIHAPUS' + SUF },
   mahasiswa: { email: 'uji.hapus.mhs.' + SUF + '@student.umn.ac.id', nim: '99999' + SUF },
 }
+/* Bagian "data master": nama fakultas/prodi dan akun mahasiswa sementara (NIM wajib angka), id angkatan yang
+   dibuat uji, id log yang dibuatnya, dan izin admin uji sebelum disentuh (undefined = belum disentuh). */
+const FAK_UJI = 'Fakultas Uji ' + SUF
+const FAK_UJI_B = FAK_UJI + ' B'
+const PRODI_UJI = 'Prodi Uji ' + SUF
+const PRODI_UJI_B = PRODI_UJI + ' B'
+const EMAIL_DM = 'uji.master.' + SUF + '@student.umn.ac.id'
+const NIM_DM = '99998' + SUF
+const angkatanUji = []
+const logDataMasterUji = []
+let izinAdminAsli
+/* Bagian "aspek CPMK": seluruh baris Aspek sebelum disentuh (undefined = belum disentuh), ID aspek sementara (komponennya
+   dihapus di akhir), dan id log yang dibuat bagian itu. */
+let aspekAsliUji
+const aspekUji = []
+const logAspekUji = []
 /** Target baris LogAktivitas yang dibuat uji ini; ditambah id batch begitu diketahui. */
 const targetLog = [
+  'fakultas ' + FAK_UJI,
+  'fakultas ' + FAK_UJI_B,
+  'prodi ' + PRODI_UJI,
+  'prodi ' + PRODI_UJI_B,
+  'akun ' + EMAIL_DM,
   'angkatan ' + ANG_A,
   'angkatan ' + ANG_B,
   'mahasiswa ' + NIM,
@@ -253,7 +293,44 @@ async function pulihkanPeriode() {
   if (logPeriodeUji.length) await db.logAktivitas.deleteMany({ where: { id: { in: logPeriodeUji } } })
 }
 
+/** Izin admin uji dikembalikan, lalu mahasiswa, angkatan, prodi, fakultas, dan log buatan bagian data master dihapus. */
+async function pulihkanDataMaster() {
+  if (izinAdminAsli !== undefined) {
+    await db.pengguna.updateMany({ where: { email: EMAIL_ADMIN }, data: { kelolaMaster: izinAdminAsli } })
+    izinAdminAsli = undefined
+  }
+  await bersihkanMahasiswa(EMAIL_DM)
+  if (angkatanUji.length) await db.angkatan.deleteMany({ where: { id: { in: angkatanUji }, mahasiswa: { none: {} } } })
+  await db.programStudi.deleteMany({ where: { nama: { in: [PRODI_UJI, PRODI_UJI_B] }, mahasiswa: { none: {} }, dosen: { none: {} } } })
+  await db.fakultas.deleteMany({ where: { nama: { in: [FAK_UJI, FAK_UJI_B] }, prodi: { none: {} } } })
+  if (logDataMasterUji.length) await db.logAktivitas.deleteMany({ where: { id: { in: logDataMasterUji } } })
+}
+
+/**
+ * Tabel Aspek dikembalikan persis seperti sebelum bagian aspek CPMK (baris baru dihapus, baris lama ditulis ulang),
+ * komponen aspek sementara dan log-nya dihapus, lalu versi dinaikkan. Dijalankan sebelum pulihkanPenilaian(), yang
+ * mengembalikan teks C2 ke keadaan sebelum bagian penilaian.
+ */
+async function pulihkanAspekUji() {
+  if (aspekAsliUji !== undefined) {
+    const asli = new Map(aspekAsliUji.map((a) => [a.id, a]))
+    for (const a of await db.aspek.findMany()) {
+      if (!asli.has(a.id)) await db.aspek.delete({ where: { id: a.id } })
+      else {
+        const { id, ...data } = asli.get(a.id)
+        await db.aspek.update({ where: { id }, data })
+      }
+    }
+    aspekAsliUji = undefined
+    await naikkanVersi()
+  }
+  if (aspekUji.length) await db.komponen.deleteMany({ where: { aspekId: { in: aspekUji } } })
+  if (logAspekUji.length) await db.logAktivitas.deleteMany({ where: { id: { in: logAspekUji } } })
+}
+
 async function bersihkan() {
+  await pulihkanAspekUji()
+  await pulihkanDataMaster()
   await pulihkanPeriode()
   await pulihkanPenilaian()
   await pulihkanBobot()
@@ -1110,8 +1187,380 @@ try {
     cek('akun ' + peran + ' yang sudah dihapus tidak ditemukan lagi (404)', (await hapus(sa, { id, alasan: ALASAN_HAPUS })).status === 404)
   }
 
+  /* ------------------------------ izin dan data master ------------------------------ */
+  garis('18. IZIN DAN DATA MASTER')
+  const akunAdmin = await db.pengguna.findUnique({ where: { email: EMAIL_ADMIN } })
+  izinAdminAsli = akunAdmin.kelolaMaster
+  // Mulai dari keadaan tanpa izin, apa pun isi basis datanya; nilai aslinya dikembalikan di bersihkan().
+  if (akunAdmin.kelolaMaster) await db.pengguna.update({ where: { id: akunAdmin.id }, data: { kelolaMaster: false } })
+  const izin = (pelaku, isi) => pelaku('/api/akses/izin', { metode: 'POST', isi })
+  const kirimMaster = (pelaku, jenis, isi) => pelaku('/api/master/' + jenis, { metode: 'POST', isi })
+  /** Log terbaru untuk aksi dan target itu; id-nya dicatat supaya dihapus di bersihkan(). */
+  const logBaru = async (aksi, target) => {
+    const l = await db.logAktivitas.findFirst({ where: { aksi, target }, orderBy: { id: 'desc' } })
+    if (l) logDataMasterUji.push(l.id)
+    return l
+  }
+  const ALASAN_DM = 'Uji otomatis data master'
+
+  cek('sesi admin tanpa izin: kelolaMaster false', (await admin('/api/sesi')).isi.akun?.kelolaMaster === false)
+  cek(
+    'admin tanpa izin tidak boleh menambah angkatan (403)',
+    (await kirimMaster(admin, 'angkatan', { aksi: 'tambah', tahun: 2026, semester: 'Ganjil' })).status === 403,
+  )
+  cek('dosen tidak boleh mengubah prodi (403)', (await kirimMaster(dosen, 'prodi', { jenis: 'prodi', aksi: 'tambah' })).status === 403)
+  cek('mahasiswa tidak boleh mengubah data mahasiswa (403)', (await kirimMaster(mhs, 'mahasiswa', { aksi: 'ubah', nim: NIM })).status === 403)
+  cek('admin tidak boleh memberi izin (403)', (await izin(admin, { id: akunAdmin.id, aktif: true, alasan: ALASAN_DM })).status === 403)
+  cek('izin tanpa alasan cukup ditolak (400)', (await izin(sa, { id: akunAdmin.id, aktif: true, alasan: 'pendek' })).status === 400)
+  cek('izin untuk super admin ditolak (403)', (await izin(sa, { id: idSA, aktif: true, alasan: ALASAN_DM })).status === 403)
+  cek('izin untuk akun mahasiswa ditolak (403)', (await izin(sa, { id: akunUji.id, aktif: true, alasan: ALASAN_DM })).status === 403)
+  const beri = await izin(sa, { id: akunAdmin.id, aktif: true, alasan: ALASAN_DM })
+  cek('super admin memberi izin', beri.status === 200 && beri.isi.akun?.kelolaMaster === true, JSON.stringify(beri.isi))
+  const logBeri = await logBaru('UBAH_IZIN', 'akun ' + EMAIL_ADMIN)
+  cek(
+    'log UBAH_IZIN mencatat pelaku, sebelum, sesudah, dan alasan',
+    logBeri?.aktorId === idSA &&
+      logBeri.rincian?.sebelum === false &&
+      logBeri.rincian.sesudah === true &&
+      logBeri.rincian.alasan === ALASAN_DM,
+    JSON.stringify(logBeri?.rincian ?? null),
+  )
+  const jumlahLogIzin = await db.logAktivitas.count({ where: { aksi: 'UBAH_IZIN' } })
+  await izin(sa, { id: akunAdmin.id, aktif: true, alasan: ALASAN_DM })
+  cek('memberi izin yang sudah ada tidak mencatat log baru', (await db.logAktivitas.count({ where: { aksi: 'UBAH_IZIN' } })) === jumlahLogIzin)
+  cek('sesi admin sesudah diberi izin: kelolaMaster true', (await admin('/api/sesi')).isi.akun?.kelolaMaster === true)
+  const daftarIzin = (await sa('/api/akses', { metode: 'POST', isi: {} })).isi.akun ?? []
+  cek('daftar Akses Pengguna menandai izin admin', daftarIzin.find((a) => a.id === akunAdmin.id)?.kelolaMaster === true)
+
+  // Angkatan: tahun dan semester masuk yang belum ada, paling jauh satu tahun di depan periode aktif.
+  const batasAtas = Number(String(PERIODE_AKTIF.tahun).slice(0, 4)) + 1
+  const adaAngkatan = new Set((await db.angkatan.findMany({ select: { id: true } })).map((a) => a.id))
+  let pilihAngkatan = null
+  for (let t = batasAtas; t >= 2000 && !pilihAngkatan; t--) {
+    if (!adaAngkatan.has(String(t))) pilihAngkatan = { tahun: t, semester: 'Ganjil', id: String(t), label: String(t) }
+    else if (!adaAngkatan.has(t + 'B')) pilihAngkatan = { tahun: t, semester: 'Genap', id: t + 'B', label: t + ' Genap' }
+  }
+  cek(
+    'tahun di luar batas ditolak (400)',
+    (await kirimMaster(admin, 'angkatan', { aksi: 'tambah', tahun: batasAtas + 1, semester: 'Ganjil' })).status === 400,
+  )
+  cek(
+    'semester masuk tidak sah ditolak (400)',
+    (await kirimMaster(admin, 'angkatan', { aksi: 'tambah', tahun: pilihAngkatan.tahun, semester: 'Pendek' })).status === 400,
+  )
+  cek('aksi selain tambah/ubah ditolak (400)', (await kirimMaster(admin, 'angkatan', { aksi: 'hapus', id: angkatan.id })).status === 400)
+  const tambahAng = await kirimMaster(admin, 'angkatan', { aksi: 'tambah', tahun: pilihAngkatan.tahun, semester: pilihAngkatan.semester })
+  if (tambahAng.status === 200) angkatanUji.push(pilihAngkatan.id)
+  const barisAng = await db.angkatan.findUnique({ where: { id: pilihAngkatan.id } })
+  cek(
+    'admin berizin menambah angkatan ' + pilihAngkatan.label + ': kode, label, dan periode dibentuk server',
+    tambahAng.status === 200 &&
+      barisAng?.label === pilihAngkatan.label &&
+      barisAng.tahun === pilihAngkatan.tahun &&
+      barisAng.periodeTahun === pilihAngkatan.tahun + '/' + (pilihAngkatan.tahun + 1) &&
+      barisAng.periodeSemester === (pilihAngkatan.semester === 'Genap' ? 'GENAP' : 'GANJIL') &&
+      barisAng.status === 'AKTIF',
+    JSON.stringify({ isi: tambahAng.isi, barisAng }),
+  )
+  cek('jawaban membawa data master terbaru', tambahAng.isi.master?.angkatan?.some((a) => a.id === pilihAngkatan.id))
+  const logAng = await logBaru('TAMBAH_ANGKATAN', 'angkatan ' + pilihAngkatan.label)
+  cek('log TAMBAH_ANGKATAN atas nama admin', logAng?.aktorId === akunAdmin.id, JSON.stringify(logAng))
+  cek(
+    'angkatan kembar ditolak (409)',
+    (await kirimMaster(admin, 'angkatan', { aksi: 'tambah', tahun: pilihAngkatan.tahun, semester: pilihAngkatan.semester })).status === 409,
+  )
+  const LABEL_UJI = 'Uji Label ' + SUF
+  cek(
+    'ubah label tanpa alasan ditolak (400)',
+    (await kirimMaster(admin, 'angkatan', { aksi: 'ubah', id: pilihAngkatan.id, label: LABEL_UJI })).status === 400,
+  )
+  cek(
+    'label yang sudah dipakai angkatan lain ditolak (409)',
+    (await kirimMaster(admin, 'angkatan', { aksi: 'ubah', id: pilihAngkatan.id, label: angkatan.label, alasan: ALASAN_DM })).status === 409,
+  )
+  cek(
+    'angkatan terkunci tidak bisa diubah (409)',
+    (await kirimMaster(admin, 'angkatan', { aksi: 'ubah', id: ANG_A, label: 'Uji Lain ' + SUF, alasan: ALASAN_DM })).status === 409,
+  )
+  const ubahAng = await kirimMaster(admin, 'angkatan', { aksi: 'ubah', id: pilihAngkatan.id, label: LABEL_UJI, alasan: ALASAN_DM })
+  const logUbahAng = await logBaru('UBAH_ANGKATAN', 'angkatan ' + pilihAngkatan.label)
+  cek(
+    'ubah label angkatan tersimpan dan tercatat beserta alasannya',
+    ubahAng.status === 200 &&
+      (await db.angkatan.findUnique({ where: { id: pilihAngkatan.id } }))?.label === LABEL_UJI &&
+      logUbahAng?.rincian?.sesudah?.label === LABEL_UJI &&
+      logUbahAng.rincian.alasan === ALASAN_DM,
+    JSON.stringify(ubahAng.isi),
+  )
+
+  // Fakultas dan prodi, dikenali dari namanya.
+  const tambahFak = await kirimMaster(admin, 'prodi', { jenis: 'fakultas', aksi: 'tambah', nama: FAK_UJI })
+  await logBaru('TAMBAH_FAKULTAS', 'fakultas ' + FAK_UJI)
+  cek('admin berizin menambah fakultas', tambahFak.status === 200 && Boolean(await db.fakultas.findUnique({ where: { nama: FAK_UJI } })))
+  cek('fakultas kembar ditolak (409)', (await kirimMaster(admin, 'prodi', { jenis: 'fakultas', aksi: 'tambah', nama: FAK_UJI })).status === 409)
+  cek('jenis selain fakultas/prodi ditolak (400)', (await kirimMaster(admin, 'prodi', { jenis: 'kampus', aksi: 'tambah', nama: 'X' })).status === 400)
+  cek(
+    'prodi berjenjang tidak sah ditolak (400)',
+    (await kirimMaster(admin, 'prodi', { jenis: 'prodi', aksi: 'tambah', nama: PRODI_UJI, jenjang: 'S9', fakultas: FAK_UJI })).status === 400,
+  )
+  cek(
+    'prodi di fakultas yang tidak ada ditolak (404)',
+    (await kirimMaster(admin, 'prodi', { jenis: 'prodi', aksi: 'tambah', nama: PRODI_UJI, jenjang: 'S1', fakultas: 'Tidak Ada ' + SUF })).status === 404,
+  )
+  const tambahProdi = await kirimMaster(admin, 'prodi', { jenis: 'prodi', aksi: 'tambah', nama: PRODI_UJI, jenjang: 'S1', fakultas: FAK_UJI })
+  await logBaru('TAMBAH_PRODI', 'prodi ' + PRODI_UJI)
+  cek(
+    'admin berizin menambah prodi, langsung ada di data master',
+    tambahProdi.status === 200 &&
+      tambahProdi.isi.master?.fakultas?.find((f) => f.name === FAK_UJI)?.programs?.some((p) => p.nama === PRODI_UJI),
+    JSON.stringify(tambahProdi.isi.galat ?? ''),
+  )
+  cek(
+    'prodi kembar ditolak (409)',
+    (await kirimMaster(admin, 'prodi', { jenis: 'prodi', aksi: 'tambah', nama: prodi.nama, jenjang: 'S1', fakultas: FAK_UJI })).status === 409,
+  )
+  const ubahProdi = await kirimMaster(admin, 'prodi', {
+    jenis: 'prodi',
+    aksi: 'ubah',
+    nama: PRODI_UJI,
+    namaBaru: PRODI_UJI_B,
+    jenjang: 'D3',
+    alasan: ALASAN_DM,
+  })
+  const logUbahProdi = await logBaru('UBAH_PRODI', 'prodi ' + PRODI_UJI)
+  cek(
+    'ubah prodi: nama dan jenjang berubah, log hanya memuat yang berubah',
+    ubahProdi.status === 200 &&
+      (await db.programStudi.findUnique({ where: { nama: PRODI_UJI_B } }))?.jenjang === 'D3' &&
+      logUbahProdi?.rincian?.sebelum?.nama === PRODI_UJI &&
+      logUbahProdi.rincian.sesudah?.jenjang === 'D3' &&
+      !('fakultas' in (logUbahProdi.rincian.sesudah ?? {})),
+    JSON.stringify(logUbahProdi?.rincian ?? ubahProdi.isi),
+  )
+  const ubahFak = await kirimMaster(admin, 'prodi', { jenis: 'fakultas', aksi: 'ubah', nama: FAK_UJI, namaBaru: FAK_UJI_B, alasan: ALASAN_DM })
+  await logBaru('UBAH_FAKULTAS', 'fakultas ' + FAK_UJI)
+  cek(
+    'ganti nama fakultas, prodinya ikut tersambung',
+    ubahFak.status === 200 &&
+      (await db.programStudi.findUnique({ where: { nama: PRODI_UJI_B }, include: { fakultas: true } }))?.fakultas.nama === FAK_UJI_B,
+  )
+
+  // Mahasiswa: tambah lewat tambahAkun, ubah tanpa NIM; pindah prodi/angkatan hanya selama belum punya data penilaian.
+  const isiMhsDM = { aksi: 'tambah', email: EMAIL_DM, sandi: 'umn12345', nama: 'Mahasiswa Uji Master', nim: NIM_DM, prodi: PRODI_UJI_B }
+  cek(
+    'mahasiswa baru ke angkatan terkunci ditolak (409)',
+    (await kirimMaster(admin, 'mahasiswa', { ...isiMhsDM, angkatanId: ANG_A })).status === 409,
+  )
+  const tambahMhs = await kirimMaster(admin, 'mahasiswa', { ...isiMhsDM, angkatanId: pilihAngkatan.id })
+  await logBaru('TAMBAH_AKUN', 'akun ' + EMAIL_DM)
+  cek('admin berizin menambah mahasiswa', tambahMhs.status === 200 && tambahMhs.isi.akun?.nim === NIM_DM, JSON.stringify(tambahMhs.isi))
+  const pindahMhs = await kirimMaster(admin, 'mahasiswa', {
+    aksi: 'ubah',
+    nim: NIM_DM,
+    nama: 'Mahasiswa Uji Master Dua',
+    prodi: prodi.nama,
+    angkatanId: angkatan.id,
+    alasan: ALASAN_DM,
+  })
+  const logPindah = await logBaru('UBAH_AKUN', 'akun ' + EMAIL_DM)
+  const barisMhsDM = await db.mahasiswa.findUnique({ where: { nim: NIM_DM } })
+  cek(
+    'mahasiswa tanpa nilai bisa diganti nama, prodi, dan angkatannya; log memuat NIM dan sebelum/sesudah',
+    pindahMhs.status === 200 &&
+      barisMhsDM?.nama === 'Mahasiswa Uji Master Dua' &&
+      barisMhsDM.prodiId === prodi.id &&
+      barisMhsDM.angkatanId === angkatan.id &&
+      logPindah?.rincian?.nim === NIM_DM &&
+      logPindah.rincian.sebelum?.prodi === PRODI_UJI_B &&
+      logPindah.rincian.sesudah?.prodi === prodi.nama,
+    JSON.stringify(pindahMhs.isi),
+  )
+  const pindahBernilai = await kirimMaster(admin, 'mahasiswa', { aksi: 'ubah', nim: NIM, prodi: PRODI_UJI_B, alasan: ALASAN_DM })
+  cek(
+    'mahasiswa yang sudah punya nilai tidak bisa pindah prodi (409), pesannya menyebut nilainya',
+    pindahBernilai.status === 409 && /\d+ nilai/.test(pindahBernilai.isi.galat ?? ''),
+    JSON.stringify(pindahBernilai.isi),
+  )
+  cek(
+    'email yang sudah dipakai akun lain ditolak (409)',
+    (await kirimMaster(admin, 'mahasiswa', { aksi: 'ubah', nim: NIM_DM, email: EMAIL, alasan: ALASAN_DM })).status === 409,
+  )
+  cek(
+    'NIM yang tidak terdaftar ditolak (404)',
+    (await kirimMaster(admin, 'mahasiswa', { aksi: 'ubah', nim: '00000000000', nama: 'X', alasan: ALASAN_DM })).status === 404,
+  )
+
+  // Mencabut izin langsung berlaku tanpa masuk ulang; super admin selalu boleh.
+  const cabutIzin = await izin(sa, { id: akunAdmin.id, aktif: false, alasan: ALASAN_DM })
+  await logBaru('UBAH_IZIN', 'akun ' + EMAIL_ADMIN)
+  cek('super admin mencabut izin', cabutIzin.status === 200 && cabutIzin.isi.akun?.kelolaMaster === false)
+  const isiBalikFak = { jenis: 'fakultas', aksi: 'ubah', nama: FAK_UJI_B, namaBaru: FAK_UJI, alasan: ALASAN_DM }
+  cek('sesudah dicabut, admin langsung ditolak tanpa masuk ulang (403)', (await kirimMaster(admin, 'prodi', isiBalikFak)).status === 403)
+  const saLangsung = await kirimMaster(sa, 'prodi', isiBalikFak)
+  await logBaru('UBAH_FAKULTAS', 'fakultas ' + FAK_UJI_B)
+  cek('super admin selalu boleh mengelola data master', saLangsung.status === 200, JSON.stringify(saLangsung.isi))
+
+  /* ------------------------------ aspek CPMK ------------------------------ */
+  garis('19. ASPEK CPMK (TAMBAH, STRUKTUR, ARSIP)')
+  aspekAsliUji = await db.aspek.findMany()
+  const ALASAN_ASPEK = 'Uji otomatis aspek CPMK'
+  const KOMPONEN_UJI = [{ label: 'Tugas uji aspek', sumber: 'MK', jenis: 'TUGAS', ranah: 'kognitif', status: 'resmi' }]
+  const kirimAspek = (pelaku, isi) =>
+    pelaku('/api/kurikulum/aspek', { metode: 'POST', isi: { versi: KURIKULUM_TERPASANG.versi, ...isi } })
+  /** Log terbaru untuk aksi itu pada aspek `id`; id-nya dicatat supaya dihapus di bersihkan(). */
+  const logAspek = async (aksi, id) => {
+    const l = await db.logAktivitas.findFirst({ where: { aksi, target: { startsWith: 'aspek ' + id + ' ' } }, orderBy: { id: 'desc' } })
+    if (l) logAspekUji.push(l.id)
+    return l
+  }
+  /** Transkrip mahasiswa uji (angkatan berjalan) dan NIM2 (angkatan ANG_A, terkunci di bagian 8) dari /api/data. */
+  const transkripUji = async () => {
+    const semua = (await sa('/api/data')).isi.mahasiswa ?? []
+    const cari = (nim) => semua.find((m) => m.nim === nim)
+    return { aktif: hitungTranskrip(cari(NIM)), kunci: hitungTranskrip(cari(NIM2)), mhs2: cari(NIM2) }
+  }
+
+  const awalAspek = await transkripUji()
+  cek(
+    'angkatan terkunci menyimpan susunan aspek saat dikunci',
+    JSON.stringify(awalAspek.mhs2?.aspekKunci) === JSON.stringify(getAspekList().map((a) => a.id)),
+    JSON.stringify(awalAspek.mhs2?.aspekKunci),
+  )
+  const totalAwal = awalAspek.aktif.akhir.aspekTotal
+  const isiTambah = {
+    aksi: 'tambah',
+    cluster: 'CL6',
+    semester: 1,
+    nama: 'Aspek Uji ' + SUF,
+    deskripsi: 'Deskripsi aspek uji otomatis.',
+    komponen: KOMPONEN_UJI,
+    alasan: ALASAN_ASPEK,
+  }
+  const kodeUji = 'C.' + (90 + (Number(SUF) % 9)) + '.'
+  cek('dosen tidak boleh mengelola aspek (403)', (await kirimAspek(dosen, { ...isiTambah, kode: kodeUji })).status === 403)
+  cek('mahasiswa tidak boleh mengelola aspek (403)', (await kirimAspek(mhs, { ...isiTambah, kode: kodeUji })).status === 403)
+  cek('versi kurikulum basi ditolak (409)', (await kirimAspek(sa, { ...isiTambah, kode: kodeUji, versi: -1 })).status === 409)
+  cek('aspek baru tanpa komponen ditolak (400)', (await kirimAspek(sa, { ...isiTambah, kode: kodeUji, komponen: [] })).status === 400)
+  cek('kode yang sudah dipakai ditolak (400)', (await kirimAspek(sa, { ...isiTambah, kode: 'A.1.' })).status === 400)
+  cek('cluster tidak dikenal ditolak (400)', (await kirimAspek(sa, { ...isiTambah, kode: kodeUji, cluster: 'CL9' })).status === 400)
+  cek('alasan kurang dari 10 karakter ditolak (400)', (await kirimAspek(sa, { ...isiTambah, kode: kodeUji, alasan: 'pendek' })).status === 400)
+
+  // Super admin menambah aspek: langsung tersimpan beserta komponen pertamanya.
+  const idAspekUji = idAspekBaru('CL6')
+  const versiSebelum = KURIKULUM_TERPASANG.versi
+  const tambahAsp = await kirimAspek(sa, { ...isiTambah, kode: kodeUji })
+  if (tambahAsp.status === 200) aspekUji.push(idAspekUji)
+  const barisAspekUji = await db.aspek.findUnique({ where: { id: idAspekUji } })
+  const komponenAspekUji = await db.komponen.findMany({ where: { aspekId: idAspekUji } })
+  cek(
+    'super admin menambah aspek ' + idAspekUji + ' (' + kodeUji + '): baris aspek dan komponen pertamanya tersimpan',
+    tambahAsp.status === 200 &&
+      tambahAsp.isi.aspek?.id === idAspekUji &&
+      barisAspekUji?.cluster === 'CL6' &&
+      barisAspekUji.semester === 1 &&
+      barisAspekUji.kode === kodeUji &&
+      barisAspekUji.aktif === true &&
+      komponenAspekUji.length === 1 &&
+      komponenAspekUji[0].id === idAspekUji + '-MK-B1',
+    JSON.stringify(tambahAsp.isi.galat ?? barisAspekUji),
+  )
+  cek('versi kurikulum naik dan jawaban membawa kurikulum baru', KURIKULUM_TERPASANG.versi === versiSebelum + 1 && Boolean(tambahAsp.isi.kurikulum?.aspek?.[idAspekUji]))
+  const logTambahAsp = await logAspek('TAMBAH_ASPEK', idAspekUji)
+  cek('log TAMBAH_ASPEK mencatat pelaku, alasan, dan komponennya', logTambahAsp?.rincian?.alasan === ALASAN_ASPEK && logTambahAsp.rincian.ditambah?.length === 1)
+  const sesudahTambah = await transkripUji()
+  cek(
+    'mahasiswa angkatan berjalan: aspek baru ikut dihitung dan masih kosong',
+    sesudahTambah.aktif.akhir.aspekTotal === totalAwal + 1 && sesudahTambah.aktif.aspekById[idAspekUji]?.komponenKosong.length === 1,
+    sesudahTambah.aktif.akhir.aspekTotal,
+  )
+  cek(
+    'angkatan terkunci: aspek baru tidak ikut, jumlah aspek tetap',
+    sesudahTambah.kunci.akhir.aspekTotal === awalAspek.kunci.akhir.aspekTotal && !sesudahTambah.kunci.aspekById[idAspekUji],
+  )
+
+  // Ubah struktur: kode, semester, cluster (area ikut cluster); ID tetap.
+  const kodeUji2 = 'B.' + (90 + (Number(SUF) % 9)) + '.'
+  cek('ubah tanpa perubahan ditolak (400)', (await kirimAspek(sa, { aksi: 'ubah', id: idAspekUji, kode: kodeUji, alasan: ALASAN_ASPEK })).status === 400)
+  const ubahAsp = await kirimAspek(sa, { aksi: 'ubah', id: idAspekUji, kode: kodeUji2, semester: 2, cluster: 'CL5', alasan: ALASAN_ASPEK })
+  const logUbahAsp = await logAspek('UBAH_ASPEK', idAspekUji)
+  cek(
+    'ubah struktur: kode, semester, dan cluster tersimpan; area mengikuti cluster; log sebelum/sesudah',
+    ubahAsp.status === 200 &&
+      getAspek(idAspekUji)?.kode === kodeUji2 &&
+      getAspek(idAspekUji).semester === 2 &&
+      getAspek(idAspekUji).area === 'B' &&
+      logUbahAsp?.rincian?.sebelum?.cluster === 'CL6' &&
+      logUbahAsp.rincian.sesudah?.cluster === 'CL5',
+    JSON.stringify(ubahAsp.isi.galat ?? getAspek(idAspekUji)),
+  )
+
+  // Admin biasa mengarsipkan aspek: selalu menjadi permintaan, aspeknya belum berubah sampai disetujui.
+  const ajukanArsip = await kirimAspek(admin, { aksi: 'arsipkan', id: idAspekUji, alasan: ALASAN_ASPEK })
+  if (ajukanArsip.isi?.permintaan?.id) {
+    permintaanUji.push(nomorP(ajukanArsip))
+    targetLog.push('permintaan ' + ajukanArsip.isi.permintaan.id)
+  }
+  cek(
+    'admin biasa mengarsipkan: menjadi permintaan KELOLA_ASPEK, aspek masih aktif',
+    ajukanArsip.status === 200 && ajukanArsip.isi.menunggu === true && getAspek(idAspekUji)?.aktif === true,
+    JSON.stringify(ajukanArsip.isi),
+  )
+  const setujuArsip = await sa('/api/persetujuan/keputusan', {
+    metode: 'POST',
+    isi: { id: ajukanArsip.isi.permintaan?.id, keputusan: 'disetujui' },
+  })
+  await logAspek('ARSIPKAN_ASPEK', idAspekUji)
+  cek(
+    'super admin menyetujui: aspek diarsipkan, kurikulum baru dibawa pulang',
+    setujuArsip.isi.status === 'disetujui' && getAspek(idAspekUji)?.aktif === false && Boolean(setujuArsip.isi.kurikulum),
+    JSON.stringify(setujuArsip.isi),
+  )
+  cek('aspek yang diarsipkan tidak bisa diubah lagi (400)', (await kirimAspek(sa, { aksi: 'ubah', id: idAspekUji, semester: 1, alasan: ALASAN_ASPEK })).status === 400)
+  cek('mengarsipkan dua kali ditolak (400)', (await kirimAspek(sa, { aksi: 'arsipkan', id: idAspekUji, alasan: ALASAN_ASPEK })).status === 400)
+
+  // Arsipkan aspek bawaan B4: angkatan berjalan berhenti menghitungnya, angkatan terkunci tetap menghitungnya.
+  const arsipB4 = await kirimAspek(sa, { aksi: 'arsipkan', id: 'B4', alasan: ALASAN_ASPEK })
+  await logAspek('ARSIPKAN_ASPEK', 'B4')
+  const sesudahB4 = await transkripUji()
+  cek(
+    'arsip B4: angkatan berjalan tidak lagi menghitung B4',
+    arsipB4.status === 200 && !sesudahB4.aktif.aspekById.B4 && sesudahB4.aktif.akhir.aspekTotal === totalAwal - 1,
+    JSON.stringify(arsipB4.isi.galat ?? sesudahB4.aktif.akhir.aspekTotal),
+  )
+  cek(
+    'arsip B4: angkatan terkunci tetap menghitung B4 dengan nilai akhir yang sama',
+    Boolean(sesudahB4.kunci.aspekById.B4) && sesudahB4.kunci.akhir.nilai === awalAspek.kunci.akhir.nilai,
+    JSON.stringify([sesudahB4.kunci.akhir.nilai, awalAspek.kunci.akhir.nilai]),
+  )
+  const komponenB4 = getKomponen('B4')[0]
+  const imporB4 = await sa('/api/nilai', {
+    metode: 'POST',
+    isi: {
+      sumber: komponenB4.sumber,
+      semester: 3,
+      angkatanId: angkatan.id,
+      cara: 'import',
+      entri: [{ nim: NIM, komponenId: komponenB4.id, nilai: 80 }],
+    },
+  })
+  cek('nilai ke komponen aspek arsip ditolak (400)', imporB4.status === 400 && /diarsipkan/.test(imporB4.isi.galat ?? ''), JSON.stringify(imporB4.isi))
+  const penilaianB4 = await sa('/api/kurikulum/penilaian', {
+    metode: 'POST',
+    isi: { versi: KURIKULUM_TERPASANG.versi, aspekId: 'B4', aspek: {}, komponen: [] },
+  })
+  cek('editor penilaian menolak aspek arsip (409)', penilaianB4.status === 409, JSON.stringify(penilaianB4.isi))
+  const pulihB4 = await kirimAspek(sa, { aksi: 'pulihkan', id: 'B4', alasan: ALASAN_ASPEK })
+  await logAspek('PULIHKAN_ASPEK', 'B4')
+  cek(
+    'pulihkan B4: kembali dihitung untuk angkatan berjalan',
+    pulihB4.status === 200 && Boolean((await transkripUji()).aktif.aspekById.B4),
+    JSON.stringify(pulihB4.isi.galat ?? ''),
+  )
+  const logAsp = await sa('/api/log', { metode: 'POST', isi: { jenis: 'aktivitas', aksi: 'ARSIPKAN_ASPEK' } })
+  cek('Log Aktivitas bisa disaring dengan aksi ARSIPKAN_ASPEK', logAsp.status === 200 && logAsp.isi.baris?.length >= 2, JSON.stringify(logAsp.isi.galat ?? ''))
+
   /* ------------------------------ keluar ------------------------------ */
-  garis('18. KELUAR')
+  garis('20. KELUAR')
   await sa('/api/keluar', { metode: 'POST' })
   await mhs('/api/keluar', { metode: 'POST' })
   cek('setelah keluar, sesi tidak berlaku', (await mhs('/api/sesi')).status === 401)

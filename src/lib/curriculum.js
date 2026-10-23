@@ -64,6 +64,8 @@ export const AREA = [
 
 /* ---------------------------------- cluster ------------------------------- */
 
+/* `aspek` = aspek aktif di cluster itu. Isi di bawah adalah bawaan; pasangCluster() mengisinya ulang dari
+   aspek.cluster setiap kali susunan aspek berubah (aspek ditambah, dipindah cluster, atau diarsipkan). */
 export const CLUSTER = [
   { id: 'CL1', nama: 'Ethical Foundation & Self-Discipline', area: 'A', aspek: ['A1', 'A3'] },
   { id: 'CL2', nama: 'Emotional Self-Regulation', area: 'A', aspek: ['A2'] },
@@ -230,26 +232,99 @@ function resolveSemester(aspek) {
   return kunci ? CONFIG[kunci] : aspek.semester
 }
 
-/** Teks aspek yang boleh diubah dari layar (tabel Aspek); struktur aspek tetap di kode. */
+/** Teks aspek yang boleh diubah dari layar (tabel Aspek). */
 export const BIDANG_ASPEK = ['nama', 'deskripsi', 'pdp', 'mk', 'engagement']
+/** Struktur aspek yang boleh diubah dari layar (tabel Aspek): kode tampilan, cluster (area dan fase ikut), semester. */
+export const BIDANG_STRUKTUR = ['kode', 'cluster', 'semester']
 
-/* Timpaan teks per aspek dari basis data ({ A1: { nama, deskripsi, ... } }), diisi isiKurikulum(). */
+/* Timpaan per aspek dari basis data, diisi isiKurikulum(): teks (BIDANG_ASPEK), struktur (BIDANG_STRUKTUR), dan
+   `aktif`. Isian kosong (null) memakai bawaan ASPEK_DASAR. Aspek yang tidak ada di ASPEK_DASAR adalah aspek yang
+   ditambah dari layar, jadi barisnya membawa semuanya. Lihat src/server/aspek.js dan README.md › Mengelola aspek CPMK. */
 const ASPEK_TIMPA = {}
 
-export function getAspekList() {
-  return ASPEK_DASAR.map((a) => ({
+/** Satu aspek utuh: bawaan ditimpa basis data; area mengikuti cluster, fase mengikuti area. */
+function susunAspek(dasar, timpa = {}) {
+  const isi = Object.fromEntries(Object.entries(timpa ?? {}).filter(([, v]) => v != null))
+  const a = { ...dasar, ...isi }
+  const area = CLUSTER.find((c) => c.id === a.cluster)?.area ?? a.area
+  return {
     ...a,
-    ...ASPEK_TIMPA[a.id],
-    semester: resolveSemester(a),
-    semesterSementara: Boolean(ASPEK_SEMESTER_SEMENTARA[a.id]),
-  }))
+    area,
+    fase: AREA.find((x) => x.id === area)?.fase ?? a.fase,
+    // Semester yang ditetapkan dari layar menang atas angka "menunggu konfirmasi" di config.js (A3, C1).
+    semester: isi.semester ?? resolveSemester(dasar),
+    semesterSementara: isi.semester == null && Boolean(ASPEK_SEMESTER_SEMENTARA[a.id]),
+    aktif: a.aktif !== false,
+  }
 }
 
-/** Teks aspek bawaan dari kode, sebelum ditimpa basis data. */
+const urutArea = (id) => AREA.findIndex((x) => x.id === id)
+
+/** Semua aspek, termasuk yang diarsipkan; urut menurut area lalu kode. */
+function semuaAspek() {
+  const dasar = new Set(ASPEK_DASAR.map((a) => a.id))
+  return [
+    ...ASPEK_DASAR.map((a) => susunAspek(a, ASPEK_TIMPA[a.id])),
+    ...Object.entries(ASPEK_TIMPA)
+      .filter(([id]) => !dasar.has(id))
+      .map(([id, t]) => susunAspek({ id }, t)),
+  ].sort((x, y) => urutArea(x.area) - urutArea(y.area) || String(x.kode).localeCompare(String(y.kode), 'en', { numeric: true }))
+}
+
+/** Aspek aktif: yang tampil, diisi, dan dihitung untuk angkatan yang belum terkunci. */
+export function getAspekList() {
+  return semuaAspek().filter((a) => a.aktif)
+}
+
+/** Aspek yang diarsipkan: tidak tampil dan tidak dihitung, kecuali untuk angkatan yang terkunci sebelum diarsipkan. */
+export function getAspekArsip() {
+  return semuaAspek().filter((a) => !a.aktif)
+}
+
+/**
+ * Aspek yang dihitung untuk satu mahasiswa. Angkatan terkunci memakai daftar ID aspek saat ia dikunci
+ * (`aspekKunci`, dari Angkatan.aspekSaatKunci), termasuk aspek yang sesudahnya diarsipkan; aspek yang ditambah
+ * sesudahnya tidak ikut. Selain itu, aspek aktif.
+ */
+export function aspekUntuk(student) {
+  const kunci = student?.statusAngkatan === 'terkunci' && Array.isArray(student.aspekKunci) ? new Set(student.aspekKunci) : null
+  if (!kunci) return getAspekList()
+  return semuaAspek().filter((a) => kunci.has(a.id))
+}
+
+/** Teks aspek bawaan dari kode, sebelum ditimpa basis data; null untuk aspek yang ditambah dari layar. */
 export const aspekBawaan = (id) => ASPEK_DASAR.find((a) => a.id === id) ?? null
 
+/** Satu aspek menurut ID, termasuk yang diarsipkan (transkrip angkatan terkunci masih memakainya). */
 export function getAspek(id) {
-  return getAspekList().find((a) => a.id === id) ?? null
+  return semuaAspek().find((a) => a.id === id) ?? null
+}
+
+/** Keanggotaan cluster dihitung ulang dari aspek aktif; dipanggil setiap susunan aspek berubah. */
+function pasangCluster() {
+  const aktif = getAspekList()
+  for (const c of CLUSTER) c.aspek = aktif.filter((a) => a.cluster === c.id).map((a) => a.id)
+}
+
+/**
+ * Menjalankan `fn` seolah timpaan aspek `id` sudah `timpa` (dan komponennya `komponen`, bila diberikan), lalu
+ * mengembalikan keadaan semula. Dipakai untuk menghitung dampak sebelum menyimpan; `fn` harus sinkron.
+ */
+export function denganAspekSementara(id, timpa, komponen, fn) {
+  const adaTimpa = Object.prototype.hasOwnProperty.call(ASPEK_TIMPA, id)
+  const asliTimpa = ASPEK_TIMPA[id]
+  const asliKomponen = KOMPONEN.slice()
+  ASPEK_TIMPA[id] = { ...asliTimpa, ...timpa }
+  if (komponen) KOMPONEN.splice(0, KOMPONEN.length, ...asliKomponen.filter((k) => k.aspekId !== id), ...komponen)
+  pasangCluster()
+  try {
+    return fn()
+  } finally {
+    if (adaTimpa) ASPEK_TIMPA[id] = asliTimpa
+    else delete ASPEK_TIMPA[id]
+    KOMPONEN.splice(0, KOMPONEN.length, ...asliKomponen)
+    pasangCluster()
+  }
 }
 
 export function getAspekSemester(semester) {
@@ -450,6 +525,7 @@ export function isiKurikulum({ versi, komponen, arsip, aspek, indikator, konfigu
   Object.assign(ASPEK_TIMPA, aspek ?? {})
   isiUlang(INDIKATOR, indikator ?? INDIKATOR_BAWAAN.map((x) => ({ ...x, sumber: [...x.sumber] })))
   terapkanKonfigurasi(konfigurasi ?? {})
+  pasangCluster()
 }
 
 /* ------------------------------- pencarian -------------------------------- */

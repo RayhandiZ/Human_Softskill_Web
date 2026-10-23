@@ -181,7 +181,10 @@ export function dampakDari(mahasiswa, jalankan, batas = 50, susunUlang = null) {
   mahasiswa.forEach((m, i) => {
     const a = sebelum[i]
     const b = sesudah[i]
-    const aspek = Object.keys(a.aspek).filter((id) => a.aspek[id] !== b.aspek[id] || a.kosong[id] !== b.kosong[id])
+    // Gabungan aspek sebelum dan sesudah: aspek yang ditambah atau diarsipkan hanya ada di salah satunya.
+    const aspek = [...new Set([...Object.keys(a.aspek), ...Object.keys(b.aspek)])].filter(
+      (id) => (a.aspek[id] ?? null) !== (b.aspek[id] ?? null) || (a.kosong[id] ?? 0) !== (b.kosong[id] ?? 0),
+    )
     if (!aspek.length && a.nilai === b.nilai && a.layak === b.layak) return
 
     hasil.berubah++
@@ -189,7 +192,7 @@ export function dampakDari(mahasiswa, jalankan, batas = 50, susunUlang = null) {
     if (a.peringkat != null && b.peringkat != null && b.peringkat < a.peringkat) hasil.turun++
     if (!a.layak && b.layak) hasil.jadiLayak++
     if (a.layak && !b.layak) hasil.tidakLagiLayak++
-    if (aspek.some((id) => !a.kosong[id] && b.kosong[id])) hasil.jadiBelumLengkap++
+    if (aspek.some((id) => !(a.kosong[id] ?? 0) && (b.kosong[id] ?? 0))) hasil.jadiBelumLengkap++
     const terkunci = m.statusAngkatan === 'terkunci' || aspek.some((id) => m.penguncian?.[id]?.status === 'final')
     if (terkunci) hasil.terkunci++
     if (m.statusAngkatan === 'terkunci') angkatanTerkunci.add(m.angkatanLabel)

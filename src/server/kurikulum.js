@@ -25,6 +25,19 @@ const indikatorKode = (x) => ({
   sumber: Array.isArray(x.sumber) ? x.sumber : [],
 })
 
+/** Baris Aspek dalam bentuk timpaan ASPEK_TIMPA di curriculum.js; `aktif` undefined pada Prisma Client lama. */
+export const aspekKode = (a) => ({
+  nama: a.nama,
+  deskripsi: a.deskripsi,
+  pdp: a.pdp,
+  mk: a.mk,
+  engagement: a.engagement,
+  kode: a.kode ?? null,
+  cluster: a.cluster ?? null,
+  semester: a.semester ?? null,
+  aktif: a.aktif ?? true,
+})
+
 async function bacaVersi() {
   const baris = await db.konfigurasi.findUnique({ where: { kunci: KUNCI_VERSI_KURIKULUM } })
   return baris ? Number(baris.nilai) || 0 : null
@@ -41,7 +54,8 @@ export async function kunciVersiKurikulum(tx) {
 
 /**
  * Kurikulum dan pengaturan dari basis data, atau null bila belum di-seed. `komponen` hanya yang aktif (yang dihitung);
- * `arsip` yang diarsipkan (bisa dipulihkan); `aspek` timpaan teks aspek dari tabel Aspek.
+ * `arsip` yang diarsipkan (bisa dipulihkan); `aspek` timpaan aspek dari tabel Aspek: teks, struktur (kode, cluster,
+ * semester; kosong = bawaan kode), dan `aktif`. Aspek yang ditambah dari layar hanya ada di sini.
  */
 export async function ambilKurikulum() {
   const versi = await bacaVersi()
@@ -57,9 +71,7 @@ export async function ambilKurikulum() {
     versi,
     komponen: komponen.filter((k) => k.aktif).map(komponenKode),
     arsip: komponen.filter((k) => !k.aktif).map(komponenKode),
-    aspek: Object.fromEntries(
-      aspek.map((a) => [a.id, { nama: a.nama, deskripsi: a.deskripsi, pdp: a.pdp, mk: a.mk, engagement: a.engagement }]),
-    ),
+    aspek: Object.fromEntries(aspek.map((a) => [a.id, aspekKode(a)])),
     indikator: indikator.map(indikatorKode),
     konfigurasi: Object.fromEntries(pengaturan.map((p) => [p.kunci, p.nilai])),
   }

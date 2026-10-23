@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Card, EmptyState } from '../../components/Ui'
 import ChartFrame from '../../components/charts/ChartFrame'
 import {
+  IconBuilding,
   IconCalendar,
   IconCertificate,
   IconCheck,
@@ -55,7 +56,19 @@ const IKON_LOG = {
   UBAH_PENILAIAN: IconDocument,
   UBAH_AKSES: IconUsers,
   TAMBAH_AKUN: IconUsers,
+  UBAH_AKUN: IconUsers,
   HAPUS_AKUN: IconHapus,
+  UBAH_IZIN: IconCheckShield,
+  TAMBAH_ANGKATAN: IconCalendar,
+  UBAH_ANGKATAN: IconCalendar,
+  TAMBAH_FAKULTAS: IconBuilding,
+  UBAH_FAKULTAS: IconBuilding,
+  TAMBAH_PRODI: IconBuilding,
+  UBAH_PRODI: IconBuilding,
+  TAMBAH_ASPEK: IconDocument,
+  UBAH_ASPEK: IconDocument,
+  ARSIPKAN_ASPEK: IconHapus,
+  PULIHKAN_ASPEK: IconUndo,
 }
 
 const LABEL_KEPUTUSAN = { disetujui: 'Disetujui', ditolak: 'Ditolak', gagal: 'Gagal dijalankan' }

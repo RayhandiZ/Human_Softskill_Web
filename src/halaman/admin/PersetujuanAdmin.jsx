@@ -17,6 +17,7 @@ export const LABEL_AKSI = {
   KUNCI_ANGKATAN: 'Kunci angkatan',
   UBAH_BOBOT: 'Ubah bobot',
   UBAH_PENILAIAN: 'Ubah penilaian aspek',
+  KELOLA_ASPEK: 'Kelola aspek CPMK',
 }
 
 const RUPA = {

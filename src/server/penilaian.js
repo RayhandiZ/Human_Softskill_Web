@@ -42,6 +42,7 @@ const rapikanKomponen = (k) =>
  */
 export async function rencanakanPenilaian({ versi = null, aspekId, aspek, komponen }) {
   if (!getAspek(aspekId)) throw new GalatApi('Aspek tidak dikenal.', 404)
+  if (!getAspek(aspekId).aktif) throw new GalatApi('Aspek ini sudah diarsipkan. Pulihkan dulu sebelum mengubah penilaiannya.', 409)
   if ((versi == null ? null : Number(versi)) !== (KURIKULUM_TERPASANG.versi ?? null)) {
     throw new GalatApi('Kurikulum sudah diubah orang lain sejak halaman ini dibuka. Muat ulang halaman, lalu ulangi perubahan Anda.', 409)
   }
@@ -84,8 +85,11 @@ export async function rencanakanPenilaian({ versi = null, aspekId, aspek, kompon
   return { aspekId, lama, baru, beda, dampak, lamaDb, dinilai }
 }
 
-/** ID baru '<aspek>-<sumber>-B<n>' yang belum pernah dipakai, termasuk oleh komponen yang diarsipkan. */
-function idBaru(aspekId, sumber, terpakai) {
+/**
+ * ID baru '<aspek>-<sumber>-B<n>' yang belum pernah dipakai, termasuk oleh komponen yang diarsipkan. Dipakai juga
+ * src/server/aspek.js untuk komponen pertama aspek baru.
+ */
+export function idBaru(aspekId, sumber, terpakai) {
   const awalan = aspekId + '-' + (KODE_SUMBER[sumber] ?? sumber) + '-B'
   let n = 1
   while (terpakai.has(awalan + n)) n++

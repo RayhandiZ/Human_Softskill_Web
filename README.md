@@ -49,7 +49,8 @@ npm run assert      # periksa transkrip mematuhi R2, R3, R4, R8
 npm run test:nilai  # simpan batch, rollback, dan validasi import
 npm run test:profil # penyimpanan profil: kunci akun, simpan-muat, foto
 npm run test:db     # setiap pintu API terhadap MySQL, termasuk kunci angkatan, data terkunci, log, kurikulum, bobot, periode,
-                    # akses, tambah akun, dan hapus akun; data uji (NIM dan angkatan berawalan UJI, akun uji.hapus.*) dihapus lagi
+                    # akses, tambah akun, hapus akun, izin dan data master, serta aspek CPMK; data uji (NIM dan angkatan berawalan UJI,
+                    # akun uji.hapus.* dan uji.master.*, Fakultas/Prodi Uji) dihapus lagi dan izin admin uji dikembalikan
 ```
 
 Uji selain `test:db` berjalan tanpa server dan tanpa basis data (mode lokal, lihat
@@ -135,8 +136,9 @@ dan pengaturan kebijakan yang ditimpa (tabel `Konfigurasi`) dibaca dari basis da
 hanya bila basis data belum di-seed atau tidak bisa dibaca. Dari halaman Kurikulum CPMK,
 Kemahasiswaan kini bisa mengubah bobotnya sendiri (lihat Mengubah bobot dari halaman Kurikulum), dan
 dari Input Manual teks aspek, komponen asesmen, serta bobotnya (lihat Mengubah penilaian dari Input
-Manual). Teks aspek yang diubah disimpan di tabel `Aspek`; aspek yang belum pernah diubah tetap
-memakai teks di `curriculum.js`. Indikator dan pengaturan lain belum bisa diubah dari layar.
+Manual). Teks dan struktur aspek yang diubah, serta aspek yang ditambah atau diarsipkan, disimpan di
+tabel `Aspek` (lihat Mengelola aspek CPMK); aspek yang belum pernah diubah tetap memakai isi
+`curriculum.js`. Indikator dan pengaturan lain belum bisa diubah dari layar.
 
 - **Penanda versi.** Baris `VERSI_KURIKULUM` di tabel `Konfigurasi` menandai bahwa kurikulum sudah
   dikelola di basis data. Seed hanya menanam kurikulum selama penanda itu belum ada, jadi isi yang
@@ -190,6 +192,8 @@ src/lib/
                   dampak (dampakDari, juga dipakai penilaian.js), porsi per komponen
   penilaian.js    penilaian satu aspek yang diubah dari Input Manual: pemeriksaan, perbedaan,
                   denganAspek() untuk pratinjau; dipakai layar dan server
+  aspek.js        aspek CPMK itu sendiri: pemeriksaan tambah/ubah/arsip/pulihkan, ID dan kode baru,
+                  dampakAspek() untuk pratinjau; dipakai layar dan server (lihat Mengelola aspek CPMK)
   rules.js        R1–R9 sebagai fungsi murni + validasi import
   data.js         sumber data halaman: periode akademik (semesterAktif dibatasi 3,
                   semesterKalender tidak); angkatan, fakultas, prodi (diisi dari basis data
@@ -234,14 +238,20 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   persetujuan.js  permintaan admin kepada super admin: gerbang denganPersetujuan(), keputusan,
                   penarikan (lihat Persetujuan super admin)
   penilaian.js    menyimpan penilaian satu aspek (POST /api/kurikulum/penilaian)
+  aspek.js        tambah, ubah struktur, arsipkan, pulihkan aspek CPMK (POST /api/kurikulum/aspek)
   periode.js      memindahkan periode akademik, hanya super admin (POST /api/periode)
-  akses.js        daftar akun, cabut/pulihkan akses, tambah akun, dan hapus akun, hanya super admin
-                  (POST /api/akses, /api/akses/ubah, /api/akses/tambah, /api/akses/hapus)
+  akses.js        daftar akun, cabut/pulihkan akses, tambah akun, hapus akun, dan izin kelola data
+                  master, hanya super admin (POST /api/akses, /api/akses/ubah, /api/akses/tambah,
+                  /api/akses/hapus, /api/akses/izin)
+  dataMaster.js   tambah/ubah angkatan, fakultas, prodi, dan mahasiswa oleh super admin atau admin
+                  berizin (POST /api/master/angkatan, /api/master/prodi, /api/master/mahasiswa)
 
 app/api/          masuk, keluar, sesi, data, nilai, nilai/rollback, penguncian, koreksi,
                   koreksi/keputusan, usulan, usulan/keputusan, profil, angkatan,
                   angkatan/pratinjau, angkatan/kunci, log, kurikulum/bobot, kurikulum/penilaian,
-                  persetujuan/keputusan, persetujuan/batal, periode, akses, akses/ubah
+                  persetujuan/keputusan, persetujuan/batal, periode, akses, akses/ubah,
+                  akses/tambah, akses/hapus, akses/izin, master/angkatan, master/prodi,
+                  master/mahasiswa, kurikulum/aspek (30 pintu)
 src/components/PemuatData.jsx  memuat /api/data begitu ada yang masuk dan menahan panel
                   sampai datanya tiba
 prisma/           skema, migrasi, seed.js (isi dasar), seed-contoh.js (data contoh),
@@ -267,8 +277,9 @@ src/halaman/dosen/    DosenLayout, Masuk (Beranda), Nilai (Penilaian tiga langka
 src/halaman/admin/    AdminLayout, Overview, Students, StudentDetail, Programs, Nilai, Usulan,
                     LoncengKemahasiswaan, StatusData, Kurikulum (bobot), Angkatan, CetakSertifikat,
                     PersetujuanAdmin, PermintaanTerkirim (bagian layar bersama),
-                    EditorPenilaian (di Input Manual), Log (juga dipakai panel super admin)
-src/halaman/super-admin/  SuperLayout, Kendali, Wewenang, Aturan (lihat Panel Super Admin)
+                    EditorPenilaian (di Input Manual), Log (juga dipakai panel super admin),
+                    DataMaster (lihat Data master), KelolaAspek (lihat Mengelola aspek CPMK)
+src/halaman/super-admin/  SuperLayout, Kendali, Wewenang, Aturan, Akses (lihat Panel Super Admin)
 ```
 
 Arah ketergantungan satu arah: `curriculum → scoring → rules → UI`.
@@ -334,6 +345,7 @@ Begitu program sebuah angkatan lewat Semester 3 (`programSelesai()` di `src/lib/
 | `KUNCI_ANGKATAN` | `/api/angkatan/kunci` | selalu, karena angkatan baru boleh dikunci sesudah Semester 3 |
 | `UBAH_BOBOT` | `/api/kurikulum/bobot` | nilai mahasiswa itu ikut berubah menurut pratinjau dampak |
 | `UBAH_PENILAIAN` | `/api/kurikulum/penilaian` | **selalu** untuk admin biasa, apa pun mahasiswanya (lihat Mengubah penilaian dari Input Manual) |
+| `KELOLA_ASPEK` | `/api/kurikulum/aspek` | **selalu** untuk admin biasa: tambah, ubah struktur, arsipkan, atau pulihkan aspek (lihat Mengelola aspek CPMK) |
 
 Gerbangnya `denganPersetujuan(aksi)` di `src/server/persetujuan.js`, dipasang di pintu API
 (`tangani(request, ['admin'], denganPersetujuan('SIMPAN_NILAI'))`), jadi tidak bisa dilewati dengan
@@ -446,6 +458,13 @@ di `src/server/akses.js`. Bila server menjawab 404, halaman menyatakan fiturnya 
   Di layar, tombol "Hapus akun" hanya muncul di baris yang aksesnya sudah dicabut, di samping "Pulihkan
   akses". Panelnya meminta alasan sebelum tombol "Hapus permanen" aktif. Penolakan dari server tampil
   di panel itu; bila berhasil, barisnya hilang dan pesan status muncul di atas daftar.
+- `POST /api/akses/izin` dengan isi `{ id, aktif, alasan }`, hanya super admin (`aturIzinMaster()`).
+  Memberi (`aktif: true`) atau mencabut izin kelola data master satu akun admin biasa (kolom
+  `Pengguna.kelolaMaster`); lihat Data master. Tolak (403) akun `SUPER_ADMIN` (selalu punya izin) dan
+  akun selain admin; tolak (400) alasan kurang dari 10 karakter; tolak (409) memberi izin ke akun yang
+  aksesnya dicabut. Dicatat dengan aksi `UBAH_IZIN`; bila statusnya sudah sama, tidak ada yang dicatat.
+  Jawaban: `{ akun }`, dan setiap akun admin di `POST /api/akses` membawa `kelolaMaster`. Di layar, baris
+  admin biasa punya tombol "Beri izin data master"/"Cabut izin data master" dan lencana "Izin data master".
 
 **Tampilan panel super admin** mengambil pola dasbor modern di Dribbble (sapaan bertanggal, satu kartu
 fokus, angka dengan meter, grafik batang dengan tooltip, linimasa berikon, kepingan periode) tanpa
@@ -1004,6 +1023,44 @@ padanya:
   cukup fungsi itu yang disesuaikan. Sesudah berhasil, status angkatan di data master ikut
   disamakan di peramban, karena data master baru dimuat ulang saat halaman dibuka lagi.
 
+## Data master
+
+Angkatan, fakultas, program studi, dan data mahasiswa bisa ditambah dan diubah dari `/admin/data-master`
+(`src/halaman/admin/DataMaster.jsx`, tab Angkatan, Fakultas & Prodi, dan Mahasiswa) oleh **super admin**
+dan **admin yang diberi izin** olehnya di Akses Pengguna. Izinnya satu untuk semua jenis data master,
+berlaku sampai dicabut, dan tidak mencakup menghapus.
+
+- **Izin.** Kolom `Pengguna.kelolaMaster` (migrasi `20261023030000_izin_data_master`, bawaannya `false`).
+  `penggunaDariId()` di `src/server/api.js` membacanya ulang di setiap permintaan (`punyaIzinMaster()`:
+  `SUPER_ADMIN` selalu, `ADMIN` bila kolomnya `true`), dan penjaga `['master']` di `tangani()` hanya
+  meloloskan pemiliknya. Mencabut izin langsung berlaku di permintaan berikutnya tanpa masuk ulang. Sesi
+  (`masuk.js`, `auth.jsx`) ikut membawa `kelolaMaster` hanya untuk menampilkan menu Data Master; menu dan
+  tombolnya baru berubah setelah halaman dimuat ulang. Admin tanpa izin yang membuka alamatnya hanya
+  melihat penjelasan.
+- **Pintu API** (semuanya `POST`, penjaga `['master']`, isi `aksi: 'tambah' | 'ubah'`; logika di
+  `src/server/dataMaster.js`; setiap perubahan dan log-nya dalam satu transaksi):
+  - `/api/master/angkatan`: tambah `{ tahun, semester: 'Ganjil' | 'Genap' }`. Kode, label, dan periode
+    dibentuk server (`2027`/`2027B`, `2027`/`2027 Genap`, `2027/2028`), tahunnya 2000 sampai satu tahun
+    di depan periode aktif, kembar 409. Ubah `{ id, label, alasan }`: hanya label, unik, dan bukan
+    angkatan terkunci (409). Periode masuk tidak bisa diubah karena semester setiap mahasiswanya
+    dihitung dari situ.
+  - `/api/master/prodi`: `jenis: 'fakultas'` (tambah `{ nama }`, ubah `{ nama, namaBaru, alasan }`) atau
+    `jenis: 'prodi'` (tambah `{ nama, jenjang: 'S1' | 'D3', fakultas }`, ubah `{ nama, namaBaru?,
+    jenjang?, fakultas?, alasan }`). Dikenali dari namanya; nama kembar 409. Ganti nama aman karena
+    mahasiswa dan dosen menyambung lewat id.
+  - `/api/master/mahasiswa`: tambah memakai `tambahAkun()` (isi sama dengan Akses Pengguna: email, sandi
+    awal, NIM, nama, prodi, angkatan), jadi tercatat `TAMBAH_AKUN`. Ubah `{ nim, nama?, email?, prodi?,
+    angkatanId?, alasan }`, dicatat `UBAH_AKUN` dengan sebelum/sesudah. **NIM tidak bisa diubah**:
+    `UsulanEntri` menyambung ke mahasiswa lewat teks NIM, bukan id. Prodi dan angkatan hanya bisa diubah
+    selama mahasiswanya belum punya nilai, pengumpulan, koreksi, penguncian, atau usulan nilai (409
+    menyebut jumlahnya), dan angkatan asal maupun tujuannya tidak terkunci.
+- **Angkatan terkunci menolak mahasiswa baru**, baik dari sini maupun dari Akses Pengguna
+  (`isianMahasiswa()` di `akses.js`).
+- Jawaban angkatan dan prodi membawa `master` terbaru (`ambilAngkatanProdi()` di `master.js`);
+  `tulisMaster()` di `store.js` memasangnya lewat `isiMaster()` lalu memuat ulang `/api/data`, jadi
+  pilihan angkatan dan prodi di semua halaman langsung ikut tanpa memuat ulang halaman.
+- Akun dosen dan penghapusan tetap hanya lewat super admin di Akses Pengguna.
+
 ## Yang masih menunggu keputusan unit pengelola
 
 Semuanya ada di `src/lib/config.js` bertanda `// MENUNGGU KONFIRMASI`:
@@ -1080,7 +1137,8 @@ Di Input Manual, tombol **Atur penilaian A.x** membuka penyunting untuk aspek ya
 
 - **Teks aspek**: nama, deskripsi, kegiatan PDP, mata kuliah, kegiatan Kemahasiswaan. Disimpan di
   tabel `Aspek` (migrasi `aspek_dari_layar`) dan menimpa teks di `curriculum.js`. Struktur aspek
-  (kode, fase, area, cluster, semester) tetap di kode, dan aspek tidak bisa ditambah.
+  (kode, cluster, semester) serta menambah dan mengarsipkan aspek diatur terpisah; lihat Mengelola
+  aspek CPMK. Aspek yang diarsipkan tidak bisa diubah penilaiannya sampai dipulihkan (409).
 - **Komponen asesmen**: tambah (ID baru `<aspek>-<sumber>-B<n>`, mis. `A1-MK-B1`, tidak pernah
   diganti), ubah nama, sumber, jenis MK, ranah, status resmi/draft, dan urutan. Komponen yang
   **sudah dinilai** (punya nilai atau pernah tercatat di riwayat) tidak bisa diganti sumbernya;
@@ -1104,6 +1162,58 @@ Semua ditulis dalam satu transaksi: teks aspek, komponen, versi kurikulum baru, 
 
 Setelah menarik migrasi `aspek_dari_layar`, hentikan `npm run dev`, jalankan `npx prisma generate`,
 lalu nyalakan lagi.
+
+### Mengelola aspek CPMK
+
+Aspek itu sendiri (A.1, B.1, ...), bukan hanya isinya, bisa **ditambah**, **diubah strukturnya**,
+**diarsipkan**, dan **dipulihkan** (`src/halaman/admin/KelolaAspek.jsx`) dari tiga tempat:
+
+- **Input & Import Nilai**: begitu semester dipilih, kartu *Aspek CPMK Semester N* (`AspekSemester`) muncul di
+  bawah langkah memilih sasaran, walau angkatannya belum siap. Setiap aspek semester itu punya tombol **Edit**
+  (teks dan komponen lewat `EditorPenilaian`), **Ubah** (kode, semester, cluster), dan **Hapus** (= arsip);
+  **Tambah aspek** membuat aspek baru tepat di semester itu, dengan area dan cluster mengikuti aspek terakhir
+  semester itu. Aspek semester itu yang pernah dihapus bisa dipulihkan dari kartu yang sama;
+- **Penilaian & Bobot** (super admin), di bawah editor: panel *Struktur aspek*, *Tambah aspek*, *Aspek
+  diarsipkan*;
+- **Kurikulum CPMK** (panel Kemahasiswaan), di bawah halaman: panel yang sama (`app/admin/kurikulum/page.jsx`).
+
+Formulir tambah meminta **area dulu** (A/B/C), lalu cluster di area itu; kodenya diusulkan **nomor kosong
+berikutnya** di huruf area itu (Semester 1 berisi A.1–A.3 dan A.4 milik Semester 2, jadi aspek baru di
+Semester 1 menjadi A.5) dan bisa diketik ulang sebelum disimpan. Menghapus aspek **tidak** merapatkan kode
+aspek lain.
+
+- **ID aspek tidak pernah berubah** dan tidak dipakai ulang, karena menempel di ID komponen (`A1-MK-T1`),
+  nilai, dan penguncian. Aspek baru diberi huruf area dari cluster-nya + nomor berikutnya (`C3`), termasuk
+  melewati ID aspek yang diarsipkan. Yang bisa diubah: **kode tampilan** (`A.1.`, tidak boleh kembar dengan
+  aspek mana pun termasuk arsip), **semester** (1–3), dan **cluster** (CL1–CL6; area dan fase mengikuti
+  cluster). Semester yang ditetapkan di sini menggantikan angka "menunggu konfirmasi" A.3/C.1 di `config.js`.
+  Cluster, area, dan fase baru tidak bisa ditambah.
+- **Tambah aspek** wajib menyertakan teks (nama, deskripsi, PDP/MK/Engagement opsional) dan **minimal satu
+  komponen**, yang langsung dibuat dengan ID `<aspek>-<sumber>-B<n>`. Komponen lain ditambah sesudahnya di
+  editor penilaian.
+- **Hapus = arsip** (`Aspek.aktif = false`): aspek tidak tampil, tidak dihitung, tidak menerima nilai
+  (import dan Input Manual menolak komponennya), dan tidak bisa diubah; komponen dan nilainya tidak
+  disentuh. Aspek aktif terakhir tidak bisa diarsipkan. Tidak ada hapus permanen.
+- **Angkatan terkunci tidak ikut berubah.** Saat angkatan dikunci, ID aspek aktif disimpan di
+  `Angkatan.aspekSaatKunci` (migrasi `20261023060000_kelola_aspek` mengisi angkatan yang sudah terkunci
+  dengan sepuluh aspek bawaan). `aspekUntuk(mahasiswa)` di `curriculum.js` memakai daftar itu untuk
+  transkrip (`hitungTranskrip`) dan tampilan (`aspekTerlihat`), jadi aspek yang ditambah sesudahnya tidak
+  ikut dan aspek yang diarsipkan sesudahnya tetap dihitung. Kode, semester, dan cluster yang diubah tetap
+  berlaku untuk tampilan semua angkatan; dengan `MODE_AGREGASI` per semester, memindah semester bisa
+  mengubah nilai akhir angkatan terkunci (bawaannya per aspek, aman).
+- **Alasan selalu wajib** (minimal 10 karakter). Sebelum menyimpan, layar menghitung dampak terhadap
+  seluruh mahasiswa yang termuat (`dampakAspek` di `src/lib/aspek.js`, memakai `denganAspekSementara` di
+  `curriculum.js`), termasuk yang menjadi belum lengkap karena aspek baru masih kosong.
+- **Siapa:** super admin menyimpan langsung (`POST /api/kurikulum/aspek`, isi `aksi: 'tambah' | 'ubah' |
+  'arsipkan' | 'pulihkan'`). Admin biasa **selalu** mengajukan (`KELOLA_ASPEK`); dosen dan mahasiswa 403.
+  Satu transaksi: baris `Aspek` (aspek bawaan dibuatkan baris berisi teksnya yang sekarang), komponen aspek
+  baru, versi kurikulum baru, dan log `TAMBAH_ASPEK`/`UBAH_ASPEK`/`ARSIPKAN_ASPEK`/`PULIHKAN_ASPEK`.
+  Aturannya ditulis sekali di `src/lib/aspek.js`, dipakai layar dan server (`src/server/aspek.js`).
+- Keanggotaan cluster (`CLUSTER[].aspek`) dihitung ulang dari aspek aktif setiap kurikulum dipasang;
+  nilai cluster di transkrip dihitung dari aspek milik mahasiswa itu.
+
+Setelah menarik migrasi `kelola_aspek`, hentikan `npm run dev`, jalankan `npx prisma migrate deploy` lalu
+`npx prisma generate`, kemudian nyalakan lagi.
 
 ### Mengubah bobot dari halaman Kurikulum
 
@@ -1312,9 +1422,16 @@ dengan perubahannya: tidak ada perubahan tanpa jejak, dan tidak ada jejak tanpa 
 | `PUTUSKAN_PERSETUJUAN` | super admin menyetujui atau menolak (pelakunya super admin) | aksi, keputusan (disetujui/ditolak/gagal), catatan, pesan galat, id pengaju |
 | `TARIK_PERMINTAAN` | admin menarik permintaannya sendiri | — |
 | `UBAH_PENILAIAN` | penilaian satu aspek disimpan dari Input Manual | alasan, teks aspek sebelum/sesudah, komponen ditambah/diubah/diarsipkan/dipulihkan, bobot sebelum/sesudah, ringkasan dampak |
+| `TAMBAH_ASPEK`, `UBAH_ASPEK`, `ARSIPKAN_ASPEK`, `PULIHKAN_ASPEK` | aspek CPMK ditambah, diubah strukturnya, diarsipkan, atau dipulihkan (lihat Mengelola aspek CPMK) | alasan, ID, kode, nama, struktur sebelum/sesudah (kode, cluster, semester, aktif), komponen yang ditambah, ringkasan dampak |
 | `UBAH_PERIODE` | super admin memindahkan periode akademik (lihat Periode akademik) | periode sebelum/sesudah, alasan |
 | `UBAH_AKSES` | super admin mencabut atau memulihkan akses akun (lihat Panel Super Admin › Akses Pengguna) | email, peran, aktif sebelum/sesudah, alasan |
 | `HAPUS_AKUN` | super admin menghapus permanen akun yang aksesnya sudah dicabut dan belum punya data | email, peran, nama, NIM/NIP, prodi, angkatan, alasan |
+| `TAMBAH_AKUN` | akun baru dibuat dari Akses Pengguna atau Data Master | email, peran, nama, NIM/NIP, prodi, angkatan (tanpa sandi) |
+| `UBAH_AKUN` | data mahasiswa diubah dari Data Master | NIM, nama/email/prodi/angkatan sebelum dan sesudah (hanya yang berubah), alasan |
+| `UBAH_IZIN` | super admin memberi atau mencabut izin kelola data master (lihat Data master) | email, izin, sebelum/sesudah, alasan |
+| `TAMBAH_ANGKATAN`, `UBAH_ANGKATAN` | angkatan ditambah atau labelnya diubah | kode, label, periode; untuk ubah: label sebelum/sesudah dan alasan |
+| `TAMBAH_FAKULTAS`, `UBAH_FAKULTAS` | fakultas ditambah atau namanya diubah | nama; untuk ubah: sebelum/sesudah dan alasan |
+| `TAMBAH_PRODI`, `UBAH_PRODI` | program studi ditambah atau diubah | nama, jenjang, fakultas; untuk ubah: hanya yang berubah, sebelum/sesudah, dan alasan |
 
 Kedua log dibaca lewat `POST /api/log` (`bacaLog()`, hanya Kemahasiswaan), satu halaman setiap kali:
 
@@ -1738,19 +1855,23 @@ panah kiri/kanan). Bagian yang mudah rusak:
 | 9 | Poles cetak, responsif, aksesibilitas | sebagian (cetak & reduced-motion sudah) |
 | — | Panel Kemahasiswaan lainnya: Overview, Data Mahasiswa beserta detailnya, Program Studi, Persetujuan Nilai Dosen | selesai |
 | — | Panel dosen: Beranda, Penilaian (usulan nilai), Riwayat Pengiriman | selesai; tampilan baru: kerangka, Penilaian, footer, dan menu aksesibilitas selesai, Beranda dan Riwayat Pengiriman menyusul (lihat Panel Dosen) |
-| — | Basis data MySQL: 21 tabel, 9 migrasi, 23 pintu API, sesi cookie | selesai |
+| — | Basis data MySQL: 21 tabel, 12 migrasi, 30 pintu API, sesi cookie | selesai |
+| — | Mengelola aspek CPMK: tambah, ubah kode/semester/cluster, arsip, pulihkan | selesai; super admin langsung, admin biasa lewat persetujuan, angkatan terkunci tetap memakai aspek saat dikunci |
+| — | Data master (angkatan, fakultas, prodi, mahasiswa) oleh super admin dan admin yang diberi izin | selesai; tanpa hapus, NIM tetap (lihat Data master) |
 | — | Penilaian per aspek dari Input Manual (teks aspek, komponen, arsip, bobot) | selesai; super admin langsung, admin biasa lewat persetujuan |
 | — | Super admin | sebagian: Tahap 1 (akun berperan `SUPER_ADMIN`, penjaga `'superadmin'`) dan Tahap 2 (persetujuan perubahan data mahasiswa yang sudah lewat Semester 3, halaman Persetujuan Admin, dosen lepas tangan) selesai; halaman pengawasan selesai di panel `/super` (Pusat Kendali, Persetujuan, Log Aktivitas, Peran & Wewenang, Aturan Sistem) |
 
 Yang belum dikerjakan:
 
 - mengubah indikator perilaku dan pengaturan selain bobot (ambang sertifikat, mode penguncian,
-  mode agregasi, dan lain-lain) dari layar; menambah aspek baru atau mengubah struktur aspek
-  (semester, cluster). Teks aspek, komponen, dan bobot sudah bisa diubah;
+  mode agregasi, dan lain-lain) dari layar; menambah cluster, area, atau fase baru. Aspek (tambah,
+  kode, semester, cluster, arsip), teks aspek, komponen, dan bobot sudah bisa diubah;
 - halaman bagi mahasiswa untuk mengumpulkan berkas (kini baris `Pengumpulan` diisi langsung di
   basis data);
 - penerbitan sertifikat yang membekukan nomor, tanggal, dan nilai — kini kelayakan dihitung
   langsung, jadi sertifikat ikut berubah bila nilai diubah sesudah angkatan dikunci;
 - ganti dan lupa kata sandi di aplikasi ini, masuk lewat SSO kampus, serta pembatasan percobaan
   masuk;
-- kelola data master (angkatan, fakultas, prodi) dan akun dari panel Kemahasiswaan.
+- menghapus angkatan, fakultas, atau prodi, mengganti NIM, dan mengelola akun dosen dari panel
+  Kemahasiswaan. Angkatan, fakultas, prodi, dan data mahasiswa sudah bisa ditambah dan diubah oleh admin
+  yang diberi izin super admin (lihat Data master).

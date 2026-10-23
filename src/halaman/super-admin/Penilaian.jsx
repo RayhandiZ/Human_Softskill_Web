@@ -7,13 +7,14 @@ import { susunanBobot } from '../../lib/bobot'
 import { PERMINTAAN, useStore } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
 import EditorPenilaian from '../admin/EditorPenilaian'
+import KelolaAspek from '../admin/KelolaAspek'
 import Kurikulum from '../admin/Kurikulum'
 
 /* Aspek, komponen asesmen, dan bobot penilaian. Memakai editor yang sama dengan panel Kemahasiswaan
    (Input Manual dan Kurikulum); bedanya, simpanan super admin langsung berlaku tanpa persetujuan.
    Lihat README.md › Panel Super Admin. */
 
-const AKSI_PENILAIAN = ['UBAH_PENILAIAN', 'UBAH_BOBOT']
+const AKSI_PENILAIAN = ['UBAH_PENILAIAN', 'UBAH_BOBOT', 'KELOLA_ASPEK']
 
 export default function Penilaian() {
   const t = useTeks()
@@ -45,7 +46,8 @@ export default function Penilaian() {
       <header>
         <h1 className="text-[26px] font-extrabold tracking-tight text-ink">{t('Penilaian & Bobot')}</h1>
         <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-ink-2">
-          {t('Ubah aspek, komponen asesmen, dan bobotnya, termasuk menambah komponen secara manual. Sebagai Super Admin, perubahan Anda langsung berlaku untuk semua angkatan tanpa menunggu persetujuan, dan tetap tercatat di Log Aktivitas.')}
+          {t('Ubah aspek, komponen asesmen, dan bobotnya, termasuk menambah komponen secara manual. Sebagai Super Admin, perubahan Anda langsung berlaku untuk semua angkatan tanpa menunggu persetujuan, dan tetap tercatat di Log Aktivitas.')}{' '}
+          {t('Aspek juga bisa ditambah, diubah strukturnya, atau diarsipkan di bawah editor; angkatan yang sudah terkunci tetap memakai aspek saat ia dikunci.')}
         </p>
       </header>
 
@@ -113,6 +115,14 @@ export default function Penilaian() {
               <EditorPenilaian key={aspek.id} aspekId={aspek.id} onPerubahan={setBelumDisimpan} />
             </Card>
           ) : null}
+
+          <KelolaAspek
+            aspekId={aspek?.id}
+            onPilih={(id) => {
+              setBelumDisimpan(false)
+              setPilih(id)
+            }}
+          />
         </div>
       ) : (
         <Kurikulum tertanam aspekAwal={aspek?.id} onPilihAspek={setPilih} onPerubahan={setBelumDisimpan} />

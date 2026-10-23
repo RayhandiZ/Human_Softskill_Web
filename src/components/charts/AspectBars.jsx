@@ -7,7 +7,8 @@ import { useTeks } from '../../lib/bahasa'
 export default function AspectBars({
   rows,
   title = 'Nilai per aspek CPMK',
-  subtitle = 'Sepuluh aspek, dikelompokkan menurut area pengembangan',
+  // Jumlah aspek bisa berubah (aspek ditambah atau diarsipkan), jadi tidak disebut angkanya.
+  subtitle = 'Aspek CPMK, dikelompokkan menurut area pengembangan',
   height = 380,
   catatan,
 }) {

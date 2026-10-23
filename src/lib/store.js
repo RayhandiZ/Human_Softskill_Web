@@ -11,6 +11,7 @@ import {
   USULAN_AWAL,
   getStudentByNim,
   isiData,
+  isiMaster,
   pasangPeriode,
   resetTranskripCache,
 } from './data.js'
@@ -647,6 +648,51 @@ export async function hapusAkun({ id, alasan }) {
   return { id }
 }
 
+/**
+ * Memberi (aktif true) atau mencabut (aktif false) izin kelola data master satu akun admin; jawabannya { akun }
+ * baru. Hanya super admin; lihat aturIzinMaster() di src/server/akses.js.
+ */
+export async function aturIzinMaster({ id, aktif, alasan }) {
+  if (!modeLokal()) return kirim('/api/akses/izin', { isi: { id, aktif, alasan } })
+  const a = AKUN_LOKAL.find((x) => x.id === id)
+  if (!a) throw new Error('Akun tidak ditemukan.')
+  if (a.peran !== 'admin') throw new Error('Izin kelola data master hanya untuk akun admin Kemahasiswaan.')
+  if (String(alasan ?? '').trim().length < ALASAN_AKSES_MIN) throw new Error('Alasan wajib diisi, minimal 10 karakter.')
+  a.kelolaMaster = Boolean(aktif)
+  return { akun: { ...a } }
+}
+
+/* -------------------------------- data master ------------------------------- */
+
+/* Tambah/ubah angkatan, fakultas, prodi, dan mahasiswa oleh super admin atau admin yang diberi izin; lihat
+   src/server/dataMaster.js dan README.md › Data master. Data master dipasang app/layout.jsx sekali saat halaman
+   dimuat, jadi jawaban server yang membawa `master` dipasang di sini supaya pilihan angkatan dan prodi di semua
+   halaman langsung ikut berubah, lalu data mahasiswa dimuat ulang (nama prodi atau mahasiswa bisa berubah). */
+
+async function tulisMaster(alamat, isi) {
+  if (modeLokal()) throw new Error('Data master hanya bisa diubah saat terhubung ke basis data.')
+  const hasil = await kirim(alamat, { isi })
+  if (hasil.master) isiMaster(hasil.master)
+  await muatDariServer()
+  return hasil
+}
+
+/** { aksi: 'tambah', tahun, semester: 'Ganjil' | 'Genap' } atau { aksi: 'ubah', id, label, alasan }. */
+export const simpanAngkatan = (isi) => tulisMaster('/api/master/angkatan', isi)
+
+/**
+ * Fakultas: { jenis: 'fakultas', aksi: 'tambah', nama } atau { jenis: 'fakultas', aksi: 'ubah', nama, namaBaru, alasan }.
+ * Prodi: { jenis: 'prodi', aksi: 'tambah', nama, jenjang, fakultas } atau { ..., aksi: 'ubah', nama, namaBaru?,
+ * jenjang?, fakultas?, alasan }. Fakultas dan prodi dikenali dari namanya.
+ */
+export const simpanProdi = (isi) => tulisMaster('/api/master/prodi', isi)
+
+/**
+ * { aksi: 'tambah', email, sandi, nim, nama, prodi, angkatanId } atau { aksi: 'ubah', nim, nama?, email?, prodi?,
+ * angkatanId?, alasan }. NIM tidak bisa diubah.
+ */
+export const simpanMahasiswa = (isi) => tulisMaster('/api/master/mahasiswa', isi)
+
 /* ---------------------------------- nilai --------------------------------- */
 
 /** Batch yang tersimpan, atau { menunggu, permintaan } bila menunggu persetujuan super admin. */
@@ -803,6 +849,21 @@ export async function simpanPenilaian({ aspekId, aspek, komponen, alasan }) {
   const hasil = await kirim('/api/kurikulum/penilaian', {
     isi: { versi: KURIKULUM_TERPASANG.versi, aspekId, aspek, komponen, alasan },
   })
+  if (!menungguPersetujuan(hasil)) isiKurikulum(hasil.kurikulum ?? {})
+  await muatDariServer()
+  return hasil
+}
+
+/* ----------------------------- aspek CPMK itu sendiri ---------------------------- */
+
+/**
+ * Menambah, mengubah struktur (kode, cluster, semester), mengarsipkan, atau memulihkan aspek; bentuk isinya di
+ * src/lib/aspek.js. Super admin: kurikulum baru langsung dipasang. Admin biasa: jawabannya { menunggu, permintaan }
+ * dan belum ada yang berubah. Lihat src/server/aspek.js.
+ */
+export async function simpanAspek(isi) {
+  if (modeLokal()) throw new Error('Mengelola aspek hanya tersedia saat terhubung ke basis data.')
+  const hasil = await kirim('/api/kurikulum/aspek', { isi: { versi: KURIKULUM_TERPASANG.versi, ...isi } })
   if (!menungguPersetujuan(hasil)) isiKurikulum(hasil.kurikulum ?? {})
   await muatDariServer()
   return hasil

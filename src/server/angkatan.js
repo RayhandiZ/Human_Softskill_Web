@@ -3,6 +3,7 @@ import { GalatApi } from './api.js'
 import { catatLog } from './log.js'
 import { SERTA_MAHASISWA, intakeDari, petaNama, susunMahasiswa, waktuWib } from './muat.js'
 import { CONFIG } from '../lib/config.js'
+import { getAspekList } from '../lib/curriculum.js'
 import { semesterKalender } from '../lib/data.js'
 import { pratinjauPenguncian } from '../lib/rules.js'
 import { hitungTranskrip } from '../lib/scoring.js'
@@ -162,9 +163,16 @@ export async function kunci(pengguna, { angkatanId, konfirmasi }) {
 
   return db.$transaction(async (tx) => {
     // Hanya yang masih AKTIF yang berubah: dua jendela yang mengunci bersamaan tidak saling timpa.
+    // Susunan aspek saat dikunci ikut disimpan: aspek yang ditambah atau diarsipkan sesudahnya tidak mengubah
+    // transkrip angkatan ini (aspekUntuk di src/lib/curriculum.js).
     const ubah = await tx.angkatan.updateMany({
       where: { id: a.id, status: 'AKTIF' },
-      data: { status: 'TERKUNCI', dikunciOleh: pengguna.id, dikunciPada: new Date() },
+      data: {
+        status: 'TERKUNCI',
+        dikunciOleh: pengguna.id,
+        dikunciPada: new Date(),
+        aspekSaatKunci: getAspekList().map((x) => x.id),
+      },
     })
     if (ubah.count !== 1) return { ok: false }
 

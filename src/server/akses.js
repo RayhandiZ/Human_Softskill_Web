@@ -14,7 +14,7 @@ const PERAN = {
   ADMIN: "admin",
   SUPER_ADMIN: "superadmin",
 };
-const ALASAN_MIN = 10;
+export const ALASAN_MIN = 10;
 const SERTA = {
   dosen: { include: { prodi: true } },
   mahasiswa: { include: { prodi: true, angkatan: true } },
@@ -26,6 +26,8 @@ function susunAkun(p) {
     email: p.email,
     peran: PERAN[p.peran],
     aktif: p.aktif,
+    // Hanya admin biasa yang izinnya bisa diatur; super admin selalu punya (punyaIzinMaster di api.js).
+    ...(p.peran === "ADMIN" ? { kelolaMaster: p.kelolaMaster } : {}),
     ...(p.dosen
       ? { nama: p.dosen.nama, nip: p.dosen.nip, prodi: p.dosen.prodi.nama }
       : {}),
@@ -94,23 +96,59 @@ export async function ubahAkses(pengguna, { id, aktif, alasan }) {
   return { akun: susunAkun(baru) };
 }
 
+/* --------------------------- izin kelola data master --------------------------- */
+
+// Super admin memberi atau mencabut izin admin biasa untuk menambah dan mengubah data master (angkatan, fakultas,
+// prodi, mahasiswa) lewat src/server/dataMaster.js. Satu izin untuk semuanya, berlaku sampai dicabut, dan tidak
+// mencakup menghapus. Pemiliknya dibaca ulang setiap permintaan (penggunaDari di api.js), jadi mencabut izin
+// langsung berlaku; tombol di layar admin baru ikut hilang setelah halamannya dimuat ulang.
+
+/** Memberi (aktif true) atau mencabut (aktif false) izin kelola data master satu akun admin, dengan alasan. */
+export async function aturIzinMaster(pengguna, { id, aktif, alasan }) {
+  const target = Number(id)
+  if (!Number.isInteger(target)) throw new GalatApi('Akun tidak valid.')
+  if (typeof aktif !== 'boolean') throw new GalatApi('Status izin tidak valid.')
+  const teksAlasan = String(alasan ?? '').trim()
+  if (teksAlasan.length < ALASAN_MIN) throw new GalatApi('Alasan wajib diisi, minimal 10 karakter.')
+
+  const akun = await db.pengguna.findUnique({ where: { id: target }, include: SERTA })
+  if (!akun) throw new GalatApi('Akun tidak ditemukan.', 404)
+  if (akun.peran === 'SUPER_ADMIN') throw new GalatApi('Super Admin selalu boleh mengelola data master.', 403)
+  if (akun.peran !== 'ADMIN') throw new GalatApi('Izin kelola data master hanya untuk akun admin Kemahasiswaan.', 403)
+  if (aktif && !akun.aktif) throw new GalatApi('Pulihkan dulu akses akun ini sebelum memberinya izin.', 409)
+  if (akun.kelolaMaster === aktif) return { akun: susunAkun(akun) } // tidak ada yang berubah, tidak dicatat
+
+  // Perubahan dan catatan lognya dalam satu transaksi: berhasil bersama atau gagal bersama.
+  const baru = await db.$transaction(async (tx) => {
+    const hasil = await tx.pengguna.update({ where: { id: akun.id }, data: { kelolaMaster: aktif }, include: SERTA })
+    await catatLog(tx, {
+      aktorId: pengguna.id,
+      aksi: 'UBAH_IZIN',
+      target: 'akun ' + akun.email,
+      rincian: { email: akun.email, izin: 'kelola data master', sebelum: akun.kelolaMaster, sesudah: aktif, alasan: teksAlasan },
+    })
+    return hasil
+  })
+  return { akun: susunAkun(baru) }
+}
+
 /* ------------------------------- tambah akun ------------------------------ */
 
 // Super admin menambah akun mahasiswa, dosen, atau admin. Akun Super Admin tetap hanya dibuat di basis data.
 const PERAN_BARU = { mahasiswa: 'MAHASISWA', dosen: 'DOSEN', admin: 'ADMIN' }
 const SUMBER_DOSEN = ['PDP', 'MK'] // Engagement diinput Kemahasiswaan, bukan dosen
 const SANDI_MIN = 8
-const PANJANG_MAKS = 191 // batas kolom String Prisma di MySQL (VARCHAR 191)
+export const PANJANG_MAKS = 191 // batas kolom String Prisma di MySQL (VARCHAR 191)
 
-/** Teks isian yang wajib ada, sudah dirapikan. */
-function wajib(nilai, label) {
+/** Teks isian yang wajib ada, sudah dirapikan. Dipakai juga src/server/dataMaster.js. */
+export function wajib(nilai, label) {
   const teks = String(nilai ?? '').trim()
   if (!teks) throw new GalatApi(label + ' wajib diisi.')
   if (teks.length > PANJANG_MAKS) throw new GalatApi(label + ' terlalu panjang.')
   return teks
 }
 
-async function cariProdi(nama) {
+export async function cariProdi(nama) {
   const prodi = await db.programStudi.findUnique({ where: { nama: wajib(nama, 'Program studi') } })
   if (!prodi) throw new GalatApi('Program studi tidak ditemukan.')
   return prodi.id
@@ -122,6 +160,10 @@ async function isianMahasiswa(isi) {
   if (await db.mahasiswa.findUnique({ where: { nim } })) throw new GalatApi('NIM ' + nim + ' sudah terdaftar.', 409)
   const angkatan = await db.angkatan.findUnique({ where: { id: wajib(isi.angkatanId, 'Angkatan') } })
   if (!angkatan) throw new GalatApi('Angkatan tidak ditemukan.')
+  // Angkatan terkunci sudah ditutup (kelayakan sertifikatnya final); mahasiswa baru tidak boleh masuk ke sana.
+  if (angkatan.status === 'TERKUNCI') {
+    throw new GalatApi('Angkatan ' + angkatan.label + ' sudah dikunci, jadi tidak bisa menerima mahasiswa baru.', 409)
+  }
   return { nim, nama: wajib(isi.nama, 'Nama'), prodiId: await cariProdi(isi.prodi), angkatanId: angkatan.id }
 }
 

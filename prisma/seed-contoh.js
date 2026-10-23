@@ -10,6 +10,7 @@ import 'dotenv/config'
 import bcrypt from 'bcryptjs'
 import { PrismaClient } from '@prisma/client'
 import { MASTER_AWAL } from '../src/lib/data.js'
+import { getAspekList } from '../src/lib/curriculum.js'
 import { STUDENTS, DOSEN } from '../scripts/dataContoh.js'
 import { tanamKurikulum } from './tanam-kurikulum.js'
 
@@ -43,6 +44,8 @@ async function main() {
   await db.angkatan.deleteMany()
   await db.komponen.deleteMany()
   await db.indikator.deleteMany()
+  // Aspek yang diubah atau ditambah dari layar ikut dihapus, supaya kurikulum kembali ke isi curriculum.js.
+  await db.aspek.deleteMany()
   await db.konfigurasi.deleteMany()
 
   /* 1. Fakultas dan program studi. */
@@ -65,6 +68,8 @@ async function main() {
       periodeTahun: c.intake.tahun,
       periodeSemester: c.intake.semester === 'Ganjil' ? 'GANJIL' : 'GENAP',
       status: c.status === 'terkunci' ? 'TERKUNCI' : 'AKTIF',
+      // Angkatan terkunci memakai susunan aspek saat dikunci (aspekUntuk di src/lib/curriculum.js).
+      aspekSaatKunci: c.status === 'terkunci' ? getAspekList().map((a) => a.id) : undefined,
     })),
   })
 

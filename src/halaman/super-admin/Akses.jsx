@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Avatar, Badge, Card, CatatanKaki, EmptyState, SearchInput, Select, Tabs } from '../../components/Ui'
-import { IconAlert, IconCheck, IconHapus, IconLock, IconPlus, IconRefresh, IconUndo } from '../../components/Icons'
-import { ALASAN_AKSES_MIN, SANDI_AWAL_MIN, hapusAkun, muatAkses, tambahAkun, ubahAkses } from '../../lib/store'
+import { IconAlert, IconCheck, IconCheckShield, IconHapus, IconLock, IconPlus, IconRefresh, IconUndo } from '../../components/Icons'
+import { ALASAN_AKSES_MIN, SANDI_AWAL_MIN, aturIzinMaster, hapusAkun, muatAkses, tambahAkun, ubahAkses } from '../../lib/store'
 import { COHORTS, PROGRAMS, getAngkatan } from '../../lib/data'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 
 /* Mahasiswa, dosen, dan admin Kemahasiswaan yang boleh masuk (Pengguna.aktif). Daftar dari /api/akses, perubahan
    lewat /api/akses/ubah (src/server/akses.js); lihat README.md › Panel Super Admin › Akses Pengguna.
-   Akun yang dicabut sudah ditolak server: penggunaDari() di src/server/api.js membaca `aktif` setiap permintaan. */
+   Akun yang dicabut sudah ditolak server: penggunaDari() di src/server/api.js membaca `aktif` setiap permintaan.
+   Baris admin juga memberi atau mencabut izin kelola data master lewat /api/akses/izin; lihat README.md › Data master. */
 
 const KELOMPOK = {
   dosen: { label: 'Dosen', peran: ['dosen'], kosong: 'Belum ada akun dosen.', cari: 'Cari nama, email, atau NIP', tambah: 'Tambah dosen' },
@@ -192,7 +193,7 @@ export default function Akses() {
 
 function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus }) {
   const t = useTeks()
-  // Panel baris ini berisi ubah akses ('akses') atau hapus akun ('hapus').
+  // Panel baris ini berisi ubah akses ('akses'), hapus akun ('hapus'), atau izin kelola data master ('izin').
   const [mode, setMode] = useState('akses')
   const [alasan, setAlasan] = useState('')
   const [sibuk, setSibuk] = useState(false)
@@ -202,7 +203,12 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
   // Hanya akun yang aksesnya sudah dicabut; server juga menolak akun yang masih punya data.
   const bisaDihapus = bisaDiubah && !a.aktif
   const hapus = mode === 'hapus'
-  const panel = terbuka && bisaDiubah && (!hapus || bisaDihapus)
+  // Izin kelola data master hanya untuk admin biasa (aturIzinMaster di src/server/akses.js). Memberi izin butuh akun
+  // yang masih punya akses; mencabut tetap bisa walau aksesnya sudah dicabut.
+  const izin = mode === 'izin'
+  const punyaIzin = a.kelolaMaster === true
+  const bisaIzin = bisaDiubah && a.peran === 'admin' && (a.aktif || punyaIzin)
+  const panel = terbuka && bisaDiubah && (hapus ? bisaDihapus : izin ? bisaIzin : true)
 
   function tutup() {
     setAlasan('')
@@ -230,7 +236,9 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
         onHapus(a)
         return
       }
-      const { akun } = await ubahAkses({ id: a.id, aktif: !cabut, alasan: alasan.trim() })
+      const { akun } = izin
+        ? await aturIzinMaster({ id: a.id, aktif: !punyaIzin, alasan: alasan.trim() })
+        : await ubahAkses({ id: a.id, aktif: !cabut, alasan: alasan.trim() })
       onGanti(akun)
       tutup()
     } catch (err) {
@@ -262,6 +270,11 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
           {a.peran === 'superadmin' ? <Badge tone="brand">{t('Super Admin')}</Badge> : null}
+          {punyaIzin ? (
+            <Badge tone="brand" icon={IconCheckShield}>
+              {t('Izin data master')}
+            </Badge>
+          ) : null}
           <Badge
             tone={a.aktif ? 'good' : 'critical'}
             icon={a.aktif ? IconCheck : IconLock}
@@ -271,10 +284,21 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
           </Badge>
           {bisaDiubah ? (
             <>
+              {bisaIzin ? (
+                <button
+                  type="button"
+                  className="btn-ghost !px-3 !py-2 text-[13px]"
+                  aria-expanded={panel && izin}
+                  onClick={() => buka('izin')}
+                >
+                  <IconCheckShield size={15} />
+                  {t(punyaIzin ? 'Cabut izin data master' : 'Beri izin data master')}
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="btn-ghost !px-3 !py-2 text-[13px]"
-                aria-expanded={panel && !hapus}
+                aria-expanded={panel && mode === 'akses'}
                 onClick={() => buka('akses')}
               >
                 {cabut ? <IconLock size={15} /> : <IconUndo size={15} />}
@@ -304,7 +328,11 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
             {t(
               hapus
                 ? 'Akun ini dihapus permanen dari basis data beserta profilnya, dan tidak bisa dikembalikan. Akun yang masih punya nilai, pengumpulan, atau riwayat tindakan tidak bisa dihapus; biarkan aksesnya tetap dicabut.'
-                : cabut
+                : izin
+                  ? punyaIzin
+                    ? 'Admin ini tidak bisa lagi menambah atau mengubah data master. Data yang sudah ditambahkannya tetap tersimpan.'
+                    : 'Admin ini bisa menambah dan mengubah angkatan, fakultas, program studi, dan data mahasiswa dari halaman Data Master sampai izinnya dicabut. Menghapus data tetap tidak bisa.'
+                  : cabut
                   ? 'Akun ini tidak bisa masuk lagi, dan sesi yang sedang terbuka langsung berakhir. Datanya tetap tersimpan.'
                   : 'Akun ini bisa masuk lagi seperti semula.',
             )}
@@ -316,11 +344,21 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
           <div className="flex flex-wrap gap-2.5">
             <button
               type="submit"
-              className={hapus || cabut ? TOMBOL_BAHAYA : 'btn-primary'}
+              className={hapus || (izin ? punyaIzin : cabut) ? TOMBOL_BAHAYA : 'btn-primary'}
               disabled={sibuk || alasan.trim().length < ALASAN_AKSES_MIN}
             >
-              {hapus ? <IconHapus size={16} /> : cabut ? <IconLock size={16} /> : <IconUndo size={16} />}
-              {t(hapus ? 'Hapus permanen' : cabut ? 'Cabut akses' : 'Pulihkan akses')}
+              {hapus ? <IconHapus size={16} /> : izin ? <IconCheckShield size={16} /> : cabut ? <IconLock size={16} /> : <IconUndo size={16} />}
+              {t(
+                hapus
+                  ? 'Hapus permanen'
+                  : izin
+                    ? punyaIzin
+                      ? 'Cabut izin data master'
+                      : 'Beri izin data master'
+                    : cabut
+                      ? 'Cabut akses'
+                      : 'Pulihkan akses',
+              )}
             </button>
             <button type="button" className="btn-ghost" disabled={sibuk} onClick={tutup}>
               {t('Batal')}

@@ -46,6 +46,13 @@ const MATRIKS = [
   { tindakan: 'Memindahkan periode akademik', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
   // /api/akses/ubah, hanya super admin; akun Super Admin dan akun sendiri ditolak (src/server/akses.js).
   { tindakan: 'Mencabut dan memulihkan akses mahasiswa, dosen, dan admin', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
+  // /api/master/*, penjaga ['master']: super admin, dan admin yang diberi izin di Akses Pengguna (src/server/dataMaster.js).
+  {
+    tindakan: 'Menambah dan mengubah angkatan, fakultas, prodi, dan data mahasiswa',
+    izin: [['tidak'], ['tidak'], ['syarat', 'bila diberi izin oleh Super Admin; tanpa hapus'], ['ya']],
+  },
+  // /api/akses/izin, hanya super admin, dan hanya untuk akun admin (aturIzinMaster di src/server/akses.js).
+  { tindakan: 'Memberi dan mencabut izin kelola data master', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
   // Peran SUPER_ADMIN hanya dipasang langsung di basis data; tidak ada tombolnya di website.
   { tindakan: 'Mengangkat Super Admin dari website', izin: [['tidak'], ['tidak'], ['tidak'], ['tidak']] },
 ]

@@ -95,6 +95,8 @@ export function susunMahasiswa(m, nama = new Map(), { komponenBoleh = null, deng
     angkatanLabel: m.angkatan.label,
     semesterAktif: semesterDari(m.angkatan),
     statusAngkatan: m.angkatan.status === 'TERKUNCI' ? 'terkunci' : 'aktif',
+    // ID aspek saat angkatannya dikunci (null = belum terkunci); transkripnya dihitung dari daftar ini.
+    aspekKunci: Array.isArray(m.angkatan.aspekSaatKunci) ? m.angkatan.aspekSaatKunci : null,
     periode: periodeAngkatan(intakeDari(m.angkatan)),
     nilai,
     penguncian,

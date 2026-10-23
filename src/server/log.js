@@ -4,8 +4,9 @@ import { petaNama, waktuWib } from './muat.js'
 import { getKomponenById } from '../lib/curriculum.js'
 
 // Catatan tindakan admin selain perubahan nilai (yang sudah punya AuditLog): kunci angkatan, perubahan
-// data terkunci beserta alasannya, perubahan tanda penguncian aspek, perubahan bobot kurikulum, serta
-// permintaan admin kepada super admin (diajukan, diputuskan, ditarik).
+// data terkunci beserta alasannya, perubahan tanda penguncian aspek, perubahan bobot kurikulum,
+// permintaan admin kepada super admin (diajukan, diputuskan, ditarik), akses dan izin akun, serta
+// perubahan data master (angkatan, fakultas, prodi, mahasiswa).
 //
 // Dipanggil DI DALAM transaksi `tx` yang sama dengan perubahan datanya, supaya catatan dan perubahan
 // selalu berhasil atau gagal bersama: tidak ada perubahan tanpa jejak, tidak ada jejak tanpa perubahan.
@@ -37,6 +38,19 @@ export const AKSI_LOG = [
   'TAMBAH_AKUN',
   'UBAH_AKUN',
   'HAPUS_AKUN',
+  // Izin kelola data master (akses.js) dan perubahan data master oleh pemegangnya (dataMaster.js).
+  'UBAH_IZIN',
+  'TAMBAH_ANGKATAN',
+  'UBAH_ANGKATAN',
+  'TAMBAH_FAKULTAS',
+  'UBAH_FAKULTAS',
+  'TAMBAH_PRODI',
+  'UBAH_PRODI',
+  // Aspek CPMK itu sendiri (src/server/aspek.js).
+  'TAMBAH_ASPEK',
+  'UBAH_ASPEK',
+  'ARSIPKAN_ASPEK',
+  'PULIHKAN_ASPEK',
 ]
 
 const UKURAN_BAWAAN = 25

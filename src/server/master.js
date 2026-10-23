@@ -11,22 +11,15 @@ import { ambilKurikulum, ambilPeriode } from './kurikulum.js'
    jadi tidak perlu sesi untuk membacanya.
    -------------------------------------------------------------------------- */
 
-export async function ambilMaster() {
-  const [angkatan, fakultas, kurikulum, periode] = await Promise.all([
+/**
+ * Angkatan, fakultas, dan prodi saja, tanpa kurikulum dan periode. Dipakai juga jawaban pintu data master
+ * (src/server/dataMaster.js), supaya layar langsung memasang isi terbaru lewat isiMaster() tanpa memuat ulang.
+ */
+export async function ambilAngkatanProdi() {
+  const [angkatan, fakultas] = await Promise.all([
     db.angkatan.findMany(),
     db.fakultas.findMany({ orderBy: { id: 'asc' }, include: { prodi: { orderBy: { id: 'asc' } } } }),
-    // Kurikulum yang gagal dibaca tidak ikut menggagalkan angkatan dan prodi.
-    ambilKurikulum().catch((e) => {
-      console.warn('Kurikulum dibaca dari kode karena basis data tidak bisa dibaca:', e.message)
-      return null
-    }),
-    // null = belum disimpan atau gagal dibaca: periode dari kode yang dipakai.
-    ambilPeriode().catch((e) => {
-      console.warn('Periode aktif dibaca dari kode karena basis data tidak bisa dibaca:', e.message)
-      return null
-    }),
   ])
-
   return {
     angkatan: angkatan.map((a) => ({
       id: a.id,
@@ -39,7 +32,23 @@ export async function ambilMaster() {
       name: f.nama,
       programs: f.prodi.map((p) => ({ nama: p.nama, jenjang: p.jenjang })),
     })),
-    kurikulum,
-    periode,
   }
+}
+
+export async function ambilMaster() {
+  const [dasar, kurikulum, periode] = await Promise.all([
+    ambilAngkatanProdi(),
+    // Kurikulum yang gagal dibaca tidak ikut menggagalkan angkatan dan prodi.
+    ambilKurikulum().catch((e) => {
+      console.warn('Kurikulum dibaca dari kode karena basis data tidak bisa dibaca:', e.message)
+      return null
+    }),
+    // null = belum disimpan atau gagal dibaca: periode dari kode yang dipakai.
+    ambilPeriode().catch((e) => {
+      console.warn('Periode aktif dibaca dari kode karena basis data tidak bisa dibaca:', e.message)
+      return null
+    }),
+  ])
+
+  return { ...dasar, kurikulum, periode }
 }

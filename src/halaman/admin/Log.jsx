@@ -25,6 +25,19 @@ export const LABEL_LOG = {
   TAMBAH_AKUN: 'Tambah akun',
   UBAH_AKUN: 'Ubah akun',
   HAPUS_AKUN: 'Hapus akun',
+  // Izin kelola data master (src/server/akses.js) dan perubahan data master (src/server/dataMaster.js).
+  UBAH_IZIN: 'Ubah izin data master',
+  TAMBAH_ANGKATAN: 'Tambah angkatan',
+  UBAH_ANGKATAN: 'Ubah angkatan',
+  TAMBAH_FAKULTAS: 'Tambah fakultas',
+  UBAH_FAKULTAS: 'Ubah fakultas',
+  TAMBAH_PRODI: 'Tambah program studi',
+  UBAH_PRODI: 'Ubah program studi',
+  // Aspek CPMK itu sendiri (src/server/aspek.js).
+  TAMBAH_ASPEK: 'Tambah aspek',
+  UBAH_ASPEK: 'Ubah struktur aspek',
+  ARSIPKAN_ASPEK: 'Arsipkan aspek',
+  PULIHKAN_ASPEK: 'Pulihkan aspek',
 }
 
 const UKURAN = 25

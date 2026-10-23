@@ -18,7 +18,7 @@ import 'dotenv/config'
 import bcrypt from 'bcryptjs'
 import { PrismaClient } from '@prisma/client'
 import { MASTER_AWAL } from '../src/lib/data.js'
-import { KUNCI_VERSI_KURIKULUM } from '../src/lib/curriculum.js'
+import { KUNCI_VERSI_KURIKULUM, getAspekList } from '../src/lib/curriculum.js'
 import { tanamKurikulum } from './tanam-kurikulum.js'
 
 const db = new PrismaClient()
@@ -77,6 +77,8 @@ async function main() {
         periodeTahun: c.intake.tahun,
         periodeSemester: c.intake.semester === 'Ganjil' ? 'GANJIL' : 'GENAP',
         status: c.status === 'terkunci' ? 'TERKUNCI' : 'AKTIF',
+        // Angkatan terkunci memakai susunan aspek saat dikunci (aspekUntuk di src/lib/curriculum.js).
+        aspekSaatKunci: c.status === 'terkunci' ? getAspekList().map((a) => a.id) : undefined,
       })),
     })
     console.log('Angkatan ditanam dari isi awal.')

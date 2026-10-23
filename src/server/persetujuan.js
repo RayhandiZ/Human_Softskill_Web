@@ -7,6 +7,7 @@ import { putuskanUsulan } from './pengajuan.js'
 import { kunci, pratinjau } from './angkatan.js'
 import { simpanBobot } from './bobot.js'
 import { rencanakanPenilaian, simpanPenilaian } from './penilaian.js'
+import { kelolaAspek, rencanakanAspek } from './aspek.js'
 import { validasiBatchImport } from '../lib/rules.js'
 import { KURIKULUM_TERPASANG, getAspek } from '../lib/curriculum.js'
 import { bedaBobot, dampakBobot, periksaBobot, susunanBobot } from '../lib/bobot.js'
@@ -256,6 +257,42 @@ AKSI.UBAH_PENILAIAN = {
       mahasiswa: r.dampak.daftar.map((x) => ({ nim: x.nim, nama: x.nama, angkatan: x.angkatan })),
       jumlahMahasiswa: r.dampak.berubah,
       ringkasan: { judul: 'Ubah penilaian ' + kode + ': ' + (bagian.join(', ') || 'urutan komponen'), baris: baris.slice(0, BATAS_BARIS) },
+    }
+  },
+}
+
+const JUDUL_ASPEK = { tambah: 'Tambah aspek', ubah: 'Ubah struktur aspek', arsipkan: 'Arsipkan aspek', pulihkan: 'Pulihkan aspek' }
+const NAMA_BIDANG = { kode: 'kode', cluster: 'cluster', semester: 'semester' }
+
+// Mengelola aspek CPMK (src/server/aspek.js): oleh admin biasa SELALU digerbang, apa pun mahasiswanya, karena
+// mengubah perhitungan semua angkatan yang belum terkunci.
+AKSI.KELOLA_ASPEK = {
+  kerja: kelolaAspek,
+  alasan: (isi) => isi.alasan,
+  pesanAlasan:
+    'Mengelola aspek CPMK oleh admin perlu persetujuan Super Admin. Isi alasan minimal ' + ALASAN_MIN +
+    ' karakter supaya Super Admin bisa menimbangnya.',
+  async telaah(isiMentah) {
+    const { isi, perubahan, sebelum, dampak } = await rencanakanAspek(isiMentah)
+    const kode = isi.aksi === 'tambah' ? isi.kode : kodeAspek(perubahan.id)
+    const nama = isi.aksi === 'tambah' ? isi.nama : sebelum.nama
+    const baris =
+      isi.aksi === 'tambah'
+        ? [
+            'Aspek baru ' + perubahan.id + ' (' + isi.kode + ' ' + isi.nama + '), cluster ' + isi.cluster + ', semester ' + isi.semester,
+            ...isi.komponen.map((k) => '+ komponen: ' + k.label + ' (' + k.sumber + (k.jenis ? ', ' + k.jenis : '') + ')'),
+          ]
+        : isi.aksi === 'ubah'
+          ? Object.entries(perubahan.timpa).map(([b, v]) => 'Ubah ' + NAMA_BIDANG[b] + ': ' + (sebelum[b] ?? '–') + ' → ' + v)
+          : [isi.aksi === 'arsipkan' ? 'Aspek tidak tampil dan tidak dihitung lagi; nilainya tetap tersimpan.' : 'Aspek kembali tampil dan dihitung.']
+    baris.push(
+      'Dampak: nilai ' + dampak.berubah + ' dari ' + dampak.total + ' mahasiswa berubah, ' + dampak.jadiBelumLengkap +
+        ' menjadi belum lengkap, ' + dampak.tidakLagiLayak + ' tidak lagi berhak sertifikat (angkatan terkunci tidak ikut)',
+    )
+    return {
+      mahasiswa: dampak.daftar.map((x) => ({ nim: x.nim, nama: x.nama, angkatan: x.angkatan })),
+      jumlahMahasiswa: dampak.berubah,
+      ringkasan: { judul: JUDUL_ASPEK[isi.aksi] + ' ' + kode.replace(/\.$/, '') + ' ' + nama, baris: baris.slice(0, BATAS_BARIS) },
     }
   },
 }
