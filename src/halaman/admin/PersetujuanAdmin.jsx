@@ -14,7 +14,7 @@ export const LABEL_AKSI = {
   ROLLBACK_NILAI: 'Batalkan batch nilai',
   UBAH_PENGUNCIAN: 'Ubah tanda final/sementara',
   PUTUSKAN_USULAN: 'Setujui usulan nilai dosen',
-  KUNCI_ANGKATAN: 'Kunci angkatan',
+  KUNCI_ANGKATAN: 'Sahkan nilai angkatan',
   UBAH_BOBOT: 'Ubah bobot',
   UBAH_PENILAIAN: 'Ubah penilaian aspek',
   KELOLA_ASPEK: 'Kelola aspek CPMK',

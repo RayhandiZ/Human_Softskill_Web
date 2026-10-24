@@ -496,7 +496,11 @@ meninggalkan bahasa visual di bawah: warna padat, garis rambut, tanpa bayangan b
   Semester Antara di akhir Juli. Dibulatkan per bulan supaya setahun tertutup: Ganjil 1 Agustus sampai
   31 Januari, Genap 1 Februari sampai 31 Juli. Pilihan tidak disimpan; membuka Pusat Kendali lagi kembali
   ke periode aktif. Daftarnya berpola listbox: panah, Home/End, Enter atau Spasi, Escape.
-- **Grafik perubahan nilai** menjawab "bulan apa saja nilai banyak berubah" dalam periode terpilih: enam
+- **Grafik nilai tersimpan per bulan** menjawab "bulan apa saja nilai banyak berubah" dalam periode terpilih:
+  satu batang per bulan menghitung baris `AuditLog`, yaitu setiap nilai tugas yang tersimpan, baik input baru
+  maupun perubahan. Rapat 24 Okt 2026 membaca judul lamanya ("Perubahan nilai per bulan") sebagai jumlah
+  pengajuan koreksi, jadi judul, subjudul, ringkasan, dan keterangannya kini menyebut "nilai tersimpan" dan
+  "bukan jumlah pengajuan koreksi". Enam
   batang bulanan; bulan yang belum berjalan di periode aktif tidak diberi batang. Satu seri, satu warna
   (`.isi-data`: `--brand` di tema terang, `#5598e7` di tema gelap karena `--brand` di bawah 3:1 di kartu
   gelap), batang paling lebar 24px dengan ujung 4px, garis bantu rambut, hanya nilai terbesar yang diberi
@@ -1115,6 +1119,14 @@ porsinya, jadi nilai aspek sama dengan rata-rata komponen yang sudah terisi.
 Contoh: tugas A.1 bernilai 80 menyumbang 16 dari 20 poin. Aturan ini usulan tim dan belum
 dikonfirmasi unit pengelola.
 
+**Label contoh** (rapat 24 Okt 2026): selama `MODE_BOBOT_KOMPONEN` masih menunggu konfirmasi, aspek yang
+bobot komponennya sama rata diberi tanda *(contoh)* di kartu aspek dan catatan di atas tabel editor Penilaian
+& Bobot (`bobotMasihContoh` di `src/lib/bobot.js`). Selisih sampai 0,1 tetap terhitung sama rata, karena
+pembagian rata yang dibulatkan ke sen menyisakan sisa (A.2 tersimpan 14,29 ×6 + 14,26). Angkanya tetap
+dipakai menghitung; labelnya hilang sendiri begitu bobot resmi yang tidak rata disimpan atau aturannya
+dikonfirmasi. Di Aturan Sistem, *Bobot aspek kustom* (semua 10) berstatus *Angka contoh* selama
+`BOBOT_ASPEK` bukan `kustom`, karena angkanya memang tidak dipakai.
+
 Mode `per-sumber` adalah aturan sebelumnya dan tetap bisa dipilih:
 
 ```
@@ -1349,8 +1361,16 @@ nilainya sesudah itu wajib beralasan (lihat bagian berikut). Setiap perubahan ta
 
 ## Penguncian angkatan dan data terkunci
 
+**Istilah di layar** (rapat 24 Okt 2026, supaya tidak terdengar seperti bahasa komputer): angkatan yang
+dikunci tertulis *disahkan* ("Sahkan nilai angkatan", "Nilai angkatan 2024 sudah disahkan"), aspek yang
+dikunci tertulis *final* ("ditetapkan final", "tanda final"), dan aspek yang semesternya belum tiba
+tertulis *belum dibuka* di panel mahasiswa. Bahasa Inggrisnya *ratified*, *final*, dan *not open yet*.
+Nama di kode dan data tidak berubah: status `terkunci`, aksi `KUNCI_ANGKATAN`, `/api/penguncian`, dan
+judul bagian README ini. Sasaran log dari server yang masih bertuliskan `penguncian (N mahasiswa)`
+ditampilkan sebagai *tanda final (N mahasiswa)* lewat `labelSasaran` di `admin/Log.jsx`.
+
 Mengunci angkatan menandai bahwa program tiga semesternya sudah selesai, dengan dua akibat:
-angkatan memenuhi syarat sertifikat *Angkatan sudah dikunci oleh Kemahasiswaan* (R5), dan setiap
+angkatan memenuhi syarat sertifikat *Nilai angkatan sudah disahkan Kemahasiswaan* (R5), dan setiap
 perubahan nilai sesudahnya wajib beralasan dan tercatat. Penguncian **tidak** menutup pintu bagi
 Kemahasiswaan untuk memperbaiki atau melengkapi nilai.
 
@@ -1498,8 +1518,19 @@ Aturan tampilan dashboard mahasiswa:
 - **satu angka besar saja** (nilai akhir); angka lain lebih kecil supaya mata tahu harus mulai
   dari mana;
 - nilai akhir selalu disertai status dan dasar hitungnya (R3);
-- aspek terkunci tampil dengan gembok dan semester pembukaannya, tidak pernah sebagai 0 (R2);
+- aspek yang belum dibuka tampil dengan gembok dan semester pembukaannya, tidak pernah sebagai 0 (R2);
 - grafik di kartu nilai akhir mengikuti data yang ada, lihat *Grafik* di bagian Catatan kode.
+
+Transkrip di layar menjelaskan kodenya sendiri, karena rapat 24 Okt 2026 menilai kode seperti CL1 atau PDP
+tidak dipahami orang awam:
+
+- **Arti kode di tabel** di bawah tabel utama: huruf area beserta namanya, CL1 sampai CL6, dan kepanjangan
+  PDP, MK Humaniora, dan Kemahasiswaan. Sel cluster dan pil sumber juga membawa nama lengkapnya lewat `title`
+  dan teks pembaca layar. Transkrip cetak tidak perlu bagian ini karena hanya memuat kode aspek, yang selalu
+  ditulis di samping namanya.
+- **Paling menurunkan nilai** di rincian aspek: tugas yang selisih nilainya dari nilai aspek, dikali
+  bobotnya, paling negatif, beserta tanda *paling menurunkan* di barisnya. Rubrik dan catatan dosen per
+  tugas belum disimpan di basis data, jadi belum bisa ditampilkan.
 
 Tombol **Ajukan koreksi nilai** yang sebelumnya mati kini membuka formulir
 sungguhan: mahasiswa memilih komponen, menuliskan alasan, dan pengajuannya masuk
@@ -1622,9 +1653,14 @@ di peramban harus menunggu komponen menempel:
   peramban hanya ada di Chromium versi baru dan berjalan di perangkat; ia hanya mengisi kalimat
   yang belum ada di kamus dan tidak pernah menimpanya. Hasil mesin yang kehilangan penanda `{n}`
   dibuang. `dumpOtomatis()` di konsol mencetak hasil mesin untuk ditempel ke `teks.js`.
-- Kata yang ejaannya sama di kedua bahasa (Dashboard, Email, Status, Helpdesk, …) tidak
-  didaftarkan. Nilai kosong berarti belum diterjemahkan; `npm run bahasa:sync` menulis kunci
-  baru dengan nilai kosong.
+- Kata yang ejaannya sama di kedua bahasa (Dashboard, Email, Status, Helpdesk, …) tidak wajib
+  didaftarkan untuk `test:bahasa`, yang mengenalinya lewat daftar `SAMA`. Yang tampil di layar sebaiknya
+  tetap didaftarkan identik (`Dashboard`, `Helpdesk`, `PDP`, `Area {kode}`): tanpa entri, lapisan bahasa
+  memperingatkannya di konsol pengembangan dan memintanya ke penerjemah peramban. Nilai kosong berarti
+  belum diterjemahkan; `npm run bahasa:sync` menulis kunci baru dengan nilai kosong.
+- **Sasaran log dari server** ditulis sebagai kalimat Indonesia jadi (`akun x@umn.ac.id`, `angkatan 2024`,
+  `penguncian (2 mahasiswa)`). `labelSasaran` di `admin/Log.jsx` menerjemahkannya menurut sebelas pola
+  awalannya, di halaman Log dan di Tindakan admin terbaru Pusat Kendali; yang tidak dikenali tampil apa adanya.
 - Penanda `{dalamKurungKurawal}` wajib ada juga di sisi Inggris. Nama penanda tidak boleh memakai
   tanda hubung: `{ rata-rata: … }` dibaca sebagai pengurangan dan menggagalkan kompilasi.
 - Kunci yang dioper sebagai prop (judul dan kepala tabel `ChartFrame`, kepala tabel lembar cetak)
@@ -1669,8 +1705,20 @@ panah kiri/kanan). Bagian yang mudah rusak:
 
 ### Grafik
 
-- **Kartu nilai akhir mahasiswa**: tren dua garis (nilai semester dan kumulatif) baru tampil bila
-  ada minimal dua semester bernilai; selain itu tampil sebaran aspek.
+- **Kartu nilai akhir mahasiswa**: tren dua garis (*Nilai tiap semester* dan *Rata-rata gabungan*) baru
+  tampil bila ada minimal dua semester bernilai; selain itu tampil sebaran aspek.
+- **Rata-rata gabungan, bukan "kumulatif"** (rapat 24 Okt 2026): angkanya `nilaiKumulatif`, yaitu nilai akhir
+  bila hanya aspek sampai semester itu yang dihitung, jadi titik terakhirnya selalu sama dengan nilai akhir.
+  Kedua rumus `MODE_AGREGASI` yang masih menunggu konfirmasi sama-sama rata-rata, bukan jumlah, jadi labelnya
+  tetap benar apa pun yang dipilih. Catatan satu baris di bawah grafik menjelaskannya. Di bahasa Inggris
+  keduanya "Combined average", karena kunci `'Rata-rata gabungan'` juga dipakai kartu Program Studi.
+- **Dua garis dibedakan warna dan bentuk**: biru bertitik isi untuk nilai tiap semester, abu-abu bercincin
+  untuk rata-rata gabungan. Cincinnya lebih besar dan digambar lebih dulu, jadi saat keduanya sama (selalu di
+  semester pertama) titik biru duduk di tengahnya. Legenda memakai kunci yang meniru tanda itu. Warnanya
+  `--tren-semester` dan `--tren-gabungan` di `index.css`, dengan nilai sendiri untuk tema gelap dan kedua mode
+  kontras; setiap pasangan lolos `validate_palette.js` skill dataviz (beda warna normal ≥ 15, buta warna ≥ 8,
+  kontras ≥ 3:1). Mode gelap tidak memakai `--brand-ink` (`#9ec5f4`), karena biru sepucat itu terbaca abu-abu.
+  Titik terpilih membesar tanpa berganti bentuk.
 - **Sumbu Y tren boleh dipotong, asal dilabeli**: lebar jendelanya minimal 20 angka
   (`src/lib/kurva.js`) dan angka di ujung sumbu selalu ditulis. Grafik batang selalu mulai dari
   nol.
@@ -1699,6 +1747,10 @@ panah kiri/kanan). Bagian yang mudah rusak:
   baris, jadi warna di sana berhenti menandai apa pun. Tingkatannya dibedakan berat huruf (final
   pekat, berjalan lebih ringan), dan teks redupnya memakai `ink-2` (6,89:1), bukan `ink-3`
   (3,22:1).
+- **Teks redup panel mahasiswa** ikut `#63677f` (gelap `#8b96ad`) seperti tiga panel lain sejak cek ulang
+  aksesibilitas rapat 24 Okt 2026: `StudentLayout` kini berkelas `panel-mahasiswa`. Bawaannya (`#8a8ea9`)
+  hanya 3,22:1 di kartu putih dan 3,04:1 di `--surface-2`, dipakai label tabel transkrip, keterangan
+  grafik, dan catatan kaki.
 - **Penanda (Draft)** ditulis merah dalam kurung, bukan pil kuning. `--warning` hanya 1,83:1
   sebagai teks di kartu putih, sedangkan `--critical` 4,80:1 (terang) dan 6,18:1 (gelap). Yang
   jarang boleh berwarna.

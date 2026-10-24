@@ -1,4 +1,4 @@
-import { CONFIG, withConfig } from './config.js'
+import { CONFIG, MENUNGGU_KONFIRMASI, withConfig } from './config.js'
 import { JENIS_MK, KOMPONEN, SUMBER_LIST, getAspekList, getKomponen } from './curriculum.js'
 import { bobotKomponen } from './scoring.js'
 import { kelayakanSertifikat } from './rules.js'
@@ -36,6 +36,19 @@ export const genapSeratus = (daftar) => Math.round(jumlah(daftar) * 100) === 100
 
 const tampil = (n) => n.toLocaleString('id-ID', { maximumFractionDigits: 2 })
 const kode = (a) => a.kode.replace(/\.$/, '') // 'A.1.' → 'A.1'
+
+/**
+ * Bobot komponen satu aspek masih angka contoh: semua komponennya sama besar selagi aturan pembagian bobot menunggu
+ * konfirmasi unit pengelola. Rapat 24 Okt 2026 meminta angka seperti itu diberi label "contoh" sampai data asli ada;
+ * labelnya hilang sendiri begitu bobot resmi yang tidak rata disimpan, atau aturannya dikonfirmasi.
+ */
+export function bobotMasihContoh(aspekId) {
+  if (!MENUNGGU_KONFIRMASI.includes('MODE_BOBOT_KOMPONEN')) return false
+  const angka = Object.values(bobotKomponen(aspekId))
+  // Pembagian rata yang dibulatkan ke sen menyisakan selisih kecil (100/7 tersimpan 14,29 x6 + 14,26), jadi selisih
+  // sampai 0,1 tetap terhitung sama rata.
+  return angka.length > 1 && Math.max(...angka) - Math.min(...angka) <= 0.1
+}
 
 /** Susunan bobot yang sedang berlaku. Aspek yang hanya sebagian komponennya berbobot terbaca otomatis. */
 export function susunanBobot() {

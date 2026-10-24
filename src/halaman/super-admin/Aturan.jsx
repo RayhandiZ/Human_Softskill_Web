@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Badge, Card, CardHeader, CatatanKaki } from '../../components/Ui'
-import { IconAlert, IconCalendar, IconCheck, IconChevronRight, IconClock, IconUndo } from '../../components/Icons'
+import { IconAlert, IconCalendar, IconCheck, IconChevronRight, IconClock, IconInfo, IconUndo } from '../../components/Icons'
 import { CONFIG, DARI_BASIS_DATA, KUNCI_DAPAT_DIUBAH, MENUNGGU_KONFIRMASI, nilaiBawaan } from '../../lib/config'
 import { ASAL_PERIODE, COHORTS, PERIODE_AKTIF, labelPeriode, periodeSetelah, semesterKalender } from '../../lib/data'
 import { ubahPeriode, useStore } from '../../lib/store'
@@ -61,12 +61,17 @@ const ATURAN = {
   IZINKAN_FINAL_DRAFT: { label: 'Aspek berkomponen draft boleh final', tampil: (v, t) => t(v ? 'Ya' : 'Tidak') },
 }
 
+/* Bobot aspek kustom hanya dipakai bila bobot antaraspeknya kustom; selama tidak, angkanya (semua 10) hanyalah
+   isian awal. Rapat 24 Okt 2026: angka sama seperti itu diberi label contoh, bukan "Ditetapkan". */
+const angkaContoh = (k) => k === 'BOBOT_ASPEK_KUSTOM' && CONFIG.BOBOT_ASPEK !== 'kustom'
+
 export default function Aturan() {
   useStore()
   const t = useTeks()
   // Baris tabel: aturan yang bisa ditimpa ditambah lama program, yang selalu ditetapkan.
   const jumlah = KUNCI_DAPAT_DIUBAH.length + 1
   const menunggu = KUNCI_DAPAT_DIUBAH.filter((k) => MENUNGGU_KONFIRMASI.includes(k)).length
+  const contoh = KUNCI_DAPAT_DIUBAH.filter((k) => !MENUNGGU_KONFIRMASI.includes(k) && angkaContoh(k)).length
 
   return (
     <div className="space-y-6">
@@ -96,7 +101,10 @@ export default function Aturan() {
             <span className="font-bold text-ink-2"> / {jumlah} </span>
             {t('aturan masih menunggu konfirmasi')}
           </p>
-          <p className="text-[13px] text-ink-2">{t('{n} sudah ditetapkan', { n: jumlah - menunggu })}</p>
+          <p className="text-[13px] text-ink-2">
+            {t('{n} sudah ditetapkan', { n: jumlah - menunggu - contoh })}
+            {contoh ? ' · ' + t('{n} berisi angka contoh', { n: contoh }) : ''}
+          </p>
         </div>
         <span aria-hidden="true" className="mt-3 block h-2 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--warning)_22%,transparent)]">
           <span className="block h-full rounded-full bg-[var(--warning)]" style={{ width: Math.round((menunggu / jumlah) * 100) + '%' }} />
@@ -137,6 +145,8 @@ export default function Aturan() {
                     <td className="px-5 py-3 sm:px-6">
                       {MENUNGGU_KONFIRMASI.includes(k) ? (
                         <Badge tone="warning" icon={IconClock} className="teks-tunggu whitespace-nowrap">{t('Menunggu konfirmasi')}</Badge>
+                      ) : angkaContoh(k) ? (
+                        <Badge tone="neutral" icon={IconInfo} className="whitespace-nowrap">{t('Angka contoh')}</Badge>
                       ) : (
                         <Badge tone="neutral" icon={IconCheck} className="whitespace-nowrap">{t('Ditetapkan')}</Badge>
                       )}
@@ -165,7 +175,8 @@ export default function Aturan() {
       </Card>
 
       <CatatanKaki>
-        {t('Menunggu konfirmasi: angka usulan tim yang belum dikonfirmasi unit pengelola, jadi masih bisa berubah.')}
+        {t('Menunggu konfirmasi: angka usulan tim yang belum dikonfirmasi unit pengelola, jadi masih bisa berubah.')}{' '}
+        {t('Angka contoh: isian awal yang belum dipakai menghitung, sampai unit pengelola menetapkan angka resmi.')}
       </CatatanKaki>
     </div>
   )
@@ -232,7 +243,7 @@ function KartuPeriode() {
       <CardHeader
         icon={IconCalendar}
         title={t('Periode akademik')}
-        subtitle={t('Semester tiap mahasiswa, siapa yang sudah lewat Semester 3, dan angkatan yang boleh dikunci dihitung dari periode ini.')}
+        subtitle={t('Semester tiap mahasiswa, siapa yang sudah lewat Semester 3, dan angkatan yang nilainya boleh disahkan dihitung dari periode ini.')}
       />
       <div className="card-pad space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
@@ -295,7 +306,7 @@ function KartuPeriode() {
             {jadiSelesai ? (
               <p className="text-[13px] leading-relaxed text-ink">
                 {t(
-                  '{n} angkatan akan lewat Semester {batas}: mahasiswanya tidak lagi ditangani dosen, perubahan datanya oleh admin biasa perlu persetujuan Super Admin, dan angkatannya boleh dikunci.',
+                  '{n} angkatan akan lewat Semester {batas}: mahasiswanya tidak lagi ditangani dosen, perubahan datanya oleh admin biasa perlu persetujuan Super Admin, dan nilai angkatannya boleh disahkan.',
                   { n: jadiSelesai, batas },
                 )}
               </p>

@@ -166,7 +166,7 @@ function BagianKirim({ isi, alasan, onAlasan, label, bahaya = false, k, onBatal 
       ) : dampak ? (
         <Dampak
           dampak={dampak}
-          kosong={t('Tidak ada nilai mahasiswa yang berubah. Angkatan yang sudah terkunci tidak ikut berubah.')}
+          kosong={t('Tidak ada nilai mahasiswa yang berubah. Angkatan yang sudah disahkan tidak ikut berubah.')}
         />
       ) : null}
       <label className="block max-w-xl">
@@ -263,7 +263,7 @@ function FormArsipAspek({ aspek, onSelesai, onBatal = null, className = '' }) {
       }}
     >
       <p className="text-[13.5px] leading-relaxed text-ink">
-        {t('Aspek ini tidak tampil dan tidak dihitung lagi untuk angkatan yang belum terkunci. Komponen dan nilainya tidak dihapus, dan angkatan yang sudah terkunci tetap menghitungnya.')}
+        {t('Aspek ini tidak tampil dan tidak dihitung lagi untuk angkatan yang belum disahkan. Komponen dan nilainya tidak dihapus, dan angkatan yang sudah disahkan tetap menghitungnya.')}
       </p>
       <BagianKirim isi={isi} alasan={alasan} onAlasan={setAlasan} label={t('Arsipkan aspek')} bahaya k={k} onBatal={onBatal} />
     </form>
@@ -457,7 +457,7 @@ function TambahAspek({ onPilih }) {
       <CardHeader
         icon={IconPlus}
         title={t('Tambah aspek')}
-        subtitle={t('Aspek baru langsung dihitung untuk angkatan yang belum terkunci, mulai dari semesternya. Komponen lain bisa ditambah sesudahnya di editor penilaian.')}
+        subtitle={t('Aspek baru langsung dihitung untuk angkatan yang belum disahkan, mulai dari semesternya. Komponen lain bisa ditambah sesudahnya di editor penilaian.')}
         action={
           buka ? null : (
             <button
@@ -501,7 +501,7 @@ function DaftarArsip({ arsip, onPilih, onPesan }) {
       <CardHeader
         icon={IconUndo}
         title={t('Aspek diarsipkan')}
-        subtitle={t('Tidak tampil dan tidak dihitung, kecuali untuk angkatan yang terkunci sebelum aspeknya diarsipkan.')}
+        subtitle={t('Tidak tampil dan tidak dihitung, kecuali untuk angkatan yang disahkan sebelum aspeknya diarsipkan.')}
       />
       <ul className="divide-y divide-line">
         {arsip.map((a) => (
@@ -591,7 +591,7 @@ export function AspekSemester({ semester }) {
         title={t('Aspek CPMK Semester {n}', { n: semester })}
         subtitle={t(
           user?.superAdmin
-            ? 'Tambah, edit, ubah, atau hapus aspek yang dinilai di semester ini. Perubahan langsung berlaku; angkatan yang sudah terkunci tidak ikut berubah.'
+            ? 'Tambah, edit, ubah, atau hapus aspek yang dinilai di semester ini. Perubahan langsung berlaku; angkatan yang sudah disahkan tidak ikut berubah.'
             : 'Tambah, edit, ubah, atau hapus aspek yang dinilai di semester ini. Perubahan Anda dikirim ke Super Admin dan berlaku setelah disetujui.',
         )}
         action={

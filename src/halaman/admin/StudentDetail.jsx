@@ -206,7 +206,7 @@ function PanelStatusAspek({ student }) {
   return (
     <Card className="print:hidden">
       <CardHeader
-        title={teks('Status penguncian aspek')}
+        title={teks('Status final aspek')}
         subtitle={
           teks('Mode berlaku: {mode}.', { mode: CONFIG.PENGUNCIAN_ASPEK }) +
           ' ' +
@@ -240,7 +240,7 @@ function PanelStatusAspek({ student }) {
               className="field !py-2.5"
               value={alasan}
               onChange={(e) => setAlasan(e.target.value)}
-              placeholder={teks('Wajib, minimal 10 karakter, bila angkatan atau aspek sudah terkunci')}
+              placeholder={teks('Wajib, minimal 10 karakter, bila nilai angkatan sudah disahkan atau aspek sudah final')}
             />
           </label>
         </div>
@@ -326,7 +326,7 @@ function PanelStatusAspek({ student }) {
 
       <div className="px-5 pb-4 sm:px-6">
         <CatatanKaki>
-          {teks('Aspek yang komponennya belum lengkap tidak pernah bisa dikunci, tombolnya nonaktif beserta alasannya. Penguncian hanya menghentikan perubahan status, bukan mengubah angka.')}
+          {teks('Aspek yang komponennya belum lengkap tidak pernah bisa ditandai final, tombolnya nonaktif beserta alasannya. Tanda final hanya menghentikan perubahan status, bukan mengubah angka.')}
         </CatatanKaki>
       </div>
     </Card>

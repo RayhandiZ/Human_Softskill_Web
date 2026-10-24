@@ -194,7 +194,7 @@ export function telaahAspek(student, aspekId) {
 
   return {
     status: 'berjalan',
-    alasan: 'Seluruh komponen sudah dinilai, menunggu penguncian oleh Kemahasiswaan',
+    alasan: 'Seluruh komponen sudah dinilai, menunggu ditetapkan final oleh Kemahasiswaan',
     siapDikunci: true,
     tanda,
   }

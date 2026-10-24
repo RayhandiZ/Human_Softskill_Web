@@ -236,7 +236,7 @@ export default function Overview() {
             nilai={angka.final.toLocaleString('id-ID')}
             satuan={teks('dari {n}', { n: angka.total.toLocaleString('id-ID') })}
             persen={bagi(angka.final)}
-            persenLabel={teks('Sudah dikunci')}
+            persenLabel={teks('Sudah final')}
           />
         </div>
       </section>

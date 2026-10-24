@@ -66,9 +66,11 @@ export default function Sertifikat() {
               <li key={s.id} className="flex items-start gap-3 py-3.5">
                 <span className="mt-0.5 text-ink-2">{s.lolos ? <IconCheck size={18} /> : <IconX size={18} />}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14.5px] font-semibold text-ink">{teks(s.label)}</p>
-                  {!s.lolos && s.alasan ? (
-                    <p className="mt-0.5 text-[13px] leading-snug text-ink-2">{teks(s.alasan)}</p>
+                  {/* labelT/alasanT, bukan label/alasan: kalimat jadi yang berisi angka tidak ada di kamus, jadi dulu
+                      tetap berbahasa Indonesia di mode Inggris. Sama seperti StudentDetail admin. */}
+                  <p className="text-[14.5px] font-semibold text-ink">{teks(...s.labelT)}</p>
+                  {!s.lolos && s.alasanT ? (
+                    <p className="mt-0.5 text-[13px] leading-snug text-ink-2">{teks(...s.alasanT)}</p>
                   ) : null}
                 </div>
                 <StatusTeks kuat={!s.lolos}>{teks(s.lolos ? 'Terpenuhi' : 'Belum terpenuhi')}</StatusTeks>

@@ -1,7 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { IconAlert, IconCheck, IconChevronDown, IconLock, IconPlus, IconUndo, IconX } from '../../components/Icons'
 import { JENIS_MK, RANAH, SUMBER_LIST, getAspek } from '../../lib/curriculum'
-import { dampakDari } from '../../lib/bobot'
+import { bobotMasihContoh, dampakDari } from '../../lib/bobot'
 import { bobotKomponen } from '../../lib/scoring'
 import {
   STATUS_KOMPONEN,
@@ -16,7 +16,7 @@ import { menungguPersetujuan, simpanPenilaian, useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 import { PesanMenunggu } from './PermintaanTerkirim'
-import { GulirTabel } from '../../components/Ui'
+import { GulirTabel, TandaContoh } from '../../components/Ui'
 
 /* Penilaian satu aspek di Input Manual: teks aspek, komponen asesmen, dan bobotnya. Super admin menyimpan
    langsung; admin biasa mengajukan ke super admin. Lihat src/server/penilaian.js dan README.md › Mengubah
@@ -282,6 +282,16 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
           </fieldset>
         </div>
 
+        {/* Menurut bobot yang tersimpan, bukan draf: labelnya baru hilang setelah bobot resmi benar-benar disimpan. */}
+        {bobotMasihContoh(aspekId) ? (
+          <p className="mb-2 text-[12.5px] leading-snug text-ink-2">
+            <TandaContoh className="mr-1">{t('contoh')}</TandaContoh>
+            {t(
+              'Bobot komponen aspek ini masih dibagi rata sambil menunggu bobot resmi dari unit pengelola. Angkanya tetap dipakai menghitung nilai sampai diganti.',
+            )}
+          </p>
+        ) : null}
+
         <GulirTabel className="rounded-xl border border-line bg-surface">
           <table className="w-full min-w-[900px] border-collapse">
             <thead>
@@ -472,7 +482,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
                 dampak.naik ? t('{n} naik huruf mutu', { n: dampak.naik }) : null,
                 dampak.turun ? t('{n} turun huruf mutu', { n: dampak.turun }) : null,
                 dampak.tidakLagiLayak ? t('{n} tidak lagi berhak atas sertifikat', { n: dampak.tidakLagiLayak }) : null,
-                dampak.terkunci ? t('{n} di angkatan terkunci atau aspek final', { n: dampak.terkunci }) : null,
+                dampak.terkunci ? t('{n} di angkatan yang sudah disahkan atau aspek final', { n: dampak.terkunci }) : null,
               ]
                 .filter(Boolean)
                 .join(' · ')}

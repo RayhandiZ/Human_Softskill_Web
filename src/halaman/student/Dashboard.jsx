@@ -94,16 +94,35 @@ function SebaranAspek({ t }) {
 
 const TINGGI_BAGAN = 116
 
+/** Kunci legenda yang meniru tanda di grafik: garis bertitik isi (semester) atau bercincin (gabungan). Bentuknya
+    ikut membedakan kedua seri, jadi tidak bergantung pada warna saja. */
+function KunciSeri({ seri }) {
+  return (
+    <span aria-hidden="true" className="relative inline-flex h-4 w-8 shrink-0 items-center justify-center">
+      <span
+        className="absolute inset-x-0 top-1/2 -translate-y-1/2 rounded-full"
+        style={{ height: seri.tebal, background: seri.warna }}
+      />
+      <span
+        className={'relative rounded-full ' + (seri.cincin ? 'h-3.5 w-3.5 border-2 bg-surface' : 'h-2 w-2 ring-2 ring-surface')}
+        style={seri.cincin ? { borderColor: seri.warna } : { background: seri.warna }}
+      />
+    </span>
+  )
+}
+
 function TrenSemester({ t }) {
   const teks = useTeks()
   const daftar = Object.values(t.semester)
   const dinilai = daftar.filter((s) => s.nilai != null)
-  // Kumulatif = nilai akhir bila dihitung sampai semester itu.
-  const kumulatif = Object.fromEntries(dinilai.map((s) => [s.semester, nilaiKumulatif(t, s.semester)]))
+  // Rata-rata gabungan = nilai akhir bila dihitung sampai semester itu, jadi titik terakhirnya sama dengan nilai
+  // akhir. Kedua rumus yang masih menunggu konfirmasi (MODE_AGREGASI) sama-sama rata-rata, bukan jumlah; karena itu
+  // labelnya bukan lagi "kumulatif" (rapat 24 Okt 2026).
+  const gabungan = Object.fromEntries(dinilai.map((s) => [s.semester, nilaiKumulatif(t, s.semester)]))
 
   const { bawah, atas, garis: garisBantu } = jendelaNilai([
     ...dinilai.map((s) => s.nilai),
-    ...dinilai.map((s) => kumulatif[s.semester]),
+    ...dinilai.map((s) => gabungan[s.semester]),
   ])
 
   const n = daftar.length
@@ -120,9 +139,10 @@ function TrenSemester({ t }) {
     }
     return hasil
   }
+  // Warna dari --tren-*: pasangan biru dan abu-abu yang lolos uji beda warna di tiap tema; lihat index.css.
   const SERI = [
-    { kunci: 'semester', label: 'Nilai semester', warna: 'var(--brand-ink)', tebal: 2.5, ambil: (s) => s.nilai },
-    { kunci: 'kumulatif', label: 'Nilai kumulatif', warna: 'var(--text-muted)', tebal: 2, ambil: (s) => kumulatif[s.semester] },
+    { kunci: 'semester', label: 'Nilai tiap semester', warna: 'var(--tren-semester)', tebal: 2.5, cincin: false, ambil: (s) => s.nilai },
+    { kunci: 'gabungan', label: 'Rata-rata gabungan', warna: 'var(--tren-gabungan)', tebal: 2, cincin: true, ambil: (s) => gabungan[s.semester] },
   ]
 
   const mulai = dinilai[0]
@@ -169,13 +189,13 @@ function TrenSemester({ t }) {
   return (
     <div ref={wadah} className="relative">
       <p className="flex items-baseline justify-between gap-3">
-        <span className="text-[13px] font-semibold text-ink-2">{teks('Nilai per semester')}</span>
+        <span className="text-[13px] font-semibold text-ink-2">{teks('Perkembangan nilai')}</span>
         <span className="shrink-0 text-[12.5px] font-bold text-ink-2">{ringkas}</span>
       </p>
-      <p className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-ink-2">
+      <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] font-semibold text-ink-2">
         {SERI.map((r) => (
-          <span key={r.kunci} className="inline-flex items-center gap-1.5">
-            <span className="h-[3px] w-3 rounded-full" style={{ background: r.warna }} />
+          <span key={r.kunci} className="inline-flex items-center gap-2">
+            <KunciSeri seri={r} />
             {teks(r.label)}
           </span>
         ))}
@@ -258,30 +278,33 @@ function TrenSemester({ t }) {
             )}
           </svg>
 
-          {/* Titik ditulis sebagai HTML: lingkaran di viewBox yang diregangkan jadi lonjong. */}
+          {/* Titik ditulis sebagai HTML: lingkaran di viewBox yang diregangkan jadi lonjong. Cincin gabungan digambar
+              lebih dulu dan lebih besar, jadi saat kedua nilai sama (selalu di semester pertama) titik semester duduk
+              di tengahnya dan keduanya tetap terlihat. */}
           {[...SERI].reverse().map((r) =>
             dinilai.map((s) => {
               const terpilih = pilih === s
+              const ukuran = r.cincin ? (terpilih ? 'h-5 w-5' : 'h-4 w-4') : terpilih ? 'h-[11px] w-[11px]' : 'h-2 w-2'
               return (
                 <span
                   key={r.kunci + s.semester}
                   aria-hidden="true"
                   className={
                     'pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-[width,height] duration-150 ' +
-                    (terpilih ? 'h-3.5 w-3.5 border-[2.5px] bg-surface' : r.kunci === 'semester' ? 'h-2.5 w-2.5 ring-2 ring-surface' : 'h-2 w-2 ring-2 ring-surface')
+                    ukuran +
+                    (r.cincin ? ' border-2 bg-surface' : ' ring-2 ring-surface')
                   }
                   style={{
                     left: px(s.semester) + '%',
                     top: py(r.ambil(s)) + '%',
-                    background: terpilih ? undefined : r.warna,
-                    borderColor: terpilih ? r.warna : undefined,
+                    ...(r.cincin ? { borderColor: r.warna } : { background: r.warna }),
                   }}
                 />
               )
             }),
           )}
 
-          <div role="list" aria-label={teks('Nilai per semester')} className="absolute inset-0">
+          <div role="list" aria-label={teks('Perkembangan nilai')} className="absolute inset-0">
             {kolom.map(({ s, kiri, lebar }, i) => (
               <div
                 key={s.semester}
@@ -318,6 +341,12 @@ function TrenSemester({ t }) {
         ))}
       </div>
 
+      <p className="mt-3 text-[12.5px] leading-snug text-ink-2">
+        {teks(
+          'Rata-rata gabungan: rata-rata semua aspek dari Semester 1 sampai semester itu, sehingga titik terakhirnya sama dengan nilai akhir.',
+        )}
+      </p>
+
       {pilih ? (
         <div
           ref={tipRef}
@@ -338,7 +367,7 @@ function TrenSemester({ t }) {
             {SERI.map((r) => (
               <Fragment key={r.kunci}>
                 <span className="inline-flex items-center gap-1.5 text-ink-2">
-                  <span className="h-[3px] w-3 shrink-0 rounded-full" style={{ background: r.warna }} />
+                  <KunciSeri seri={r} />
                   {teks(r.label)}
                 </span>
                 <span className="text-ink-2">:</span>
@@ -408,7 +437,7 @@ const TAB = [
   { id: 'semua', label: 'Semua', cocok: () => true },
   { id: 'final', label: 'Final', cocok: (a) => a.status === 'final' },
   { id: 'berjalan', label: 'Berjalan', cocok: (a) => a.status === 'berjalan' || a.status === 'menunggu' },
-  { id: 'terkunci', label: 'Terkunci', cocok: (a) => a.status === 'terkunci' },
+  { id: 'terkunci', label: 'Belum dibuka', cocok: (a) => a.status === 'terkunci' },
 ]
 
 function BarisAspek({ a, terbuka, onToggle }) {
@@ -819,8 +848,8 @@ export default function Dashboard() {
             <p className="mt-2 text-[12.5px] leading-snug text-ink-2">
               {teks(
                 akhir.aspekFinal
-                  ? 'Sudah dikunci dan tidak akan berubah lagi'
-                  : 'Belum ada aspek yang dikunci',
+                  ? 'Sudah final dan tidak akan berubah lagi'
+                  : 'Belum ada aspek yang final',
               )}
             </p>
           </UbinRingkas>

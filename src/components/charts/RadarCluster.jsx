@@ -1,6 +1,7 @@
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip } from 'recharts'
 import ChartFrame, { VizTooltip } from './ChartFrame'
 import { CLUSTER } from '../../lib/curriculum'
+import { useTeks } from '../../lib/bahasa'
 
 export default function RadarCluster({
   data,
@@ -10,6 +11,7 @@ export default function RadarCluster({
   color = 'var(--brand-ink)',
   height = 300,
 }) {
+  const t = useTeks()
   const rows = CLUSTER.map((c) => {
     const d = data.find((x) => x.cluster.id === c.id)
     return {
@@ -65,7 +67,9 @@ export default function RadarCluster({
               <span className="font-bold text-ink">{r.id}</span> {r.nama}
             </span>
             <span className="shrink-0 tabular-nums text-ink-3">
-              {r.nilai == null ? 'belum dibuka' : r.nilai + ' · ' + r.dinilai + '/' + r.total + ' aspek'}
+              {r.nilai == null
+                ? t('belum dibuka')
+                : t('{nilai} · {dinilai}/{total} aspek', { nilai: r.nilai, dinilai: r.dinilai, total: r.total })}
             </span>
           </li>
         ))}
@@ -73,9 +77,13 @@ export default function RadarCluster({
 
       {terkunci.length || sebagian.length ? (
         <p className="px-4 pb-2 pt-3 text-[12px] leading-snug text-ink-3">
-          {terkunci.length ? terkunci.length + ' cluster belum dibuka sehingga sumbunya kosong — bukan bernilai nol. ' : ''}
+          {terkunci.length
+            ? t('{n} cluster belum dibuka sehingga sumbunya kosong, bukan bernilai nol.', { n: terkunci.length }) + ' '
+            : ''}
           {sebagian.length
-            ? sebagian.map((r) => r.id).join(', ') + ' baru dinilai sebagian karena aspeknya melintasi dua semester.'
+            ? t('{daftar} baru dinilai sebagian karena aspeknya melintasi dua semester.', {
+                daftar: sebagian.map((r) => r.id).join(', '),
+              })
             : ''}
         </p>
       ) : null}

@@ -90,7 +90,7 @@ function kunciDi(sumber) {
       /* Nama properti dan potongan kode ikut tertangkap; yang diambil hanya
          yang benar-benar terbaca sebagai kalimat. */
       if (k && /[A-Za-z]/.test(k) && !/^[a-z]+$/.test(k.trim())) hasil.add(k)
-      else if (['siap', 'belum', 'sementara', 'pada', 'draft', 'usulan'].includes(k)) hasil.add(k)
+      else if (['siap', 'belum', 'sementara', 'pada', 'draft', 'usulan', 'contoh'].includes(k)) hasil.add(k)
     }
   }
   return hasil
@@ -110,6 +110,16 @@ const DARI_DATA = [
   'Profil enam cluster', 'Rata-rata aspek CPMK di tiap cluster',
   'Nilai per aspek CPMK', 'Aspek CPMK, dikelompokkan menurut area pengembangan',
   'Perkembangan nilai per semester',
+  'Nilai tersimpan per bulan', 'Nilai tersimpan', 'Bulan',
+  'Banyaknya nilai tugas yang tersimpan tiap bulan (input baru maupun perubahan), menurut tanggal WIB. Ini bukan jumlah pengajuan koreksi.',
+  /* Seri grafik perkembangan nilai mahasiswa (larik SERI di student/Dashboard.jsx, diterjemahkan lewat t(r.label)). */
+  'Nilai tiap semester', 'Rata-rata gabungan',
+  /* Ringkasan pilihan tanda status di Input Manual (TANDA_BARIS di admin/Nilai.jsx, lewat t(ringkas)). */
+  'tahan walau sudah lengkap', 'nilai berhenti berubah',
+  /* Status aspek di transkrip (STATUS_LABEL, lewat t(st.teks)) dan tab Dashboard mahasiswa (lewat t(label)). */
+  'Belum dibuka',
+  /* Nama lengkap sumber penilaian (SUMBER di curriculum.js), di "Arti kode" transkrip dan title pil sumber. */
+  'Personal Development Program', 'Mata Kuliah Humaniora / Kebangsaan', 'Student Service & Engagement',
   /* src/lib/ingest.js: label keyakinan, skala, dan cara menggabung kolom di Import CSV. */
   'Yakin', 'Perlu dicek', 'Tebakan lemah', 'Tidak cocok',
   '0–100 (tanpa konversi)', '0–10 (dikali 10)', '0–4 (dikali 25)',
@@ -137,7 +147,7 @@ const DARI_ATURAN = [
   'komponen {komponen} pada {kode} belum dinilai',
   'Nilai akhir minimal {n}', 'Nilai akhir belum bisa dihitung', 'Nilai akhir {nilai}, di bawah rata-rata minimal {n}',
   'nilai akhir belum bisa dihitung', 'nilai akhir {nilai} di bawah rata-rata minimal {n}',
-  'Angkatan sudah dikunci oleh Kemahasiswaan', 'Angkatan {label} belum dikunci', 'angkatan {label} belum dikunci',
+  'Nilai angkatan sudah disahkan Kemahasiswaan', 'Nilai angkatan {label} belum disahkan', 'nilai angkatan {label} belum disahkan',
 ]
 
 /* kunci rapi -> { asli, berkas } */

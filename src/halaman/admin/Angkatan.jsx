@@ -87,7 +87,7 @@ export default function Angkatan() {
     <div className="space-y-6">
       <JudulHalaman
         judul={t('Angkatan')}
-        keterangan={t('Pantau kelengkapan nilai tiap angkatan, temukan mahasiswa yang perlu ditindaklanjuti, lalu kunci angkatan yang programnya sudah selesai.')}
+        keterangan={t('Pantau kelengkapan nilai tiap angkatan, temukan mahasiswa yang perlu ditindaklanjuti, lalu sahkan nilai angkatan yang programnya sudah selesai.')}
       />
 
       {!daftar.length ? (
@@ -134,7 +134,7 @@ function KartuAngkatan({ x, aktif, onPilih }) {
     >
       <span className="flex items-start justify-between gap-2">
         <span className="text-[17px] font-extrabold tracking-tight text-ink">{c.label}</span>
-        <StatusTeks kuat={terkunci}>{t(terkunci ? 'Terkunci' : 'Aktif')}</StatusTeks>
+        <StatusTeks kuat={terkunci}>{t(terkunci ? 'Disahkan' : 'Aktif')}</StatusTeks>
       </span>
       <span className="mt-0.5 block text-[12.5px] text-ink-2">
         {t('Masuk {periode}', { periode: labelPeriode(c.intake) })}
@@ -419,15 +419,15 @@ function PanelKunci({ x }) {
   return (
     <Card>
       <CardHeader
-        title={t('Penguncian angkatan')}
-        subtitle={t('Angkatan yang sudah dikunci memenuhi syarat sertifikat.')}
+        title={t('Pengesahan nilai angkatan')}
+        subtitle={t('Angkatan yang nilainya sudah disahkan memenuhi syarat sertifikat.')}
         icon={IconLock}
       />
       <div className="space-y-3 px-5 py-5 sm:px-6">
         {kunci === 'terkunci' ? (
           <>
             <p role={baruDikunci ? 'status' : undefined} className="text-[14.5px] font-bold text-ink">
-              {t('Angkatan {label} sudah dikunci.', { label: c.label })}
+              {t('Nilai angkatan {label} sudah disahkan.', { label: c.label })}
             </p>
             <p className="text-[13px] leading-relaxed text-ink-2">
               {t('Nilainya masih bisa diubah atau dilengkapi Kemahasiswaan, asal disertai alasan yang tercatat.')}
@@ -442,15 +442,15 @@ function PanelKunci({ x }) {
           </>
         ) : kunci === 'belum' ? (
           <>
-            <p className="text-[14.5px] font-bold text-ink">{t('Belum bisa dikunci')}</p>
+            <p className="text-[14.5px] font-bold text-ink">{t('Belum bisa disahkan')}</p>
             <p className="text-[13px] leading-relaxed text-ink-2">
               {/* Dulu angkatan yang belum mulai tertulis "baru di Semester 0 dari 3". */}
               {kalender < 1
-                ? t('Angkatan ini belum mulai; Semester 1-nya dimulai {periode}. Penguncian bisa dilakukan setelah Semester {total} berakhir.', {
+                ? t('Angkatan ini belum mulai; Semester 1-nya dimulai {periode}. Pengesahan bisa dilakukan setelah Semester {total} berakhir.', {
                     periode: labelPeriode(c.intake),
                     total: CONFIG.TOTAL_SEMESTER_PROGRAM,
                   })
-                : t('Angkatan ini baru di Semester {n} dari {total}. Penguncian bisa dilakukan setelah Semester {total} berakhir.', {
+                : t('Angkatan ini baru di Semester {n} dari {total}. Pengesahan bisa dilakukan setelah Semester {total} berakhir.', {
                     n: kalender,
                     total: CONFIG.TOTAL_SEMESTER_PROGRAM,
                   })}
@@ -461,14 +461,14 @@ function PanelKunci({ x }) {
         ) : (
           <>
             <p className="text-[14.5px] font-bold text-ink">
-              {t('Bila dikunci sekarang, {b} dari {n} mahasiswa berhak atas sertifikat.', {
+              {t('Bila disahkan sekarang, {b} dari {n} mahasiswa berhak atas sertifikat.', {
                 b: pratinjau.berhak,
                 n: pratinjau.total,
               })}
             </p>
             {pratinjau.tidakBerhak ? (
               <p className="text-[13px] leading-relaxed text-ink-2">
-                {t('{n} belum berhak, {k} di antaranya karena nilainya belum lengkap. Nilai masih bisa dilengkapi sesudah dikunci, asal disertai alasan yang tercatat.', {
+                {t('{n} belum berhak, {k} di antaranya karena nilainya belum lengkap. Nilai masih bisa dilengkapi sesudah disahkan, asal disertai alasan yang tercatat.', {
                   n: pratinjau.tidakBerhak,
                   k: pratinjau.komponenKosong,
                 })}
@@ -482,7 +482,7 @@ function PanelKunci({ x }) {
                 <input
                   value={alasan}
                   onChange={(e) => setAlasan(e.target.value)}
-                  placeholder={t('Wajib, minimal 10 karakter, bila angkatan atau aspek sudah terkunci')}
+                  placeholder={t('Wajib, minimal 10 karakter, bila nilai angkatan sudah disahkan atau aspek sudah final')}
                   className="field !py-2.5"
                 />
               </label>
@@ -504,7 +504,7 @@ function PanelKunci({ x }) {
                 className="btn-primary inline-flex min-h-[44px] items-center gap-2 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-2 disabled:text-ink-2 disabled:shadow-none"
               >
                 <IconLock size={16} />
-                {t(perluPersetujuan ? 'Ajukan penguncian' : 'Kunci angkatan')}
+                {t(perluPersetujuan ? 'Ajukan pengesahan' : 'Sahkan nilai angkatan')}
               </button>
             </form>
           </>
@@ -522,7 +522,7 @@ function PanelKunci({ x }) {
       </div>
       {kunci === 'boleh' ? (
         <div className="px-5 pb-4 sm:px-6">
-          <CatatanKaki>{t('Penguncian tidak bisa dibatalkan dari halaman ini.')}</CatatanKaki>
+          <CatatanKaki>{t('Pengesahan tidak bisa dibatalkan dari halaman ini.')}</CatatanKaki>
         </div>
       ) : null}
     </Card>

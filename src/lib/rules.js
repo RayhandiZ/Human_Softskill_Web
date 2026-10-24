@@ -30,7 +30,7 @@ export function labelNilaiAkhir(akhir) {
   if (akhir.status === 'final') {
     return {
       teks: 'Final',
-      rinci: 'Seluruh {total} aspek sudah dinilai dan dikunci.',
+      rinci: 'Seluruh {total} aspek sudah dinilai dan final.',
       nilai: { total: akhir.aspekTotal },
     }
   }
@@ -147,13 +147,14 @@ export function kelayakanSertifikat(student) {
     },
     {
       id: 'terkunci',
-      label: 'Angkatan sudah dikunci oleh Kemahasiswaan',
-      labelT: ['Angkatan sudah dikunci oleh Kemahasiswaan', null],
+      // "Disahkan", bukan "dikunci": istilah layar sejak rapat 24 Okt 2026. id dan status di data tetap 'terkunci'.
+      label: 'Nilai angkatan sudah disahkan Kemahasiswaan',
+      labelT: ['Nilai angkatan sudah disahkan Kemahasiswaan', null],
       lolos: student.statusAngkatan === 'terkunci',
-      alasan: 'Angkatan ' + student.angkatanLabel + ' belum dikunci',
-      alasanT: ['Angkatan {label} belum dikunci', { label: student.angkatanLabel }],
-      ringkas: 'angkatan ' + student.angkatanLabel + ' belum dikunci',
-      ringkasT: ['angkatan {label} belum dikunci', { label: student.angkatanLabel }],
+      alasan: 'Nilai angkatan ' + student.angkatanLabel + ' belum disahkan',
+      alasanT: ['Nilai angkatan {label} belum disahkan', { label: student.angkatanLabel }],
+      ringkas: 'nilai angkatan ' + student.angkatanLabel + ' belum disahkan',
+      ringkasT: ['nilai angkatan {label} belum disahkan', { label: student.angkatanLabel }],
     },
   ]
 

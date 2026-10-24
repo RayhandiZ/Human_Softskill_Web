@@ -129,7 +129,7 @@ function Segmen({ nama, judul, pilihan, nilai, onPilih, kolom, catatan, wajib = 
 
 const TANDA_BARIS = [
   { id: 'sementara', label: 'Sementara', ringkas: 'tahan walau sudah lengkap' },
-  { id: 'final', label: 'Final', ringkas: 'kunci, nilai berhenti berubah' },
+  { id: 'final', label: 'Final', ringkas: 'nilai berhenti berubah' },
 ]
 
 /** Tanda status hanya diterapkan ke pasangan (mahasiswa, aspek) yang ikut tersimpan. */
@@ -505,7 +505,7 @@ function HasilSimpan({ hasil }) {
   const mahasiswa = [...new Map(batch.jejak.map((j) => [j.nim, j])).values()]
 
   const bagian = []
-  if (status.dikunci) bagian.push(t('{n} aspek dikunci sebagai final', { n: status.dikunci }))
+  if (status.dikunci) bagian.push(t('{n} aspek ditandai final', { n: status.dikunci }))
   if (status.ditahan) bagian.push(t('{n} ditahan sebagai sementara', { n: status.ditahan }))
   if (status.otomatis) bagian.push(t('{n} mengikuti aturan sistem', { n: status.otomatis }))
 
@@ -658,7 +658,7 @@ function IsianAlasan({ nilai, onChange, label = 'Alasan perubahan', className = 
         className="field !py-2.5"
         value={nilai}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={t('Wajib, minimal 10 karakter, bila angkatan atau aspek sudah terkunci')}
+        placeholder={t('Wajib, minimal 10 karakter, bila nilai angkatan sudah disahkan atau aspek sudah final')}
       />
     </label>
   )
@@ -1647,7 +1647,7 @@ function RiwayatBatch() {
               onClick={() => {
                 if (
                   window.confirm(
-                    t('Hapus seluruh perubahan: batch nilai, penguncian aspek, dan usulan dosen? Tindakan ini tidak bisa dibatalkan.'),
+                    t('Hapus seluruh perubahan: batch nilai, tanda final aspek, dan usulan dosen? Tindakan ini tidak bisa dibatalkan.'),
                   )
                 ) {
                   try {

@@ -53,8 +53,9 @@ export default function StudentLayout({ children }) {
   const a11y = useAkarAksesibilitas()
 
   return (
-    // kelasAkar: setelan menu aksesibilitas; lihat index.css › menu aksesibilitas.
-    <div className={'min-h-screen bg-bg lg:pl-[264px] print:pl-0 ' + a11y.kelasAkar}>
+    // panel-mahasiswa: teks redup dipertebal seperti tiga panel lain; kelasAkar: setelan menu aksesibilitas; lihat
+    // index.css › menu aksesibilitas.
+    <div className={'panel-mahasiswa min-h-screen bg-bg lg:pl-[264px] print:pl-0 ' + a11y.kelasAkar}>
       {/* print:pl-0 wajib: sidebar disembunyikan saat mencetak. */}
       {/* -------------------------------- sidebar ------------------------------- */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] p-4 pr-0 lg:block print:hidden">

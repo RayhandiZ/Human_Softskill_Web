@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Card, Tabs, TandaDraft } from '../../components/Ui'
+import { Card, Tabs, TandaContoh, TandaDraft } from '../../components/Ui'
 import { IconAlert, IconChevronRight } from '../../components/Icons'
 import { aspekPunyaDraft, getAspekList, getKomponen } from '../../lib/curriculum'
-import { susunanBobot } from '../../lib/bobot'
+import { bobotMasihContoh, susunanBobot } from '../../lib/bobot'
 import { PERMINTAAN, useStore } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
 import EditorPenilaian from '../admin/EditorPenilaian'
@@ -47,7 +47,7 @@ export default function Penilaian() {
         <h1 className="text-[26px] font-extrabold tracking-tight text-ink">{t('Penilaian & Bobot')}</h1>
         <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-ink-2">
           {t('Ubah aspek, komponen asesmen, dan bobotnya, termasuk menambah komponen secara manual. Sebagai Super Admin, perubahan Anda langsung berlaku untuk semua angkatan tanpa menunggu persetujuan, dan tetap tercatat di Log Aktivitas.')}{' '}
-          {t('Aspek juga bisa ditambah, diubah strukturnya, atau diarsipkan di bawah editor; angkatan yang sudah terkunci tetap memakai aspek saat ia dikunci.')}
+          {t('Aspek juga bisa ditambah, diubah strukturnya, atau diarsipkan di bawah editor; angkatan yang sudah disahkan tetap memakai susunan aspek saat ia disahkan.')}
         </p>
       </header>
 
@@ -102,6 +102,7 @@ export default function Penilaian() {
                     <span className="mt-2 block text-[12px] text-ink-3">
                       {t('{n} komponen', { n: getKomponen(a.id).length })} ·{' '}
                       {t(bobot.aspek[a.id] != null ? 'bobot manual' : 'bobot otomatis')}
+                      {bobotMasihContoh(a.id) ? <TandaContoh className="ml-1">{t('contoh')}</TandaContoh> : null}
                     </span>
                   </button>
                 </li>

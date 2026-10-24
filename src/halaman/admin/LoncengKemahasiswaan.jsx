@@ -116,7 +116,7 @@ export function usePekerjaanKemahasiswaan() {
       id: 'kunci',
       href: '/admin/angkatan',
       ikon: IconCertificate,
-      judul: t('{n} angkatan siap dikunci', { n: tinjau.siapDikunci }),
+      judul: t('{n} angkatan siap disahkan', { n: tinjau.siapDikunci }),
       rinci: t('Tiga semester sudah tuntas, sertifikatnya bisa diterbitkan'),
     },
   ].filter(Boolean)

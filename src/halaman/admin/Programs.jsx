@@ -52,7 +52,7 @@ export default function Programs() {
             sub:
               labelSemesterAngkatan(t, a.angkatan.intake) +
               ' · ' +
-              t(a.angkatan.status === 'terkunci' ? 'Terkunci' : 'Aktif'),
+              t(a.angkatan.status === 'terkunci' ? 'Disahkan' : 'Aktif'),
             ...a,
           }))
 
@@ -98,7 +98,7 @@ export default function Programs() {
           nilai={r.final.toLocaleString('id-ID')}
           satuan={t('dari {n}', { n: r.total.toLocaleString('id-ID') })}
           persen={bagi(r.final)}
-          persenLabel={t('Sudah dikunci')}
+          persenLabel={t('Sudah final')}
         />
       </section>
 

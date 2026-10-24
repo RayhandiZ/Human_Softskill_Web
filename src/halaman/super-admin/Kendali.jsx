@@ -27,10 +27,10 @@ import { PERMINTAAN, bacaLog, permintaanMenunggu, useStore } from '../../lib/sto
 import { useAuth } from '../../lib/auth'
 import { useBahasa } from '../../lib/bahasa'
 import { LABEL_AKSI } from '../admin/PersetujuanAdmin'
-import { LABEL_LOG, tanggalWib } from '../admin/Log'
+import { LABEL_LOG, labelSasaran, tanggalWib } from '../admin/Log'
 
 /* Pusat Kendali Super Admin, disusun mengikuti satu keputusan yang diambil di sini: permintaan admin yang
-   menunggu. Kartu navy itu titik fokusnya; keadaan sistem, perubahan nilai per hari, dan tindakan admin
+   menunggu. Kartu navy itu titik fokusnya; keadaan sistem, nilai tersimpan per bulan, dan tindakan admin
    terbaru adalah bahan pengawasan di bawahnya. Semua angka dihitung dari data yang termuat atau /api/log.
    Pemilih periode di pojok kanan atas menyaring keputusan, perubahan nilai, dan tindakan admin ke rentang
    semester itu (rentangPeriode di src/lib/data.js); antrean, angkatan terkunci, dan aturan tetap keadaan
@@ -474,7 +474,7 @@ function KeadaanSistem({ t, rentang, label, periodeLain }) {
           </dd>
         </div>
         <div className="px-5 py-4 sm:px-6">
-          <dt className="text-[13px] font-semibold text-ink-2">{t('Angkatan terkunci')}</dt>
+          <dt className="text-[13px] font-semibold text-ink-2">{t('Angkatan disahkan')}</dt>
           <dd className="mt-1 text-[26px] font-extrabold leading-tight text-ink">
             {terkunci.length}
             <span className="text-[15px] font-bold text-ink-2"> / {angkatan.length}</span>
@@ -484,8 +484,8 @@ function KeadaanSistem({ t, rentang, label, periodeLain }) {
           </dd>
           <dd className="mt-2 text-[12.5px] leading-snug text-ink-2">
             {terkunci.length
-              ? t('Terkunci: {daftar}', { daftar: terkunci.map((c) => c.label).join(', ') })
-              : t('Belum ada angkatan yang terkunci.')}
+              ? t('Disahkan: {daftar}', { daftar: terkunci.map((c) => c.label).join(', ') })
+              : t('Belum ada angkatan yang disahkan.')}
           </dd>
         </div>
         <div className="px-5 py-4 sm:px-6">
@@ -556,13 +556,15 @@ function GrafikPerubahan({ periode, t, bahasa }) {
   const label = namaPeriode(periode, t)
 
   return (
+    // Yang dihitung baris AuditLog: satu nilai tugas yang tersimpan, baru maupun diubah. Rapat 24 Okt 2026 membacanya
+    // sebagai jumlah pengajuan koreksi, jadi judul dan subjudulnya menyebut isinya terang-terangan.
     <ChartFrame
-      title="Perubahan nilai per bulan"
-      subtitle="Per bulan dalam semester yang dipilih, menurut tanggal WIB."
+      title="Nilai tersimpan per bulan"
+      subtitle="Banyaknya nilai tugas yang tersimpan tiap bulan (input baru maupun perubahan), menurut tanggal WIB. Ini bukan jumlah pengajuan koreksi."
       height={0}
       action={<TautanKepala href="/super/log">{t('Telusuri di log')}</TautanKepala>}
       table={{
-        head: ['Bulan', 'Perubahan nilai'],
+        head: ['Bulan', 'Nilai tersimpan'],
         rows: data.map((d) => [
           <time key={d.bulan} dateTime={d.bulan}>
             {namaBulan(d.bulan, bahasa, true)}
@@ -574,7 +576,7 @@ function GrafikPerubahan({ periode, t, bahasa }) {
       {total ? (
         <div className="px-3 pb-2 pt-1 sm:px-2">
           <p className="text-[13px] text-ink-2">
-            {label + ': ' + t('{n} perubahan nilai pada {m} mahasiswa.', { n: total, m: mahasiswa.size })}
+            {label + ': ' + t('{n} nilai tersimpan untuk {m} mahasiswa.', { n: total, m: mahasiswa.size })}
           </p>
           {/* mt-8: ruang untuk label nilai puncak, yang bisa naik melewati garis teratas. */}
           <div className="mt-8 flex gap-2">
@@ -593,7 +595,7 @@ function GrafikPerubahan({ periode, t, bahasa }) {
               {[0, 50, 100].map((p) => (
                 <span key={p} aria-hidden="true" className="absolute inset-x-0 h-px bg-[var(--grid)]" style={{ top: p + '%' }} />
               ))}
-              <ol aria-label={t('Perubahan nilai per bulan di {periode}', { periode: label })} className="relative flex h-full items-end">
+              <ol aria-label={t('Nilai tersimpan per bulan di {periode}', { periode: label })} className="relative flex h-full items-end">
                 {data.map((d) => {
                   const nama = namaBulan(d.bulan, bahasa, true)
                   return (
@@ -601,7 +603,7 @@ function GrafikPerubahan({ periode, t, bahasa }) {
                     <li
                       key={d.bulan}
                       tabIndex={0}
-                      aria-label={nama + ': ' + (d.nanti ? t('belum berjalan') : t('{n} perubahan', { n: d.n }))}
+                      aria-label={nama + ': ' + (d.nanti ? t('belum berjalan') : t('{n} nilai tersimpan', { n: d.n }))}
                       className="group relative flex h-full flex-1 items-end justify-center rounded-md"
                     >
                       {d.nanti ? null : (
@@ -624,7 +626,7 @@ function GrafikPerubahan({ periode, t, bahasa }) {
                         aria-hidden="true"
                         className="pointer-events-none invisible absolute bottom-full left-1/2 z-10 mb-1 -translate-x-1/2 whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-[12px] font-semibold text-surface group-hover:visible group-focus-visible:visible"
                       >
-                        {d.nanti ? t('Belum berjalan') : <strong className="font-extrabold">{d.n}</strong>} · {nama}
+                        {d.nanti ? t('Belum berjalan') : t('{n} nilai tersimpan', { n: d.n })} · {nama}
                       </span>
                     </li>
                   )
@@ -644,7 +646,7 @@ function GrafikPerubahan({ periode, t, bahasa }) {
           </div>
         </div>
       ) : (
-        <EmptyState title={t('Tidak ada perubahan nilai di {periode}', { periode: label })}>
+        <EmptyState title={t('Belum ada nilai yang tersimpan di {periode}', { periode: label })}>
           {t('Nilai yang diinput, diimpor, atau disetujui akan terhitung di sini per bulan.')}
         </EmptyState>
       )}
@@ -695,7 +697,7 @@ function Aktivitas({ aktivitas, label, t, bahasa }) {
                       {b.aktor ? <span className="font-bold">{b.aktor} · </span> : null}
                       {t(LABEL_LOG[b.aksi] ?? b.aksi)}
                     </p>
-                    {b.target ? <p className="mt-0.5 truncate text-[12.5px] text-ink-2">{b.target}</p> : null}
+                    {b.target ? <p className="mt-0.5 truncate text-[12.5px] text-ink-2">{labelSasaran(b.target, t)}</p> : null}
                   </div>
                   <time
                     dateTime={String(b.waktu ?? '').replace(' ', 'T')}
@@ -712,7 +714,7 @@ function Aktivitas({ aktivitas, label, t, bahasa }) {
       ) : (
         <div className="flex-1">
           <EmptyState title={t('Belum ada tindakan admin yang tercatat')}>
-            {t('Penguncian, perubahan bobot, dan keputusan persetujuan akan tercatat di sini.')}
+            {t('Pengesahan angkatan, perubahan bobot, dan keputusan persetujuan akan tercatat di sini.')}
           </EmptyState>
         </div>
       )}

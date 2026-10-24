@@ -21,7 +21,7 @@ import {
   IconPrint,
 } from '../../components/Icons'
 import { CATATAN_BOBOT_SEMENTARA, CONFIG } from '../../lib/config'
-import { SUMBER, getArea, getCluster, getIndikator, getKomponen } from '../../lib/curriculum'
+import { AREA, CLUSTER, SUMBER, SUMBER_LIST, getArea, getCluster, getIndikator, getKomponen } from '../../lib/curriculum'
 import { labelNilaiAkhir, statusDokumenTranskrip } from '../../lib/rules'
 import { PERIODE_AKTIF, labelPeriode, transkripOf } from '../../lib/data'
 import { ajukanKoreksi, koreksiMilik, useStore } from '../../lib/store'
@@ -29,7 +29,7 @@ import { useTeks } from '../../lib/bahasa'
 import LembarCetak from './LembarCetak'
 
 const STATUS_LABEL = {
-  terkunci: { teks: 'Terkunci' },
+  terkunci: { teks: 'Belum dibuka' },
   menunggu: { teks: 'Menunggu nilai' },
   berjalan: { teks: 'Sementara' },
   final: { teks: 'Final' },
@@ -215,12 +215,18 @@ export default function Transkrip({ student, untukAdmin = false }) {
                             </TandaDraft>
                           ) : null}
                         </td>
-                        <td className="px-4 py-3 text-[12.5px] text-ink-2">{cluster.id}</td>
+                        <td className="px-4 py-3 text-[12.5px] text-ink-2">
+                          {/* Kode saja tidak dipahami orang awam (rapat 24 Okt 2026); namanya ada di "Arti kode" di
+                              bawah tabel, di sini lewat title dan untuk pembaca layar. */}
+                          <span title={cluster.nama}>{cluster.id}</span>
+                          <span className="sr-only"> {cluster.nama}</span>
+                        </td>
                         <td className="px-4 py-3">
                           <span className="flex flex-wrap gap-1">
                             {sumberHadir.map((s) => (
                               <span
                                 key={s}
+                                title={teks(SUMBER[s].nama)}
                                 className="sumber-pil rounded-md bg-surface-2 px-1.5 py-0.5 text-[11px] font-bold text-ink-2"
                               >
                                 {SUMBER[s].label}
@@ -283,6 +289,8 @@ export default function Transkrip({ student, untukAdmin = false }) {
             ))}
           </table>
         </GulirTabel>
+
+        <ArtiKode />
 
         <div className="px-6 py-4">
           <CatatanKaki>
@@ -360,11 +368,77 @@ export default function Transkrip({ student, untukAdmin = false }) {
   )
 }
 
+/* --------------------------------- arti kode -------------------------------- */
+
+/* Arti kode yang dipakai tabel di atasnya: huruf area, cluster, dan singkatan sumber penilaian. Rapat 24 Okt 2026:
+   kode seperti CL1 atau PDP tidak dipahami orang awam. Nama area dan cluster memang istilah Inggris kerangka VIBE,
+   jadi tidak diterjemahkan. */
+function ArtiKode() {
+  const t = useTeks()
+  return (
+    <section aria-labelledby="arti-kode" className="border-t border-line px-6 py-5">
+      <h3 id="arti-kode" className="text-[13.5px] font-bold text-ink">
+        {t('Arti kode di tabel')}
+      </h3>
+      <dl className="mt-3 grid gap-x-8 gap-y-4 text-[12.5px] leading-snug sm:grid-cols-2 xl:grid-cols-3">
+        <div>
+          <dt className="font-bold text-ink-2">{t('Kode aspek')}</dt>
+          <dd className="mt-1.5 space-y-1 text-ink-2">
+            {AREA.map((a) => (
+              <p key={a.id} className="flex items-start gap-2">
+                <span
+                  aria-hidden="true"
+                  className="tanda-area mt-[3px] h-2.5 w-2.5 shrink-0 rounded-[3px]"
+                  style={{ background: a.warna }}
+                />
+                <span>
+                  <span className="font-semibold text-ink">{t('Area {kode}', { kode: a.id })}</span> {a.nama}
+                </span>
+              </p>
+            ))}
+            <p>{t('A.1 berarti aspek pertama di area A, dan seterusnya.')}</p>
+          </dd>
+        </div>
+        <div>
+          <dt className="font-bold text-ink-2">{t('Cluster')}</dt>
+          <dd className="mt-1.5 space-y-1 text-ink-2">
+            {CLUSTER.map((c) => (
+              <p key={c.id}>
+                <span className="font-semibold text-ink">{c.id}</span> {c.nama}
+              </p>
+            ))}
+          </dd>
+        </div>
+        <div>
+          <dt className="font-bold text-ink-2">{t('Sumber penilaian')}</dt>
+          <dd className="mt-1.5 space-y-1 text-ink-2">
+            {SUMBER_LIST.map((s) => (
+              <p key={s.id}>
+                <span className="font-semibold text-ink">{s.label}</span> {t(s.nama)}
+              </p>
+            ))}
+          </dd>
+        </div>
+      </dl>
+    </section>
+  )
+}
+
 /* --------------------- drill-down komponen & indikator --------------------- */
 
 function BarisRincian({ aspek }) {
   const t = useTeks()
   const indikator = getIndikator(aspek.aspek.id)
+  // Tugas yang paling menarik nilai aspek ke bawah: selisihnya dari nilai aspek dikali bobotnya, yang paling negatif.
+  // Menjawab "kenapa nilai saya rendah" dari data yang ada; rubrik dan catatan dosen belum disimpan di basis data.
+  const terisi = aspek.komponen.filter((x) => x.terisi)
+  const penurun =
+    aspek.nilai != null && terisi.length > 1
+      ? (terisi
+          .map((x) => ({ x, tarik: (x.nilai - aspek.nilaiMentah) * x.bobotEfektif }))
+          .filter((d) => d.tarik < 0)
+          .sort((a, b) => a.tarik - b.tarik)[0]?.x ?? null)
+      : null
 
   return (
     <tr className="border-b border-line bg-surface-2">
@@ -376,7 +450,7 @@ function BarisRincian({ aspek }) {
           {aspek.status === 'final' ? (
             <span>
               {aspek.penguncian?.oleh
-                ? t('Final, dikunci oleh {oleh} pada {tanggal}.', {
+                ? t('Final, ditetapkan oleh {oleh} pada {tanggal}.', {
                     oleh: aspek.penguncian.oleh,
                     tanggal: aspek.penguncian.tanggal,
                   })
@@ -389,6 +463,17 @@ function BarisRincian({ aspek }) {
             </span>
           )}
         </p>
+
+        {penurun ? (
+          <p className="mb-3 text-[12.5px] leading-snug text-ink-2">
+            <span className="font-bold text-ink">{t('Paling menurunkan nilai')}:</span>{' '}
+            {t('{komponen}, nilai {nilai} dengan bobot {bobot}%.', {
+              komponen: penurun.label,
+              nilai: penurun.nilai,
+              bobot: penurun.bobotEfektif.toFixed(1),
+            })}
+          </p>
+        ) : null}
 
         <GulirTabel className="rounded-xl border border-line bg-surface print:overflow-visible">
           <table className="w-full min-w-[680px] border-collapse print:min-w-0 print:table-fixed">
@@ -415,6 +500,11 @@ function BarisRincian({ aspek }) {
                     {x.label}
                     {x.status === 'draft' ? (
                       <TandaDraft className="ml-2">{t('Draft')}</TandaDraft>
+                    ) : null}
+                    {x === penurun ? (
+                      <span className="ml-2 whitespace-nowrap text-[11.5px] font-bold text-ink-2">
+                        {t('paling menurunkan')}
+                      </span>
                     ) : null}
                   </td>
                   <td className="px-3 py-2.5 text-[12.5px] text-ink-2">

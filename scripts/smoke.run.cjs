@@ -22,7 +22,7 @@ const ISI = {
     [/Nilai akhir/, 'ubin nilai akhir ada'],
     [/(Sementara|Final)[\s\S]{0,40}berdasarkan \d+ dari \d+ aspek/, 'nilai akhir disertai status dan dasar hitungnya (R3)'],
     [/Aspek dinilai[\s\S]{0,80}\/ \d+/, 'ubin jumlah aspek dinilai'],
-    [/Semua \d+[\s\S]{0,60}Final \d+[\s\S]{0,60}Berjalan \d+[\s\S]{0,60}Terkunci \d+/, 'tab aspek lengkap dengan jumlahnya'],
+    [/Semua \d+[\s\S]{0,60}Final \d+[\s\S]{0,60}Berjalan \d+[\s\S]{0,60}Belum dibuka \d+/, 'tab aspek lengkap dengan jumlahnya'],
     [/Perjalanan semester/, 'perjalanan semester ada'],
     /* Komponen yang belum dinilai pindah ke lonceng bilah atas — kartunya
        tidak boleh tertinggal di badan halaman. */
@@ -60,7 +60,7 @@ const ISI = {
     [/Grafik Sebaran Aspek/, 'ada satu grafik sebaran'],
     [/Nilai yang sudah masuk[\s\S]{0,40}%/, 'persentase nilai yang sudah masuk'],
     [/Di atas batas 70[\s\S]{0,40}%/, 'persentase di atas batas kelulusan'],
-    [/Sudah dikunci[\s\S]{0,40}%/, 'persentase nilai yang sudah final'],
+    [/Sudah final[\s\S]{0,40}%/, 'persentase nilai yang sudah final'],
     [/Huruf A[\s\S]{0,200}Huruf B[\s\S]{0,200}Huruf C/, 'tiap irisan diberi label huruf, bukan warna saja'],
     [/sudah dinilai/, 'pusat donat menyebut dasar penghitungannya'],
     [/Kelengkapan nilai/, 'tidak ada lagi tabel kelengkapan padat', false],
@@ -72,7 +72,7 @@ const ISI = {
     [/Riwayat penilaian/, 'ada daftar riwayat penilaian'],
     [/disetujui oleh/, 'komponen final menyebut siapa yang menyetujui'],
     [/dari (PDP|MK Humaniora|Kemahasiswaan)/, 'tiap catatan menyebut jalur penilaiannya'],
-    [/Final berarti aspeknya sudah dikunci/, 'arti Final dijelaskan'],
+    [/Final berarti aspeknya sudah ditetapkan final/, 'arti Final dijelaskan'],
     /* Yang belum dinilai tempatnya di lonceng, bukan di riwayat. */
     [/belum masuk/, 'komponen yang belum dinilai tidak ikut masuk riwayat', false],
   ],
@@ -177,7 +177,7 @@ const ISI = {
     [/2026[\s\S]{0,400}2025 Genap[\s\S]{0,400}2024/, 'kartu angkatan, terbaru lebih dulu'],
     [/Nilai yang belum masuk/, 'ringkasan nilai yang belum masuk'],
     [/Mahasiswa yang perlu ditindaklanjuti/, 'daftar mahasiswa yang perlu ditindaklanjuti'],
-    [/Penguncian angkatan/, 'bagian penguncian angkatan'],
+    [/Pengesahan nilai angkatan/, 'bagian pengesahan nilai angkatan'],
   ],
   '/admin/kurikulum': [
     [/Fase 8|Segera hadir/i, 'bukan lagi halaman segera hadir', false],
@@ -227,7 +227,7 @@ const ISI = {
   ],
   '/super/wewenang': [
     [/Matriks wewenang/, 'matriks wewenang'],
-    [/Mengunci angkatan[\s\S]{0,400}Selalu perlu persetujuan/, 'kunci angkatan oleh admin selalu perlu persetujuan'],
+    [/Mengesahkan nilai angkatan[\s\S]{0,400}Selalu perlu persetujuan/, 'pengesahan nilai angkatan oleh admin selalu perlu persetujuan'],
     [/Yang meminta tidak menyetujui/, 'prinsip pemisahan tugas'],
   ],
   '/super/aturan': [
@@ -611,7 +611,7 @@ const RUTE = [
     ['tab Semua menampilkan semua catatan', hh.barisSemua === hh.jumlah.Semua, hh.barisSemua + ' baris'],
     ['tab Final menyaring dengan benar', hh.barisFinal === hh.jumlah.Final, hh.barisFinal + ' baris'],
     ['tab Sementara menyaring dengan benar', hh.barisSementara === hh.jumlah.Sementara, hh.barisSementara + ' baris'],
-    /* Kata "disetujui" hanya boleh dipakai untuk nilai yang sudah dikunci —
+    /* Kata "disetujui" hanya boleh dipakai untuk nilai yang sudah final;
        nilai sementara masih bisa berubah. */
     ['tiap catatan final menyebut siapa yang menyetujui', hh.finalSelaluDisetujui],
     ['catatan sementara tidak pernah disebut disetujui', hh.sementaraTidakDisetujui],
@@ -640,7 +640,7 @@ const RUTE = [
     ['panel memuat pekerjaan yang belum dinilai', hl.adaBelumDinilai],
     ['panel memuat bagian Perlu ditinjau', hl.adaPerluDitinjau],
     ['mahasiswa di bawah ambang ikut tercatat', hl.adaAmbang],
-    ['angkatan siap dikunci ikut tercatat', hl.adaSiapDikunci],
+    ['angkatan siap disahkan ikut tercatat', hl.adaSiapDikunci],
     ['setiap baris menuju halaman yang menanganinya', hl.semuaPunyaTujuan],
   ]
 
@@ -945,6 +945,8 @@ const RUTE = [
     /* DEMO-3: tiga semester bernilai 80, 81, 82. */
     ['tiga semester: tren yang tampil', tr3.adaTren && !tr3.adaSebaran],
     ['legenda menyebut kedua garis', tr3.legenda],
+    ['nilai tiap semester bertitik isi, rata-rata gabungan bercincin', tr3.bentukBeda],
+    ['arti rata-rata gabungan dijelaskan di bawah grafik', tr3.catatanGabungan],
     ['satu titik per semester, di tiap garis', tr3.jumlahTitikSemester === 3 && tr3.jumlahTitikKumulatif === 3],
     ['satu jalur utuh per garis, tanpa putus', tr3.jumlahJalur === 2],
     ['dua ruas antar semester berurutan, di tiap garis', tr3.jumlahRuas === 4],
@@ -959,13 +961,13 @@ const RUTE = [
     ['nama semester ditulis lengkap, termasuk yang terkunci', tr3.labelSemuaSemester],
     ['label tidak diredupkan (kontras tetap terbaca)', tr3.tanpaRedup && tr2.tanpaRedup],
     ['belum ada kotak info sebelum titik dipilih', tr3.tanpaTipAwal],
-    ['fokus semester 3: kotak info seperti contoh', tr3.isiTip === 'Semester:3Nilai semester:84Nilai kumulatif:82'],
+    ['fokus semester 3: kotak info seperti contoh', tr3.isiTip === 'Semester:3Nilai tiap semester:84Rata-rata gabungan:82'],
     ['garis tegak penanda semester muncul', tr3.garisTegak === 1],
-    ['titik terpilih jadi berongga, di kedua garis', tr3.titikBerongga === 2],
+    ['titik terpilih membesar, di kedua garis', tr3.titikTerpilihBesar === 2],
     ['nama semester terpilih ditebalkan', tr3.labelTerpilihTebal],
-    ['kumulatif terakhir sama dengan angka besar di kartu', tr3.kumulatifSamaAngkaBesar],
+    ['rata-rata gabungan terakhir sama dengan angka besar di kartu', tr3.kumulatifSamaAngkaBesar],
     ['kotak info tidak dibaca dua kali oleh pembaca layar', tr3.tipTersembunyiDariSR],
-    ['pembaca layar mendapat kalimat lengkap per semester', tr3.kalimatKolom === 'Semester 3: Nilai semester 84, Nilai kumulatif 82'],
+    ['pembaca layar mendapat kalimat lengkap per semester', tr3.kalimatKolom === 'Semester 3: Nilai tiap semester 84, Rata-rata gabungan 82'],
     ['Escape menyembunyikan kotak info, fokus tetap', tr3.escapeMenyembunyikan],
     ['tunjuk dengan tetikus menampilkan, pergi menyembunyikan', tr3.tunjukMenampilkan && tr3.lepasMenyembunyikan],
 
@@ -976,8 +978,8 @@ const RUTE = [
     ['semester terkunci tidak bisa dipilih', tr2.jumlahKolom === 2],
     ['semester terkunci bergembok', tr2.gembokTerkunci === 1],
     ['nama semester ditulis lengkap', tr2.labelSemuaSemester],
-    ['kotak info semester 2: 85 dan kumulatif 79', tr2.isiTip === 'Semester:2Nilai semester:85Nilai kumulatif:79'],
-    ['kumulatif terakhir sama dengan angka besar (79)', tr2.kumulatifSamaAngkaBesar],
+    ['kotak info semester 2: 85 dan rata-rata gabungan 79', tr2.isiTip === 'Semester:2Nilai tiap semester:85Rata-rata gabungan:79'],
+    ['rata-rata gabungan terakhir sama dengan angka besar (79)', tr2.kumulatifSamaAngkaBesar],
 
     /* DEMO-1: satu semester saja. Tren belum punya arti di sana. */
     ['satu semester: berganti ke sebaran aspek', tr1.adaSebaran && !tr1.adaTren],
@@ -1088,16 +1090,16 @@ const RUTE = [
   const cekAk = [
     ['satu kartu per angkatan di data master, terbaru lebih dulu', ak.kartuSesuaiBasisData],
     ['angkatan terbaru terpilih lebih dulu', ak.bawaanTerbaru],
-    ['angkatan terkunci tertulis Terkunci', ak.terkunciTertulis],
+    ['angkatan yang nilainya disahkan tertulis Disahkan', ak.terkunciTertulis],
     ['memilih kartu memindahkan rincian', ak.pilihBerpindah],
-    ['angkatan yang belum selesai belum bisa dikunci, beserta alasannya', ak.belumBisaDikunci],
+    ['angkatan yang belum selesai belum bisa disahkan, beserta alasannya', ak.belumBisaDikunci],
     ['jumlah di kartu sama dengan daftar yang perlu ditindaklanjuti', ak.jumlahCocok],
     ['tautan Masukkan nilai membawa angkatan dan NIM', ak.tautanInputLengkap],
     ['angkatan yang selesai: pratinjau berhak sertifikat tampil', ak.pratinjauTampil],
-    ['admin biasa: tombolnya "Ajukan penguncian" beserta catatan persetujuan', ak.ajukanUntukAdminBiasa],
+    ['admin biasa: tombolnya "Ajukan pengesahan" beserta catatan persetujuan', ak.ajukanUntukAdminBiasa],
     ['tombol kunci mati sebelum nama angkatan diketik persis', ak.matiSebelumDiketik && ak.matiBilaSalahKetik],
     ['tombol kunci hidup setelah diketik persis', ak.hidupBilaCocok],
-    ['sesudah dikunci, statusnya dan tautan cetak sertifikat tampil', ak.terkunciSesudahnya && ak.tautanSertifikat],
+    ['sesudah disahkan, statusnya dan tautan cetak sertifikat tampil', ak.terkunciSesudahnya && ak.tautanSertifikat],
     ['Cetak Sertifikat menerima ?angkatan=', ak.sertifikatTersaring],
   ]
   const rusakAk = cekAk.filter(([, ok]) => !ok)
@@ -1146,7 +1148,7 @@ const RUTE = [
     ['menu samping dikelompokkan: Utama (4) dan Pengawasan (3)', ps.menuBerkelompok],
     ['tanpa permintaan menunggu, lonceng tidak muncul', ps.tanpaLonceng],
     ['ada permintaan menunggu: lonceng muncul dengan jumlahnya', ps.loncengMenunggu],
-    ['grafik perubahan nilai: enam batang bulanan yang bisa difokus', ps.grafikBulanan],
+    ['grafik nilai tersimpan: enam batang bulanan yang bisa difokus, bukan jumlah pengajuan', ps.grafikBulanan],
     ['pemilih periode: memilih periode lain menyaring isi dan menandai antrean "Saat ini"', ps.pilihPeriode],
     ['log perubahan nilai terisi', ps.logNilaiTerisi],
     ['penyaring NIM hanya menyisakan mahasiswa itu', ps.saringNim],

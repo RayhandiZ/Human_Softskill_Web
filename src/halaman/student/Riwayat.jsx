@@ -53,7 +53,7 @@ function Catatan({ e }) {
             {e.k.penilai ?? t('penilai tidak tercatat')}
           </span>
           {e.k.tanggal ? ' · ' + tanggalPanjang(t, e.k.tanggal) : ''}
-          {e.final ? '' : t(' (belum dikunci, masih bisa berubah)')}
+          {e.final ? '' : t(' (belum final, masih bisa berubah)')}
         </span>
       </span>
 
@@ -168,7 +168,7 @@ export default function Riwayat() {
           <h2 className="text-[17px] font-extrabold text-ink">{t('Riwayat penilaian')}</h2>
           <p className="mt-0.5 text-[13.5px] leading-relaxed text-ink-2">
             <span className="font-semibold text-ink">{t('Final')}</span>{' '}
-            {t('berarti aspeknya sudah dikunci Kemahasiswaan dan nilainya tidak akan berubah lagi.')}
+            {t('berarti aspeknya sudah ditetapkan final oleh Kemahasiswaan dan nilainya tidak akan berubah lagi.')}
           </p>
         </div>
 

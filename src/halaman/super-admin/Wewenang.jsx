@@ -38,7 +38,7 @@ const MATRIKS = [
   { tindakan: 'Mengubah tanda final/sementara', izin: [['tidak'], ['tidak'], ['syarat', LEWAT_S3], ['ya']] },
   { tindakan: 'Mengubah bobot kurikulum', izin: [['tidak'], ['tidak'], ['syarat', 'perlu persetujuan bila nilai mahasiswa yang sudah lewat Semester 3 ikut berubah'], ['ya']] },
   { tindakan: 'Mengubah penilaian aspek', izin: [['tidak'], ['tidak'], ['minta'], ['ya']] },
-  { tindakan: 'Mengunci angkatan', izin: [['tidak'], ['tidak'], ['minta'], ['ya']] },
+  { tindakan: 'Mengesahkan nilai angkatan', izin: [['tidak'], ['tidak'], ['minta'], ['ya']] },
   { tindakan: 'Memutuskan permintaan admin', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
   { tindakan: 'Menarik permintaan yang belum diputuskan', izin: [['tidak'], ['tidak'], ['syarat', 'hanya miliknya'], ['tidak']] },
   { tindakan: 'Membaca Log Aktivitas', izin: [['tidak'], ['tidak'], ['ya'], ['ya']] },

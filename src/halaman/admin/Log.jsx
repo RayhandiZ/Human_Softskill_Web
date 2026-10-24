@@ -10,9 +10,9 @@ import { useTeks } from '../../lib/bahasa'
    ringkas (label di dalam kotak), tabel, dan kaki bernomor halaman. */
 
 export const LABEL_LOG = {
-  KUNCI_ANGKATAN: 'Kunci angkatan',
-  UBAH_DATA_TERKUNCI: 'Ubah data terkunci',
-  ROLLBACK_DATA_TERKUNCI: 'Batalkan perubahan data terkunci',
+  KUNCI_ANGKATAN: 'Sahkan nilai angkatan',
+  UBAH_DATA_TERKUNCI: 'Ubah data yang sudah final',
+  ROLLBACK_DATA_TERKUNCI: 'Batalkan perubahan data yang sudah final',
   UBAH_PENGUNCIAN: 'Ubah tanda final/sementara',
   UBAH_BOBOT: 'Ubah bobot',
   AJUKAN_PERSETUJUAN: 'Ajukan persetujuan',
@@ -38,6 +38,32 @@ export const LABEL_LOG = {
   UBAH_ASPEK: 'Ubah struktur aspek',
   ARSIPKAN_ASPEK: 'Arsipkan aspek',
   PULIHKAN_ASPEK: 'Pulihkan aspek',
+}
+
+/* Sasaran log ditulis server sebagai teks Indonesia jadi ('akun x@umn.ac.id', 'penguncian (2 mahasiswa)'; lihat
+   catatLog di src/server). Polanya sedikit dan tetap, jadi diterjemahkan di sini menurut awalannya; yang tidak
+   dikenali tampil apa adanya. 'penguncian' ditampilkan sebagai tanda final, istilah yang dipakai layar sejak
+   rapat 24 Okt 2026. */
+const POLA_SASARAN = [
+  [/^penguncian \((\d+) mahasiswa\)$/, (m, t) => t('tanda final ({n} mahasiswa)', { n: m[1] })],
+  [/^aspek (\S+) \(kurikulum versi (\S+)\)$/, (m, t) => t('aspek {kode} (kurikulum versi {v})', { kode: m[1], v: m[2] })],
+  [/^kurikulum versi (\S+)$/, (m, t) => t('kurikulum versi {v}', { v: m[1] })],
+  [/^periode (Ganjil|Genap) (\S+)$/, (m, t) => t('periode {nama}', { nama: t(m[1]) + ' ' + m[2] })],
+  [/^akun (.+)$/, (m, t) => t('akun {nama}', { nama: m[1] })],
+  [/^angkatan (.+)$/, (m, t) => t('angkatan {nama}', { nama: m[1] })],
+  [/^batch (.+)$/, (m, t) => t('batch {nama}', { nama: m[1] })],
+  [/^fakultas (.+)$/, (m, t) => t('fakultas {nama}', { nama: m[1] })],
+  [/^prodi (.+)$/, (m, t) => t('prodi {nama}', { nama: m[1] })],
+  [/^mahasiswa (\S+)$/, (m, t) => t('mahasiswa {nim}', { nim: m[1] })],
+  [/^permintaan (P-\d+)$/, (m, t) => t('permintaan {id}', { id: m[1] })],
+]
+
+export function labelSasaran(sasaran, t) {
+  for (const [pola, susun] of POLA_SASARAN) {
+    const m = String(sasaran).match(pola)
+    if (m) return susun(m, t)
+  }
+  return sasaran
 }
 
 const UKURAN = 25
@@ -309,7 +335,7 @@ export default function Log() {
                         <td className="whitespace-nowrap py-3 pl-4 pr-3 text-[13px] tabular-nums text-ink-2 sm:pl-5">{b.waktu}</td>
                         <td className="px-3 py-3 text-[13.5px] font-semibold text-ink">{b.aktor ?? '—'}</td>
                         <td className="px-3 py-3 text-[13.5px] text-ink">{t(LABEL_LOG[b.aksi] ?? b.aksi)}</td>
-                        <td className="px-3 py-3 text-[13px] text-ink-2">{b.target ?? '—'}</td>
+                        <td className="px-3 py-3 text-[13px] text-ink-2">{b.target ? labelSasaran(b.target, t) : '—'}</td>
                         <td className="py-2 pl-3 pr-4 text-right sm:pr-5">
                           <button
                             type="button"

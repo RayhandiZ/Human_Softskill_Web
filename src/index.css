@@ -59,6 +59,13 @@
   --semester-2: #256abf;
   --semester-3: #104281;
 
+  /* Grafik perkembangan nilai mahasiswa: biru = nilai tiap semester, abu-abu = rata-rata gabungan. Setiap pasangan di
+     bawah lolos scripts/validate_palette.js milik skill dataviz (beda warna normal >= 15, buta warna >= 8, kontras
+     >= 3:1). Mode gelap tidak memakai --brand-ink (#9ec5f4): biru sepucat itu terbaca abu-abu di samping garis
+     gabungan. */
+  --tren-semester: #104281;
+  --tren-gabungan: #8a8ea9;
+
   --grid: #eceef6;
 
   /* Butiran halus aurora (halaman masuk dan kartu aurora panel super admin). */
@@ -109,6 +116,9 @@
   --semester-1: #256abf;
   --semester-2: #5598e7;
   --semester-3: #9ec5f4;
+
+  --tren-semester: #7db3f7;
+  --tren-gabungan: #68738c;
 
   --grid: #212c44;
 }
@@ -1256,10 +1266,12 @@ body {
    latar halaman, 4,8:1 di --brand-soft. Versi gelapnya (#7b869e) hanya 4,2:1 di --surface-2, jadi
    dinaikkan juga: 5,3:1 di --surface-2, 5,7:1 di kartu. */
 /* Panel Kemahasiswaan (.panel-admin) dan panel dosen (.panel-dosen) ikut memakai teks redup yang lebih tegas ini
-   sejak tampilannya diperbarui. */
+   sejak tampilannya diperbarui. Panel mahasiswa (.panel-mahasiswa) menyusul pada cek ulang aksesibilitas rapat
+   24 Okt 2026: label tabel transkrip, keterangan grafik, dan catatan kaki di sana hanya 3,0:1 sampai 3,2:1. */
 .panel-super,
 .panel-admin,
-.panel-dosen {
+.panel-dosen,
+.panel-mahasiswa {
   --text-muted: #63677f;
   /* Warna tulisan status yang lolos 4,5:1 di latar lencananya sendiri (lihat .teks-baik di bawah). Dipakai
      nada good/critical/warning milik Badge dan pesan "tersimpan" di dalam kedua panel ini; panel lain tetap
@@ -1270,7 +1282,8 @@ body {
 }
 .dark .panel-super,
 .dark .panel-admin,
-.dark .panel-dosen {
+.dark .panel-dosen,
+.dark .panel-mahasiswa {
   --text-muted: #8b96ad;
   --teks-baik: #22c55e;
   --teks-kritis: var(--critical);
@@ -1408,6 +1421,8 @@ body {
     --teks-baik: #6ee77a;
     --teks-kritis: #ff8a8a;
     --teks-tunggu: #ffd166;
+    --tren-semester: #9cd0ff;
+    --tren-gabungan: #8c8c8c;
   }
   .akar-a11y.a11y-kontras-terang {
     color-scheme: light;
@@ -1430,6 +1445,8 @@ body {
     --teks-baik: #0a5c0a;
     --teks-kritis: #a10e0e;
     --teks-tunggu: #5e3d00;
+    --tren-semester: #0a3a75;
+    --tren-gabungan: #767676;
   }
   .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) :is(.bilah-kaca, .kaca, .layanan-panel, .pil-kaca) {
     background: var(--surface);

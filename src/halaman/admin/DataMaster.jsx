@@ -123,7 +123,7 @@ function BagianAngkatan({ onBerhasil }) {
                 <div className="flex flex-wrap items-center gap-2.5">
                   {terkunci ? (
                     <Badge tone="neutral" icon={IconLock}>
-                      {t('Terkunci')}
+                      {t('Disahkan')}
                     </Badge>
                   ) : (
                     <button
@@ -421,7 +421,7 @@ function BagianMahasiswa({ onBerhasil }) {
                       adaNilai
                         ? t('Mahasiswa ini sudah punya nilai, jadi prodi dan angkatannya tidak bisa diubah.')
                         : terkunci
-                          ? t('Angkatan mahasiswa ini sudah dikunci, jadi ia tidak bisa dipindah.')
+                          ? t('Nilai angkatan mahasiswa ini sudah disahkan, jadi ia tidak bisa dipindah.')
                           : null
                     }
                     simpan={(isi) => simpanMahasiswa({ aksi: 'ubah', nim: s.nim, ...isi })}

@@ -295,7 +295,7 @@ export async function ujiAspek(rute) {
   const baris = () => [...el.querySelectorAll('button[aria-controls^="rinci-"]')]
 
   const hasil = { tabSesuai: {} }
-  for (const nama of ['Semua', 'Final', 'Berjalan', 'Terkunci']) {
+  for (const nama of ['Semua', 'Final', 'Berjalan', 'Belum dibuka']) {
     const t = tab(nama)
     await klik(t)
     const tautan = [...el.querySelectorAll('a[href="/mahasiswa/transkrip"]')].map((a) => a.textContent)
@@ -408,7 +408,7 @@ export async function ujiRiwayat(rute) {
   await klik(tab('Sementara'))
   hasil.barisSementara = baris().length
   hasil.sementaraTidakDisetujui = baris().every(
-    (li) => /belum dikunci/.test(li.textContent) && !/disetujui oleh/.test(li.textContent),
+    (li) => /belum final/.test(li.textContent) && !/disetujui oleh/.test(li.textContent),
   )
 
   const lonceng = el.querySelector('button[aria-label$="komponen belum dinilai"]')
@@ -451,7 +451,7 @@ export async function ujiLoncengAdmin() {
   /* Dua baris yang dipindahkan dari kartu "Requires Review". */
   hasil.adaPerluDitinjau = /Perlu ditinjau/.test(panel()?.textContent ?? '')
   hasil.adaAmbang = /belum berhak atas sertifikat/.test(panel()?.textContent ?? '')
-  hasil.adaSiapDikunci = /siap dikunci/.test(panel()?.textContent ?? '')
+  hasil.adaSiapDikunci = /siap disahkan/.test(panel()?.textContent ?? '')
 
   /* Tiga jenis tautan yang berbeda perlakuan:
      - koreksi  → membuka tab Pengajuan koreksi
@@ -901,7 +901,7 @@ export async function ujiKamus() {
    Sekalian dijaga: grafik tidak ikut tercetak. Transkrip yang dicetak adalah
    dokumen resmi berisi angka, bukan laporan analitik.
    -------------------------------------------------------------------------- */
-const KATA_STATUS = ['Final', 'Sementara', 'Belum dinilai', 'Menunggu nilai', 'Terkunci']
+const KATA_STATUS = ['Final', 'Sementara', 'Belum dinilai', 'Menunggu nilai', 'Belum dibuka']
 
 /* Kelas yang menandakan sebuah unsur memakai warna status. */
 const BERWARNA = /--good|--warning|--critical|--serious/
@@ -1248,18 +1248,19 @@ export async function ujiTrenSemester(sem) {
   const { el, lepas } = await pasang('/mahasiswa')
 
   const judul = el.textContent
-  const daftarKolom = el.querySelector('[role="list"][aria-label="Nilai per semester"]')
+  const daftarKolom = el.querySelector('[role="list"][aria-label="Perkembangan nilai"]')
   const grafik = daftarKolom ? daftarKolom.parentElement : null
   const wadah = grafik ? grafik.parentElement.parentElement : null
   const svg = grafik ? grafik.querySelector('svg') : null
 
-  /* Titiknya span HTML mutlak di dalam bidang, bukan <circle>. Dua seri dibedakan dari warnanya. */
+  /* Titiknya span HTML mutlak di dalam bidang, bukan <circle>. Dua seri dibedakan dari warnanya (--tren-*) dan
+     bentuknya: titik isi untuk nilai tiap semester, cincin untuk rata-rata gabungan (rapat 24 Okt 2026). */
   const semuaTitik = grafik
     ? [...grafik.querySelectorAll('span[style*="left"]')].filter((n) => /rounded-full/.test(n.className))
     : []
   const seriTitik = (warna) => semuaTitik.filter((n) => (n.style.background || n.style.borderColor).includes(warna))
-  const titikSemester = seriTitik('brand-ink')
-  const titikKumulatif = seriTitik('text-muted')
+  const titikSemester = seriTitik('tren-semester')
+  const titikKumulatif = seriTitik('tren-gabungan')
 
   const jalur = svg ? [...svg.querySelectorAll('path')] : []
   const d = jalur.map((n) => n.getAttribute('d') ?? '').join(' ')
@@ -1294,16 +1295,21 @@ export async function ujiTrenSemester(sem) {
   const angkaBesar = Number([...el.querySelectorAll('p')].find((n) => /text-\[56px\]/.test(n.className))?.textContent)
 
   const hasil = {
-    adaTren: /Nilai per semester/.test(judul),
+    adaTren: /Perkembangan nilai/.test(judul) && Boolean(daftarKolom),
     adaSebaran: /Sebaran nilai aspek/.test(judul),
-    legenda: /Nilai semester/.test(wadah?.textContent ?? '') && /Nilai kumulatif/.test(wadah?.textContent ?? ''),
+    legenda: /Nilai tiap semester/.test(wadah?.textContent ?? '') && /Rata-rata gabungan/.test(wadah?.textContent ?? ''),
+    bentukBeda:
+      titikKumulatif.length > 0 &&
+      titikKumulatif.every((n) => n.className.includes('bg-surface')) &&
+      titikSemester.every((n) => !n.className.includes('bg-surface')),
+    catatanGabungan: /Rata-rata gabungan: rata-rata semua aspek dari Semester 1 sampai semester itu/.test(wadah?.textContent ?? ''),
     jumlahTitikSemester: titikSemester.length,
     jumlahTitikKumulatif: titikKumulatif.length,
     jumlahJalur: jalur.length,
     jumlahRuas: (d.match(/[CL]/g) ?? []).length,
     garisTakTeregang: jalur.every((n) => n.getAttribute('vector-effect') === 'non-scaling-stroke'),
     takTerisi: jalur.every((n) => n.getAttribute('fill') === 'none'),
-    takMelampaui: takMelampauiSeri('brand-ink', titikSemester) && takMelampauiSeri('text-muted', titikKumulatif),
+    takMelampaui: takMelampauiSeri('tren-semester', titikSemester) && takMelampauiSeri('tren-gabungan', titikKumulatif),
     garisBantu: bantu.length,
     labelSecocokGaris: bantu.length > 0 && sumbu.length === bantu.length,
     ringkasTetap: /Tetap sejak Semester/.test(judul),
@@ -1331,10 +1337,11 @@ export async function ujiTrenSemester(sem) {
     const isi = tip()?.textContent ?? ''
     hasil.isiTip = isi
     hasil.garisTegak = garisTegak().length
-    hasil.titikBerongga = semuaTitik.filter((n) => n.className.includes('bg-surface')).length
+    // Titik terpilih membesar tanpa berganti bentuk, supaya isi dan cincin tetap membedakan kedua seri.
+    hasil.titikTerpilihBesar = semuaTitik.filter((n) => /h-\[11px\]|h-5/.test(n.className)).length
     hasil.labelTerpilihTebal = labelSemester.some((n) => n.className.includes('font-bold'))
-    // Kumulatif di semester terakhir harus sama persis dengan angka besar.
-    const m = isi.match(/Nilai kumulatif:(\d+)/)
+    // Rata-rata gabungan di semester terakhir harus sama persis dengan angka besar.
+    const m = isi.match(/Rata-rata gabungan:(\d+)/)
     hasil.kumulatifSamaAngkaBesar = m ? Number(m[1]) === angkaBesar : false
     hasil.tipTersembunyiDariSR = tip()?.getAttribute('aria-hidden') === 'true'
 
@@ -1515,13 +1522,13 @@ export async function ujiAngkatan() {
   hasil.kartuSesuaiBasisData =
     kartu(el).length === COHORTS.length && COHORTS.every((c, i) => labelKartu(kartu(el)[i]) === c.label)
   hasil.bawaanTerbaru = kartu(el)[0]?.getAttribute('aria-pressed') === 'true'
-  hasil.terkunciTertulis = /Terkunci/.test(kartuDari(el, '2024')?.textContent ?? '')
+  hasil.terkunciTertulis = /Disahkan/.test(kartuDari(el, '2024')?.textContent ?? '')
 
   await klik(kartuDari(el, '2025'))
   const k2025 = kartuDari(el, '2025')
   const rincian = el.querySelector('section[aria-labelledby="judul-rincian-angkatan"]')
   hasil.pilihBerpindah = k2025?.getAttribute('aria-pressed') === 'true' && /^Angkatan 2025$/.test(el.querySelector('#judul-rincian-angkatan')?.textContent ?? '')
-  hasil.belumBisaDikunci = /Belum bisa dikunci/.test(rincian?.textContent ?? '') && /baru di Semester 3 dari 3/.test(rincian?.textContent ?? '')
+  hasil.belumBisaDikunci = /Belum bisa disahkan/.test(rincian?.textContent ?? '') && /baru di Semester 3 dari 3/.test(rincian?.textContent ?? '')
   const diKartu = Number((k2025?.textContent.match(/Perlu tindak lanjut(\d+)/) ?? [])[1])
   const diDaftar = Number((rincian?.textContent.match(/(\d+) dari \d+ mahasiswa/) ?? [])[1])
   hasil.jumlahCocok = diKartu > 0 && diKartu === diDaftar
@@ -1534,13 +1541,13 @@ export async function ujiAngkatan() {
     angkatan: MASTER_AWAL.angkatan.map((a) => (a.id === '2025' ? { ...a, intake: { tahun: '2024/2025', semester: 'Ganjil' } } : a)),
   })
   ;({ el, lepas } = await pasang('/admin/angkatan?angkatan=2025'))
-  // Admin biasa: angkatan yang sudah lewat Semester 3 tidak dikunci langsung, tetapi "Ajukan penguncian" ke super admin.
+  // Admin biasa: angkatan yang sudah lewat Semester 3 tidak disahkan langsung, tetapi "Ajukan pengesahan" ke super admin.
   const tombolKunci = () =>
-    [...el.querySelectorAll('button[type="submit"]')].find((b) => /Kunci angkatan|Ajukan penguncian/.test(b.textContent))
+    [...el.querySelectorAll('button[type="submit"]')].find((b) => /Sahkan nilai angkatan|Ajukan pengesahan/.test(b.textContent))
   const isian = el.querySelector('form input')
-  hasil.pratinjauTampil = /Bila dikunci sekarang, \d+ dari \d+ mahasiswa berhak atas sertifikat/.test(el.textContent)
+  hasil.pratinjauTampil = /Bila disahkan sekarang, \d+ dari \d+ mahasiswa berhak atas sertifikat/.test(el.textContent)
   hasil.ajukanUntukAdminBiasa =
-    /Ajukan penguncian/.test(tombolKunci()?.textContent ?? '') && /dikirim ke Super Admin sebagai permintaan/.test(el.textContent)
+    /Ajukan pengesahan/.test(tombolKunci()?.textContent ?? '') && /dikirim ke Super Admin sebagai permintaan/.test(el.textContent)
   hasil.matiSebelumDiketik = Boolean(tombolKunci()?.disabled)
   await ketik(isian, '2024')
   hasil.matiBilaSalahKetik = Boolean(tombolKunci()?.disabled)
@@ -1551,7 +1558,7 @@ export async function ujiAngkatan() {
     await new Promise((r) => setTimeout(r, 0))
   })
   hasil.terkunciSesudahnya =
-    /Angkatan 2025 sudah dikunci/.test(el.textContent) && COHORTS.find((c) => c.id === '2025')?.status === 'terkunci'
+    /Nilai angkatan 2025 sudah disahkan/.test(el.textContent) && COHORTS.find((c) => c.id === '2025')?.status === 'terkunci'
   hasil.tautanSertifikat = Boolean(el.querySelector('a[href="/admin/sertifikat?angkatan=2025"]'))
   lepas()
   for (const s of STUDENTS) if (s.angkatanId === '2025') s.statusAngkatan = 'aktif'
@@ -1697,7 +1704,8 @@ export async function ujiPanelSuper() {
     jumlahMenunggu + 1 + ' permintaan menunggu keputusan'
   hasil.grafikBulanan =
     el.querySelectorAll('main ol[aria-label] > li[tabindex="0"]').length === 6 &&
-    /Perubahan nilai per bulan/.test(el.textContent)
+    /Nilai tersimpan per bulan/.test(el.textContent) &&
+    /bukan jumlah pengajuan koreksi/.test(el.textContent)
 
   // Pemilih periode: daftar dari angkatan tertua sampai periode aktif; periode lain menyaring isi halaman.
   const keping = () => el.querySelector('main button[aria-haspopup="listbox"]')

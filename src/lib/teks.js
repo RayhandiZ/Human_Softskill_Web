@@ -85,7 +85,10 @@ export const EN = {
   /* ------------------------------ status umum ---------------------------- */
   Semua: 'All',
   Berjalan: 'In progress',
-  Terkunci: 'Locked',
+  /* Istilah sejak rapat 24 Okt 2026: angkatan "disahkan" (dulu dikunci), aspek "final", dan aspek yang semesternya
+     belum tiba "belum dibuka" (dulu terkunci). */
+  Disahkan: 'Ratified',
+  'Sudah final': 'Already final',
   Sementara: 'Provisional',
   sementara: 'provisional',
   'Menunggu nilai': 'Awaiting score',
@@ -125,8 +128,8 @@ export const EN = {
     'Spread of {n} aspect scores on a 0 to 100 scale, lowest {rendah}, highest {tinggi}',
   '{n} aspek belum dibuka': '{n} aspects not open yet',
   'Semua aspek sudah dibuka': 'All aspects are open',
-  'Sudah dikunci dan tidak akan berubah lagi': 'Locked and will not change again',
-  'Belum ada aspek yang dikunci': 'No aspect has been locked yet',
+  'Sudah final dan tidak akan berubah lagi': 'Final and will not change again',
+  'Belum ada aspek yang final': 'No aspect is final yet',
   'Siap diunduh': 'Ready to download',
   'Belum tersedia': 'Not available yet',
   'Buka untuk mengunduh': 'Open to download',
@@ -175,6 +178,26 @@ export const EN = {
   'Sedang berjalan': 'In progress',
   'Belum dibuka': 'Not open yet',
   'belum dibuka': 'not open yet',
+  '{nilai} · {dinilai}/{total} aspek': '{nilai} · {dinilai}/{total} aspects',
+  '{n} cluster belum dibuka sehingga sumbunya kosong, bukan bernilai nol.':
+    '{n} clusters are not open yet, so their axes are empty, not zero.',
+  '{daftar} baru dinilai sebagian karena aspeknya melintasi dua semester.':
+    '{daftar} is only partly graded because its aspects span two semesters.',
+  /* Arti kode di bawah tabel transkrip dan tugas yang paling menurunkan nilai aspek (rincian aspek). */
+  'Arti kode di tabel': 'What the codes mean',
+  'Kode aspek': 'Aspect codes',
+  'A.1 berarti aspek pertama di area A, dan seterusnya.': 'A.1 is the first aspect in area A, and so on.',
+  'Personal Development Program': 'Personal Development Program',
+  'Mata Kuliah Humaniora / Kebangsaan': 'Humanities / National Studies Courses',
+  'Student Service & Engagement': 'Student Service & Engagement',
+  'Paling menurunkan nilai': 'Pulls the score down most',
+  '{komponen}, nilai {nilai} dengan bobot {bobot}%.': '{komponen}, score {nilai} with a weight of {bobot}%.',
+  'paling menurunkan': 'pulls down most',
+  /* Sama di kedua bahasa; dicatat supaya lapisan bahasa tidak memperingatkan kunci yang hilang. */
+  Dashboard: 'Dashboard',
+  'Area {kode}': 'Area {kode}',
+  PDP: 'PDP',
+  'Semua tugas': 'All tasks',
   '{total} aspek': '{total} aspects',
   'semua final': 'all final',
   '{total} aspek · dibuka pada Semester {semester}':
@@ -199,8 +222,8 @@ export const EN = {
   '{n} komponen sudah dinilai': '{n} components have been graded',
   ' dan {n} masih ditunggu dari penilai': ' and {n} are still awaited from assessors',
   'Riwayat penilaian': 'Assessment history',
-  'berarti aspeknya sudah dikunci Kemahasiswaan dan nilainya tidak akan berubah lagi.':
-    'means the aspect has been locked by Student Affairs and its score will not change again.',
+  'berarti aspeknya sudah ditetapkan final oleh Kemahasiswaan dan nilainya tidak akan berubah lagi.':
+    'means Student Affairs has marked the aspect final and its score will not change again.',
   'Saring riwayat': 'Filter history',
   'Belum ada catatan pada kelompok ini.': 'No records in this group yet.',
   'Lihat bobot tiap komponen di transkrip': 'See each component weighting in the transcript',
@@ -210,7 +233,7 @@ export const EN = {
   'disetujui oleh': 'approved by',
   'dinilai oleh': 'graded by',
   'penilai tidak tercatat': 'assessor not recorded',
-  ' (belum dikunci, masih bisa berubah)': ' (not locked, can still change)',
+  ' (belum final, masih bisa berubah)': ' (not final yet, can still change)',
   'Anda ajukan {tanggal}': 'You submitted this on {tanggal}',
   Diputuskan: 'Decided by',
   pada: 'on',
@@ -268,7 +291,7 @@ export const EN = {
   'Ajukan koreksi nilai': 'Request a score correction',
   'Pengajuan kamu': 'Your requests',
   'diajukan {tanggal}': 'submitted {tanggal}',
-  'Final, dikunci oleh {oleh} pada {tanggal}.': 'Final, locked by {oleh} on {tanggal}.',
+  'Final, ditetapkan oleh {oleh} pada {tanggal}.': 'Final, set by {oleh} on {tanggal}.',
   'Final, seluruh komponen asesmen sudah dinilai.':
     'Final, every assessment component has been graded.',
   'Nilai aspek ini tidak berubah lagi.': 'This aspect score will not change again.',
@@ -304,10 +327,10 @@ export const EN = {
   'Belum ada nilai yang masuk dari penilai': 'No score has arrived from the assessor yet',
   'Seluruh komponen sudah dinilai, menunggu semester ini ditutup':
     'All components graded, waiting for this semester to close',
-  'Seluruh komponen sudah dinilai, menunggu penguncian oleh Kemahasiswaan':
-    'All components graded, waiting to be locked by Student Affairs',
-  'Seluruh {total} aspek sudah dinilai dan dikunci.':
-    'All {total} aspects have been graded and locked.',
+  'Seluruh komponen sudah dinilai, menunggu ditetapkan final oleh Kemahasiswaan':
+    'All components graded, waiting for Student Affairs to mark it final',
+  'Seluruh {total} aspek sudah dinilai dan final.':
+    'All {total} aspects have been graded and are final.',
   'Nilai sementara berdasarkan {n} dari {total} aspek. Nilai final terbit setelah Semester {semester}.':
     'Provisional score based on {n} of {total} aspects. The final score is issued after Semester {semester}.',
 
@@ -456,7 +479,6 @@ export const EN = {
   'Nilai sudah final': 'Scores already final',
   'Nilai yang sudah masuk': 'Scores already in',
   'Di atas batas {ambang}': 'Above the {ambang} threshold',
-  'Sudah dikunci': 'Already locked',
   'Tampilkan 6 halaman lainnya': 'Show 6 more pages',
   'Masukkan nilai satu per satu, atau unggah rekap dari Excel.':
     'Enter scores one by one, or upload a summary from Excel.',
@@ -466,8 +488,6 @@ export const EN = {
     'Find a student, see their scores, and open the full transcript.',
   'Bandingkan capaian antar program studi, fakultas, dan angkatan.':
     'Compare achievement across study programmes, faculties, and cohorts.',
-  'Kunci angkatan yang sudah selesai, lalu terbitkan sertifikatnya.':
-    'Lock a finished cohort, then issue its certificates.',
   'Sepuluh aspek penilaian, komponen asesmen, dan bobotnya.':
     'Ten assessment aspects, their components, and their weightings.',
   'Catatan setiap perubahan nilai beserta siapa yang mengubahnya.':
@@ -527,8 +547,8 @@ export const EN = {
     'The print button only turns on when all five requirements are met, just like in the student panel. Choose Save as PDF in the print dialog to send it to the student.',
 
   /* -------------------------------- angkatan ------------------------------- */
-  'Pantau kelengkapan nilai tiap angkatan, temukan mahasiswa yang perlu ditindaklanjuti, lalu kunci angkatan yang programnya sudah selesai.':
-    'Monitor score completeness for each cohort, find the students who need follow-up, then lock cohorts whose programme has finished.',
+  'Pantau kelengkapan nilai tiap angkatan, temukan mahasiswa yang perlu ditindaklanjuti, lalu sahkan nilai angkatan yang programnya sudah selesai.':
+    'Monitor score completeness for each cohort, find the students who need follow-up, then ratify the scores of cohorts whose programme has finished.',
   'Angkatan yang ditambahkan di basis data akan tampil di sini.': 'Cohorts added to the database will appear here.',
   Aktif: 'Active',
   'Masuk {periode}': 'Intake {periode}',
@@ -555,35 +575,36 @@ export const EN = {
   'Tidak ada yang perlu ditindaklanjuti': 'Nothing needs follow-up',
   'Belum ada nilai yang kosong, di bawah rata-rata minimal, atau tertahan sementara di angkatan ini.':
     'No score in this cohort is empty, below the minimum average, or held as provisional.',
-  'Penguncian angkatan': 'Cohort locking',
-  'Angkatan yang sudah dikunci memenuhi syarat sertifikat.': 'A locked cohort meets the certificate requirement.',
-  'Angkatan {label} sudah dikunci.': 'Cohort {label} is locked.',
+  'Pengesahan nilai angkatan': 'Cohort score ratification',
+  'Angkatan yang nilainya sudah disahkan memenuhi syarat sertifikat.':
+    'A cohort with ratified scores meets the certificate requirement.',
+  'Nilai angkatan {label} sudah disahkan.': 'Cohort {label} scores are ratified.',
   'Nilainya masih bisa diubah atau dilengkapi Kemahasiswaan, asal disertai alasan yang tercatat.':
     'Student Affairs can still change or complete its scores, as long as a recorded reason is given.',
   'Cetak sertifikat angkatan ini': 'Print certificates for this cohort',
-  'Belum bisa dikunci': 'Cannot be locked yet',
-  'Angkatan ini baru di Semester {n} dari {total}. Penguncian bisa dilakukan setelah Semester {total} berakhir.':
-    'This cohort is only in Semester {n} of {total}. It can be locked once Semester {total} has ended.',
-  'Bila dikunci sekarang, {b} dari {n} mahasiswa berhak atas sertifikat.':
-    'If locked now, {b} of {n} students will be eligible for a certificate.',
-  '{n} belum berhak, {k} di antaranya karena nilainya belum lengkap. Nilai masih bisa dilengkapi sesudah dikunci, asal disertai alasan yang tercatat.':
-    '{n} are not yet eligible, {k} of them because their scores are incomplete. Scores can still be completed after locking, as long as a recorded reason is given.',
+  'Belum bisa disahkan': 'Cannot be ratified yet',
+  'Angkatan ini baru di Semester {n} dari {total}. Pengesahan bisa dilakukan setelah Semester {total} berakhir.':
+    'This cohort is only in Semester {n} of {total}. Its scores can be ratified once Semester {total} has ended.',
+  'Bila disahkan sekarang, {b} dari {n} mahasiswa berhak atas sertifikat.':
+    'If ratified now, {b} of {n} students will be eligible for a certificate.',
+  '{n} belum berhak, {k} di antaranya karena nilainya belum lengkap. Nilai masih bisa dilengkapi sesudah disahkan, asal disertai alasan yang tercatat.':
+    '{n} are not yet eligible, {k} of them because their scores are incomplete. Scores can still be completed after ratification, as long as a recorded reason is given.',
   'Ketik {label} untuk mengonfirmasi': 'Type {label} to confirm',
-  'Kunci angkatan': 'Lock cohort',
-  'Penguncian tidak bisa dibatalkan dari halaman ini.': 'Locking cannot be undone from this page.',
+  'Sahkan nilai angkatan': 'Ratify cohort scores',
+  'Pengesahan tidak bisa dibatalkan dari halaman ini.': 'Ratification cannot be undone from this page.',
   'Setiap perubahan tercatat beserta aktornya': 'Every change is recorded with who made it',
   'Belum ada perubahan tercatat': 'No change recorded yet',
   'Nilai mahasiswa ini masuk sekali lewat batch import dan belum pernah diperbaiki.':
     'This student’s scores arrived once through an import batch and have never been corrected.',
-  'Status penguncian aspek': 'Aspect locking status',
+  'Status final aspek': 'Aspect final status',
   'Mode berlaku: {mode}.': 'Active mode: {mode}.',
   'Penandaan di sini selalu menang atas mode.': 'A mark set here always overrides the mode.',
   '{n}/{total} komponen dinilai': '{n}/{total} components graded',
   'Ditandai {tanda} oleh {oleh} pada {tanggal}': 'Marked {tanda} by {oleh} on {tanggal}',
   'Belum ada aspek yang terbuka untuk mahasiswa ini.':
     'No aspect is open for this student yet.',
-  'Aspek yang komponennya belum lengkap tidak pernah bisa dikunci, tombolnya nonaktif beserta alasannya. Penguncian hanya menghentikan perubahan status, bukan mengubah angka.':
-    'An aspect whose components are incomplete can never be locked; the button is disabled together with the reason. Locking only stops the status from changing, it does not change the number.',
+  'Aspek yang komponennya belum lengkap tidak pernah bisa ditandai final, tombolnya nonaktif beserta alasannya. Tanda final hanya menghentikan perubahan status, bukan mengubah angka.':
+    'An aspect whose components are incomplete can never be marked final; the button is disabled together with the reason. The final mark only stops the status from changing, it does not change the number.',
 
   /* ------------------------------ input nilai ---------------------------- */
   'Input nilai': 'Enter scores',
@@ -636,7 +657,7 @@ export const EN = {
   'Belum ada perubahan': 'No change yet',
   'Simpan nilai': 'Save scores',
   '{n} nilai tersimpan sebagai batch {id}.': '{n} scores saved as batch {id}.',
-  '{n} aspek dikunci sebagai final': '{n} aspects locked as final',
+  '{n} aspek ditandai final': '{n} aspects marked final',
   '{n} ditahan sebagai sementara': '{n} held as provisional',
   '{n} mengikuti aturan sistem': '{n} follow the system rule',
   'Status aspek tidak diubah.': 'Aspect status was not changed.',
@@ -694,8 +715,8 @@ export const EN = {
   'Riwayat batch': 'Batch history',
   'Batch yang Anda buat bisa dibatalkan; batch periode lalu hanya tercatat':
     'Batches you created can be rolled back; batches from past periods are recorded only',
-  'Hapus seluruh perubahan: batch nilai, penguncian aspek, dan usulan dosen? Tindakan ini tidak bisa dibatalkan.':
-    'Delete every change: score batches, aspect locks, and lecturer proposals? This cannot be undone.',
+  'Hapus seluruh perubahan: batch nilai, tanda final aspek, dan usulan dosen? Tindakan ini tidak bisa dibatalkan.':
+    'Delete every change: score batches, aspect final marks, and lecturer proposals? This cannot be undone.',
   'Hapus semua perubahan': 'Delete all changes',
   'input manual': 'manual entry',
   'import CSV': 'CSV import',
@@ -709,8 +730,8 @@ export const EN = {
   '{n} ditolak': '{n} rejected',
   'Alasan perubahan': 'Reason for change',
   'Alasan rollback': 'Reason for rollback',
-  'Wajib, minimal 10 karakter, bila angkatan atau aspek sudah terkunci':
-    'Required, at least 10 characters, if the cohort or aspect is locked',
+  'Wajib, minimal 10 karakter, bila nilai angkatan sudah disahkan atau aspek sudah final':
+    'Required, at least 10 characters, if the cohort scores are ratified or the aspect is final',
 
   /* -------------------------- pengajuan koreksi -------------------------- */
   'Belum ada pengajuan koreksi dari mahasiswa.':
@@ -731,7 +752,7 @@ export const EN = {
     '{n} students are not yet eligible for a certificate',
   'Sudah sampai Semester {semester}, nilainya masih di bawah {ambang}':
     'Already in Semester {semester}, still scoring below {ambang}',
-  '{n} angkatan siap dikunci': '{n} cohorts ready to lock',
+  '{n} angkatan siap disahkan': '{n} cohorts ready to ratify',
   'Tiga semester sudah tuntas, sertifikatnya bisa diterbitkan':
     'Three semesters are complete, the certificates can be issued',
 
@@ -896,8 +917,6 @@ export const EN = {
     'A rejected proposal changes nothing. Fix the scores and resend them from the Enter Scores page.',
 
   /* ------------------------ halaman yang belum jadi ---------------------- */
-  'Pemetaan tiap angkatan ke tiga periode akademiknya, tingkat kelengkapan nilai, penguncian angkatan dengan pratinjau dan konfirmasi ketik, lalu tabel penerbitan sertifikat massal.':
-    'A mapping of each cohort to its three academic periods, score completeness levels, cohort locking with a preview and typed confirmation, then a bulk certificate issuing table.',
   'CRUD terbatas untuk sepuluh aspek, komponen asesmen, bobot sumber dan komponen MK, rubrik huruf mutu, dan mode agregasi — lengkap dengan simulasi dampak sebelum menyimpan: berapa mahasiswa naik atau turun huruf mutu dan berapa yang berubah status kelayakan sertifikat.':
     'Limited CRUD for the ten aspects, assessment components, source and course component weightings, the letter grade rubric, and the aggregation mode, together with an impact simulation before saving: how many students move up or down a letter grade and how many change certificate eligibility.',
   'Tabel audit setiap perubahan nilai — waktu, aktor, aspek, komponen, nilai lama, nilai baru, dan sumber — dengan filter aktor, jenis aksi, dan rentang tanggal.':
@@ -909,7 +928,11 @@ export const EN = {
   'Grafik nilai per semester, Semester {a} sebesar {na} sampai Semester {b} sebesar {nb}. {ringkas}':
     'Score by semester chart, Semester {a} at {na} through Semester {b} at {nb}. {ringkas}',
   'Naik {d} sejak Semester {n}': 'Up {d} since Semester {n}',
-  'Nilai per semester': 'Score by semester',
+  'Perkembangan nilai': 'Score progress',
+  'Nilai tiap semester': 'Score each semester',
+  // 'Rata-rata gabungan' sudah ada di bagian Program Studi ('Combined average'); grafik ini memakai kunci yang sama.
+  'Rata-rata gabungan: rata-rata semua aspek dari Semester 1 sampai semester itu, sehingga titik terakhirnya sama dengan nilai akhir.':
+    'Combined average: the average of all aspects from Semester 1 up to that semester, so its last point equals the final score.',
   'Tetap sejak Semester {n}': 'Unchanged since Semester {n}',
   'Turun {d} sejak Semester {n}': 'Down {d} since Semester {n}',
 
@@ -1028,8 +1051,8 @@ export const EN = {
   '{n} tidak lagi berhak atas sertifikat': '{n} are no longer eligible for a certificate',
   'Bila disimpan, nilai {n} dari {total} mahasiswa berubah.': 'If saved, the scores of {n} of {total} students change.',
   'Huruf mutu dan kelayakan sertifikat tidak ada yang berubah.': 'No grades or certificate eligibility change.',
-  '{n} di antaranya ada di angkatan terkunci atau aspek yang sudah ditandai final. Alasan wajib diisi dan ikut tercatat.':
-    '{n} of them are in a locked cohort or an aspect already marked final. A reason is required and will be recorded.',
+  '{n} di antaranya ada di angkatan yang sudah disahkan atau aspek yang sudah ditandai final. Alasan wajib diisi dan ikut tercatat.':
+    '{n} of them are in a ratified cohort or an aspect already marked final. A reason is required and will be recorded.',
   'Angkatan: {daftar}.': 'Cohorts: {daftar}.',
   'Aspek yang berubah': 'Changed aspects',
   'menjadi berhak sertifikat': 'becomes eligible for a certificate',
@@ -1061,6 +1084,18 @@ export const EN = {
   'Tarik permintaan': 'Withdraw request',
   'Batalkan batch nilai': 'Roll back a score batch',
   'Ubah tanda final/sementara': 'Change final/provisional flag',
+  /* Sasaran log dari server, diterjemahkan menurut polanya (labelSasaran di admin/Log.jsx). */
+  'tanda final ({n} mahasiswa)': 'final marks ({n} students)',
+  'aspek {kode} (kurikulum versi {v})': 'aspect {kode} (curriculum version {v})',
+  'kurikulum versi {v}': 'curriculum version {v}',
+  'periode {nama}': 'period {nama}',
+  'akun {nama}': 'account {nama}',
+  'angkatan {nama}': 'cohort {nama}',
+  'batch {nama}': 'batch {nama}',
+  'fakultas {nama}': 'faculty {nama}',
+  'prodi {nama}': 'study program {nama}',
+  'mahasiswa {nim}': 'student {nim}',
+  'permintaan {id}': 'request {id}',
   'Setujui usulan nilai dosen': 'Approve lecturer score proposal',
   'Ubah bobot': 'Change weights',
   Ditarik: 'Withdrawn',
@@ -1071,7 +1106,7 @@ export const EN = {
   'Perubahan ini menyentuh mahasiswa yang sudah lewat Semester 3, jadi baru berlaku setelah Super Admin menyetujuinya.':
     'This change affects students who are past Semester 3, so it takes effect only once the Super Admin approves it.',
   'Lihat permintaan': 'View request',
-  'Ajukan penguncian': 'Request locking',
+  'Ajukan pengesahan': 'Request ratification',
   'Ajukan ke Super Admin': 'Send to Super Admin',
 
   /* ------------------ penilaian aspek (Input Manual) ------------------ */
@@ -1111,7 +1146,7 @@ export const EN = {
   'Bila disimpan, hasil {n} dari {total} mahasiswa berubah.': 'If saved, the results of {n} of {total} students change.',
   'Tidak ada hasil mahasiswa yang berubah.': 'No student results change.',
   '{n} menjadi belum lengkap karena ada komponen baru': '{n} become incomplete because of the new component',
-  '{n} di angkatan terkunci atau aspek final': '{n} in a locked cohort or final aspect',
+  '{n} di angkatan yang sudah disahkan atau aspek final': '{n} in a ratified cohort or final aspect',
   'Nilai lama komponen yang dipulihkan ikut dihitung lagi; pratinjau di layar belum memasukkannya, server yang menghitungnya.':
     'Earlier scores of restored components count again; the on-screen preview does not include them yet, the server does.',
   'Perubahan penilaian oleh admin baru berlaku setelah Super Admin menyetujuinya.':
@@ -1146,8 +1181,7 @@ export const EN = {
   'Perubahan nilai 7 hari terakhir': 'Score changes in the last 7 days',
   'Dari {n} mahasiswa terdaftar.': 'Across {n} registered students.',
   'Telusuri di log': 'Trace in the log',
-  'Angkatan terkunci': 'Locked cohorts',
-  'Angkatan terkunci tidak bisa diubah tanpa alasan.': 'Locked cohorts cannot be changed without a reason.',
+  'Angkatan disahkan': 'Ratified cohorts',
   'Perlu keputusan Anda': 'Needs your decision',
   'Diurutkan dari yang paling lama menunggu.': 'Oldest requests first.',
   'Diajukan {siapa} pada {kapan}': 'Submitted by {siapa} on {kapan}',
@@ -1183,24 +1217,26 @@ export const EN = {
   Genap: 'Even',
   'Periode yang ditampilkan: {periode}': 'Period shown: {periode}',
   'Pilih periode': 'Choose a period',
-  'Terkunci: {daftar}': 'Locked: {daftar}',
-  'Belum ada angkatan yang terkunci.': 'No cohort is locked yet.',
+  'Disahkan: {daftar}': 'Ratified: {daftar}',
+  'Belum ada angkatan yang disahkan.': 'No cohort has been ratified yet.',
   'Aturan menunggu konfirmasi': 'Rules awaiting confirmation',
   'Lihat aturan': 'View rules',
-  'Perubahan nilai per bulan': 'Score changes per month',
-  'Per bulan dalam semester yang dipilih, menurut tanggal WIB.': 'Per month in the selected semester, by WIB date.',
+  'Nilai tersimpan per bulan': 'Scores saved per month',
+  'Banyaknya nilai tugas yang tersimpan tiap bulan (input baru maupun perubahan), menurut tanggal WIB. Ini bukan jumlah pengajuan koreksi.':
+    'Number of task scores saved each month (new entries and changes), by WIB date. This is not the number of correction requests.',
   Bulan: 'Month',
-  '{n} perubahan nilai pada {m} mahasiswa.': '{n} score changes across {m} students.',
-  'Perubahan nilai per bulan di {periode}': 'Score changes per month in {periode}',
+  'Nilai tersimpan': 'Scores saved',
+  '{n} nilai tersimpan untuk {m} mahasiswa.': '{n} scores saved for {m} students.',
+  'Nilai tersimpan per bulan di {periode}': 'Scores saved per month in {periode}',
   'belum berjalan': 'not started yet',
   'Belum berjalan': 'Not started yet',
-  '{n} perubahan': '{n} changes',
-  'Tidak ada perubahan nilai di {periode}': 'No score changes in {periode}',
+  '{n} nilai tersimpan': '{n} scores saved',
+  'Belum ada nilai yang tersimpan di {periode}': 'No scores saved in {periode}',
   'Nilai yang diinput, diimpor, atau disetujui akan terhitung di sini per bulan.':
     'Scores that are entered, imported, or approved are counted here per month.',
   'Enam catatan terakhir di {periode}.': 'The six most recent entries in {periode}.',
-  'Penguncian, perubahan bobot, dan keputusan persetujuan akan tercatat di sini.':
-    'Locks, weight changes, and approval decisions will be recorded here.',
+  'Pengesahan angkatan, perubahan bobot, dan keputusan persetujuan akan tercatat di sini.':
+    'Cohort ratifications, weight changes, and approval decisions will be recorded here.',
   'Lihat matriks': 'View matrix',
   Anda: 'You',
   'Lihat matriks peran & wewenang': 'View the roles & permissions matrix',
@@ -1222,7 +1258,7 @@ export const EN = {
   'Mengubah tanda final/sementara': 'Change final/provisional marks',
   'Mengubah bobot kurikulum': 'Change curriculum weights',
   'Mengubah penilaian aspek': 'Change aspect assessments',
-  'Mengunci angkatan': 'Lock a cohort',
+  'Mengesahkan nilai angkatan': 'Ratify cohort scores',
   'Memutuskan permintaan admin': 'Decide admin requests',
   'Menarik permintaan yang belum diputuskan': 'Withdraw a pending request',
   'Memindahkan periode akademik': 'Move the academic period',
@@ -1242,6 +1278,14 @@ export const EN = {
   'Pilih aspek yang ingin diubah.': 'Choose the aspect to change.',
   'bobot manual': 'manual weights',
   'bobot otomatis': 'automatic weights',
+  /* Label angka contoh: bobot yang dibagi rata sambil menunggu angka resmi (rapat 24 Okt 2026). */
+  contoh: 'sample',
+  'Bobot komponen aspek ini masih dibagi rata sambil menunggu bobot resmi dari unit pengelola. Angkanya tetap dipakai menghitung nilai sampai diganti.':
+    "This aspect's component weights are still split evenly while the official weights from the managing unit are pending. They are still used to calculate scores until replaced.",
+  'Angka contoh': 'Sample numbers',
+  '{n} berisi angka contoh': '{n} hold sample numbers',
+  'Angka contoh: isian awal yang belum dipakai menghitung, sampai unit pengelola menetapkan angka resmi.':
+    'Sample numbers: starting values that are not used in calculations until the managing unit sets official numbers.',
   'Perubahan yang belum disimpan akan hilang. Lanjutkan?': 'Unsaved changes will be lost. Continue?',
 
   // Akses Pengguna
@@ -1323,8 +1367,8 @@ export const EN = {
   'Aturan perhitungan yang sedang berlaku. Periode akademik dipindah dari halaman ini; aturan lainnya diubah lewat tabel Konfigurasi di basis data, sedangkan bobot dan penilaian aspek lewat halaman Penilaian & Bobot.':
     'The calculation rules currently in effect. The academic period is moved from this page; other rules are changed through the Konfigurasi table in the database, while weights and aspect assessments are changed on the Assessment & Weights page.',
   'Periode akademik': 'Academic period',
-  'Semester tiap mahasiswa, siapa yang sudah lewat Semester 3, dan angkatan yang boleh dikunci dihitung dari periode ini.':
-    "Each student's semester, who is already past Semester 3, and which cohorts may be locked are all calculated from this period.",
+  'Semester tiap mahasiswa, siapa yang sudah lewat Semester 3, dan angkatan yang nilainya boleh disahkan dihitung dari periode ini.':
+    "Each student's semester, who is already past Semester 3, and which cohorts may have their scores ratified are all calculated from this period.",
   'Tersimpan di basis data': 'Stored in the database',
   'Bawaan kode, belum pernah dipindah': 'Code default, never moved',
   'Pindah ke {periode}': 'Move to {periode}',
@@ -1335,8 +1379,8 @@ export const EN = {
   'Belum mulai': 'Not started',
   'Lewat Semester {n}': 'Past Semester {n}',
   'Belum ada angkatan yang terdampak.': 'No cohort is affected.',
-  '{n} angkatan akan lewat Semester {batas}: mahasiswanya tidak lagi ditangani dosen, perubahan datanya oleh admin biasa perlu persetujuan Super Admin, dan angkatannya boleh dikunci.':
-    '{n} cohorts will pass Semester {batas}: their students are no longer handled by lecturers, changes to their data by a regular admin need Super Admin approval, and the cohorts may be locked.',
+  '{n} angkatan akan lewat Semester {batas}: mahasiswanya tidak lagi ditangani dosen, perubahan datanya oleh admin biasa perlu persetujuan Super Admin, dan nilai angkatannya boleh disahkan.':
+    '{n} cohorts will pass Semester {batas}: their students are no longer handled by lecturers, changes to their data by a regular admin need Super Admin approval, and the cohort scores may be ratified.',
   '{n} angkatan akan kembali ke Semester {batas} dan kembali ditangani dosen.':
     '{n} cohorts will return to Semester {batas} and be handled by lecturers again.',
   'Pindahkan ke {periode}': 'Move to {periode}',
@@ -1382,8 +1426,8 @@ export const EN = {
   'MK Humaniora': 'Humanities course',
   'Jejak setiap tindakan untuk menelusuri siapa mengubah apa dan kapan. Log hanya bisa dibaca, tidak bisa diubah atau dihapus dari website.':
     'A trail of every action, to trace who changed what and when. The log is read-only; it cannot be edited or deleted from the website.',
-  'Ubah data terkunci': 'Change locked data',
-  'Batalkan perubahan data terkunci': 'Roll back a locked data change',
+  'Ubah data yang sudah final': 'Change finalized data',
+  'Batalkan perubahan data yang sudah final': 'Roll back a change to finalized data',
   'Ajukan persetujuan': 'Submit for approval',
   'Putuskan persetujuan': 'Decide an approval',
   'Tidak ada rincian tambahan.': 'No further details.',
@@ -1472,7 +1516,7 @@ export const EN = {
   'Aktor': 'Actor',
   'Angka di kanan: banyaknya nilai dalam usulan dosen, atau nilai komponen yang masih kosong pada kelompok itu.': 'Number on the right: how many scores a lecturer proposal contains, or how many component scores are still empty in that group.',
   'Angkatan {label} belum mulai': 'Cohort {label} has not started',
-  'Angkatan ini belum mulai; Semester 1-nya dimulai {periode}. Penguncian bisa dilakukan setelah Semester {total} berakhir.': 'This cohort has not started; its Semester 1 begins in {periode}. It can be locked after Semester {total} ends.',
+  'Angkatan ini belum mulai; Semester 1-nya dimulai {periode}. Pengesahan bisa dilakukan setelah Semester {total} berakhir.': 'This cohort has not started; its Semester 1 begins in {periode}. Its scores can be ratified after Semester {total} ends.',
   'Atur lagi': 'Adjust again',
   'Batalkan batch {id}? Semua nilai di batch ini dikembalikan ke nilai sebelumnya.': 'Roll back batch {id}? Every score in this batch returns to its previous value.',
   'Batalkan pilihan': 'Cancel selection',
@@ -1535,9 +1579,9 @@ export const EN = {
   'Nilai akhir belum bisa dihitung': 'Final score cannot be calculated yet',
   'nilai akhir belum bisa dihitung': 'final score cannot be calculated yet',
   'nilai akhir {nilai} di bawah rata-rata minimal {n}': 'final score {nilai} below the minimum average of {n}',
-  'Angkatan sudah dikunci oleh Kemahasiswaan': 'Cohort has been locked by Student Affairs',
-  'Angkatan {label} belum dikunci': 'Cohort {label} is not locked yet',
-  'angkatan {label} belum dikunci': 'cohort {label} not locked yet',
+  'Nilai angkatan sudah disahkan Kemahasiswaan': 'Cohort scores ratified by Student Affairs',
+  'Nilai angkatan {label} belum disahkan': 'Cohort {label} scores are not ratified yet',
+  'nilai angkatan {label} belum disahkan': 'cohort {label} scores not ratified yet',
 
   /* -------- label predikat (sama di kedua bahasa) -------- */
   'Professional & Competent': 'Professional & Competent',
@@ -1700,7 +1744,7 @@ export const EN = {
   'Angkatan {label} sudah ada.': 'Cohort {label} already exists.',
   'Angkatan {label} sudah ditambahkan.': 'Cohort {label} has been added.',
   'Angkatan {label} sudah diubah.': 'Cohort {label} has been updated.',
-  'Angkatan mahasiswa ini sudah dikunci, jadi ia tidak bisa dipindah.': 'This student’s cohort is locked, so they cannot be moved.',
+  'Nilai angkatan mahasiswa ini sudah disahkan, jadi ia tidak bisa dipindah.': 'This student’s cohort scores are ratified, so they cannot be moved.',
   'Belum ada mahasiswa.': 'No students yet.',
   'Beri izin data master': 'Grant master data permission',
   'Cabut izin data master': 'Revoke master data permission',
@@ -1756,10 +1800,10 @@ export const EN = {
   'Aspek {kode} diarsipkan. Nilainya tetap tersimpan dan bisa dipulihkan.': 'Aspect {kode} archived. Its scores stay saved and it can be restored.',
   'Aspek {kode} dipulihkan.': 'Aspect {kode} restored.',
   'Aspek {kode} ditambahkan.': 'Aspect {kode} added.',
-  'Aspek baru langsung dihitung untuk angkatan yang belum terkunci, mulai dari semesternya. Komponen lain bisa ditambah sesudahnya di editor penilaian.': 'A new aspect counts right away for cohorts that are not locked, from its semester on. More components can be added afterwards in the assessment editor.',
+  'Aspek baru langsung dihitung untuk angkatan yang belum disahkan, mulai dari semesternya. Komponen lain bisa ditambah sesudahnya di editor penilaian.': 'A new aspect counts right away for cohorts whose scores are not ratified, from its semester on. More components can be added afterwards in the assessment editor.',
   'Aspek diarsipkan': 'Archived aspects',
-  'Aspek ini tidak tampil dan tidak dihitung lagi untuk angkatan yang belum terkunci. Komponen dan nilainya tidak dihapus, dan angkatan yang sudah terkunci tetap menghitungnya.': 'This aspect is no longer shown or counted for cohorts that are not locked. Its components and scores are not deleted, and locked cohorts still count it.',
-  'Aspek juga bisa ditambah, diubah strukturnya, atau diarsipkan di bawah editor; angkatan yang sudah terkunci tetap memakai aspek saat ia dikunci.': 'Aspects can also be added, restructured, or archived below the editor; locked cohorts keep the aspects they had when they were locked.',
+  'Aspek ini tidak tampil dan tidak dihitung lagi untuk angkatan yang belum disahkan. Komponen dan nilainya tidak dihapus, dan angkatan yang sudah disahkan tetap menghitungnya.': 'This aspect is no longer shown or counted for cohorts whose scores are not ratified. Its components and scores are not deleted, and ratified cohorts still count it.',
+  'Aspek juga bisa ditambah, diubah strukturnya, atau diarsipkan di bawah editor; angkatan yang sudah disahkan tetap memakai susunan aspek saat ia disahkan.': 'Aspects can also be added, restructured, or archived below the editor; ratified cohorts keep the aspects they had when their scores were ratified.',
   'Aspek tidak pernah dihapus permanen, supaya nilai dan riwayatnya tetap utuh.': 'Aspects are never deleted permanently, so their scores and history stay intact.',
   'Batal arsipkan': 'Cancel archiving',
   'ID {id} tetap; kode tampilan, semester, dan cluster bisa diubah. Area mengikuti cluster.': 'ID {id} stays fixed; the display code, semester, and cluster can be changed. The area follows the cluster.',
@@ -1771,8 +1815,8 @@ export const EN = {
   'Struktur aspek {kode}': 'Structure of aspect {kode}',
   'Struktur aspek {kode} tersimpan.': 'Structure of aspect {kode} saved.',
   'Tambah aspek': 'Add aspect',
-  'Tidak ada nilai mahasiswa yang berubah. Angkatan yang sudah terkunci tidak ikut berubah.': 'No student scores change. Locked cohorts are not affected.',
-  'Tidak tampil dan tidak dihitung, kecuali untuk angkatan yang terkunci sebelum aspeknya diarsipkan.': 'Not shown or counted, except for cohorts locked before the aspect was archived.',
+  'Tidak ada nilai mahasiswa yang berubah. Angkatan yang sudah disahkan tidak ikut berubah.': 'No student scores change. Ratified cohorts are not affected.',
+  'Tidak tampil dan tidak dihitung, kecuali untuk angkatan yang disahkan sebelum aspeknya diarsipkan.': 'Not shown or counted, except for cohorts ratified before the aspect was archived.',
   'Ubah kode, semester, atau cluster untuk melihat dampaknya.': 'Change the code, semester, or cluster to see the impact.',
   'Kelola aspek CPMK': 'Manage CPMK aspects',
   'Ubah struktur aspek': 'Change aspect structure',
@@ -1784,5 +1828,8 @@ export const EN = {
   'Belum ada aspek di semester ini.': 'No aspects in this semester yet.',
   'Hapus = arsip: aspek tidak tampil dan tidak dihitung, tetapi komponen dan nilainya tetap tersimpan dan bisa dipulihkan. Kode aspek lain tidak berubah.': 'Delete = archive: the aspect is no longer shown or counted, but its components and scores stay saved and can be restored. Other aspect codes do not change.',
   'Tambah, edit, ubah, atau hapus aspek yang dinilai di semester ini. Perubahan Anda dikirim ke Super Admin dan berlaku setelah disetujui.': 'Add, edit, change, or delete the aspects assessed in this semester. Your changes are sent to the Super Admin and apply once approved.',
-  'Tambah, edit, ubah, atau hapus aspek yang dinilai di semester ini. Perubahan langsung berlaku; angkatan yang sudah terkunci tidak ikut berubah.': 'Add, edit, change, or delete the aspects assessed in this semester. Changes apply right away; locked cohorts are not affected.',
+  'Tambah, edit, ubah, atau hapus aspek yang dinilai di semester ini. Perubahan langsung berlaku; angkatan yang sudah disahkan tidak ikut berubah.': 'Add, edit, change, or delete the aspects assessed in this semester. Changes apply right away; ratified cohorts are not affected.',
+  /* Ringkasan pilihan tanda status di Input Manual (TANDA_BARIS di admin/Nilai.jsx, lewat t(ringkas)). */
+  'tahan walau sudah lengkap': 'hold even when complete',
+  'nilai berhenti berubah': 'score stops changing',
 }

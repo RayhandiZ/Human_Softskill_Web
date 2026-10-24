@@ -317,12 +317,18 @@ export function TandaDraft({ children, className = '' }) {
   )
 }
 
+/* Angka contoh yang tetap dipakai menghitung selagi angka resmi belum ada, misalnya bobot yang dibagi rata (rapat
+   24 Okt 2026). Nada tunggu, sama dengan "Menunggu konfirmasi" di Aturan Sistem. */
+export function TandaContoh({ children, className = '' }) {
+  return <span className={'teks-tunggu whitespace-nowrap text-[12px] font-bold ' + className}>({children})</span>
+}
+
 export function Terkunci({ semester, ringkas = false }) {
   const t = useTeks()
   return (
     <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-3">
       <IconLock size={14} />
-      {ringkas ? t('Terkunci') : t('Dibuka pada Semester {n}', { n: semester })}
+      {ringkas ? t('Belum dibuka') : t('Dibuka pada Semester {n}', { n: semester })}
     </span>
   )
 }

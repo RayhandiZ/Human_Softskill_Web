@@ -272,7 +272,7 @@ export default function Kurikulum({ tertanam = false, aspekAwal, onPilihAspek, o
                   className="field !py-2.5"
                   value={alasan}
                   onChange={(e) => setAlasan(e.target.value)}
-                  placeholder={t('Wajib, minimal 10 karakter, bila angkatan atau aspek sudah terkunci')}
+                  placeholder={t('Wajib, minimal 10 karakter, bila nilai angkatan sudah disahkan atau aspek sudah final')}
                 />
               </label>
               <div className="flex flex-wrap items-center gap-3">
@@ -611,7 +611,7 @@ export function Dampak({ dampak, kosong = null }) {
         <p className="flex items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--warning)_16%,transparent)] px-3.5 py-3 text-[13px] font-semibold leading-relaxed text-ink">
           <IconLock size={16} className="mt-px shrink-0" />
           <span>
-            {t('{n} di antaranya ada di angkatan terkunci atau aspek yang sudah ditandai final. Alasan wajib diisi dan ikut tercatat.', {
+            {t('{n} di antaranya ada di angkatan yang sudah disahkan atau aspek yang sudah ditandai final. Alasan wajib diisi dan ikut tercatat.', {
               n: dampak.terkunci,
             })}
             {dampak.angkatanTerkunci.length ? ' ' + t('Angkatan: {daftar}.', { daftar: dampak.angkatanTerkunci.join(', ') }) : ''}
@@ -639,7 +639,7 @@ export function Dampak({ dampak, kosong = null }) {
                   {x.terkunci ? (
                     <span className="mt-0.5 flex items-center gap-1 text-[12px] font-semibold text-ink-3">
                       <IconLock size={12} />
-                      {t('Terkunci')}
+                      {t('Sudah final')}
                     </span>
                   ) : null}
                 </td>

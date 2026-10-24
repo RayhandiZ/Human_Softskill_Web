@@ -87,7 +87,7 @@ export default function MutuDonut({ huruf, totalMahasiswa, height = 260 }) {
             <p className="text-[30px] font-extrabold leading-none tabular-nums text-ink">
               {total.toLocaleString('id-ID')}
             </p>
-            <p className="mt-1 text-[13px] text-ink-2">sudah dinilai</p>
+            <p className="mt-1 text-[13px] text-ink-2">{t('sudah dinilai')}</p>
           </div>
         </div>
 
