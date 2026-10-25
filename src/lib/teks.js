@@ -130,9 +130,7 @@ export const EN = {
   'Semua aspek sudah dibuka': 'All aspects are open',
   'Sudah final dan tidak akan berubah lagi': 'Final and will not change again',
   'Belum ada aspek yang final': 'No aspect is final yet',
-  'Siap diunduh': 'Ready to download',
   'Belum tersedia': 'Not available yet',
-  'Buka untuk mengunduh': 'Open to download',
   '{n} syarat belum terpenuhi': '{n} requirements not met',
 
   'Aspek penilaian': 'Assessment aspects',
@@ -197,7 +195,6 @@ export const EN = {
   Dashboard: 'Dashboard',
   'Area {kode}': 'Area {kode}',
   PDP: 'PDP',
-  'Semua tugas': 'All tasks',
   '{total} aspek': '{total} aspects',
   'semua final': 'all final',
   '{total} aspek · dibuka pada Semester {semester}':
@@ -403,6 +400,17 @@ export const EN = {
   'Log Aktivitas': 'Activity Log',
   'Data Mahasiswa': 'Student Data',
   'Input & Import Nilai': 'Enter & Import Scores',
+  /* Admin biasa hanya membaca nilai sejak rapat 24 Okt 2026 (halaman nilai, lonceng, riwayat batch). */
+  'Nilai Mahasiswa': 'Student Scores',
+  'Pilih semester, sumber penilaian, dan angkatan untuk melihat nilai yang tersimpan. Nilai diunggah dosen lewat Excel; perubahan nilai lewat Super Admin.':
+    'Choose a semester, assessment source, and cohort to see the stored scores. Lecturers upload scores through Excel; score changes go through the Super Admin.',
+  'Sel kosong berarti nilainya belum diunggah dosen. Admin hanya melihat; perubahan nilai lewat Super Admin.':
+    'An empty cell means the lecturer has not uploaded that score yet. Admins only view; score changes go through the Super Admin.',
+  'belum ada': 'none yet',
+  Tersimpan: 'Saved',
+  'unggahan dosen': 'lecturer upload',
+  'Setiap penyimpanan nilai tercatat sebagai satu batch; hanya Super Admin yang bisa membatalkannya':
+    'Every score save is recorded as one batch; only the Super Admin can roll it back',
   'Persetujuan Nilai Dosen': 'Lecturer Score Approval',
   'Data Masuk': 'Incoming Submissions',
   'Input Nilai': 'Enter Scores',
@@ -416,8 +424,6 @@ export const EN = {
   'baris {n}': 'row {n}',
   '{n} baris': '{n} rows',
   Tindakan: 'Action',
-  Dikumpulkan: 'Submitted',
-  Terlambat: 'Late',
   terlambat: 'late',
   Komponen: 'Component',
   Tugas: 'Task',
@@ -430,7 +436,6 @@ export const EN = {
   Menampilkan: 'Showing',
   dari: 'of',
   'dari {n}': 'of {n}',
-  'Halaman {n} dari {total}': 'Page {n} of {total}',
   'Cari mahasiswa': 'Search students',
   'Nama atau NIM…': 'Name or student ID…',
   'Nama, NIM, atau prodi…': 'Name, student ID, or programme…',
@@ -452,7 +457,6 @@ export const EN = {
   'harus 0–100': 'must be 0–100',
   'di luar rentang 0–100': 'outside the 0–100 range',
   '{n} sel di luar rentang 0–100': '{n} cells outside the 0–100 range',
-  'Nilai untuk {nama}': 'Score for {nama}',
   'nilai {n}': 'score {n}',
   '{n} nilai': '{n} scores',
   '{n} kosong': '{n} empty',
@@ -464,6 +468,15 @@ export const EN = {
   '{n} aspek': '{n} aspects',
   'Angkatan {label}': 'Cohort {label}',
   'angkatan {id}': 'cohort {id}',
+  'beberapa angkatan': 'several cohorts',
+  // Jenis tindakan baru di Log Aktivitas (LABEL_LOG di admin/Log.jsx, diterjemahkan lewat t(label)).
+  'Teruskan pengajuan ubah nilai': 'Forward score change request',
+  'Setujui dan terapkan ubah nilai': 'Approve and apply score change',
+  'Tolak pengajuan ubah nilai': 'Reject score change request',
+  'Setujui akses cetak sertifikat': 'Approve certificate print access',
+  'Tolak akses cetak sertifikat': 'Reject certificate print access',
+  'Cabut akses cetak sertifikat': 'Revoke certificate print access',
+  'Buka sertifikat untuk dicetak': 'Open certificate for printing',
   'batch {id}': 'batch {id}',
   'Buka transkrip {nama}': 'Open {nama}’s transcript',
   'Ekspor CSV': 'Export CSV',
@@ -533,8 +546,6 @@ export const EN = {
 
   /* ---------------------------- cetak sertifikat --------------------------- */
   'Cetak Sertifikat': 'Print Certificates',
-  'Bantu mahasiswa yang kesulitan mencetak sertifikatnya sendiri. Lembarnya sama persis dengan yang dicetak mahasiswa.':
-    'Help students who cannot print their own certificate. The sheet is exactly the one students print themselves.',
   '{n} dari {total} mahasiswa sudah berhak atas sertifikat': '{n} of {total} students are eligible for a certificate',
   'Belum berhak': 'Not yet eligible',
   Kelayakan: 'Eligibility',
@@ -543,8 +554,6 @@ export const EN = {
   Cetak: 'Print',
   'Cetak sertifikat {nama}': 'Print certificate for {nama}',
   'Ubah kata kunci, angkatan, atau pilihan kelayakan.': 'Change the keyword, cohort, or eligibility filter.',
-  'Tombol cetak hanya aktif bila kelima syarat terpenuhi, sama seperti di panel mahasiswa. Pilih Simpan sebagai PDF di dialog cetak untuk mengirimkannya ke mahasiswa.':
-    'The print button only turns on when all five requirements are met, just like in the student panel. Choose Save as PDF in the print dialog to send it to the student.',
 
   /* -------------------------------- angkatan ------------------------------- */
   'Pantau kelengkapan nilai tiap angkatan, temukan mahasiswa yang perlu ditindaklanjuti, lalu sahkan nilai angkatan yang programnya sudah selesai.':
@@ -720,6 +729,7 @@ export const EN = {
   'Hapus semua perubahan': 'Delete all changes',
   'input manual': 'manual entry',
   'import CSV': 'CSV import',
+  'pengajuan koreksi': 'correction request',
   'unggah berkas': 'file upload',
   Rollback: 'Roll back',
   'Batch ini sudah dibatalkan sebelumnya.': 'This batch was already rolled back.',
@@ -738,9 +748,6 @@ export const EN = {
     'No correction request from students yet.',
   'Nilai yang diharapkan': 'Expected score',
   'Catatan keputusan': 'Decision note',
-  'Alasan menyetujui atau menolak…': 'Reason for approving or rejecting…',
-  'Pengajuan tidak ditemukan. Mungkin sudah diputuskan di jendela lain.':
-    'Request not found. It may have been decided in another window.',
 
   /* ------------------------------- lonceng ------------------------------- */
   '{n} hal menunggu ditangani': '{n} things waiting to be handled',
@@ -757,8 +764,6 @@ export const EN = {
     'Three semesters are complete, the certificates can be issued',
 
   /* ------------------------- persetujuan nilai dosen --------------------- */
-  'Nilai yang dikirim dosen tertahan di sini sampai disetujui. Sebelum Anda memutuskan, sistem sudah memeriksa tiap barisnya lebih dulu.':
-    'Scores sent by lecturers are held here until approved. Before you decide, the system has already checked every row.',
   'Usulan menunggu keputusan': 'Proposals awaiting a decision',
   'berisi {n} nilai': 'holding {n} scores',
   'Dari {n} dosen pengampu.': 'From {n} lecturers.',
@@ -772,8 +777,6 @@ export const EN = {
   'Sudah diputuskan': 'Already decided',
   'Tidak ada usulan yang menunggu': 'No proposal is waiting',
   'Belum ada usulan yang diputuskan': 'No proposal has been decided yet',
-  'Usulan baru akan muncul di sini begitu dosen mengirim nilai.':
-    'A new proposal appears here as soon as a lecturer sends scores.',
   'Keputusan yang sudah diambil akan tercatat di sini lengkap dengan alasannya.':
     'Decisions already made are recorded here together with their reasons.',
   'Usulan yang disetujui masuk sebagai satu batch di Riwayat Batch halaman Input Nilai. Bila ternyata keliru, seluruh nilainya masih bisa dibatalkan sekaligus.':
@@ -784,7 +787,6 @@ export const EN = {
   '{n} nilai, {unit} Semester {semester}': '{n} scores, {unit} Semester {semester}',
   '{n} ditolak sistem': '{n} rejected by the system',
   'Catatan dosen': 'Lecturer’s note',
-  'Catatan Anda': 'Your note',
   'Pemeriksaan sistem': 'System check',
   '{n} baris lolos': '{n} rows passed',
   ', {n} ditolak dan tidak akan ikut ditulis':
@@ -812,109 +814,12 @@ export const EN = {
     'This account is not registered as a course lecturer',
   'Hubungi Biro Kemahasiswaan untuk didaftarkan pada satu kelas.':
     'Contact the Student Affairs Bureau to be assigned to a class.',
-  'Data masuk': 'Incoming data',
-  'Nilai tidak pernah datang dari mahasiswa. Yang mereka kirim hanya pekerjaannya.':
-    'Scores never come from students. All they send is their work.',
-  'Menunggu dinilai': 'Awaiting grading',
-  'dari {n} pengumpulan': 'of {n} submissions',
-  'Berkasnya sudah ada, nilainya belum Anda isi.':
-    'The files are in, you have not entered the scores.',
-  'Tidak ada yang tertinggal. Seluruh pengumpulan sudah Anda tangani.':
-    'Nothing is left behind. You have handled every submission.',
-  'Mulai menilai': 'Start grading',
   'Menunggu persetujuan': 'Awaiting approval',
-  'Sudah Anda usulkan, belum diputuskan Kemahasiswaan.':
-    'You have proposed it; Student Affairs has not decided.',
-  'Sudah tercatat': 'Recorded',
-  'Disetujui dan sudah masuk transkrip.': 'Approved and already in the transcript.',
-  'Perlu Anda usulkan ulang.': 'You need to propose it again.',
-  'Belum ada usulan yang ditolak.': 'No proposal has been rejected.',
-  'Daftar pengumpulan': 'Submission list',
-  '{n} berkas dari seluruh kelas': '{n} files from the whole class',
-  '{n} dari {total} berkas': '{n} of {total} files',
-  'Tugas yang dikumpulkan': 'Task submitted',
-  'Usulkan ulang': 'Propose again',
-  'Tidak ada pengumpulan yang cocok': 'No matching submission',
-  'Ubah penyaring di atas, atau kosongkan kotak pencarian.':
-    'Change the filters above, or clear the search box.',
-  'Belum ada pengumpulan': 'No submissions yet',
-  'Berkas yang dikirim mahasiswa kelas ini akan muncul di sini.':
-    'Files sent by students in this class will appear here.',
-  'Belum ada mahasiswa yang mengumpulkan berkas.': 'No student has submitted a file yet.',
-  'Nilai yang Anda isi tidak langsung masuk transkrip. Setiap penilaian dikirim sebagai usulan dan baru tercatat setelah disetujui Biro Kemahasiswaan.':
-    'The scores you enter do not go straight into a transcript. Every grading is sent as a proposal and is recorded only after the Student Affairs Bureau approves it.',
-  'Isi sendiri satu per satu, atau unggah berkas nilai dari kelas Anda. Keduanya berakhir di tempat yang sama: antrean persetujuan Biro Kemahasiswaan.':
-    'Fill them in one by one, or upload a score file from your class. Both end in the same place: the Student Affairs Bureau approval queue.',
-  'Pilih tugas yang dinilai': 'Choose the task being graded',
-  'Tugas / komponen asesmen': 'Task / assessment component',
-  'Skema komponen ini belum final di kurikulum. Nilainya tetap bisa diusulkan.':
-    'This component’s scheme is not final in the curriculum. Its score can still be proposed.',
-  '{n} mahasiswa mengumpulkan tugas ini; {sisa} di antaranya belum bernilai.':
-    '{n} students submitted this task; {sisa} of them have no score yet.',
-  'Semua pengumpulan tugas ini sudah Anda tangani':
-    'You have handled every submission for this task',
-  'Yang tersisa hanya menunggu keputusan Kemahasiswaan atau sudah tercatat. Pilih tugas lain di atas untuk melanjutkan.':
-    'What remains is either awaiting a Student Affairs decision or already recorded. Choose another task above to continue.',
-  'Belum ada yang mengumpulkan tugas ini': 'Nobody has submitted this task yet',
-  'Nilai hanya bisa diisi untuk mahasiswa yang berkasnya sudah masuk.':
-    'A score can only be entered for a student whose file has arrived.',
-  'Isi nilainya': 'Enter the scores',
-  'Kedua cara di bawah menghasilkan usulan yang sama':
-    'Both ways below produce the same proposal',
   Manual: 'Manual',
   Otomatis: 'Automatic',
-  'Catatan untuk Kemahasiswaan (opsional)': 'Note for Student Affairs (optional)',
-  'Misalnya: nilai sudah termasuk penyesuaian keterlambatan.':
-    'For example: the score already includes a lateness adjustment.',
-  '{n} nilai terkirim sebagai usulan {id}': '{n} scores sent as proposal {id}',
-  'Belum ada satu pun yang masuk transkrip. Biro Kemahasiswaan akan menyetujui atau menolaknya; statusnya bisa Anda pantau kapan saja.':
-    'Not one has reached a transcript. The Student Affairs Bureau will approve or reject them; you can follow the status at any time.',
-  'Lihat status usulan': 'See proposal status',
-  'Tutup pemberitahuan': 'Dismiss notice',
-  'Sel yang dikosongkan tidak ikut terkirim. Sel kosong tidak dihitung sebagai nol.':
-    'A cell left empty is not sent. An empty cell is not counted as zero.',
-  'nilai siap diusulkan': 'scores ready to propose',
-  '{n} tidak sah': '{n} invalid',
-  'Kirim untuk disetujui': 'Send for approval',
-  'Setelah dikirim, nilainya menunggu keputusan Biro Kemahasiswaan dan belum terlihat oleh mahasiswa.':
-    'Once sent, the scores await a Student Affairs Bureau decision and are not visible to students.',
-  'Pilih berkas CSV': 'Choose a CSV file',
   'Unduh templat': 'Download template',
-  'Templatnya sudah berisi NIM dan nama mahasiswa yang mengumpulkan tugas ini. Cukup isi kolom nilainya, lalu unggah kembali. Berkas dari sumber lain juga bisa: kolomnya akan ditebak, dan Anda tetap bisa membetulkan tebakan itu.':
-    'The template already holds the student IDs and names of everyone who submitted this task. Just fill in the score column and upload it back. A file from another source works too: its columns will be guessed, and you can still correct the guess.',
-  'Berkas tidak berisi tabel yang bisa dibaca.': 'The file holds no readable table.',
-  'Berkas gagal dibaca.': 'The file could not be read.',
   'Kolom nilai': 'Score column',
-  'Skala nilai di berkas': 'Score scale in the file',
   'NIM kosong': 'empty student ID',
-  'NIM ganda di berkas': 'duplicate student ID in the file',
-  'sudah {keadaan}': 'already {keadaan}',
-  'tidak mengumpulkan tugas ini': 'did not submit this task',
-  'nilai tidak terbaca': 'score unreadable',
-  'siap diusulkan': 'ready to propose',
-  'Menampilkan 40 baris pertama dari {n}. Seluruh baris tetap ikut diperiksa dan dikirim.':
-    'Showing the first 40 rows of {n}. Every row is still checked and sent.',
-  'Baris bermasalah tidak ikut terkirim; betulkan berkasnya lalu unggah ulang bila perlu.':
-    'Problem rows are not sent; fix the file and upload it again if needed.',
-  'Belum ada komponen yang bisa dinilai': 'No component can be graded yet',
-  'Kelas {unit} Semester {semester} belum memiliki komponen asesmen pada kurikulum yang berlaku.':
-    'The {unit} Semester {semester} class has no assessment component in the current curriculum.',
-  'Status usulan': 'Proposal status',
-  'Setiap pengiriman nilai tercatat sebagai satu usulan. Di sini terlihat mana yang masih menunggu, mana yang sudah masuk transkrip, dan mana yang ditolak beserta alasannya.':
-    'Every score submission is recorded as one proposal. Here you can see which are still waiting, which have reached a transcript, and which were rejected and why.',
-  'dari {n} usulan': 'of {n} proposals',
-  '{n} usulan disetujui, {nilai} nilai sudah tercatat di transkrip mahasiswa':
-    '{n} proposals approved, {nilai} scores already recorded in student transcripts',
-  ', {n} usulan ditolak': ', {n} proposals rejected',
-  'Riwayat usulan': 'Proposal history',
-  'Terbaru di atas; ketuk satu baris untuk melihat nilainya':
-    'Newest on top; tap a row to see its scores',
-  'Usulkan nilai': 'Propose scores',
-  'Belum ada usulan terkirim': 'No proposal sent yet',
-  'Isi nilai di halaman Input Nilai; setiap pengiriman akan muncul di sini beserta statusnya.':
-    'Enter scores on the Enter Scores page; every submission appears here with its status.',
-  'Usulan yang ditolak tidak mengubah apa pun. Perbaiki nilainya lalu kirim ulang dari halaman Input Nilai.':
-    'A rejected proposal changes nothing. Fix the scores and resend them from the Enter Scores page.',
 
   /* ------------------------ halaman yang belum jadi ---------------------- */
   'CRUD terbatas untuk sepuluh aspek, komponen asesmen, bobot sumber dan komponen MK, rubrik huruf mutu, dan mode agregasi — lengkap dengan simulasi dampak sebelum menyimpan: berapa mahasiswa naik atau turun huruf mutu dan berapa yang berubah status kelayakan sertifikat.':
@@ -988,10 +893,8 @@ export const EN = {
   'Nilai akhir {nilai}, predikat {huruf}.': 'Final score {nilai}, grade {huruf}.',
   'Nomor': 'Number',
   'Program Pembinaan VIBE': 'VIBE Development Programme',
-  'Semua syarat terpenuhi. Sertifikat siap dicetak.': 'All requirements met. The certificate is ready to print.',
   'Sertifikat Pembinaan VIBE': 'VIBE Development Certificate',
   'Syarat kelayakan': 'Eligibility requirements',
-  'Tombol cetak aktif setelah seluruh syarat di bawah terpenuhi, tanpa terlewat satu pun.': 'The print button turns on once every requirement below is met, with none missing.',
 
   /* ----------------------------- kurikulum: bobot ----------------------------- */
   'Atur bobot komponen asesmen di setiap aspek. Bobot berlaku untuk semua angkatan, dan nilai yang sudah masuk langsung dihitung ulang dengannya.':
@@ -1063,10 +966,6 @@ export const EN = {
   'Persetujuan Admin': 'Admin Approvals',
   'Permintaan Saya': 'My Requests',
   Persetujuan: 'Approvals',
-  'Permintaan admin untuk mengubah data mahasiswa yang sudah lewat Semester 3. Setujui untuk menjalankannya persis seperti yang diajukan, atau tolak dengan catatan.':
-    'Admin requests to change the data of students who are past Semester 3. Approve to carry one out exactly as requested, or reject it with a note.',
-  'Perubahan pada mahasiswa yang sudah lewat Semester 3 menunggu persetujuan Super Admin sebelum berlaku. Selama masih menunggu, permintaan bisa Anda tarik.':
-    'Changes to students who are past Semester 3 wait for Super Admin approval before they take effect. While a request is pending, you can withdraw it.',
   'Tidak ada permintaan yang menunggu': 'No pending requests',
   'Belum ada riwayat permintaan': 'No request history yet',
   'Permintaan yang disetujui dijalankan dengan isi yang sama seperti saat diajukan, atas nama admin pengaju, dan diperiksa ulang lebih dulu. Bila datanya sudah berubah, statusnya gagal dan perlu diajukan ulang. Setiap pengajuan dan keputusan tercatat di log aktivitas.':
@@ -1102,6 +1001,15 @@ export const EN = {
   'Gagal dijalankan': 'Could not be carried out',
   'Angkatan ini sudah lewat Semester 3. Perubahan yang Anda simpan dikirim ke Super Admin sebagai permintaan dan baru berlaku setelah disetujui. Alasan wajib diisi.':
     'This cohort is past Semester 3. Changes you save are sent to the Super Admin as a request and take effect only once approved. A reason is required.',
+  /* Tindakan yang dari admin biasa SELALU diajukan sejak rapat 24 Okt 2026. */
+  'Tanda final atau sementara dari admin dikirim ke Super Admin sebagai permintaan dan baru berlaku setelah disetujui. Alasan wajib diisi.':
+    'Final or provisional marks from an admin are sent to the Super Admin as a request and take effect only once approved. A reason is required.',
+  'Tanda dari admin baru berlaku setelah Super Admin menyetujuinya.':
+    'Marks from an admin take effect only after the Super Admin approves them.',
+  'Perubahan bobot dari admin dikirim ke Super Admin sebagai permintaan dan baru berlaku setelah disetujui. Alasan wajib diisi.':
+    'Weight changes from an admin are sent to the Super Admin as a request and take effect only once approved. A reason is required.',
+  'Perubahan bobot dari admin baru berlaku setelah Super Admin menyetujuinya.':
+    'Weight changes from an admin take effect only after the Super Admin approves them.',
   'Permintaan {id} dikirim ke Super Admin.': 'Request {id} sent to the Super Admin.',
   'Perubahan ini menyentuh mahasiswa yang sudah lewat Semester 3, jadi baru berlaku setelah Super Admin menyetujuinya.':
     'This change affects students who are past Semester 3, so it takes effect only once the Super Admin approves it.',
@@ -1169,9 +1077,11 @@ export const EN = {
   '{n} permintaan menunggu keputusan': '{n} requests awaiting a decision',
   'Pengawasan seluruh sistem VIBE: permintaan yang perlu diputuskan, jejak tindakan, dan aturan yang berlaku.':
     'Oversight of the whole VIBE system: requests awaiting a decision, action trails, and the rules in effect.',
-  'Menyetujui permintaan admin dan mengawasi seluruh jejak tindakan.': 'Approves admin requests and oversees every action trail.',
-  'Mengelola nilai, angkatan, kurikulum, dan sertifikat.': 'Manages scores, cohorts, curriculum, and certificates.',
-  'Mengusulkan nilai mahasiswa di kelasnya.': 'Proposes scores for students in their classes.',
+  'Memegang nilai dan data master, menyetujui permintaan admin, dan mengawasi seluruh jejak.':
+    'Holds scores and master data, approves admin requests, and oversees every trail.',
+  'Membaca nilai, mengurus koreksi, angkatan, kurikulum, dan sertifikat.':
+    'Reads scores and handles corrections, cohorts, curriculum, and certificates.',
+  'Mengunggah nilai kelasnya lewat Excel dan memantau hasilnya.': 'Uploads class scores through Excel and monitors the results.',
   'Melihat capaian dan mengajukan koreksi nilai.': 'Views their achievements and requests score corrections.',
   'Permintaan admin menunggu persetujuan Anda.': 'Admin requests are waiting for your approval.',
   'Tidak ada yang menunggu.': 'Nothing is waiting.',
@@ -1185,8 +1095,6 @@ export const EN = {
   'Perlu keputusan Anda': 'Needs your decision',
   'Diurutkan dari yang paling lama menunggu.': 'Oldest requests first.',
   'Diajukan {siapa} pada {kapan}': 'Submitted by {siapa} on {kapan}',
-  'Permintaan admin untuk mahasiswa yang sudah lewat Semester 3 akan muncul di sini.':
-    'Admin requests for students past Semester 3 will appear here.',
   'Buka antrean persetujuan': 'Open the approval queue',
   'Lihat riwayat keputusan': 'View decision history',
   'Tindakan admin terbaru': 'Latest admin actions',
@@ -1198,7 +1106,7 @@ export const EN = {
   'Lihat seluruh log': 'View the full log',
   'Rantai pengawasan': 'Chain of oversight',
   'Setiap peran diawasi peran di atasnya.': 'Each role is overseen by the role above it.',
-  'Permintaan admin, diurutkan dari yang paling lama menunggu.': 'Admin requests, oldest first.',
+  'Permintaan admin dan dosen, diurutkan dari yang paling lama menunggu.': 'Admin and lecturer requests, oldest first.',
   'permintaan menunggu': 'requests waiting',
   'Terlama menunggu {n} hari, sejak {tanggal}.': 'The oldest has waited {n} days, since {tanggal}.',
   'Yang terlama diajukan hari ini.': 'The oldest was submitted today.',
@@ -1242,19 +1150,110 @@ export const EN = {
   'Lihat matriks peran & wewenang': 'View the roles & permissions matrix',
   'Siapa boleh melakukan apa di VIBE. Halaman ini hanya bacaan: peran diatur lewat basis data, bukan dari website.':
     'Who may do what in VIBE. This page is read-only: roles are set in the database, not from the website.',
-  'Melihat capaiannya sendiri dan mengajukan koreksi bila nilainya keliru.':
-    'Views their own achievements and requests a correction when a score is wrong.',
-  'Mengusulkan nilai mahasiswa di kelasnya sampai program angkatannya selesai.':
-    'Proposes scores for students in their classes until the cohort’s programme ends.',
-  'Mengelola nilai, angkatan, kurikulum, dan sertifikat sehari-hari.': 'Manages scores, cohorts, curriculum, and certificates day to day.',
-  'Wewenang tertinggi: menyetujui permintaan admin, mengatur penilaian dan akses, dan mengawasi seluruh jejak.':
-    'Highest authority: approves admin requests, manages assessment and access, and oversees every trail.',
+  /* Matriks wewenang sejak rapat 24 Okt 2026 (super-admin/Wewenang.jsx). */
+  'Mengunggah nilai angkatan yang diampunya lewat Excel dan memantau hasilnya; perbaikan untuk angkatan yang sudah disahkan diajukan ke Super Admin.':
+    'Uploads scores for the cohorts they teach through Excel and monitors the results; fixes for ratified cohorts go to the Super Admin for approval.',
+  'Melihat capaiannya sendiri, mengajukan koreksi bila nilainya keliru, dan meminta akses cetak sertifikat.':
+    'Views their own achievements, requests a correction when a score is wrong, and requests certificate print access.',
+  'Membaca nilai dan memantau kelengkapannya, memutuskan lapis pertama pengajuan koreksi dan akses cetak sertifikat, serta mengurus angkatan dan kurikulum.':
+    'Reads scores and monitors their completeness, decides the first layer of correction and certificate print access requests, and handles cohorts and curriculum.',
+  'Wewenang tertinggi: memegang nilai dan data master, memutuskan lapis kedua koreksi dan akses cetak sertifikat, menyetujui permintaan admin, mengatur penilaian dan akses, dan mengawasi seluruh jejak.':
+    'Highest authority: holds scores and master data, decides the second layer of corrections and certificate print access, approves admin requests, manages assessment and access, and oversees every trail.',
   'Melihat capaian mahasiswa': 'View student achievements',
   'Mengajukan koreksi nilai': 'Request a score correction',
-  'Mengusulkan nilai': 'Propose scores',
-  'Menyetujui usulan nilai dosen': 'Approve lecturer score proposals',
+  'Memutuskan pengajuan koreksi nilai': 'Decide score correction requests',
+  'lapis pertama: meneruskan atau menolak': 'first layer: forward or reject',
+  'lapis kedua: menyetujui dan menerapkan nilai, atau menolak': 'second layer: approve and apply the score, or reject',
+  'Meminta akses cetak sertifikat': 'Request certificate print access',
+  'bila seluruh syarat terpenuhi': 'once every requirement is met',
+  'Menyetujui akses cetak sertifikat': 'Approve certificate print access',
+  'lapis pertama': 'first layer',
+  'lapis kedua, sesudah admin': 'second layer, after the admin',
+  'Mencetak sertifikat': 'Print certificates',
+  'sesudah akses cetaknya disetujui': 'after its print access is approved',
+  'Mencabut akses cetak sertifikat': 'Revoke certificate print access',
+  'langsung, wajib beralasan': 'directly, with a required reason',
+  // Pencabutan akses cetak dan catatan cetak (student/Sertifikat.jsx, admin/CetakSertifikat.jsx, Dashboard).
+  Dicabut: 'Revoked',
+  'Akses cetak sertifikatmu dicabut. Baca alasannya, lalu minta lagi bila masalahnya sudah selesai.':
+    'Your certificate print access was revoked. Read the reason, then request it again once the issue is resolved.',
+  'Alasan pencabutan': 'Reason for revocation',
+  'Sertifikat hanya bisa dicetak lewat tombol Cetak sertifikat di halaman ini, setelah akses cetaknya disetujui.':
+    'The certificate can only be printed with the Print certificate button on this page, after its print access is approved.',
+  'Sertifikat dicetak, atau disimpan sebagai PDF lewat dialog cetak, dari tombol di halaman ini, dan setiap pembukaan dialog cetak tercatat. Sertifikat tidak dikirim lewat surel.':
+    'Print the certificate, or save it as a PDF through the print dialog, with the button on this page; every time the print dialog opens is recorded. Certificates are not sent by email.',
+  'Tombol cetak hanya aktif untuk sertifikat yang akses cetaknya sudah disetujui admin Kemahasiswaan dan Super Admin. Akses itu bisa dicabut lagi, dan setiap pembukaan dialog cetak tercatat. Sertifikat dicetak atau disimpan sebagai PDF dari website ini; jangan kirim lewat surel.':
+    'The print button is only active for certificates whose print access was approved by the Student Affairs admin and the Super Admin. That access can be revoked again, and every time the print dialog opens is recorded. Certificates are printed or saved as PDF from this website; do not send them by email.',
+  'dicabut {tanggal}': 'revoked {tanggal}',
+  'dibuka untuk dicetak {n} kali, terakhir {waktu}': 'opened for printing {n} times, last {waktu}',
+  'belum pernah dibuka untuk dicetak': 'never opened for printing',
+  'Cabut akses cetak {nama}': 'Revoke print access for {nama}',
+  'Alasan pencabutan wajib diisi, minimal 10 karakter, supaya mahasiswa tahu sebabnya.':
+    'A revocation reason is required, at least 10 characters, so the student knows why.',
+  'Akses cetak ini sudah tidak Siap dicetak, mungkin sudah dicabut di jendela lain.':
+    'This print access is no longer Ready to print; it may have been revoked in another window.',
+  'Sesudah dicabut, mahasiswa tidak bisa mencetak lagi sampai permintaan barunya disetujui admin Kemahasiswaan dan Super Admin. Sertifikat yang sudah telanjur tercetak tidak ikut tertarik.':
+    'Once revoked, the student cannot print again until a new request is approved by the Student Affairs admin and the Super Admin. Certificates already printed are not recalled.',
+  'Sudah dibuka untuk dicetak {n} kali, terakhir {waktu} oleh {oleh}.': 'Opened for printing {n} times, last on {waktu} by {oleh}.',
+  'Belum pernah dibuka untuk dicetak.': 'Never opened for printing.',
+  'Alasan pencabutan (wajib, terbaca mahasiswa)': 'Reason for revocation (required, shown to the student)',
+  'Cabut akses cetak': 'Revoke print access',
+  'Mengunggah nilai kelasnya dari Excel': 'Upload class scores from Excel',
+  'langsung tersimpan untuk angkatan berjalan': 'saved right away for running cohorts',
+  'Memperbaiki nilai angkatan yang sudah disahkan atau selesai, atau aspek final':
+    'Fix scores of ratified or finished cohorts, or final aspects',
+  'Mengatur kelas dosen dan angkatan yang diampu': 'Set a lecturer’s class and the cohorts they teach',
+  // Angkatan yang diampu dosen dan perbaikan nilai lewat Super Admin (dosen/Unggah.jsx, dosen/Pantau.jsx,
+  // super-admin/Akses.jsx, PersetujuanAdmin, Log Aktivitas).
+  'Perbaikan untuk angkatan yang sudah disahkan atau selesai diajukan ke Super Admin dulu.':
+    'Fixes for cohorts that are ratified or finished go to the Super Admin first.',
+  '{n} nilai diajukan ke Super Admin ({id}). Nilainya berubah setelah disetujui.':
+    '{n} scores sent to the Super Admin ({id}). They change once approved.',
+  'diajukan ke Super Admin: {sebab}': 'sent to the Super Admin: {sebab}',
+  'angkatan sudah disahkan': 'cohort already ratified',
+  'program sudah selesai': 'programme already finished',
+  'aspek sudah final': 'aspect already final',
+  'Disetujui Super Admin': 'Approved by the Super Admin',
+  'Ditolak Super Admin': 'Rejected by the Super Admin',
+  'Gagal dijalankan': 'Could not be applied',
+  Ditarik: 'Withdrawn',
+  '{n} nilai untuk angkatan yang sudah disahkan atau programnya selesai, atau aspek yang sudah final, akan diajukan ke Super Admin. Nilainya belum berubah sampai Super Admin menyetujui.':
+    '{n} scores for cohorts that are ratified or finished, or for final aspects, will be sent to the Super Admin. They stay unchanged until the Super Admin approves.',
+  'Alasan perbaikan (wajib, minimal {n} karakter)': 'Reason for the fix (required, at least {n} characters)',
+  'Misalnya: nilai UAS dikoreksi sesudah peninjauan lembar jawaban': 'For example: final exam score corrected after reviewing the answer sheet',
+  'Ajukan {n} nilai ke Super Admin': 'Send {n} scores to the Super Admin',
+  'Simpan {n} nilai, ajukan {m}': 'Save {n} scores, send {m}',
+  'Unggahan dan perbaikan yang diajukan atas nama Anda, terbaru di atas.': 'Uploads and fixes submitted under your name, newest first.',
+  Tarik: 'Withdraw',
+  'Perbaikan yang masih menunggu Super Admin bisa Anda tarik.': 'You can withdraw fixes still waiting for the Super Admin.',
+  'Permintaan ini sudah diputuskan, jadi tidak bisa ditarik lagi.': 'This request has already been decided, so it can no longer be withdrawn.',
+  '{prodi}, angkatan {daftar}.': '{prodi}, cohort {daftar}.',
+  'Di sini akan muncul mahasiswa {prodi} angkatan {daftar}.': '{prodi} students of cohort {daftar} will appear here.',
+  'Bila Anda mengampu angkatan tertentu, termasuk yang sudah disahkan, minta Super Admin memilihnya di akun Anda.':
+    'If you teach specific cohorts, including ratified ones, ask the Super Admin to select them on your account.',
+  'Angkatan yang Anda ampu ({daftar}) belum berisi mahasiswa {prodi}.': 'The cohorts you teach ({daftar}) have no {prodi} students yet.',
+  'Saat ini tidak ada mahasiswa {prodi} yang sudah sampai Semester {n} dan programnya belum selesai.':
+    'Right now there are no {prodi} students who have reached Semester {n} and whose programme has not ended.',
+  'Bila angkatannya keliru, minta Super Admin mengubahnya di akun Anda.': 'If the cohorts are wrong, ask the Super Admin to change them on your account.',
+  'Templat dan unggahan bisa dipakai setelah kelas Anda berisi mahasiswa.': 'The template and upload become available once your class has students.',
+  'angkatan otomatis': 'cohorts set automatically',
+  'Ubah kelas': 'Change class',
+  'Angkatan yang diampu': 'Cohorts taught',
+  '(disahkan)': '(ratified)',
+  'Kosongkan untuk otomatis: angkatan yang sedang di semester yang diampu. Untuk angkatan yang sudah disahkan atau selesai, perbaikan nilai dari dosen diajukan ke Super Admin dulu.':
+    'Leave empty for automatic: the cohorts currently in the semester taught. For ratified or finished cohorts, score fixes from the lecturer go to the Super Admin first.',
+  'Kelas menentukan mahasiswa yang terlihat dan bisa diunggah nilainya oleh dosen ini. Nilai yang sudah tersimpan tidak berubah.':
+    'The class decides which students this lecturer sees and can upload scores for. Saved scores do not change.',
+  'Simpan kelas': 'Save class',
+  'Perbaikan nilai dari dosen': 'Score fix from a lecturer',
+  'Ubah kelas dosen': 'Change lecturer class',
+  'Memutuskan usulan nilai dosen yang tersisa': 'Decide remaining lecturer score proposals',
   'Menyimpan dan mengimpor nilai': 'Save and import scores',
   'Membatalkan batch nilai': 'Roll back a score batch',
+  'Membatalkan batch nilai, termasuk unggahan dosen': 'Roll back a score batch, including lecturer uploads',
+  'Melihat halaman Data Master': 'View the Master Data page',
+  'bila diberi izin atau permintaannya disetujui Super Admin': 'if granted, or once the Super Admin approves the request',
+  'Memberi dan mencabut izin lihat data master': 'Grant and revoke master data view permission',
   'Mengubah tanda final/sementara': 'Change final/provisional marks',
   'Mengubah bobot kurikulum': 'Change curriculum weights',
   'Mengubah penilaian aspek': 'Change aspect assessments',
@@ -1340,10 +1339,6 @@ export const EN = {
   'Mengangkat Super Admin dari website': 'Appoint a Super Admin from the website',
   'hanya miliknya': 'own only',
   'mahasiswa di kelasnya': 'students in their classes',
-  'sampai program angkatan selesai': 'until the cohort’s programme ends',
-  'kecuali mahasiswa yang sudah lewat Semester 3: perlu persetujuan': 'except students past Semester 3: needs approval',
-  'perlu persetujuan bila nilai mahasiswa yang sudah lewat Semester 3 ikut berubah':
-    'needs approval when scores of students past Semester 3 would change',
   'hanya menarik permintaannya sendiri': 'can only withdraw their own requests',
   'Wewenang secukupnya': 'Least privilege',
   'Setiap peran hanya bisa melakukan yang dibutuhkan tugasnya.': 'Each role can only do what its job requires.',
@@ -1484,8 +1479,9 @@ export const EN = {
   '{n} kelompok nilai lain juga belum lengkap; semuanya ada di lonceng di kanan atas.':
     '{n} more score groups are incomplete; all of them are listed under the bell at the top right.',
   'Tidak ada pekerjaan yang menunggu': 'Nothing is waiting for you',
-  'Usulan dosen, koreksi mahasiswa, dan nilai yang wajib diisi sudah tertangani.':
-    'Lecturer proposals, student corrections, and required scores are all handled.',
+  'Koreksi mahasiswa dan nilai yang wajib diisi sudah tertangani.':
+    'Student corrections and required scores are all handled.',
+  'Lihat nilai': 'View scores',
   'Ringkasan angka': 'Key figures',
 
   /* ---------------------------- Data Mahasiswa ---------------------------- */
@@ -1603,7 +1599,6 @@ export const EN = {
   'Jenis tindak lanjut': 'Follow-up type',
   'Masuk sebagai batch di Riwayat Batch halaman Input Nilai.': 'Entered as a batch in the Batch History of the Score Input page.',
   'Menampilkan {n} dari {total} perubahan': 'Showing {n} of {total} changes',
-  'Permintaan baru muncul di sini begitu perubahan pada mahasiswa yang sudah lewat Semester 3 diajukan.': 'New requests appear here as soon as a change to students past Semester 3 is submitted.',
   'Permintaan yang sudah diputuskan atau ditarik tercatat di sini.': 'Requests that were decided or withdrawn are recorded here.',
   'program studi': 'study programmes',
   'Program studi yang punya mahasiswa pada saringan ini.': 'Study programmes with students under this filter.',
@@ -1615,79 +1610,244 @@ export const EN = {
   /* -------- satuan kartu angka -------- */
   'usulan': 'proposals',
 
-  /* -------- desain ulang panel dosen tahap 1 -------- */
-  '(belum)': '(not yet)',
-  '(sedang dikerjakan)': '(in progress)',
-  '(selesai)': '(done)',
-  '{n} baris tidak bisa dipakai': '{n} rows cannot be used',
-  '{n} baris tanpa nilai dilewati': '{n} rows without a score skipped',
-  '{n} dari {total} pengumpulan sudah Anda nilai': 'You have graded {n} of {total} submissions',
-  '{n} mahasiswa lain belum Anda beri nilai dan tidak ikut terkirim.': '{n} other students have no score yet and will not be sent.',
-  '{n} mahasiswa mengumpulkan, {sisa} belum dinilai': '{n} students submitted, {sisa} not yet graded',
-  '{n} nilai dari berkas sudah masuk ke tabel. Periksa, lalu tekan Periksa & kirim.': '{n} scores from the file are now in the table. Check them, then press Review & send.',
-  '{n} nilai ditolak Kemahasiswaan dan perlu dinilai ulang': '{n} scores were rejected by Student Affairs and need grading again',
-  '{n} nilai terkirim ke Biro Kemahasiswaan': '{n} scores sent to the Student Affairs Bureau',
-  '{n} perlu dibetulkan': '{n} need fixing',
-  'Ada {n} nilai draf yang belum dikirim': '{n} draft scores have not been sent yet',
-  'Ada nilai yang perlu dibetulkan': 'Some scores need fixing',
-  'Anda akan mengirim {n} nilai untuk tugas {tugas}.': 'You are about to send {n} scores for {tugas}.',
-  'Baris {n}': 'Row {n}',
-  'Belum ada nilai untuk dikirim': 'No scores to send yet',
-  'Belum ada tugas yang bisa dinilai': 'No assignments to grade yet',
-  'Belum ada yang mengumpulkan tugas ini.': 'Nobody has submitted this assignment yet.',
+  /* -------- panel dosen sejak rapat 24 Okt 2026: Beranda memantau (dosen/Pantau.jsx), nilai masuk lewat
+     unggahan Excel (dosen/Unggah.jsx, galatnya dari src/lib/unggahDosen.js) -------- */
+  'Unggah Nilai': 'Upload Scores',
+  Unggah: 'Upload',
+  'Unggah nilai': 'Upload scores',
+  'Pantau kelengkapan dan sebaran nilai kelas Anda. Nilai masuk lewat unggahan Excel.':
+    'Monitor how complete your class scores are and how they spread. Scores come in through Excel uploads.',
+  'dari {n} nilai': 'of {n} scores',
+  'Belum ada mahasiswa atau tugas di kelas Anda.': 'Your class has no students or tasks yet.',
+  'Belum ada nilai yang masuk. Unggah rekap Excel kelas Anda.': 'No scores have come in yet. Upload your class recap from Excel.',
+  '{n} nilai belum masuk.': '{n} scores have not come in yet.',
+  'Semua nilai kelas Anda sudah masuk.': 'All of your class scores are in.',
+  'Unggahan terakhir {waktu}, {n} nilai.': 'Last upload {waktu}, {n} scores.',
+  'Jumlah mahasiswa': 'Students',
+  '{prodi} dari Semester {n} sampai programnya selesai.': '{prodi}, from Semester {n} until their programme ends.',
+  'Rata-rata kelas': 'Class average',
+  'Dari seluruh nilai tugas yang sudah masuk.': 'From every task score that has come in.',
+  'Rata-rata di bawah {n}': 'Average below {n}',
+  'Mahasiswa yang rata-rata nilai tugasnya perlu perhatian.': 'Students whose task average needs attention.',
+  'Kelengkapan per tugas': 'Completeness per task',
+  'Berapa mahasiswa yang nilainya sudah masuk untuk tiap tugas.': 'How many students have a score in for each task.',
+  'Belum ada tugas untuk kelas Anda': 'Your class has no tasks yet',
+  'Tugas kelas ditetapkan Super Admin lewat halaman Penilaian & Bobot.': 'The Super Admin sets class tasks on the Assessment & Weights page.',
+  'Nilai mahasiswa': 'Student scores',
+  '{n} mahasiswa di kelas Anda': '{n} students in your class',
+  Terisi: 'Filled in',
+  Terendah: 'Lowest',
+  'Tutup rincian': 'Hide details',
+  'Belum ada mahasiswa di kelas Anda': 'Your class has no students yet',
+  'Di sini akan muncul mahasiswa {prodi} yang sudah sampai Semester {n} dan programnya belum selesai.':
+    '{prodi} students who have reached Semester {n} and whose programme has not ended will appear here.',
+  'Nilai yang Anda unggah langsung tersimpan dan tampil di transkrip mahasiswa. Bila ada yang keliru, unggah ulang dengan nilai yang benar, atau minta Super Admin membatalkan unggahannya.':
+    'Scores you upload are saved right away and appear on student transcripts. If something is wrong, upload again with the right scores, or ask the Super Admin to cancel the upload.',
+  'Unggah rekap nilai kelas Anda dari Excel. Periksa perubahannya, lalu simpan: nilainya langsung masuk transkrip mahasiswa.':
+    'Upload your class score recap from Excel. Review the changes, then save: the scores go straight onto student transcripts.',
+  'Templat berisi {n} mahasiswa kelas Anda dan satu kolom untuk tiap tugas ({k} tugas). Nilai yang sudah tersimpan ikut terisi.':
+    'The template lists the {n} students in your class with one column per task ({k} tasks). Scores already saved are filled in.',
+  'Jangan ubah baris judul dan kolom NIM.': 'Do not change the title row or the NIM (student ID) column.',
+  'Tulis nilai 0 sampai 100. Desimal boleh, misalnya 85,5.': 'Write scores from 0 to 100. Decimals are fine, for example 85.5.',
+  'Sel yang dikosongkan dilewati; nilai yang sudah tersimpan tidak terhapus.': 'Empty cells are skipped; scores already saved are not deleted.',
+  'Menyiapkan templat…': 'Preparing the template…',
+  'Unduh templat (.xlsx)': 'Download template (.xlsx)',
+  'Templat gagal dibuat. Muat ulang halaman, lalu coba lagi.': 'The template could not be created. Reload the page, then try again.',
+  'Unggah berkas': 'Upload the file',
+  'Pilih rekap yang sudah diisi. Isinya dibaca dulu untuk Anda periksa; belum ada yang tersimpan.':
+    'Choose the filled-in recap. It is read first for you to review; nothing is saved yet.',
+  'Tarik berkas ke sini, atau': 'Drag the file here, or',
+  'Membaca berkas…': 'Reading the file…',
+  'Ganti berkas': 'Change file',
+  'Pilih berkas': 'Choose file',
+  'Berkas .xlsx atau .csv, paling besar 5 MB.': 'An .xlsx or .csv file, up to 5 MB.',
+  '{n} nilai tersimpan dan sudah tampil di transkrip mahasiswa.': '{n} scores saved and now shown on student transcripts.',
+  'Tidak ada nilai yang berubah, jadi tidak ada yang disimpan.': 'No score changed, so nothing was saved.',
+  'Periksa sebelum menyimpan': 'Review before saving',
+  'Hanya nilai yang berbeda dari yang tersimpan yang akan ditulis.': 'Only scores that differ from the saved ones will be written.',
+  'Nilai berubah': 'Scores changed',
+  'Mahasiswa terdampak': 'Students affected',
+  'Sama dengan tersimpan': 'Same as saved',
+  'Sel kosong dilewati': 'Empty cells skipped',
+  'Kolom tugas yang dibaca': 'Task columns read',
+  '{n} kolom sama persis dengan templat.': '{n} columns match the template exactly.',
+  '(dicocokkan dari kemiripan nama, periksa lagi)': '(matched by a similar name, check again)',
+  'Tidak ada kolomnya di berkas, jadi nilainya tidak berubah: {daftar}.': 'Not in the file, so their scores stay the same: {daftar}.',
+  'Belum bisa disimpan. Perbaiki {n} masalah ini di berkas, lalu unggah lagi:':
+    'Cannot be saved yet. Fix these {n} problems in the file, then upload again:',
+  'dan {n} masalah lainnya': 'and {n} more problems',
+  'Nilai yang akan disimpan': 'Scores to be saved',
+  'dan {n} perubahan lainnya': 'and {n} more changes',
+  'Tidak ada nilai yang berubah. Semua nilai di berkas sama dengan yang tersimpan atau selnya kosong.':
+    'No score changed. Every score in the file matches the saved one or its cell is empty.',
+  'Menyimpan…': 'Saving…',
+  'Simpan {n} nilai': 'Save {n} scores',
+  'Riwayat unggahan': 'Upload history',
+  'usulan lama yang disetujui': 'approved earlier proposal',
+  'Dibatalkan Super Admin': 'Cancelled by the Super Admin',
+  'Belum ada unggahan': 'No uploads yet',
+  'Unggahan yang Anda simpan akan tercatat di sini.': 'Uploads you save will be listed here.',
+  'Setiap unggahan tercatat di log. Bila ada nilai yang keliru, unggah ulang dengan nilai yang benar, atau minta Super Admin membatalkan unggahannya.':
+    'Every upload is recorded in the log. If a score is wrong, upload again with the right score, or ask the Super Admin to cancel the upload.',
+  // Lembar templat Excel.
+  'Petunjuk': 'Instructions',
+  'Cara mengisi templat ini': 'How to fill in this template',
+  'Kelas: {kelas}.': 'Class: {kelas}.',
+  'Satu baris untuk satu mahasiswa. Jangan ubah baris judul, kolom NIM, dan urutan kolomnya.':
+    'One row per student. Do not change the title row, the NIM column, or the column order.',
+  'Nilai yang sudah tersimpan ikut terisi. Cukup ubah atau tambah yang perlu.': 'Scores already saved are filled in. Change or add only what you need.',
+  'Simpan sebagai .xlsx, lalu unggah di halaman Unggah Nilai.': 'Save it as .xlsx, then upload it on the Upload Scores page.',
+  // Galat dan peringatan bacaRekap (src/lib/unggahDosen.js) dan bacaBerkas (dosen/Unggah.jsx).
+  'Berkasnya kosong: tidak ada baris judul maupun nilai.': 'The file is empty: it has no title row and no scores.',
+  'Kolom NIM tidak ditemukan di baris pertama. Pakai templat dan jangan ubah baris judulnya.':
+    'No NIM column in the first row. Use the template and do not change its title row.',
+  'Kolom "{kolom}" tidak dikenali sebagai tugas kelas Anda. Pakai judul kolom dari templat.':
+    'Column "{kolom}" is not recognised as a task in your class. Use the column titles from the template.',
+  'Kolom "{kolom}" dan "{lain}" sama-sama untuk {kode}. Hapus salah satunya.': 'Columns "{kolom}" and "{lain}" are both for {kode}. Remove one of them.',
+  'Tidak ada kolom tugas yang dikenali. Pakai templat dari halaman ini.': 'No task column was recognised. Use the template from this page.',
+  'Ada angka di kolom tanpa judul: {kolom}. Pastikan setiap nilai berada di bawah judul tugasnya, lalu hapus angka di kolom tersebut.':
+    'There are numbers in untitled columns: {kolom}. Make sure every score sits under its task title, then delete the stray numbers.',
+  'Baris {baris}: NIM kosong.': 'Row {baris}: the NIM is empty.',
+  'Baris {baris}: NIM {nim} tidak terdaftar di kelas Anda.': 'Row {baris}: NIM {nim} is not in your class.',
+  'Baris {baris}: NIM {nim} sudah ada di baris {lain}.': 'Row {baris}: NIM {nim} already appears in row {lain}.',
+  'Baris {baris} (NIM {nim}), kolom {kode}: "{sel}" bukan angka 0 sampai 100.':
+    'Row {baris} (NIM {nim}), column {kode}: "{sel}" is not a number from 0 to 100.',
+  'Baris {baris} (NIM {nim}): aspek {aspek} baru dibuka pada Semester {n}.': 'Row {baris} (NIM {nim}): aspect {aspek} only opens in Semester {n}.',
+  'Kolom {kode}: semua nilai barunya {maks} atau kurang. Templat memakai skala 0 sampai 100; bila rekap Anda berskala 0 sampai 10 atau 0 sampai 4, ubah dulu ke 0 sampai 100.':
+    'Column {kode}: every new score is {maks} or lower. The template uses a 0 to 100 scale; if your recap uses 0 to 10 or 0 to 4, convert it to 0 to 100 first.',
+  'Berkasnya lebih dari 5 MB. Pastikan ini rekap nilai kelas Anda.': 'The file is larger than 5 MB. Make sure it is your class score recap.',
+  'Berkas .xls (Excel lama) belum bisa dibaca. Buka di Excel, simpan sebagai .xlsx, lalu unggah lagi.':
+    '.xls files (old Excel) cannot be read yet. Open it in Excel, save it as .xlsx, then upload again.',
+  'Pilih berkas .xlsx atau .csv.': 'Choose an .xlsx or .csv file.',
+  'Berkas ini tidak terbaca sebagai Excel. Simpan ulang sebagai .xlsx lalu unggah lagi.': 'This file cannot be read as Excel. Save it again as .xlsx, then upload again.',
+  // Persetujuan Nilai Dosen (admin/Usulan.jsx) kini hanya untuk usulan lama.
+  'Usulan nilai dosen dari sebelum dosen mengunggah langsung. Hanya Super Admin yang memutuskannya; Anda bisa melihat isinya.':
+    'Lecturer score proposals from before lecturers uploaded directly. Only the Super Admin decides them; you can view what they contain.',
+  'Usulan nilai dosen dari sebelum dosen mengunggah langsung. Nilainya tertahan di sini sampai Anda putuskan, dan sistem sudah memeriksa tiap barisnya lebih dulu.':
+    'Lecturer score proposals from before lecturers uploaded directly. Their scores are held here until you decide, and the system has already checked every row.',
+  'Dosen kini mengunggah nilai langsung, jadi tidak ada usulan baru yang masuk ke sini.': 'Lecturers now upload scores directly, so no new proposals arrive here.',
+  'Menunggu keputusan Super Admin.': 'Waiting for the Super Admin to decide.',
+  // Pilihan wajib di formulir tambah akun dan data master, tanpa nilai bawaan (Select › kosong).
+  'Pilih program studi': 'Choose a study programme',
+  'Pilih angkatan': 'Choose a cohort',
+  'Pilih fakultas': 'Choose a faculty',
+  'Pilih sumber penilaian': 'Choose an assessment source',
+  'Pilih semester': 'Choose a semester',
+  'Pilih program studi lebih dulu.': 'Choose a study programme first.',
+  'Pilih angkatan lebih dulu.': 'Choose a cohort first.',
+  'Pilih sumber penilaian lebih dulu.': 'Choose an assessment source first.',
+  'Pilih semester yang diampu lebih dulu.': 'Choose the semester taught first.',
+
+  /* -------- persetujuan dua lapis (rapat 24 Okt 2026): ubah nilai dan akses cetak sertifikat -------- */
+  // Status (src/lib/duaLapis.js).
+  'Menunggu Admin': 'Waiting for Admin',
+  'Menunggu Super Admin': 'Waiting for Super Admin',
+  'Siap dicetak': 'Ready to print',
+  // Halaman Sertifikat mahasiswa.
+  'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.':
+    'All requirements are met. Request print access to get your certificate.',
+  'Permintaan akses cetak sedang ditinjau admin Kemahasiswaan.': 'Your print access request is being reviewed by Student Affairs.',
+  'Admin Kemahasiswaan sudah menyetujui. Menunggu persetujuan Super Admin.':
+    'Student Affairs has approved it. Waiting for the Super Admin to approve.',
+  'Akses cetak sudah disetujui. Sertifikat siap dicetak.': 'Print access is approved. Your certificate is ready to print.',
+  'Permintaan akses cetak ditolak. Periksa alasannya, lalu ajukan lagi bila sudah sesuai.':
+    'Your print access request was rejected. Check the reason, then request again once it is resolved.',
+  'Akses cetak bisa diminta setelah seluruh syarat di bawah terpenuhi, tanpa terlewat satu pun.':
+    'You can request print access once every requirement below is met, without exception.',
+  'Minta akses cetak': 'Request print access',
+  'Minta akses cetak lagi': 'Request print access again',
+  'Alasan penolakan': 'Reason for rejection',
+  '{oleh}, {tanggal}': '{oleh}, {tanggal}',
+  'Langkah akses cetak': 'Print access steps',
+  'Diajukan {tanggal}': 'Requested {tanggal}',
+  'Disetujui {tanggal}': 'Approved {tanggal}',
+  'Sedang ditinjau': 'Under review',
+  'Bisa dicetak sekarang': 'Can be printed now',
+  // Ubin Sertifikat di Dashboard mahasiswa.
+  'Bisa diminta': 'Can be requested',
+  'Minta akses cetak di halaman ini': 'Request print access on this page',
+  'Sedang ditinjau admin Kemahasiswaan': 'Being reviewed by Student Affairs',
+  'Menunggu persetujuan Super Admin': 'Waiting for Super Admin approval',
+  'Buka untuk mencetak': 'Open to print',
+  'Permintaan ditolak': 'Request rejected',
+  'Buka untuk melihat alasannya': 'Open to see the reason',
+  // Pengajuan koreksi mahasiswa (Transkrip, Riwayat).
+  'Nilai yang menurutmu benar (opsional)': 'The score you think is correct (optional)',
+  'Nilai yang diharapkan harus 0–100.': 'The expected score must be 0–100.',
+  'Nilai baru {nilai} sudah masuk transkrip.': 'The new score {nilai} is now on your transcript.',
+  'Admin Kemahasiswaan sudah meneruskannya. Menunggu keputusan Super Admin.':
+    'Student Affairs has forwarded it. Waiting for the Super Admin to decide.',
+  // Keputusan koreksi (admin/DaftarKoreksi.jsx).
+  'Nilai sekarang': 'Current score',
+  'Nilai usulan': 'Proposed score',
+  'Catatan (wajib bila menolak)': 'Note (required when rejecting)',
+  'Alasan meneruskan atau menolak…': 'Reason for forwarding or rejecting…',
+  'Alasan menyetujui atau menolak…': 'Reason for approving or rejecting…',
+  'Isi nilai baru 0 sampai 100 sebelum menyetujui.': 'Enter a new score from 0 to 100 before approving.',
+  'Alasan penolakan wajib diisi, minimal 10 karakter, supaya mahasiswa tahu sebabnya.':
+    'A reason for rejection is required, at least 10 characters, so the student knows why.',
+  'Pengajuan ini sudah diputuskan, mungkin di jendela lain.': 'This request has already been decided, perhaps in another window.',
+  'Setujui dan terapkan nilai': 'Approve and apply score',
+  'Teruskan ke Super Admin': 'Forward to Super Admin',
+  'Setelah disetujui, nilai baru langsung masuk transkrip sebagai satu batch yang tercatat di Riwayat Batch.':
+    'Once approved, the new score goes straight onto the transcript as one batch recorded in Batch History.',
+  'Meneruskan belum mengubah nilai. Super Admin yang memutuskan dan menerapkan nilai barunya.':
+    'Forwarding does not change the score yet. The Super Admin decides and applies the new score.',
+  'Menunggu keputusan admin Kemahasiswaan (lapis pertama).': 'Waiting for Student Affairs to decide (first layer).',
+  'Diteruskan {oleh} pada {tanggal} dengan nilai usulan {nilai}.': 'Forwarded by {oleh} on {tanggal} with a proposed score of {nilai}.',
+  'Disetujui {oleh} pada {tanggal}.': 'Approved by {oleh} on {tanggal}.',
+  'Ditolak {oleh} pada {tanggal}.': 'Rejected by {oleh} on {tanggal}.',
+  'Nilai baru {nilai}.': 'New score {nilai}.',
+  'Tidak ada pengajuan ubah nilai yang menunggu Anda': 'No score change requests are waiting for you',
+  // Cetak Sertifikat dan Persetujuan.
+  'Putuskan lapis pertama permintaan akses cetak, dan bantu mahasiswa yang kesulitan mencetak sertifikatnya sendiri.':
+    'Decide the first layer of print access requests, and help students who struggle to print their own certificate.',
+  'Putuskan lapis kedua permintaan akses cetak, dan bantu mahasiswa yang kesulitan mencetak sertifikatnya sendiri.':
+    'Decide the second layer of print access requests, and help students who struggle to print their own certificate.',
+  'Menunggu Anda': 'Waiting for you',
+  'Akses cetak': 'Print access',
+  'Belum diminta': 'Not requested',
+  Tinjau: 'Review',
+  'Tidak ada permintaan yang menunggu Anda': 'No requests are waiting for you',
+  'Admin Kemahasiswaan sudah menyetujui permintaan ini pada {tanggal}. Setujui untuk membuka akses cetak mahasiswa.':
+    'Student Affairs approved this request on {tanggal}. Approve to open print access for the student.',
+  'Periksa syarat dan nilainya. Bila sesuai, teruskan ke Super Admin; akses cetak baru terbuka setelah Super Admin menyetujui.':
+    'Check the requirements and scores. If they are correct, forward it to the Super Admin; print access opens only after the Super Admin approves.',
+  'Mahasiswa ini sudah tidak memenuhi syarat. Tolak permintaannya dengan alasan itu.':
+    'This student no longer meets the requirements. Reject the request with that reason.',
+  'Setujui akses cetak': 'Approve print access',
+  'Permintaan ini sudah diputuskan, mungkin di jendela lain.': 'This request has already been decided, perhaps in another window.',
+  'Akses cetak sertifikat': 'Certificate print access',
+  'Pengajuan ubah nilai': 'Score change requests',
+  'Sudah diteruskan admin Kemahasiswaan. Setujui untuk menerapkan nilai barunya, atau tolak dengan alasan.':
+    'Forwarded by Student Affairs. Approve to apply the new score, or reject with a reason.',
+  'Sudah disetujui admin Kemahasiswaan. Setujui untuk membuka akses cetak mahasiswa, atau tolak dengan alasan.':
+    'Approved by Student Affairs. Approve to open print access for the student, or reject with a reason.',
+  'Tidak ada permintaan akses cetak yang menunggu Anda': 'No print access requests are waiting for you',
+  'Nilai akhir {nilai}': 'Final score {nilai}',
+  'Permintaan admin dan dosen yang perlu persetujuan Anda, misalnya tanda final, bobot, pengesahan angkatan, akses data master, dan perbaikan nilai untuk angkatan yang sudah disahkan. Setujui untuk menjalankannya persis seperti yang diajukan, atau tolak dengan catatan.':
+    'Admin and lecturer requests that need your approval, such as final marks, weights, cohort ratification, master data access, and score fixes for ratified cohorts. Approve to run them exactly as submitted, or reject with a note.',
+  'Perubahan yang Anda ajukan menunggu persetujuan Super Admin sebelum berlaku. Selama masih menunggu, permintaan bisa Anda tarik.':
+    'Changes you submit wait for Super Admin approval before taking effect. While a request is still waiting, you can withdraw it.',
+  'Permintaan baru muncul di sini begitu admin mengajukan perubahan yang perlu persetujuan Super Admin.':
+    'New requests appear here as soon as an admin submits a change that needs Super Admin approval.',
+  // Overview, Pusat Kendali, lonceng.
+  '{n} permintaan akses cetak sertifikat menunggu keputusan Anda': '{n} certificate print access requests are waiting for your decision',
+  'Tinjau permintaan': 'Review requests',
+  'Juga menunggu Anda: {koreksi} pengajuan ubah nilai dan {sertifikat} akses cetak sertifikat.':
+    'Also waiting for you: {koreksi} score change requests and {sertifikat} certificate print access requests.',
+  'Tidak ada permintaan admin yang menunggu.': 'No admin requests are waiting.',
+  'Permintaan admin, pengajuan ubah nilai, dan akses cetak sertifikat yang perlu keputusan Anda muncul di halaman Persetujuan.':
+    'Admin requests, score change requests, and certificate print access requests that need your decision appear on the Approvals page.',
+
+  /* -------- kerangka panel dosen (DosenLayout.jsx) -------- */
   'Beranda': 'Home',
-  'Berkas gagal dibaca. Coba pilih berkasnya sekali lagi.': 'The file could not be read. Try choosing it again.',
-  'Berkas tidak berisi tabel yang bisa dibaca. Pastikan berkasnya CSV dan baris pertamanya judul kolom.': 'The file has no readable table. Make sure it is a CSV file and its first row holds the column titles.',
   'Berkas: {nama}': 'File: {nama}',
-  'Betulkan dulu nilai yang ditandai merah, lalu periksa lagi.': 'Fix the scores marked in red first, then review again.',
-  'Bila nilainya sudah ada di Excel. Nilainya masuk ke tabel untuk Anda periksa.': 'If the scores are already in Excel. They go into the table for you to check.',
-  'Boleh dikosongkan.': 'Optional.',
-  'Cara mengisi nilai': 'How to enter scores',
   'Cari nama atau NIM': 'Search name or student ID',
-  'Catatan untuk Kemahasiswaan': 'Note for Student Affairs',
-  'Cocok untuk kelas kecil atau beberapa nilai saja.': 'Best for small classes or a few scores.',
-  'dan {n} baris lainnya': 'and {n} more rows',
-  'dari {n} nilai sudah diisi': 'of {n} scores filled in',
-  'di luar 0 sampai 100': 'outside 0 to 100',
-  'Ganti tugas': 'Change assignment',
-  'Isi kolom nilainya di Excel, lalu simpan sebagai CSV.': 'Fill in the score column in Excel, then save it as CSV.',
-  'Ke Penilaian': 'Go to Scores',
   'Keadaan': 'Status',
   'Kelas Anda': 'Your class',
-  'Kelas Anda belum memiliki tugas pada kurikulum yang berlaku. Hubungi Biro Kemahasiswaan.': 'Your class has no assignments in the current curriculum. Contact the Student Affairs Bureau.',
-  'Kembali isi nilai': 'Back to entering scores',
-  'Kembali ubah nilai': 'Back to edit scores',
-  'Ketik nilai satu per satu': 'Type scores one by one',
-  'Ketik nilainya dulu di langkah Isi nilai.': 'Type the scores first in the Enter scores step.',
-  'Kirim ke Kemahasiswaan': 'Send to Student Affairs',
-  'Kode {kode}': 'Code {kode}',
-  'Kolom nilai di berkas': 'Score column in the file',
-  'Kolom NIM di berkas': 'Student ID column in the file',
-  'Langkah penilaian': 'Grading steps',
-  'Lanjut menilai tugas ini ({n} belum)': 'Keep grading this assignment ({n} left)',
-  'Lanjutkan menilai': 'Continue grading',
-  'Lihat nilai tugas ini': 'View this assignment\'s scores',
-  'Lihat riwayat pengiriman': 'View sending history',
-  'Masukkan {n} nilai ke tabel': 'Put {n} scores in the table',
-  'Mengirim…': 'Sending…',
   'Menu dosen': 'Lecturer menu',
-  'Nilai (0–100)': 'Score (0–100)',
-  'Nilai belum terkirim.': 'The scores were not sent.',
-  'Nilai belum terlihat oleh mahasiswa sampai dikirim dan disetujui.': 'Students cannot see the scores until they are sent and approved.',
-  'Nilai sebelumnya {n} ditolak': 'The previous score {n} was rejected',
-  'nilai siap dimasukkan ke tabel': 'scores ready to go into the table',
-  'Nilai terkirim ke Biro Kemahasiswaan': 'Scores sent to the Student Affairs Bureau',
-  'Nilai tugas ini': 'Grade this assignment',
-  'Nilai tugas lain': 'Grade another assignment',
-  'Nilai tugas mahasiswa dalam tiga langkah. Nilai baru masuk transkrip setelah disetujui Biro Kemahasiswaan.': 'Grade student assignments in three steps. Scores enter the transcript only after the Student Affairs Bureau approves them.',
-  'Nilai yang Anda ketik tersimpan otomatis sebagai draf di perangkat ini.': 'The scores you type are saved automatically as a draft on this device.',
-  'Nilainya belum masuk transkrip sampai disetujui. Hasil keputusannya bisa Anda lihat di Riwayat Pengiriman.': 'They do not enter the transcript until approved. You can see the decision in Sending History.',
-  'nilainya tidak terbaca': 'the score cannot be read',
   'NIM {nim}': 'Student ID {nim}',
-  'NIM muncul dua kali di berkas': 'the student ID appears twice in the file',
-  'Nomor pengiriman {id}, untuk tugas {tugas}.': 'Sending number {id}, for {tugas}.',
-  'Pengumpulan tugas dari mahasiswa kelas Anda.': 'Assignment submissions from students in your class.',
-  'Peramban ini menolak menyimpan draf. Kirim nilainya sebelum menutup halaman ini.': 'This browser refuses to save drafts. Send the scores before closing this page.',
   'Perbesar tulisan': 'Larger text',
   // Menu aksesibilitas panel dosen (MenuAksesibilitas.jsx).
   'Menu aksesibilitas': 'Accessibility menu',
@@ -1713,47 +1873,43 @@ export const EN = {
   'Pemandu baca': 'Reading guide',
   'Hentikan animasi': 'Stop animations',
   'Kursor besar': 'Big cursor',
-  'Periksa & kirim': 'Review & send',
-  'Periksa ejaan nama atau NIM, atau kosongkan kotak pencarian.': 'Check the spelling of the name or student ID, or clear the search box.',
-  'Periksa sebelum dikirim': 'Review before sending',
-  'Pilih berkas itu di sini. Nilainya akan masuk ke tabel untuk Anda periksa.': 'Choose that file here. Its scores go into the table for you to check.',
-  'Pilih tugas yang ingin Anda nilai': 'Choose the assignment you want to grade',
-  'Riwayat pengiriman': 'Sending history',
-  'Riwayat Pengiriman': 'Sending History',
-  'Semua pengumpulan tugas ini sudah Anda nilai. Nilainya tampil di bawah sebagai bacaan saja.': 'You have graded every submission for this assignment. The scores below are read-only.',
-  'Setelah dikirim, nilai menunggu persetujuan Biro Kemahasiswaan dan belum terlihat oleh mahasiswa.': 'After sending, the scores wait for approval from the Student Affairs Bureau and students cannot see them yet.',
-  'skema belum final, nilainya tetap bisa dikirim': 'draft scheme, scores can still be sent',
-  'Terakhir tersimpan pukul {waktu}.': 'Last saved at {waktu}.',
-  'Tercatat': 'Recorded',
-  'Tersimpan sebagai draf': 'Saved as draft',
-  'Tugas yang masih punya pengumpulan belum dinilai ada di urutan teratas.': 'Assignments with ungraded submissions are listed first.',
-  'Tugas yang sedang dinilai': 'Assignment being graded',
-  'Unduh templat. Isinya NIM dan nama mahasiswa yang belum dinilai.': 'Download the template. It lists the student IDs and names not yet graded.',
-  'Unggah dari berkas CSV': 'Upload from a CSV file',
-  'Tulis angka saja, misalnya 85 atau 85,5.': 'Type a number only, for example 85 or 85.5.',
-  'Nilai paling tinggi 100.': 'The highest score is 100.',
-
-  /* -------- label langkah penilaian dosen -------- */
-  'Pilih tugas': 'Choose assignment',
-  'Isi nilai': 'Enter scores',
 
   /* -------- data master dan izinnya (admin/DataMaster.jsx, super-admin/Akses.jsx, Log, Wewenang) -------- */
-  'Admin ini bisa menambah dan mengubah angkatan, fakultas, program studi, dan data mahasiswa dari halaman Data Master sampai izinnya dicabut. Menghapus data tetap tidak bisa.': 'This admin can add and edit cohorts, faculties, study programmes, and student data from the Master Data page until the permission is revoked. Deleting data is still not possible.',
-  'Admin ini tidak bisa lagi menambah atau mengubah data master. Data yang sudah ditambahkannya tetap tersimpan.': 'This admin can no longer add or edit master data. Data they already added stays saved.',
+  'Admin ini bisa melihat angkatan, fakultas, program studi, dan data mahasiswa di halaman Data Master untuk mencocokkan ulang, tanpa bisa mengubahnya. Menambah dan mengubah data master tetap hanya oleh Super Admin.':
+    'This admin can view cohorts, faculties, study programmes, and student data on the Master Data page to cross-check them, without changing them. Only the Super Admin adds and changes master data.',
+  'Admin ini tidak bisa lagi membuka halaman Data Master. Halaman lain yang menampilkan mahasiswa dan angkatan tetap terbaca seperti biasa.':
+    'This admin can no longer open the Master Data page. Other pages showing students and cohorts stay readable as usual.',
   'Akan dibuat: {label} (kode {id}), masuk {periode}.': 'Will be created: {label} (code {id}), intake {periode}.',
   'Angkatan {label} sudah ada.': 'Cohort {label} already exists.',
   'Angkatan {label} sudah ditambahkan.': 'Cohort {label} has been added.',
   'Angkatan {label} sudah diubah.': 'Cohort {label} has been updated.',
   'Nilai angkatan mahasiswa ini sudah disahkan, jadi ia tidak bisa dipindah.': 'This student’s cohort scores are ratified, so they cannot be moved.',
   'Belum ada mahasiswa.': 'No students yet.',
-  'Beri izin data master': 'Grant master data permission',
-  'Cabut izin data master': 'Revoke master data permission',
+  'Beri izin lihat data master': 'Grant master data view permission',
+  'Cabut izin lihat data master': 'Revoke master data view permission',
   'Data {nama} sudah diubah.': '{nama}’s data has been updated.',
   'Data Master': 'Master Data',
   'Fakultas {nama} sudah ditambahkan.': 'Faculty {nama} has been added.',
   'Fakultas {nama} sudah diubah.': 'Faculty {nama} has been updated.',
-  'Halaman ini butuh izin dari Super Admin': 'This page needs permission from the Super Admin',
-  'Izin data master': 'Master data permission',
+  'Izin lihat data master': 'Master data view permission',
+  /* Sejak rapat 24 Okt 2026 data master dipegang super admin; admin berizin hanya melihat, yang belum meminta akses. */
+  'Lihat angkatan, fakultas, program studi, dan data mahasiswa untuk mencocokkan ulang. Hanya Super Admin yang menambah dan mengubah data master.':
+    'View cohorts, faculties, study programmes, and student data to cross-check them. Only the Super Admin adds and changes master data.',
+  'Anda hanya bisa melihat data master. Bila ada data yang perlu diperbaiki, sampaikan ke Super Admin.':
+    'You can only view master data. If something needs fixing, tell the Super Admin.',
+  'Data master dipegang Super Admin. Untuk mencocokkan ulang data, Anda bisa meminta akses baca.':
+    'Master data is held by the Super Admin. To cross-check data, you can request read access.',
+  'Minta akses baca data master': 'Request read access to master data',
+  'Akses ini hanya untuk melihat angkatan, fakultas, program studi, dan data mahasiswa, tanpa bisa mengubahnya.':
+    'This access only lets you view cohorts, faculties, study programmes, and student data, without changing them.',
+  'Permintaan {id} pernah disetujui. Bila Data Master belum terbuka, muat ulang halaman ini; bila izinnya sudah dicabut Super Admin, ajukan lagi.':
+    'Request {id} was approved before. If Master Data is not open yet, reload this page; if the Super Admin has revoked it, request again.',
+  'Permintaan {id} menunggu Super Admin.': 'Request {id} is waiting for the Super Admin.',
+  'Anda akan bisa melihat Data Master setelah permintaan ini disetujui.':
+    'You will be able to view Master Data once this request is approved.',
+  Keperluan: 'Purpose',
+  'Wajib, minimal {n} karakter': 'Required, at least {n} characters',
+  'Minta akses baca': 'Request read access',
   'Jenis data master': 'Master data type',
   'Jenjang': 'Level',
   'Kode {id}': 'Code {id}',
@@ -1763,7 +1919,6 @@ export const EN = {
   'Mahasiswa ini sudah punya nilai, jadi prodi dan angkatannya tidak bisa diubah.': 'This student already has scores, so their programme and cohort cannot be changed.',
   'Menampilkan {n} dari {total}. Persempit pencarian untuk menemukan mahasiswa lain.': 'Showing {n} of {total}. Narrow the search to find other students.',
   'Menghapus data master tidak bisa dari sini. NIM tidak bisa diubah karena riwayat usulan nilai dosen menyambung lewat NIM; bila NIM salah, minta Super Admin menghapus akunnya selama belum punya data, lalu tambahkan lagi.': 'Master data cannot be deleted here. Student IDs cannot be changed because lecturer score proposals are linked by Student ID; if one is wrong, ask the Super Admin to delete the account while it has no data, then add it again.',
-  'Minta Super Admin memberi izin kelola data master di Akses Pengguna, lalu muat ulang halaman ini.': 'Ask the Super Admin to grant master data permission in User Access, then reload this page.',
   'Nama fakultas': 'Faculty name',
   'Nama program studi': 'Study programme name',
   'Prodi dan angkatan hanya bisa diubah selama mahasiswanya belum punya nilai, pengumpulan, atau usulan nilai.': 'Programme and cohort can only be changed while the student has no scores, submissions, or score proposals.',
@@ -1790,8 +1945,6 @@ export const EN = {
   'Ubah fakultas': 'Edit faculty',
   'Ubah program studi': 'Edit study programme',
   'Menambah dan mengubah angkatan, fakultas, prodi, dan data mahasiswa': 'Add and edit cohorts, faculties, programmes, and student data',
-  'bila diberi izin oleh Super Admin; tanpa hapus': 'when granted permission by the Super Admin; no deleting',
-  'Memberi dan mencabut izin kelola data master': 'Grant and revoke master data permission',
 
   /* -------- aspek CPMK: tambah, struktur, arsip (admin/KelolaAspek.jsx, Log, Persetujuan) -------- */
   '{n} menjadi belum lengkap': '{n} become incomplete',

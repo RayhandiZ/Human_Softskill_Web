@@ -24,6 +24,19 @@ export const semesterDari = (a) => turunkanSemesterAktif(intakeDari(a))
 /** Program angkatan `a` (baris tabel Angkatan) sudah lewat Semester 3; lihat programSelesai di src/lib/data.js. */
 export const selesaiProgram = (a) => programSelesai(intakeDari(a))
 
+/**
+ * Apakah mahasiswa `m` (dengan `angkatan`) masuk kelas `dosen` (dengan `angkatan`: baris DosenAngkatan). Prodinya harus
+ * sama. Bila Super Admin sudah memilih angkatan yang diampu, kelasnya angkatan itu saja, termasuk yang programnya sudah
+ * selesai; bila belum, angkatan yang sudah sampai semester dosen dan programnya belum selesai. Sama dengan mahasiswaKelas
+ * di src/lib/data.js.
+ */
+export function diKelasDosen(dosen, m) {
+  if (!dosen || m.prodiId !== dosen.prodiId) return false
+  const diampu = (dosen.angkatan ?? []).map((a) => a.angkatanId)
+  if (diampu.length) return diampu.includes(m.angkatanId)
+  return semesterDari(m.angkatan) >= dosen.semester && !selesaiProgram(m.angkatan)
+}
+
 /** Angka di balik id tampilan seperti 'K-12' atau 'U-3'. */
 export const angkaId = (id) => Number(String(id ?? '').replace(/^[A-Z]+-/, '')) || 0
 
@@ -105,6 +118,8 @@ export function susunMahasiswa(m, nama = new Map(), { komponenBoleh = null, deng
 
 const idPengguna = (mhs) => mhs.flatMap((m) => [...m.nilai.map((n) => n.penilaiId), ...m.penguncian.map((p) => p.olehId)])
 
+// status: 'menunggu_admin' | 'menunggu_superadmin' | 'disetujui' | 'ditolak' (dua lapis sejak rapat 24 Okt 2026).
+// `lapis1`: admin yang meneruskan ke super admin beserta nilai usulannya; `keputusan`: keputusan akhir.
 function susunKoreksi(k, nama) {
   const komponen = getKomponenById(k.komponenId)
   return {
@@ -116,13 +131,45 @@ function susunKoreksi(k, nama) {
     aspekId: komponen?.aspekId ?? null,
     alasan: k.alasan,
     nilaiDiharapkan: k.nilaiDiharapkan,
+    nilaiUsulan: k.nilaiUsulan,
     status: kecil(k.status),
     diajukan: tanggalWib(k.diajukan),
+    lapis1: k.adminOleh
+      ? { oleh: nama.get(k.adminOleh) ?? null, tanggal: tanggalWib(k.adminPada), catatan: k.adminCatatan ?? '' }
+      : null,
     keputusan: k.diputuskanOleh
       ? { oleh: nama.get(k.diputuskanOleh) ?? null, tanggal: tanggalWib(k.diputuskanPada), catatan: k.catatan ?? '' }
       : null,
+    batchId: k.batchId,
   }
 }
+
+const idKoreksi = (daftar) => daftar.flatMap((k) => [k.adminOleh, k.diputuskanOleh])
+
+// status: 'menunggu_admin' | 'menunggu_superadmin' | 'siap_dicetak' | 'ditolak' | 'dicabut'.
+function susunSertifikat(p, nama) {
+  const jejak = (oleh, pada) => (oleh ? { oleh: nama.get(oleh) ?? null, tanggal: tanggalWib(pada) } : null)
+  return {
+    id: 'S-' + p.id,
+    nim: p.mahasiswa.nim,
+    nama: p.mahasiswa.nama,
+    status: kecil(p.status),
+    diajukan: tanggalWib(p.diajukan),
+    lapis1: jejak(p.adminOleh, p.adminPada),
+    lapis2: jejak(p.superOleh, p.superPada),
+    ditolak: p.ditolakOleh ? { ...jejak(p.ditolakOleh, p.ditolakPada), catatan: p.catatan ?? '' } : null,
+    dicabut: p.dicabutOleh ? { ...jejak(p.dicabutOleh, p.dicabutPada), alasan: p.alasanCabut ?? '' } : null,
+    // Berapa kali dibuka untuk dicetak, kapan terakhir, dan oleh siapa (mahasiswanya sendiri atau Kemahasiswaan).
+    cetak: {
+      jumlah: p.jumlahCetak,
+      terakhir: waktuWib(p.cetakTerakhir),
+      oleh: p.cetakTerakhirOleh ? (nama.get(p.cetakTerakhirOleh) ?? null) : null,
+    },
+  }
+}
+
+const idSertifikat = (daftar) => daftar.flatMap((p) => [p.adminOleh, p.superOleh, p.ditolakOleh, p.dicabutOleh, p.cetakTerakhirOleh])
+const URUT_SERTIFIKAT = [{ diajukan: 'desc' }, { id: 'desc' }]
 
 function susunPengumpulan(p, dosen) {
   const komponen = getKomponenById(p.komponenId)
@@ -206,9 +253,9 @@ async function muatPengumpulan(where) {
 }
 
 /**
- * Permintaan admin kepada super admin (src/server/persetujuan.js). Super admin melihat semuanya, admin biasa
- * hanya miliknya. Pelaku ditulis dengan email: semua akun admin bernama "Biro Kemahasiswaan", padahal super
- * admin perlu tahu admin mana yang meminta.
+ * Permintaan kepada super admin (src/server/persetujuan.js), dari admin maupun dosen. Super admin melihat semuanya,
+ * admin biasa dan dosen hanya miliknya. Pelaku ditulis dengan email: semua akun admin bernama "Biro Kemahasiswaan",
+ * padahal super admin perlu tahu admin mana yang meminta.
  */
 async function muatPermintaan(pengguna) {
   const daftar = await db.permintaanAdmin.findMany({
@@ -256,48 +303,71 @@ export async function muatData(pengguna) {
     batch: [],
     batchImport: [],
     permintaan: [],
+    unggahan: [],
+    sertifikat: [],
     profil: await muatProfil(pengguna.id),
   }
 
   if (pengguna.peran === 'student') {
     const m = await db.mahasiswa.findUnique({ where: { id: pengguna.mahasiswa.id }, include: SERTA_MAHASISWA })
-    const koreksi = await db.pengajuanKoreksi.findMany({
-      where: { mahasiswaId: m.id },
-      include: { mahasiswa: true },
-      orderBy: [{ diajukan: 'desc' }, { id: 'desc' }],
-    })
-    const nama = await petaNama([...idPengguna([m]), ...koreksi.map((k) => k.diputuskanOleh)])
+    const [koreksi, sertifikat] = await Promise.all([
+      db.pengajuanKoreksi.findMany({
+        where: { mahasiswaId: m.id },
+        include: { mahasiswa: true },
+        orderBy: [{ diajukan: 'desc' }, { id: 'desc' }],
+      }),
+      db.permintaanSertifikat.findMany({ where: { mahasiswaId: m.id }, include: { mahasiswa: true }, orderBy: URUT_SERTIFIKAT }),
+    ])
+    const nama = await petaNama([...idPengguna([m]), ...idKoreksi(koreksi), ...idSertifikat(sertifikat)])
     hasil.mahasiswa = [susunMahasiswa(m, nama)]
     hasil.koreksi = koreksi.map((k) => susunKoreksi(k, nama))
+    hasil.sertifikat = sertifikat.map((p) => susunSertifikat(p, nama))
     return hasil
   }
 
   if (pengguna.peran === 'dosen') {
     const dosen = pengguna.dosen
     const komponenBoleh = new Set(komponenDosen(dosen).map((k) => k.id))
-    // Mahasiswa yang programnya sudah lewat Semester 3 tidak lagi ditangani dosen: diurus Kemahasiswaan.
+    // Kelasnya angkatan yang diampu (dipilih Super Admin), atau tanpa pilihan, angkatan yang sedang di semesternya.
     const mhs = (await db.mahasiswa.findMany({ where: { prodiId: dosen.prodiId }, include: SERTA_MAHASISWA, orderBy: { nim: 'asc' } }))
-      .filter((m) => semesterDari(m.angkatan) >= dosen.semester && !selesaiProgram(m.angkatan))
+      .filter((m) => diKelasDosen(dosen, m))
     const nama = await petaNama(idPengguna(mhs))
     hasil.mahasiswa = mhs.map((m) => susunMahasiswa(m, nama, { komponenBoleh, denganEmail: false }))
-    hasil.pengumpulan = (await muatPengumpulan({ dosenId: dosen.id })).filter((p) => !p.programSelesai)
-    hasil.usulan = await muatUsulan({ dosenId: dosen.id })
+    // Panel dosen hanya memantau dan mengunggah (rapat 24 Okt 2026); pengumpulan berkas dan usulan tidak dipakai lagi.
+    // Riwayatnya: batch yang ditulis atas nama dosen ini, termasuk usulan lama yang dulu disetujui.
+    const unggahan = await db.batch.findMany({
+      where: { aktorId: pengguna.id },
+      include: { _count: { select: { audit: true } } },
+      orderBy: [{ waktu: 'desc' }, { id: 'desc' }],
+      take: 30,
+    })
+    hasil.unggahan = unggahan.map((b) => ({
+      id: b.id,
+      waktu: waktuWib(b.waktu),
+      jumlah: b._count.audit,
+      cara: b.cara,
+      status: b.status === 'DIBATALKAN' ? 'dibatalkan' : 'tersimpan',
+    }))
+    // Perbaikan nilai untuk angkatan yang sudah selesai atau disahkan menunggu Super Admin (PERBAIKAN_NILAI_DOSEN).
+    hasil.permintaan = await muatPermintaan(pengguna)
     return hasil
   }
 
   // Kemahasiswaan.
-  const [mhs, audit, koreksi, batch, angkatan] = await Promise.all([
+  const [mhs, audit, koreksi, batch, angkatan, sertifikat] = await Promise.all([
     db.mahasiswa.findMany({ include: SERTA_MAHASISWA, orderBy: { nim: 'asc' } }),
     db.auditLog.findMany({ include: { batch: { select: { status: true } } }, orderBy: [{ waktu: 'desc' }, { id: 'desc' }] }),
     db.pengajuanKoreksi.findMany({ include: { mahasiswa: true }, orderBy: [{ diajukan: 'desc' }, { id: 'desc' }] }),
     db.batch.findMany({ include: { _count: { select: { audit: true } } }, orderBy: [{ waktu: 'desc' }, { id: 'desc' }] }),
     db.angkatan.findMany(),
+    db.permintaanSertifikat.findMany({ include: { mahasiswa: true }, orderBy: URUT_SERTIFIKAT }),
   ])
   const nama = await petaNama([
     ...idPengguna(mhs),
     ...audit.map((a) => a.aktorId),
-    ...koreksi.map((k) => k.diputuskanOleh),
+    ...idKoreksi(koreksi),
     ...batch.map((b) => b.aktorId),
+    ...idSertifikat(sertifikat),
   ])
   const mhsDariId = new Map(mhs.map((m) => [m.id, m]))
   const angkatanDariId = new Map(angkatan.map((a) => [a.id, a]))
@@ -326,6 +396,7 @@ export async function muatData(pengguna) {
     })
 
   hasil.koreksi = koreksi.map((k) => susunKoreksi(k, nama))
+  hasil.sertifikat = sertifikat.map((p) => susunSertifikat(p, nama))
   hasil.pengumpulan = await muatPengumpulan({})
   hasil.usulan = await muatUsulan({})
   hasil.permintaan = await muatPermintaan(pengguna)

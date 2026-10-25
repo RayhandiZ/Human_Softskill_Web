@@ -16,9 +16,21 @@ const PERAN = {
 };
 export const ALASAN_MIN = 10;
 const SERTA = {
-  dosen: { include: { prodi: true } },
+  dosen: { include: { prodi: true, angkatan: { include: { angkatan: true } } } },
   mahasiswa: { include: { prodi: true, angkatan: true } },
 };
+
+/**
+ * Kelas seorang dosen untuk dibaca: sumber, semester, dan angkatan yang diampu ([] = otomatis), urut id. Kuncinya
+ * angkatanDiampu, bukan angkatan, karena `angkatan` pada akun mahasiswa berisi label angkatannya.
+ */
+const kelasDosen = (d) => ({
+  sumber: d.sumber,
+  semester: d.semester,
+  angkatanDiampu: d.angkatan
+    .map((a) => ({ id: a.angkatanId, label: a.angkatan.label }))
+    .sort((a, b) => a.id.localeCompare(b.id)),
+});
 
 function susunAkun(p) {
   return {
@@ -29,7 +41,7 @@ function susunAkun(p) {
     // Hanya admin biasa yang izinnya bisa diatur; super admin selalu punya (punyaIzinMaster di api.js).
     ...(p.peran === "ADMIN" ? { kelolaMaster: p.kelolaMaster } : {}),
     ...(p.dosen
-      ? { nama: p.dosen.nama, nip: p.dosen.nip, prodi: p.dosen.prodi.nama }
+      ? { nama: p.dosen.nama, nip: p.dosen.nip, prodi: p.dosen.prodi.nama, ...kelasDosen(p.dosen) }
       : {}),
     ...(p.mahasiswa
       ? {
@@ -96,14 +108,15 @@ export async function ubahAkses(pengguna, { id, aktif, alasan }) {
   return { akun: susunAkun(baru) };
 }
 
-/* --------------------------- izin kelola data master --------------------------- */
+/* --------------------------- izin lihat data master --------------------------- */
 
-// Super admin memberi atau mencabut izin admin biasa untuk menambah dan mengubah data master (angkatan, fakultas,
-// prodi, mahasiswa) lewat src/server/dataMaster.js. Satu izin untuk semuanya, berlaku sampai dicabut, dan tidak
-// mencakup menghapus. Pemiliknya dibaca ulang setiap permintaan (penggunaDari di api.js), jadi mencabut izin
-// langsung berlaku; tombol di layar admin baru ikut hilang setelah halamannya dimuat ulang.
+// Super admin memberi atau mencabut izin admin biasa untuk MELIHAT data master (angkatan, fakultas, prodi,
+// mahasiswa) di halaman Data Master. Sejak rapat 24 Okt 2026 data master dipegang penuh super admin: hanya ia yang
+// menambah dan mengubahnya (pintu /api/master/* ['superadmin']), dan izin ini tidak lagi membuka pintu tulis.
+// Kolomnya tetap bernama kelolaMaster. Admin juga bisa memintanya sendiri lewat permintaan AKSES_DATA_MASTER
+// (persetujuan.js), yang bila disetujui menjalankan bukaAksesMaster di bawah.
 
-/** Memberi (aktif true) atau mencabut (aktif false) izin kelola data master satu akun admin, dengan alasan. */
+/** Memberi (aktif true) atau mencabut (aktif false) izin lihat data master satu akun admin, dengan alasan. */
 export async function aturIzinMaster(pengguna, { id, aktif, alasan }) {
   const target = Number(id)
   if (!Number.isInteger(target)) throw new GalatApi('Akun tidak valid.')
@@ -113,8 +126,8 @@ export async function aturIzinMaster(pengguna, { id, aktif, alasan }) {
 
   const akun = await db.pengguna.findUnique({ where: { id: target }, include: SERTA })
   if (!akun) throw new GalatApi('Akun tidak ditemukan.', 404)
-  if (akun.peran === 'SUPER_ADMIN') throw new GalatApi('Super Admin selalu boleh mengelola data master.', 403)
-  if (akun.peran !== 'ADMIN') throw new GalatApi('Izin kelola data master hanya untuk akun admin Kemahasiswaan.', 403)
+  if (akun.peran === 'SUPER_ADMIN') throw new GalatApi('Super Admin selalu memegang data master.', 403)
+  if (akun.peran !== 'ADMIN') throw new GalatApi('Izin lihat data master hanya untuk akun admin Kemahasiswaan.', 403)
   if (aktif && !akun.aktif) throw new GalatApi('Pulihkan dulu akses akun ini sebelum memberinya izin.', 409)
   if (akun.kelolaMaster === aktif) return { akun: susunAkun(akun) } // tidak ada yang berubah, tidak dicatat
 
@@ -125,11 +138,22 @@ export async function aturIzinMaster(pengguna, { id, aktif, alasan }) {
       aktorId: pengguna.id,
       aksi: 'UBAH_IZIN',
       target: 'akun ' + akun.email,
-      rincian: { email: akun.email, izin: 'kelola data master', sebelum: akun.kelolaMaster, sesudah: aktif, alasan: teksAlasan },
+      rincian: { email: akun.email, izin: 'lihat data master', sebelum: akun.kelolaMaster, sesudah: aktif, alasan: teksAlasan },
     })
     return hasil
   })
   return { akun: susunAkun(baru) }
+}
+
+/**
+ * Menyalakan izin lihat data master untuk `pengguna` (admin pengaju), dijalankan saat super admin menyetujui
+ * permintaan AKSES_DATA_MASTER. Keputusan itu sendiri sudah tercatat di log oleh putuskanPermintaan.
+ */
+export async function bukaAksesMaster(pengguna) {
+  const akun = await db.pengguna.findUnique({ where: { id: pengguna.id } })
+  if (!akun || akun.peran !== 'ADMIN' || !akun.aktif) return { ok: false }
+  if (!akun.kelolaMaster) await db.pengguna.update({ where: { id: akun.id }, data: { kelolaMaster: true } })
+  return { ok: true }
 }
 
 /* ------------------------------- tambah akun ------------------------------ */
@@ -167,20 +191,76 @@ async function isianMahasiswa(isi) {
   return { nim, nama: wajib(isi.nama, 'Nama'), prodiId: await cariProdi(isi.prodi), angkatanId: angkatan.id }
 }
 
-async function isianDosen(isi) {
-  const nip = wajib(isi.nip, 'NIP')
-  if (await db.dosen.findUnique({ where: { nip } })) throw new GalatApi('NIP ' + nip + ' sudah terdaftar.', 409)
+/**
+ * Isian kelas dosen yang sudah diperiksa: prodi, sumber, semester yang diampu, dan angkatan yang diampu. Angkatan boleh
+ * kosong: kelasnya lalu angkatan yang sedang di semester itu (diKelasDosen di muat.js). Dipakai tambah akun dan ubah kelas.
+ */
+async function isianKelas(isi) {
   if (!SUMBER_DOSEN.includes(isi.sumber)) throw new GalatApi('Sumber penilaian harus PDP atau MK.')
   const semester = Number(isi.semester)
   if (![1, 2, 3].includes(semester)) throw new GalatApi('Semester harus 1, 2, atau 3.')
+  const ids = [...new Set((Array.isArray(isi.angkatan) ? isi.angkatan : []).map((a) => String(a ?? '').trim()).filter(Boolean))]
+  const ada = new Set((await db.angkatan.findMany({ where: { id: { in: ids } }, select: { id: true } })).map((a) => a.id))
+  const asing = ids.find((id) => !ada.has(id))
+  if (asing) throw new GalatApi('Angkatan ' + asing + ' tidak ditemukan.')
+  return { sumber: isi.sumber, semester, prodiId: await cariProdi(isi.prodi), angkatan: ids.sort() }
+}
+
+async function isianDosen(isi) {
+  const nip = wajib(isi.nip, 'NIP')
+  if (await db.dosen.findUnique({ where: { nip } })) throw new GalatApi('NIP ' + nip + ' sudah terdaftar.', 409)
+  const { angkatan, ...kelas } = await isianKelas(isi)
   return {
     nip,
     nama: wajib(isi.nama, 'Nama'),
     jabatan: wajib(isi.jabatan, 'Jabatan'),
-    sumber: isi.sumber,
-    semester,
-    prodiId: await cariProdi(isi.prodi),
+    ...kelas,
+    angkatan: { create: angkatan.map((angkatanId) => ({ angkatanId })) },
   }
+}
+
+/**
+ * Mengubah kelas seorang dosen: prodi, sumber, semester yang diampu, dan angkatan yang diampu (rapat 25 Okt 2026). Hanya
+ * super admin. Nilai yang sudah tersimpan tidak berubah; yang berubah hanya mahasiswa yang terlihat dan bisa diunggah
+ * dosen itu. Tercatat sebagai UBAH_KELAS_DOSEN beserta kelas sebelum dan sesudahnya.
+ */
+export async function ubahKelasDosen(pengguna, isi) {
+  const target = Number(isi?.id)
+  if (!Number.isInteger(target)) throw new GalatApi('Akun tidak valid.')
+  const akun = await db.pengguna.findUnique({ where: { id: target }, include: SERTA })
+  if (!akun) throw new GalatApi('Akun tidak ditemukan.', 404)
+  if (!akun.dosen) throw new GalatApi('Kelas hanya bisa diatur untuk akun dosen.', 409)
+  const kelas = await isianKelas(isi)
+
+  const sebelum = { prodi: akun.dosen.prodi.nama, ...kelasDosen(akun.dosen) }
+  const sama =
+    kelas.prodiId === akun.dosen.prodiId &&
+    kelas.sumber === akun.dosen.sumber &&
+    kelas.semester === akun.dosen.semester &&
+    kelas.angkatan.join() === sebelum.angkatanDiampu.map((a) => a.id).join()
+  if (sama) return { akun: susunAkun(akun) } // tidak ada yang berubah, tidak dicatat
+
+  const baru = await db.$transaction(async (tx) => {
+    await tx.dosenAngkatan.deleteMany({ where: { dosenId: akun.dosen.id } })
+    await tx.dosen.update({
+      where: { id: akun.dosen.id },
+      data: {
+        prodiId: kelas.prodiId,
+        sumber: kelas.sumber,
+        semester: kelas.semester,
+        angkatan: { create: kelas.angkatan.map((angkatanId) => ({ angkatanId })) },
+      },
+    })
+    const hasil = await tx.pengguna.findUnique({ where: { id: akun.id }, include: SERTA })
+    await catatLog(tx, {
+      aktorId: pengguna.id,
+      aksi: 'UBAH_KELAS_DOSEN',
+      target: 'akun ' + akun.email,
+      rincian: { email: akun.email, sebelum, sesudah: { prodi: hasil.dosen.prodi.nama, ...kelasDosen(hasil.dosen) } },
+    })
+    return hasil
+  })
+  return { akun: susunAkun(baru) }
 }
 
 /** Membuat akun baru beserta data mahasiswa/dosennya; jawabannya { akun } dalam bentuk yang sama dengan daftarAkses. */
@@ -236,6 +316,7 @@ async function dataTerkait(akun) {
       ['nilai', db.nilai.count({ where: { mahasiswaId: m.id } })],
       ['pengumpulan', db.pengumpulan.count({ where: { mahasiswaId: m.id } })],
       ['pengajuan koreksi', db.pengajuanKoreksi.count({ where: { mahasiswaId: m.id } })],
+      ['permintaan sertifikat', db.permintaanSertifikat.count({ where: { mahasiswaId: m.id } })],
       ['penguncian aspek', db.penguncian.count({ where: { mahasiswaId: m.id } })],
       ['riwayat perubahan nilai', db.auditLog.count({ where: { mahasiswaId: m.id } })],
       ['entri usulan dosen', db.usulanEntri.count({ where: { nim: m.nim } })],
@@ -260,7 +341,10 @@ async function dataTerkait(akun) {
       db.komponen.count({ where: { diubahOleh: id } }),
       db.aspek.count({ where: { diubahOleh: id } }),
       db.indikator.count({ where: { diubahOleh: id } }),
-      db.pengajuanKoreksi.count({ where: { diputuskanOleh: id } }),
+      db.pengajuanKoreksi.count({ where: { OR: [{ adminOleh: id }, { diputuskanOleh: id }] } }),
+      db.permintaanSertifikat.count({
+        where: { OR: [{ adminOleh: id }, { superOleh: id }, { ditolakOleh: id }, { dicabutOleh: id }, { cetakTerakhirOleh: id }] },
+      }),
       db.usulan.count({ where: { diputuskanOleh: id } }),
       db.permintaanAdmin.count({ where: { OR: [{ diajukanOleh: id }, { diputuskanOleh: id }] } }),
     ]).then((jumlah) => jumlah.reduce((a, b) => a + b, 0)),

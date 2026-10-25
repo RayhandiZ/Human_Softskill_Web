@@ -1,6 +1,6 @@
 import { tangani } from '../../../../src/server/api'
-import { denganPersetujuan } from '../../../../src/server/persetujuan'
+import { rollbackBatch } from '../../../../src/server/nilai'
 
-/* Membatalkan seluruh nilai satu batch. Hanya Kemahasiswaan; batch yang menyentuh mahasiswa yang sudah lewat
-   Semester 3 menunggu persetujuan super admin bila dibatalkan admin biasa. */
-export const POST = (request) => tangani(request, ['admin'], denganPersetujuan('ROLLBACK_NILAI'))
+/* Membatalkan seluruh nilai satu batch, termasuk unggahan dosen. Hanya super admin: admin hanya membaca nilai sejak
+   rapat 24 Okt 2026. */
+export const POST = (request) => tangani(request, ['superadmin'], rollbackBatch)

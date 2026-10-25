@@ -3,12 +3,13 @@ import { GalatApi, penggunaDariId } from './api.js'
 import { catatLog } from './log.js'
 import { SERTA_MAHASISWA, angkaId, selesaiProgram, susunMahasiswa, waktuWib } from './muat.js'
 import { ALASAN_MIN, petaMahasiswa, rollbackBatch, setPenguncian, simpanBatch } from './nilai.js'
-import { putuskanUsulan } from './pengajuan.js'
+import { putuskanUsulan, terapkanPerbaikanDosen } from './pengajuan.js'
 import { kunci, pratinjau } from './angkatan.js'
 import { simpanBobot } from './bobot.js'
 import { rencanakanPenilaian, simpanPenilaian } from './penilaian.js'
 import { kelolaAspek, rencanakanAspek } from './aspek.js'
-import { validasiBatchImport } from '../lib/rules.js'
+import { bukaAksesMaster } from './akses.js'
+import { bolehTandaiFinal, validasiBatchImport } from '../lib/rules.js'
 import { KURIKULUM_TERPASANG, getAspek } from '../lib/curriculum.js'
 import { bedaBobot, dampakBobot, periksaBobot, susunanBobot } from '../lib/bobot.js'
 
@@ -20,6 +21,9 @@ import { bedaBobot, dampakBobot, periksaBobot, susunanBobot } from '../lib/bobot
 //   super admin menolak, atau admin menarik permintaannya → tidak ada yang berubah
 // Gerbangnya dipasang di pintu API (denganPersetujuan), jadi tidak bisa dilewati dengan memanggil API langsung.
 // Super admin sendiri tidak pernah tertahan. Tindakan yang tidak menyentuh mahasiswa tersebut berjalan seperti biasa.
+// Sejak rapat 24 Okt 2026 admin hanya membaca nilai: menyimpan dan membatalkan batch nilai hanya oleh super admin
+// (pintu API-nya ['superadmin']), sedangkan tanda final, bobot, penilaian aspek, dan aspek CPMK dari admin biasa SELALU
+// diajukan. SIMPAN_NILAI, ROLLBACK_NILAI, dan PUTUSKAN_USULAN tetap terdaftar supaya permintaan lama bisa diputuskan.
 
 const BATAS_BARIS = 20
 const BATAS_MAHASISWA = 50
@@ -105,27 +109,38 @@ const AKSI = {
     },
   },
 
+  // Tanda final dari admin biasa SELALU diajukan, apa pun mahasiswanya (rapat 24 Okt 2026: admin hanya membaca nilai).
   UBAH_PENGUNCIAN: {
     kerja: setPenguncian,
     alasan: (isi) => isi.alasan,
+    pesanAlasan:
+      'Tanda final atau sementara dari admin perlu persetujuan Super Admin. Isi alasan minimal ' + ALASAN_MIN +
+      ' karakter supaya Super Admin bisa menimbangnya.',
     async telaah({ daftar, status }) {
       const ke = status === 'final' ? 'FINAL' : status === 'sementara' ? 'SEMENTARA' : status == null ? null : undefined
       if (ke === undefined) return null // setPenguncian yang menolaknya
       const pasangan = (Array.isArray(daftar) ? daftar : []).filter((p) => p?.nim && p?.aspekId)
       const mhs = await db.mahasiswa.findMany({
         where: { nim: { in: [...new Set(pasangan.map((p) => String(p.nim)))] } },
-        include: { angkatan: true, penguncian: true },
+        include: SERTA_MAHASISWA,
       })
       const dariNim = new Map(mhs.map((m) => [m.nim, m]))
-      // Hanya tanda yang sungguh berubah yang dihitung: Input Nilai memanggil ini setelah setiap simpan.
+      // Hanya tanda yang sungguh berubah yang dihitung; yang tidak berubah dijalankan biasa (tidak ada yang terjadi).
       const berubah = []
       for (const p of pasangan) {
         const m = dariNim.get(String(p.nim))
-        if (!m || !selesaiProgram(m.angkatan)) continue
+        if (!m) continue
         const dari = m.penguncian.find((x) => x.aspekId === p.aspekId)?.status ?? null
         if (dari !== ke) berubah.push({ m, aspekId: p.aspekId, dari })
       }
       if (!berubah.length) return null
+      // Ditolak sekarang, bukan saat disetujui: aspek yang komponennya belum lengkap tidak pernah boleh final.
+      if (ke === 'FINAL') {
+        for (const b of berubah) {
+          const cek = bolehTandaiFinal(susunMahasiswa(b.m), b.aspekId)
+          if (!cek.boleh) throw new GalatApi(b.m.nama + ', aspek ' + kodeAspek(b.aspekId) + ': ' + cek.alasan)
+        }
+      }
       return {
         mahasiswa: [...new Map(berubah.map((b) => [b.m.nim, sebut(b.m)])).values()],
         ringkasan: {
@@ -183,9 +198,14 @@ const AKSI = {
     },
   },
 
+  // Bobot menentukan nilai, jadi perubahannya oleh admin biasa SELALU diajukan (rapat 24 Okt 2026), sama dengan
+  // UBAH_PENILAIAN yang juga bisa mengubah bobot.
   UBAH_BOBOT: {
     kerja: simpanBobot,
     alasan: (isi) => isi.alasan,
+    pesanAlasan:
+      'Perubahan bobot oleh admin perlu persetujuan Super Admin. Isi alasan minimal ' + ALASAN_MIN +
+      ' karakter supaya Super Admin bisa menimbangnya.',
     async telaah({ versi = null, pengaturan, aspek }) {
       const susunan = { pengaturan, aspek }
       const masalah = periksaBobot(susunan)
@@ -197,20 +217,21 @@ const AKSI = {
       if (!beda.pengaturan.length && !beda.aspek.length) throw new GalatApi('Tidak ada perubahan bobot untuk disimpan.')
       const mhs = await db.mahasiswa.findMany({ include: SERTA_MAHASISWA, orderBy: { nim: 'asc' } })
       const dampak = dampakBobot(mhs.map((m) => susunMahasiswa(m)), susunan, mhs.length)
-      const selesai = new Map(mhs.filter((m) => selesaiProgram(m.angkatan)).map((m) => [m.nim, m]))
-      const kena = dampak.daftar.filter((x) => selesai.has(x.nim))
-      if (!kena.length) return null
+      const dariNim = new Map(mhs.map((m) => [m.nim, m]))
+      const selesai = dampak.daftar.filter((x) => selesaiProgram(dariNim.get(x.nim).angkatan)).length
       const bagian = [
         ...(beda.aspek.length ? ['bobot ' + beda.aspek.map(kodeAspek).join(', ')] : []),
         ...(beda.pengaturan.length ? ['cara membagi bobot otomatis'] : []),
       ]
       return {
-        mahasiswa: kena.map((x) => sebut(selesai.get(x.nim))),
+        mahasiswa: dampak.daftar.map((x) => sebut(dariNim.get(x.nim))),
+        jumlahMahasiswa: dampak.berubah,
         ringkasan: {
           judul: 'Ubah ' + bagian.join(' dan '),
           baris: [
-            'Nilai ' + dampak.berubah + ' dari ' + dampak.total + ' mahasiswa berubah, ' + kena.length + ' di antaranya sudah lewat Semester 3',
-            ...kena.slice(0, BATAS_BARIS).map((x) => x.nim + ' ' + x.nama + ': nilai akhir ' + (x.nilaiSebelum ?? '–') + ' → ' + (x.nilaiSesudah ?? '–')),
+            'Nilai ' + dampak.berubah + ' dari ' + dampak.total + ' mahasiswa berubah' +
+              (selesai ? ', ' + selesai + ' di antaranya sudah lewat Semester 3' : ''),
+            ...dampak.daftar.slice(0, BATAS_BARIS).map((x) => x.nim + ' ' + x.nama + ': nilai akhir ' + (x.nilaiSebelum ?? '–') + ' → ' + (x.nilaiSesudah ?? '–')),
           ],
         },
       }
@@ -297,6 +318,40 @@ AKSI.KELOLA_ASPEK = {
   },
 }
 
+/* Admin biasa meminta akses baca data master (rapat 24 Okt 2026): data master dipegang penuh super admin, dan admin
+   yang ingin mencocokkan ulang boleh melihatnya tanpa bisa mengubah. Disetujui berarti izinnya dinyalakan; super admin
+   juga bisa memberi atau mencabutnya langsung dari Akses Pengguna (aturIzinMaster di akses.js). */
+AKSI.AKSES_DATA_MASTER = {
+  kerja: bukaAksesMaster,
+  alasan: (isi) => isi.alasan,
+  bilaTidakOk: 'Akun pengaju bukan admin Kemahasiswaan yang aktif.',
+  pesanAlasan:
+    'Sebutkan keperluan Anda melihat data master, minimal ' + ALASAN_MIN + ' karakter, supaya Super Admin bisa menimbangnya.',
+  async telaah() {
+    return {
+      mahasiswa: [],
+      jumlahMahasiswa: 0,
+      ringkasan: {
+        judul: 'Minta akses baca data master',
+        baris: ['Melihat angkatan, fakultas, program studi, dan data mahasiswa, tanpa bisa mengubahnya.'],
+      },
+    }
+  },
+}
+
+/* Dosen mengunggah nilai untuk angkatan yang programnya sudah selesai atau sudah disahkan, atau untuk aspek yang sudah
+   final (keputusan pengguna 25 Oktober). Bagian unggahan itu tidak langsung tersimpan: unggahNilaiDosen
+   (src/server/pengajuan.js) mengajukannya lewat ajukanDalam di bawah, bukan lewat denganPersetujuan, karena satu
+   unggahan bisa sebagian tersimpan langsung dan sebagian diajukan. Disetujui berarti nilainya ditulis atas nama dosen
+   pengaju, dengan alasan dosen sebagai alasan perubahan data terkunci. */
+AKSI.PERBAIKAN_NILAI_DOSEN = {
+  kerja: terapkanPerbaikanDosen,
+  alasan: (isi) => isi.alasan,
+  pesanAlasan:
+    'Sebagian nilai ini untuk angkatan yang sudah selesai atau disahkan, atau aspek yang sudah final, jadi perlu persetujuan ' +
+    'Super Admin. Isi alasan minimal ' + ALASAN_MIN + ' karakter supaya Super Admin bisa menimbangnya.',
+}
+
 export const AKSI_PERSETUJUAN = Object.keys(AKSI)
 
 /* ----------------------------------- gerbang ----------------------------------- */
@@ -317,6 +372,15 @@ export function denganPersetujuan(aksi) {
 }
 
 async function ajukan(pengguna, aksi, isi, telaah) {
+  return db.$transaction((tx) => ajukanDalam(tx, pengguna, aksi, isi, telaah))
+}
+
+/**
+ * Menyimpan satu permintaan MENUNGGU beserta catatan lognya di dalam transaksi `tx` milik pemanggil, jadi bisa ikut
+ * berhasil atau gagal bersama perubahan lain (unggahan dosen yang sebagian langsung tersimpan). `telaah` = { mahasiswa,
+ * ringkasan, jumlahMahasiswa? } seperti hasil telaah di AKSI. Jawabannya { menunggu: true, permintaan }.
+ */
+export async function ajukanDalam(tx, pengguna, aksi, isi, telaah) {
   const alasan = String(AKSI[aksi].alasan(isi) ?? '').trim()
   if (alasan.length < ALASAN_MIN) {
     throw new GalatApi(
@@ -330,17 +394,14 @@ async function ajukan(pengguna, aksi, isi, telaah) {
     jumlahMahasiswa: telaah.jumlahMahasiswa ?? telaah.mahasiswa.length,
     mahasiswa: telaah.mahasiswa.slice(0, BATAS_MAHASISWA),
   }
-  const p = await db.$transaction(async (tx) => {
-    const baru = await tx.permintaanAdmin.create({ data: { aksi, isi, ringkasan, alasan, diajukanOleh: pengguna.id } })
-    await catatLog(tx, {
-      aktorId: pengguna.id,
-      aksi: 'AJUKAN_PERSETUJUAN',
-      target: 'permintaan P-' + baru.id,
-      rincian: { aksi, judul: ringkasan.judul, alasan, jumlahMahasiswa: ringkasan.jumlahMahasiswa },
-    })
-    return baru
+  const baru = await tx.permintaanAdmin.create({ data: { aksi, isi, ringkasan, alasan, diajukanOleh: pengguna.id } })
+  await catatLog(tx, {
+    aktorId: pengguna.id,
+    aksi: 'AJUKAN_PERSETUJUAN',
+    target: 'permintaan P-' + baru.id,
+    rincian: { aksi, judul: ringkasan.judul, alasan, jumlahMahasiswa: ringkasan.jumlahMahasiswa },
   })
-  return { menunggu: true, permintaan: { id: 'P-' + p.id, aksi, judul: ringkasan.judul } }
+  return { menunggu: true, permintaan: { id: 'P-' + baru.id, aksi, judul: ringkasan.judul } }
 }
 
 /* ---------------------------------- keputusan ---------------------------------- */
@@ -358,7 +419,7 @@ const ringkasHasil = (h) =>
 export async function putuskanPermintaan(pengguna, { id, keputusan, catatan }) {
   if (!['disetujui', 'ditolak'].includes(keputusan)) throw new GalatApi('Keputusan harus "disetujui" atau "ditolak".')
   const teks = String(catatan ?? '').trim()
-  if (keputusan === 'ditolak' && !teks) throw new GalatApi('Catatan penolakan wajib diisi. Admin perlu tahu alasannya.')
+  if (keputusan === 'ditolak' && !teks) throw new GalatApi('Catatan penolakan wajib diisi. Pengajunya perlu tahu alasannya.')
 
   const p = await db.permintaanAdmin.findUnique({ where: { id: angkaId(id) } })
   if (!p) throw new GalatApi('Permintaan tidak ditemukan.', 404)
@@ -381,7 +442,7 @@ export async function putuskanPermintaan(pengguna, { id, keputusan, catatan }) {
       const def = AKSI[p.aksi]
       if (!def) throw new GalatApi('Jenis permintaan tidak dikenal.')
       const pengaju = await penggunaDariId(p.diajukanOleh)
-      if (!pengaju) throw new GalatApi('Akun admin pengaju sudah tidak aktif.')
+      if (!pengaju) throw new GalatApi('Akun pengaju sudah tidak aktif.')
       const hasil = await def.kerja(pengaju, p.isi)
       if (hasil?.ok === false) throw new GalatApi(def.bilaTidakOk ?? 'Datanya sudah berubah sejak permintaan diajukan.')
       kurikulum = hasil?.kurikulum

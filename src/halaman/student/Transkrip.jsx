@@ -25,6 +25,8 @@ import { AREA, CLUSTER, SUMBER, SUMBER_LIST, getArea, getCluster, getIndikator, 
 import { labelNilaiAkhir, statusDokumenTranskrip } from '../../lib/rules'
 import { PERIODE_AKTIF, labelPeriode, transkripOf } from '../../lib/data'
 import { ajukanKoreksi, koreksiMilik, useStore } from '../../lib/store'
+import { LABEL_KOREKSI } from '../../lib/duaLapis'
+import { bacaAngka } from '../../lib/ingest'
 import { useTeks } from '../../lib/bahasa'
 import LembarCetak from './LembarCetak'
 
@@ -342,17 +344,17 @@ export default function Transkrip({ student, untukAdmin = false }) {
             <li className="text-[12px] font-semibold text-ink-3">{teks('Pengajuan kamu')}</li>
             {milikSaya.map((k) => (
               <li key={k.id} className="flex flex-wrap items-center gap-2.5 text-[13px]">
+                {/* Dua lapis sejak rapat 24 Okt 2026: admin Kemahasiswaan, lalu Super Admin yang menerapkan nilai. */}
                 <Badge tone={k.status === 'disetujui' ? 'good' : k.status === 'ditolak' ? 'critical' : 'warning'}>
-                  {teks(
-                    k.status === 'menunggu'
-                      ? 'Menunggu'
-                      : k.status === 'disetujui'
-                        ? 'Disetujui'
-                        : 'Ditolak',
-                  )}
+                  {teks(LABEL_KOREKSI[k.status] ?? k.status)}
                 </Badge>
                 <span className="text-ink">{k.komponenLabel}</span>
                 <span className="text-ink-3">{teks('diajukan {tanggal}', { tanggal: k.diajukan })}</span>
+                {k.status === 'disetujui' && k.nilaiUsulan != null ? (
+                  <span className="w-full text-[12.5px] text-ink-2">
+                    {teks('Nilai baru {nilai} sudah masuk transkrip.', { nilai: k.nilaiUsulan })}
+                  </span>
+                ) : null}
                 {k.keputusan?.catatan ? (
                   <span className="w-full text-[12.5px] text-ink-2">{k.keputusan.catatan}</span>
                 ) : null}
@@ -566,12 +568,19 @@ function FormKoreksi({ student, transkrip, onSelesai }) {
 
   const [komponenId, setKomponenId] = useState(pilihan[0]?.id ?? '')
   const [alasan, setAlasan] = useState('')
+  const [harapan, setHarapan] = useState('')
   const [galat, setGalat] = useState('')
 
   async function kirim(e) {
     e.preventDefault()
+    // Opsional: titik awal nilai usulan admin Kemahasiswaan saat meneruskan pengajuan ke Super Admin.
+    const nilaiDiharapkan = harapan.trim() ? bacaAngka(harapan) : null
+    if (harapan.trim() && (nilaiDiharapkan == null || nilaiDiharapkan < 0 || nilaiDiharapkan > 100)) {
+      setGalat(t('Nilai yang diharapkan harus 0–100.'))
+      return
+    }
     try {
-      await ajukanKoreksi({ student, komponenId, alasan })
+      await ajukanKoreksi({ student, komponenId, alasan, nilaiDiharapkan })
       onSelesai()
     } catch (err) {
       setGalat(err.message)
@@ -611,6 +620,17 @@ function FormKoreksi({ student, transkrip, onSelesai }) {
           onChange={(e) => setAlasan(e.target.value)}
           placeholder={t('Jelaskan apa yang menurutmu keliru, dan bukti apa yang kamu punya.')}
           required
+        />
+      </label>
+
+      <label className="sm:col-span-1">
+        <span className="mb-1.5 block text-[13px] font-semibold text-ink">{t('Nilai yang menurutmu benar (opsional)')}</span>
+        <input
+          className="field tabular-nums"
+          inputMode="decimal"
+          value={harapan}
+          onChange={(e) => setHarapan(e.target.value)}
+          placeholder="0–100"
         />
       </label>
 

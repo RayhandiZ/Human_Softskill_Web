@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react'
-import { KOMPONEN, KURIKULUM_TERPASANG, getKomponenById, isiKurikulum } from './curriculum.js'
+import { KOMPONEN, KURIKULUM_TERPASANG, getAspek, getKomponenById, isiKurikulum } from './curriculum.js'
 import { updateConfig } from './config.js'
 import { periksaBobot } from './bobot.js'
-import { periksaUsulan } from './rules.js'
+import { kelayakanSertifikat, periksaUsulan } from './rules.js'
 import {
   AUDIT_LOG,
   COHORTS,
@@ -11,11 +11,14 @@ import {
   USULAN_AWAL,
   getStudentByNim,
   isiData,
+  komponenDosen,
   isiMaster,
+  mahasiswaKelas,
   pasangPeriode,
   resetTranskripCache,
 } from './data.js'
 import { kirim } from './kirim.js'
+import { sebabPersetujuan } from './unggahDosen.js'
 import { modeLokal } from './modeData.js'
 import { kunciAkun, pasangProfil } from './profil.js'
 
@@ -211,62 +214,290 @@ function rollbackBatchLokal(id) {
 
 /* ---------------------------- pengajuan koreksi --------------------------- */
 
-function putuskanKoreksiLokal(id, keputusan, { aktor, catatan }) {
+/* Dua lapis sejak rapat 24 Okt 2026, sama dengan putuskanKoreksi di src/server/pengajuan.js: admin biasa
+   meneruskan (menunggu_admin → menunggu_superadmin, dengan nilai usulan), super admin menyetujui dan nilainya
+   diterapkan sebagai batch sesi bercara 'koreksi'. `superAdmin` menentukan lapis yang boleh diputuskan. */
+const ALASAN_TOLAK_MIN = 10
+
+function putuskanKoreksiLokal(id, keputusan, { aktor, catatan, nilaiBaru = null, superAdmin = false } = {}) {
   const k = PENGAJUAN_KOREKSI.find((x) => x.id === id)
-  if (!k) return false
-  k.status = keputusan
-  k.keputusan = { oleh: aktor, tanggal: new Date().toISOString().slice(0, 10), catatan }
+  if (!k || k.status !== (superAdmin ? 'menunggu_superadmin' : 'menunggu_admin')) return false
+  const teks = String(catatan ?? '').trim()
+  const tanggal = new Date().toISOString().slice(0, 10)
+  if (keputusan === 'ditolak') {
+    if (teks.length < ALASAN_TOLAK_MIN) {
+      throw new Error('Alasan penolakan wajib diisi, minimal 10 karakter, supaya mahasiswa tahu sebabnya.')
+    }
+    k.status = 'ditolak'
+    k.keputusan = { oleh: aktor, tanggal, catatan: teks }
+  } else {
+    const usulan = superAdmin ? k.nilaiUsulan : k.nilaiDiharapkan
+    const angka = nilaiBaru == null || nilaiBaru === '' ? usulan : Number(nilaiBaru)
+    if (angka == null || !Number.isFinite(angka) || angka < 0 || angka > 100) {
+      throw new Error('Isi nilai baru 0 sampai 100 sebelum menyetujui.')
+    }
+    k.nilaiUsulan = Math.round(angka * 100) / 100
+    if (!superAdmin) {
+      k.status = 'menunggu_superadmin'
+      k.lapis1 = { oleh: aktor, tanggal, catatan: teks }
+    } else {
+      const komponen = getKomponenById(k.komponenId)
+      const batch = simpanBatchLokal({
+        sumber: komponen.sumber,
+        semester: getAspek(komponen.aspekId).semester,
+        angkatanId: getStudentByNim(k.nim)?.angkatanId,
+        aktor,
+        cara: 'koreksi',
+        entri: [{ nim: k.nim, komponenId: k.komponenId, nilai: k.nilaiUsulan }],
+      })
+      k.status = 'disetujui'
+      k.batchId = batch.id
+      k.keputusan = { oleh: aktor, tanggal, catatan: teks }
+    }
+  }
   berubah()
   simpanKePenyimpanan()
   return true
 }
 
+/* --------------------------- akses cetak sertifikat ------------------------- */
+
+/* Permintaan akses cetak sertifikat dua lapis (rapat 24 Okt 2026), dari /api/data: mahasiswa menerima miliknya,
+   Kemahasiswaan semuanya, terbaru di atas. Lihat src/server/sertifikat.js dan README.md › Sertifikat. */
+export const PERMINTAAN_SERTIFIKAT = []
+
+/** Permintaan terbaru seorang mahasiswa, atau null. */
+export const sertifikatMilik = (nim) => PERMINTAAN_SERTIFIKAT.find((p) => p.nim === nim) ?? null
+
+let urutSertifikat = 0
+
+// Yang menghalangi permintaan baru, sama dengan BERJALAN di src/server/sertifikat.js; ditolak dan dicabut boleh diulang.
+const SERTIFIKAT_BERJALAN = ['menunggu_admin', 'menunggu_superadmin', 'siap_dicetak']
+
+function mintaSertifikatLokal({ student }) {
+  const k = kelayakanSertifikat(student)
+  if (!k.layak) throw new Error('Sertifikat belum bisa diminta: syaratnya belum terpenuhi.')
+  if (PERMINTAAN_SERTIFIKAT.some((p) => p.nim === student.nim && SERTIFIKAT_BERJALAN.includes(p.status))) {
+    throw new Error('Permintaan akses cetak Anda sudah ada.')
+  }
+  const p = {
+    id: 'S-' + ++urutSertifikat,
+    nim: student.nim,
+    nama: student.name,
+    status: 'menunggu_admin',
+    diajukan: new Date().toISOString().slice(0, 10),
+    lapis1: null,
+    lapis2: null,
+    ditolak: null,
+    dicabut: null,
+    cetak: { jumlah: 0, terakhir: null, oleh: null },
+  }
+  PERMINTAAN_SERTIFIKAT.unshift(p)
+  berubah()
+  simpanKePenyimpanan()
+  return { id: p.id }
+}
+
+/** Mahasiswa yang layak meminta akses cetak; `isi.student` hanya dipakai mode lokal. */
+export async function mintaSertifikat(isi = {}) {
+  if (modeLokal()) return mintaSertifikatLokal(isi)
+  return tulis('/api/sertifikat', {})
+}
+
+function putuskanSertifikatLokal(id, keputusan, { aktor, catatan, superAdmin = false } = {}) {
+  const p = PERMINTAAN_SERTIFIKAT.find((x) => x.id === id)
+  if (!p || p.status !== (superAdmin ? 'menunggu_superadmin' : 'menunggu_admin')) return false
+  const teks = String(catatan ?? '').trim()
+  const jejak = { oleh: aktor, tanggal: new Date().toISOString().slice(0, 10) }
+  if (keputusan === 'ditolak') {
+    if (teks.length < ALASAN_TOLAK_MIN) {
+      throw new Error('Alasan penolakan wajib diisi, minimal 10 karakter, supaya mahasiswa tahu sebabnya.')
+    }
+    p.status = 'ditolak'
+    p.ditolak = { ...jejak, catatan: teks }
+  } else {
+    const s = getStudentByNim(p.nim)
+    if (s && !kelayakanSertifikat(s).layak) {
+      throw new Error('Mahasiswa ini sudah tidak memenuhi syarat sertifikat. Tolak permintaannya dengan alasan itu.')
+    }
+    if (superAdmin) {
+      p.status = 'siap_dicetak'
+      p.lapis2 = jejak
+    } else {
+      p.status = 'menunggu_superadmin'
+      p.lapis1 = jejak
+    }
+  }
+  berubah()
+  simpanKePenyimpanan()
+  return true
+}
+
+/**
+ * Keputusan atas permintaan akses cetak: admin biasa lapis pertama, super admin lapis kedua (`opsi.superAdmin`
+ * dipakai mode lokal; server membaca perannya sendiri). false bila sudah diputuskan atau menunggu lapis lain.
+ */
+export async function putuskanSertifikat(id, keputusan, opsi = {}) {
+  if (modeLokal()) return putuskanSertifikatLokal(id, keputusan, opsi)
+  return (await tulis('/api/sertifikat/keputusan', { id, keputusan, catatan: opsi.catatan ?? null })).ok
+}
+
+function cabutSertifikatLokal(id, alasan, { aktor } = {}) {
+  const p = PERMINTAAN_SERTIFIKAT.find((x) => x.id === id)
+  if (!p || p.status !== 'siap_dicetak') return false
+  const teks = String(alasan ?? '').trim()
+  if (teks.length < ALASAN_TOLAK_MIN) {
+    throw new Error('Alasan pencabutan wajib diisi, minimal 10 karakter, supaya mahasiswa tahu sebabnya.')
+  }
+  p.status = 'dicabut'
+  p.dicabut = { oleh: aktor, tanggal: new Date().toISOString().slice(0, 10), alasan: teks }
+  berubah()
+  simpanKePenyimpanan()
+  return true
+}
+
+/**
+ * Mencabut akses cetak yang sudah Siap dicetak (admin biasa atau super admin, langsung, dengan alasan); lihat
+ * cabutSertifikat di src/server/sertifikat.js. false bila aksesnya sudah tidak Siap dicetak.
+ */
+export async function cabutSertifikat(id, alasan, opsi = {}) {
+  if (modeLokal()) return cabutSertifikatLokal(id, alasan, opsi)
+  return (await tulis('/api/sertifikat/cabut', { id, alasan })).ok
+}
+
+function catatCetakLokal(id, { aktor } = {}) {
+  const p = PERMINTAAN_SERTIFIKAT.find((x) => x.id === id)
+  if (p?.status === 'dicabut') throw new Error('Akses cetak sertifikat ini sudah dicabut.')
+  if (p?.status !== 'siap_dicetak') throw new Error('Akses cetak sertifikat ini belum disetujui.')
+  p.cetak = {
+    jumlah: (p.cetak?.jumlah ?? 0) + 1,
+    terakhir: new Date().toISOString().slice(0, 16).replace('T', ' '),
+    oleh: aktor ?? p.nama,
+  }
+  berubah()
+  simpanKePenyimpanan()
+  return { ok: true, jumlahCetak: p.cetak.jumlah }
+}
+
+/**
+ * Dipanggil tepat SEBELUM window.print(): server mencatatnya dan menolak (galat) bila akses cetaknya sudah dicabut
+ * atau syaratnya gugur, juga dari halaman yang dimuat sebelum pencabutan. Data tidak dimuat ulang di sini, supaya
+ * dialog cetak langsung terbuka; pemanggil memuat ulang bila gagal.
+ */
+export async function catatCetakSertifikat(id, opsi = {}) {
+  if (modeLokal()) return catatCetakLokal(id, opsi)
+  return kirim('/api/sertifikat/cetak', { isi: { id } })
+}
+
 /* --------------------------- usulan nilai dosen --------------------------- */
 
-/* Dosen tidak menulis ke transkrip; lihat README.md › Usulan nilai dosen. */
+/* Usulan lama dari sebelum rapat 24 Okt 2026; dosen kini mengunggah langsung (unggahNilaiDosen di bawah). Yang masih
+   menunggu diputuskan super admin; lihat README.md › Usulan nilai dosen. */
 
 export const USULAN_NILAI = [...USULAN_AWAL]
 
-let urutUsulan = 0
+/* ---------------------------- unggahan nilai dosen ---------------------------- */
 
-function usulkanNilaiLokal({ dosen, cara = 'manual', catatan = '', entri }) {
-  if (!dosen?.nip) throw new Error('Usulan harus punya dosen pengusul.')
-  const bersih = (entri ?? []).filter(
-    (e) => e && e.nim && e.komponenId && Number.isFinite(Number(e.nilai)),
-  )
-  if (!bersih.length) throw new Error('Tidak ada nilai yang bisa diusulkan.')
+/* Riwayat unggahan dosen yang sedang masuk, dari /api/data (batch atas namanya). Di mode lokal dibaca dari batch sesi
+   bercara 'unggah-dosen'; lihat unggahanDosen(). */
+export const UNGGAHAN_DOSEN = []
 
-  const angkatan = [
-    ...new Set(bersih.map((e) => getStudentByNim(e.nim)?.angkatanId).filter(Boolean)),
-  ]
+let urutPermintaanLokal = 0
 
-  urutUsulan++
-  const usulan = {
-    id: 'U-' + String(urutUsulan).padStart(3, '0'),
-    dosenNip: dosen.nip,
-    dosenNama: dosen.nama ?? dosen.name ?? dosen.nip,
-    sumber: dosen.sumber,
-    semester: dosen.semester,
-    prodi: dosen.prodi ?? null,
-    angkatanId: angkatan.length === 1 ? angkatan[0] : 'campuran',
-    cara,
-    catatan: String(catatan ?? '').trim(),
-    waktu: waktuSekarang(),
-    status: 'menunggu',
-    entri: bersih.map(({ nim, komponenId, nilai }) => ({
-      nim,
-      nama: getStudentByNim(nim)?.name ?? nim,
-      komponenId,
-      nilai: Number(nilai),
-    })),
-    keputusan: null,
-    batchId: null,
+/**
+ * Sama dengan unggahNilaiDosen di src/server/pengajuan.js, tanpa basis data: yang langsung tersimpan menjadi batch sesi,
+ * dan nilai untuk angkatan yang sudah selesai atau disahkan, atau aspek final, menjadi permintaan PERBAIKAN_NILAI_DOSEN
+ * yang menunggu di PERMINTAAN. Keputusan super admin hanya ada di server (putuskanPermintaan).
+ */
+function unggahNilaiDosenLokal({ dosen, entri, alasan }) {
+  if (!dosen?.nip) throw new Error('Unggahan harus punya dosen.')
+  const komponenKelas = new Set(komponenDosen(dosen).map((k) => k.id))
+  const bersih = (entri ?? [])
+    .filter((e) => e && e.nim && e.komponenId && Number.isFinite(Number(e.nilai)))
+    .map((e) => ({ nim: String(e.nim).trim(), komponenId: e.komponenId, nilai: Number(e.nilai) }))
+  if (!bersih.length) throw new Error('Tidak ada nilai yang bisa disimpan.')
+  const luar = bersih.find((e) => !komponenKelas.has(e.komponenId))
+  if (luar) throw new Error('Komponen ' + luar.komponenId + ' bukan bagian kelas Anda.')
+  const kelas = new Set(mahasiswaKelas(dosen).map((s) => s.nim))
+  const asing = bersih.find((e) => !kelas.has(e.nim))
+  if (asing) throw new Error('NIM ' + asing.nim + ' tidak terdaftar di kelas Anda.')
+
+  const beda = bersih.filter((e) => {
+    const k = getKomponenById(e.komponenId)
+    return getStudentByNim(e.nim)?.nilai?.[k.aspekId]?.komponen?.[e.komponenId]?.nilai !== e.nilai
+  })
+  if (!beda.length) return { id: null, jumlah: 0, sama: bersih.length, permintaan: null }
+  const perluSetuju = (e) => Boolean(sebabPersetujuan(getStudentByNim(e.nim), getKomponenById(e.komponenId).aspekId))
+  const minta = beda.filter(perluSetuju)
+  const langsung = beda.filter((e) => !perluSetuju(e))
+  if (minta.length && String(alasan ?? '').trim().length < ALASAN_TOLAK_MIN) {
+    throw new Error(
+      'Sebagian nilai ini untuk angkatan yang sudah selesai atau disahkan, atau aspek yang sudah final, jadi perlu persetujuan ' +
+        'Super Admin. Isi alasan minimal 10 karakter supaya Super Admin bisa menimbangnya.',
+    )
   }
 
-  USULAN_NILAI.unshift(usulan)
-  berubah()
-  simpanKePenyimpanan()
-  return usulan
+  let permintaan = null
+  if (minta.length) {
+    const id = 'P-L' + ++urutPermintaanLokal
+    const judul = 'Perbaikan ' + minta.length + ' nilai ' + dosen.sumber + ' Semester ' + dosen.semester + ' dari ' + dosen.nama
+    const mahasiswa = [...new Set(minta.map((e) => e.nim))].map((nim) => {
+      const s = getStudentByNim(nim)
+      return { nim, nama: s.name, angkatan: s.angkatanLabel }
+    })
+    PERMINTAAN.unshift({
+      id,
+      aksi: 'PERBAIKAN_NILAI_DOSEN',
+      status: 'menunggu',
+      ringkasan: {
+        judul,
+        baris: minta.map((e) => {
+          const s = getStudentByNim(e.nim)
+          const lama = s.nilai?.[getKomponenById(e.komponenId).aspekId]?.komponen?.[e.komponenId]?.nilai
+          return e.nim + ' ' + s.name + ' · ' + e.komponenId + ': ' + (lama ?? '–') + ' → ' + e.nilai
+        }),
+        jumlahMahasiswa: mahasiswa.length,
+        mahasiswa,
+      },
+      alasan: String(alasan).trim(),
+      diajukanOleh: dosen.email || dosen.nip,
+      milikSaya: true,
+      diajukanPada: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      diputuskanOleh: null,
+      diputuskanPada: null,
+      catatanKeputusan: '',
+      hasil: null,
+    })
+    permintaan = { id, aksi: 'PERBAIKAN_NILAI_DOSEN', judul, jumlah: minta.length }
+  }
+
+  let batch = null
+  if (langsung.length) {
+    const angkatan = [...new Set(langsung.map((e) => getStudentByNim(e.nim)?.angkatanId).filter(Boolean))]
+    batch = simpanBatchLokal({
+      sumber: dosen.sumber,
+      semester: dosen.semester,
+      angkatanId: angkatan.length === 1 ? angkatan[0] : 'campuran',
+      aktor: dosen.nama ?? dosen.nip,
+      cara: 'unggah-dosen',
+      entri: langsung,
+    })
+  } else {
+    berubah() // hanya permintaan: simpanBatchLokal tidak dipanggil, jadi layar diberi tahu di sini
+  }
+  return { id: batch?.id ?? null, jumlah: batch?.jumlah ?? 0, sama: bersih.length - beda.length, permintaan }
+}
+
+/** Riwayat unggahan dosen: { id, waktu, jumlah, status: 'tersimpan' | 'dibatalkan' }, terbaru di atas. */
+export function unggahanDosen() {
+  if (!modeLokal()) return UNGGAHAN_DOSEN
+  return BATCH_SESI.filter((b) => b.cara === 'unggah-dosen').map((b) => ({
+    id: b.id,
+    waktu: b.waktu,
+    jumlah: b.jumlah,
+    cara: b.cara,
+    status: b.status === 'dibatalkan' ? 'dibatalkan' : 'tersimpan',
+  }))
 }
 
 function putuskanUsulanLokal(id, keputusan, { aktor, catatan = '' } = {}) {
@@ -318,42 +549,6 @@ function putuskanUsulanLokal(id, keputusan, { aktor, catatan = '' } = {}) {
 
 export const usulanMenunggu = () => USULAN_NILAI.filter((u) => u.status === 'menunggu')
 
-export const usulanDosen = (nip) => USULAN_NILAI.filter((u) => u.dosenNip === nip)
-
-let petaUsulan = null
-let petaVersi = -1
-
-function segarkanPeta() {
-  if (petaVersi === versi && petaUsulan) return petaUsulan
-  petaUsulan = new Map()
-  /* Dibaca dari belakang supaya usulan terbaru yang menang. */
-  for (let i = USULAN_NILAI.length - 1; i >= 0; i--) {
-    const u = USULAN_NILAI[i]
-    for (const e of u.entri) petaUsulan.set(e.nim + '|' + e.komponenId, { usulan: u, entri: e })
-  }
-  petaVersi = versi
-  return petaUsulan
-}
-
-/** Dihitung, bukan disimpan: masuk | menunggu | ditolak | dinilai. */
-export function statusPengumpulan({ nim, komponenId, aspekId }) {
-  const tersimpan = getStudentByNim(nim)?.nilai?.[aspekId]?.komponen?.[komponenId]
-  if (tersimpan) return { id: 'dinilai', nilai: tersimpan.nilai, oleh: tersimpan.penilai }
-
-  const jejak = segarkanPeta().get(nim + '|' + komponenId)
-  if (jejak?.usulan.status === 'menunggu') {
-    return { id: 'menunggu', nilai: jejak.entri.nilai, oleh: jejak.usulan.dosenNama }
-  }
-  if (jejak?.usulan.status === 'ditolak') {
-    return {
-      id: 'ditolak',
-      nilai: jejak.entri.nilai,
-      catatan: jejak.usulan.keputusan?.catatan ?? '',
-    }
-  }
-  return { id: 'masuk', nilai: null }
-}
-
 /* ------------------------------- penyimpanan ------------------------------ */
 
 const adaPenyimpanan = () => {
@@ -376,16 +571,20 @@ function simpanKePenyimpanan() {
       JSON.stringify({
         versi: 1,
         urut,
-        urutUsulan,
         usulan: USULAN_NILAI,
         batch: BATCH_SESI.map(({ id, sumber, semester, angkatanId, aktor, cara, waktu, status, entri }) => ({
           id, sumber, semester, angkatanId, aktor, cara, waktu, status, entri,
         })),
         penguncian: PENGUNCIAN,
         koreksi: Object.fromEntries(
-          PENGAJUAN_KOREKSI.filter((k) => k.keputusan).map((k) => [k.id, { status: k.status, keputusan: k.keputusan }]),
+          PENGAJUAN_KOREKSI.filter((k) => k.keputusan || k.lapis1).map((k) => [
+            k.id,
+            { status: k.status, keputusan: k.keputusan, lapis1: k.lapis1 ?? null, nilaiUsulan: k.nilaiUsulan ?? null, batchId: k.batchId ?? null },
+          ]),
         ),
         koreksiBaru: PENGAJUAN_KOREKSI.filter((k) => k.baru),
+        sertifikat: PERMINTAAN_SERTIFIKAT,
+        urutSertifikat,
       }),
     )
   } catch {
@@ -411,7 +610,6 @@ export function muatDariPenyimpanan() {
   if (Array.isArray(data.usulan)) {
     USULAN_NILAI.length = 0
     for (const u of data.usulan) USULAN_NILAI.push(u)
-    urutUsulan = data.urutUsulan ?? 0
   }
 
   PENGUNCIAN.length = 0
@@ -428,6 +626,9 @@ export function muatDariPenyimpanan() {
     const k = PENGAJUAN_KOREKSI.find((x) => x.id === id)
     if (k) Object.assign(k, nilai)
   }
+
+  PERMINTAAN_SERTIFIKAT.splice(0, PERMINTAAN_SERTIFIKAT.length, ...(data.sertifikat ?? []))
+  urutSertifikat = data.urutSertifikat ?? PERMINTAAN_SERTIFIKAT.length
 
   terapkanUlang()
 }
@@ -459,8 +660,9 @@ export function bersihkanPerubahan() {
   PENGUNCIAN.length = 0
   USULAN_NILAI.length = 0
   USULAN_NILAI.push(...USULAN_AWAL)
+  PERMINTAAN_SERTIFIKAT.length = 0
   urut = 0
-  urutUsulan = 0
+  urutSertifikat = 0
   terapkanUlang()
   try {
     localStorage.removeItem(KUNCI)
@@ -498,9 +700,11 @@ export async function muatDariServer() {
       usulan: isi.usulan,
       batchImport: isi.batchImport,
     })
-    USULAN_NILAI.splice(0, USULAN_NILAI.length, ...isi.usulan)
-    BATCH_SESI.splice(0, BATCH_SESI.length, ...isi.batch)
+    USULAN_NILAI.splice(0, USULAN_NILAI.length, ...(isi.usulan ?? []))
+    BATCH_SESI.splice(0, BATCH_SESI.length, ...(isi.batch ?? []))
     PERMINTAAN.splice(0, PERMINTAAN.length, ...(isi.permintaan ?? []))
+    UNGGAHAN_DOSEN.splice(0, UNGGAHAN_DOSEN.length, ...(isi.unggahan ?? []))
+    PERMINTAAN_SERTIFIKAT.splice(0, PERMINTAAN_SERTIFIKAT.length, ...(isi.sertifikat ?? []))
     pasangProfil(kunciAkun({ role: isi.peran, nim: isi.nim, nip: isi.nip }), isi.profil)
     waktuSegar = new Date()
     muat = { keadaan: 'siap', pesan: null }
@@ -518,6 +722,8 @@ export function kosongkanDataServer() {
   USULAN_NILAI.length = 0
   BATCH_SESI.length = 0
   PERMINTAAN.length = 0
+  UNGGAHAN_DOSEN.length = 0
+  PERMINTAAN_SERTIFIKAT.length = 0
   muat = { keadaan: 'belum', pesan: null }
   berubah()
 }
@@ -633,6 +839,15 @@ export async function tambahAkun(isi) {
 }
 
 /**
+ * Mengubah kelas seorang dosen: `isi` = { id, prodi, sumber, semester, angkatan: [id angkatan] } ([] = otomatis);
+ * jawabannya { akun }. Lihat ubahKelasDosen di src/server/akses.js.
+ */
+export async function ubahKelasDosen(isi) {
+  if (modeLokal()) throw new Error('Kelas dosen hanya bisa diubah saat terhubung ke basis data.')
+  return kirim('/api/akses/kelas', { isi })
+}
+
+/**
  * Menghapus permanen akun yang aksesnya sudah dicabut; jawabannya { id }. Server menolak akun yang masih punya
  * data (nilai, pengumpulan, riwayat tindakan) dengan pesan yang menyebut datanya; lihat hapusAkun() di
  * src/server/akses.js.
@@ -649,14 +864,14 @@ export async function hapusAkun({ id, alasan }) {
 }
 
 /**
- * Memberi (aktif true) atau mencabut (aktif false) izin kelola data master satu akun admin; jawabannya { akun }
+ * Memberi (aktif true) atau mencabut (aktif false) izin lihat data master satu akun admin; jawabannya { akun }
  * baru. Hanya super admin; lihat aturIzinMaster() di src/server/akses.js.
  */
 export async function aturIzinMaster({ id, aktif, alasan }) {
   if (!modeLokal()) return kirim('/api/akses/izin', { isi: { id, aktif, alasan } })
   const a = AKUN_LOKAL.find((x) => x.id === id)
   if (!a) throw new Error('Akun tidak ditemukan.')
-  if (a.peran !== 'admin') throw new Error('Izin kelola data master hanya untuk akun admin Kemahasiswaan.')
+  if (a.peran !== 'admin') throw new Error('Izin lihat data master hanya untuk akun admin Kemahasiswaan.')
   if (String(alasan ?? '').trim().length < ALASAN_AKSES_MIN) throw new Error('Alasan wajib diisi, minimal 10 karakter.')
   a.kelolaMaster = Boolean(aktif)
   return { akun: { ...a } }
@@ -664,7 +879,16 @@ export async function aturIzinMaster({ id, aktif, alasan }) {
 
 /* -------------------------------- data master ------------------------------- */
 
-/* Tambah/ubah angkatan, fakultas, prodi, dan mahasiswa oleh super admin atau admin yang diberi izin; lihat
+/**
+ * Admin biasa meminta akses baca data master; selalu menjadi permintaan ke super admin, jadi jawabannya
+ * { menunggu, permintaan }. Lihat AKSES_DATA_MASTER di src/server/persetujuan.js.
+ */
+export async function mintaAksesMaster({ alasan }) {
+  if (modeLokal()) throw new Error('Permintaan akses hanya bisa dikirim saat terhubung ke basis data.')
+  return tulis('/api/master/akses', { alasan })
+}
+
+/* Tambah/ubah angkatan, fakultas, prodi, dan mahasiswa oleh super admin; admin yang diberi izin hanya melihat. Lihat
    src/server/dataMaster.js dan README.md › Data master. Data master dipasang app/layout.jsx sekali saat halaman
    dimuat, jadi jawaban server yang membawa `master` dipasang di sini supaya pilihan angkatan dan prodi di semua
    halaman langsung ikut berubah, lalu data mahasiswa dimuat ulang (nama prodi atau mahasiswa bisa berubah). */
@@ -732,15 +956,26 @@ export async function setPenguncianBanyak(daftar, opsi) {
 }
 
 /** false bila pengajuannya tidak ditemukan atau sudah diputuskan. */
-export async function putuskanKoreksi(id, keputusan, opsi) {
+/**
+ * Keputusan dua lapis atas pengajuan koreksi; `opsi` = { catatan, nilaiBaru, aktor, superAdmin }. Admin biasa
+ * meneruskan dengan nilai usulan, super admin menerapkannya. false bila sudah diputuskan atau menunggu lapis lain.
+ */
+export async function putuskanKoreksi(id, keputusan, opsi = {}) {
   if (modeLokal()) return putuskanKoreksiLokal(id, keputusan, opsi)
-  return (await tulis('/api/koreksi/keputusan', { id, keputusan, catatan: opsi?.catatan ?? null })).ok
+  return (
+    await tulis('/api/koreksi/keputusan', { id, keputusan, catatan: opsi.catatan ?? null, nilaiBaru: opsi.nilaiBaru ?? null })
+  ).ok
 }
 
-export async function usulkanNilai(isi) {
-  if (modeLokal()) return usulkanNilaiLokal(isi)
-  const { id } = await tulis('/api/usulan', { cara: isi.cara, catatan: isi.catatan, entri: isi.entri })
-  return USULAN_NILAI.find((u) => u.id === id) ?? { id, entri: isi.entri ?? [] }
+/**
+ * Dosen mengunggah nilai kelasnya: `isi` = { dosen, entri: [{ nim, komponenId, nilai }], alasan }. Yang biasa langsung
+ * tersimpan; nilai untuk angkatan yang sudah selesai atau disahkan, atau aspek final, diajukan ke Super Admin dengan
+ * `alasan`. Jawabannya { id, jumlah, sama, permintaan } (id null bila tidak ada yang langsung tersimpan, permintaan null
+ * bila tidak ada yang diajukan). Lihat unggahNilaiDosen di server.
+ */
+export async function unggahNilaiDosen(isi) {
+  if (modeLokal()) return unggahNilaiDosenLokal(isi)
+  return tulis('/api/nilai/dosen', { entri: isi.entri, alasan: isi.alasan ?? null })
 }
 
 /** false bila sudah diputuskan sebelumnya; { menunggu, permintaan } bila menunggu persetujuan super admin. */
@@ -903,6 +1138,12 @@ function ajukanKoreksiLokal({ student, komponenId, alasan, nilaiDiharapkan = nul
   const komponen = getKomponenById(komponenId)
   if (!komponen) throw new Error('Komponen tidak dikenal.')
   if (!String(alasan ?? '').trim()) throw new Error('Alasan pengajuan wajib diisi.')
+  if (nilaiDiharapkan != null && !(nilaiDiharapkan >= 0 && nilaiDiharapkan <= 100)) {
+    throw new Error('Nilai yang diharapkan harus 0–100.')
+  }
+  if (PENGAJUAN_KOREKSI.some((k) => k.nim === student.nim && k.komponenId === komponenId && k.status.startsWith('menunggu'))) {
+    throw new Error('Pengajuan untuk komponen ini masih diproses. Tunggu keputusannya dulu.')
+  }
 
   const pengajuan = {
     id: 'K-' + Date.now().toString(36).toUpperCase().slice(-5),
@@ -913,7 +1154,9 @@ function ajukanKoreksiLokal({ student, komponenId, alasan, nilaiDiharapkan = nul
     aspekId: komponen.aspekId,
     alasan: String(alasan).trim(),
     nilaiDiharapkan,
-    status: 'menunggu',
+    nilaiUsulan: null,
+    lapis1: null,
+    status: 'menunggu_admin',
     diajukan: new Date().toISOString().slice(0, 10),
     keputusan: null,
     baru: true,

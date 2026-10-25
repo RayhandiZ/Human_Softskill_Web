@@ -49,7 +49,9 @@ npm run assert      # periksa transkrip mematuhi R2, R3, R4, R8
 npm run test:nilai  # simpan batch, rollback, dan validasi import
 npm run test:profil # penyimpanan profil: kunci akun, simpan-muat, foto
 npm run test:db     # setiap pintu API terhadap MySQL, termasuk kunci angkatan, data terkunci, log, kurikulum, bobot, periode,
-                    # akses, tambah akun, hapus akun, izin dan data master, serta aspek CPMK; data uji (NIM dan angkatan berawalan UJI,
+                    # akses, tambah akun, hapus akun, izin dan data master, aspek CPMK, serta koreksi dan akses cetak
+                    # sertifikat dua lapis beserta pencabutan dan catatan cetaknya, dan kelas dosen per angkatan; data uji
+                    # (NIM dan angkatan berawalan UJI, akun uji.kelas.dosen.*,
                     # akun uji.hapus.* dan uji.master.*, Fakultas/Prodi Uji) dihapus lagi dan izin admin uji dikembalikan
 ```
 
@@ -82,12 +84,12 @@ halaman (peramban) → app/api/... → src/server/... → Prisma (src/server/db.
 - **Kurikulum** (komponen, indikator, timpaan `CONFIG`): ikut dibaca bersama data master dan
   dipasang lewat `isiKurikulum()`; pintu API memuatnya ulang bila versinya naik. Lihat Kurikulum
   dari basis data.
-- **Data isian** (mahasiswa, nilai, penguncian, pengumpulan, usulan, koreksi, riwayat batch,
-  profil): `components/PemuatData.jsx` memanggil `/api/data` begitu ada yang masuk, lalu
-  `isiData()`. Isinya disaring per peran di `src/server/muat.js`: admin melihat semuanya, dosen
-  hanya kelasnya, mahasiswa hanya dirinya.
+- **Data isian** (mahasiswa, nilai, penguncian, pengumpulan, usulan lama, koreksi, riwayat batch,
+  riwayat unggahan dosen, profil): `components/PemuatData.jsx` memanggil `/api/data` begitu ada yang
+  masuk, lalu `isiData()`. Isinya disaring per peran di `src/server/muat.js`: admin melihat semuanya,
+  dosen hanya kelasnya, mahasiswa hanya dirinya.
 - **Penulisan**: fungsi di `src/lib/store.js` (simpan nilai, rollback, penguncian, koreksi,
-  usulan) dan `simpanProfil` mengirim ke API, lalu data dimuat ulang dari basis data. Aturan
+  unggahan dosen, keputusan usulan lama) dan `simpanProfil` mengirim ke API, lalu data dimuat ulang dari basis data. Aturan
   penilaian (R1, semester komponen, kunci final, data terkunci, wewenang tiap peran) diperiksa
   ulang di server.
 
@@ -195,10 +197,12 @@ src/lib/
   aspek.js        aspek CPMK itu sendiri: pemeriksaan tambah/ubah/arsip/pulihkan, ID dan kode baru,
                   dampakAspek() untuk pratinjau; dipakai layar dan server (lihat Mengelola aspek CPMK)
   rules.js        R1–R9 sebagai fungsi murni + validasi import
+  duaLapis.js     label status dan giliran persetujuan dua lapis (koreksi, akses cetak sertifikat);
+                  keadaanSertifikat() untuk layar mahasiswa dan admin (lihat Persetujuan dua lapis)
   data.js         sumber data halaman: periode akademik (semesterAktif dibatasi 3,
                   semesterKalender tidak); angkatan, fakultas, prodi (diisi dari basis data
-                  lewat isiMaster); data isian (mahasiswa, nilai, pengumpulan, usulan) yang
-                  dimulai kosong
+                  lewat isiMaster); data isian (mahasiswa, nilai, usulan lama) yang dimulai
+                  kosong; kelas dosen (komponenDosen, mahasiswaKelas)
   store.js        penulisan: kirim ke API lalu muat ulang dari basis data (mode lokal untuk uji:
                   diputar ulang di memori)
   kirim.js        satu pintu fetch ke API; jawaban 401 mengakhiri sesi
@@ -206,6 +210,8 @@ src/lib/
   profil.js       telepon, alamat, foto milik pengguna — tabel Profil lewat /api/profil
   csv.js          urai/susun CSV dan pemicu unduhan, tanpa pustaka tambahan
   ingest.js       pengenalan berkas rekap mentah — lihat Pengenalan berkas mentah
+  unggahDosen.js  unggahan Excel dosen: bacaRekap, templat (lembarTemplat), ringkasKelas untuk
+                  Beranda dosen (lihat Panel Dosen)
   values5c.js     5C sebagai materi Mentoring — tidak dipakai untuk menghitung apa pun
   auth.jsx        masuk lewat /api/masuk, sesi dari cookie lewat /api/sesi, penjaga rute per peran
   theme.jsx       mode terang/gelap
@@ -227,7 +233,11 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   muat.js         data halaman per peran (GET /api/data)
   nilai.js        simpan batch, rollback (diputar ulang dari AuditLog), penguncian aspek, dan
                   aturan data terkunci (cariTerkunci, wajibkanAlasan)
-  pengajuan.js    koreksi mahasiswa dan usulan dosen, beserta keputusannya
+  pengajuan.js    koreksi mahasiswa beserta keputusan dua lapisnya (putuskanKoreksi), unggahan nilai
+                  dosen (unggahNilaiDosen), dan keputusan usulan dosen lama
+  sertifikat.js   permintaan akses cetak sertifikat, keputusan dua lapisnya, pencabutannya, dan catatan
+                  cetak (POST /api/sertifikat, /api/sertifikat/keputusan, /api/sertifikat/cabut,
+                  /api/sertifikat/cetak)
   angkatan.js     ringkasan, pratinjau, dan penguncian angkatan
   log.js          catatLog(): catatan tindakan Kemahasiswaan ke tabel LogAktivitas; bacaLog():
                   membaca log nilai dan log aktivitas (POST /api/log)
@@ -240,18 +250,20 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   penilaian.js    menyimpan penilaian satu aspek (POST /api/kurikulum/penilaian)
   aspek.js        tambah, ubah struktur, arsipkan, pulihkan aspek CPMK (POST /api/kurikulum/aspek)
   periode.js      memindahkan periode akademik, hanya super admin (POST /api/periode)
-  akses.js        daftar akun, cabut/pulihkan akses, tambah akun, hapus akun, dan izin kelola data
-                  master, hanya super admin (POST /api/akses, /api/akses/ubah, /api/akses/tambah,
-                  /api/akses/hapus, /api/akses/izin)
-  dataMaster.js   tambah/ubah angkatan, fakultas, prodi, dan mahasiswa oleh super admin atau admin
-                  berizin (POST /api/master/angkatan, /api/master/prodi, /api/master/mahasiswa)
+  akses.js        daftar akun, cabut/pulihkan akses, tambah akun, hapus akun, izin lihat data master,
+                  dan kelas dosen (angkatan yang diampu), hanya super admin (POST /api/akses,
+                  /api/akses/ubah, /api/akses/tambah, /api/akses/hapus, /api/akses/izin,
+                  /api/akses/kelas); bukaAksesMaster() menjalankan permintaan akses admin yang disetujui
+  dataMaster.js   tambah/ubah angkatan, fakultas, prodi, dan mahasiswa, hanya super admin
+                  (POST /api/master/angkatan, /api/master/prodi, /api/master/mahasiswa)
 
-app/api/          masuk, keluar, sesi, data, nilai, nilai/rollback, penguncian, koreksi,
-                  koreksi/keputusan, usulan, usulan/keputusan, profil, angkatan,
-                  angkatan/pratinjau, angkatan/kunci, log, kurikulum/bobot, kurikulum/penilaian,
-                  persetujuan/keputusan, persetujuan/batal, periode, akses, akses/ubah,
-                  akses/tambah, akses/hapus, akses/izin, master/angkatan, master/prodi,
-                  master/mahasiswa, kurikulum/aspek (30 pintu)
+app/api/          masuk, keluar, sesi, data, nilai, nilai/dosen, nilai/rollback, penguncian,
+                  koreksi, koreksi/keputusan, sertifikat, sertifikat/keputusan, sertifikat/cabut,
+                  sertifikat/cetak, usulan/keputusan, profil, angkatan, angkatan/pratinjau,
+                  angkatan/kunci, log, kurikulum/bobot, kurikulum/penilaian, persetujuan/keputusan,
+                  persetujuan/batal, periode, akses, akses/ubah, akses/tambah, akses/hapus, akses/izin,
+                  akses/kelas, master/akses, master/angkatan, master/prodi, master/mahasiswa,
+                  kurikulum/aspek (36 pintu)
 src/components/PemuatData.jsx  memuat /api/data begitu ada yang masuk dan menahan panel
                   sampai datanya tiba
 prisma/           skema, migrasi, seed.js (isi dasar), seed-contoh.js (data contoh),
@@ -272,10 +284,10 @@ src/components/charts/  ChartFrame, RadarCluster (6 sumbu), AspectBars (10 aspek
 src/halaman/      Login, Profil (satu halaman profil untuk tiga peran)
 src/halaman/student/  StudentLayout, Dashboard, Transkrip, Peta, Riwayat, Sertifikat,
                     LembarCetak, LembarSertifikat, LoncengBelumDinilai
-src/halaman/dosen/    DosenLayout, Masuk (Beranda), Nilai (Penilaian tiga langkah), Usulan (Riwayat Pengiriman),
-                    status (lihat Panel Dosen)
+src/halaman/dosen/    DosenLayout, Pantau (Beranda), Unggah (Unggah Nilai) (lihat Panel Dosen)
 src/halaman/admin/    AdminLayout, Overview, Students, StudentDetail, Programs, Nilai, Usulan,
                     LoncengKemahasiswaan, StatusData, Kurikulum (bobot), Angkatan, CetakSertifikat,
+                    DaftarKoreksi (pengajuan koreksi dua lapis, juga di Persetujuan super admin),
                     PersetujuanAdmin, PermintaanTerkirim (bagian layar bersama),
                     EditorPenilaian (di Input Manual), Log (juga dipakai panel super admin),
                     DataMaster (lihat Data master), KelolaAspek (lihat Mengelola aspek CPMK)
@@ -324,31 +336,89 @@ Setelah menarik migrasi ini, hentikan `npm run dev`, jalankan `npx prisma migrat
 migrasi dan membuat ulang Prisma Client), lalu nyalakan lagi; server yang sudah jalan belum
 mengenal peran `SUPER_ADMIN`.
 
-### Persetujuan super admin (mahasiswa yang sudah lewat Semester 3)
+### Hak peran (rapat 24 Okt 2026)
 
-Begitu program sebuah angkatan lewat Semester 3 (`programSelesai()` di `src/lib/data.js`:
-`semesterKalender > TOTAL_SEMESTER_PROGRAM`), mahasiswanya **diurus Kemahasiswaan, bukan dosen**:
+Matriks lengkapnya ada di halaman *Peran & Wewenang* (`super-admin/Wewenang.jsx`). Ringkasnya:
 
-- **Dosen lepas tangan.** Mahasiswa itu tidak lagi termuat di data dosen (`muatData()`), begitu
-  pula pengumpulannya, dan usulan nilai untuknya ditolak server (`usulkanNilai()`). Pengajuan
-  koreksi dari mahasiswa itu tetap masuk ke Kemahasiswaan seperti biasa.
-- **Admin biasa meminta, super admin menyetujui.** Tindakan admin biasa yang mengubah data
-  mahasiswa itu tidak langsung disimpan, tetapi menjadi `PermintaanAdmin` berstatus `MENUNGGU`;
-  datanya belum berubah sampai super admin menyetujuinya. Super admin sendiri tidak pernah tertahan.
+| Peran | Nilai | Data master |
+|---|---|---|
+| Dosen | mengunggah rekap Excel angkatan yang diampunya, langsung tersimpan; perbaikan untuk angkatan yang sudah selesai atau disahkan, atau aspek final, **diajukan** ke Super Admin (lihat Panel Dosen); selebihnya memantau | tidak |
+| Admin (Kemahasiswaan) | **hanya melihat** (menu *Nilai Mahasiswa*); lapis pertama pengajuan koreksi dan akses cetak sertifikat, dan mencabut akses cetak yang sudah disetujui; tanda final, bobot, penilaian aspek, aspek CPMK, dan pengesahan angkatan **diajukan** ke Super Admin | hanya melihat, setelah diberi izin Super Admin atau permintaan aksesnya disetujui |
+| Super Admin | menyimpan, mengimpor, dan membatalkan batch; menetapkan tanda final; lapis kedua pengajuan koreksi (menerapkan nilainya) dan akses cetak sertifikat, dan mencabut akses cetak; memutuskan usulan dosen lama dan semua permintaan admin | menambah dan mengubah |
+| Mahasiswa | mengajukan koreksi; meminta akses cetak sertifikat bila seluruh syarat terpenuhi | tidak |
+
+Pintu API menegakkannya: `/api/nilai`, `/api/nilai/rollback`, `/api/usulan/keputusan`, dan
+`/api/master/angkatan`, `/api/master/prodi`, `/api/master/mahasiswa` hanya untuk `['superadmin']`, sedangkan
+`/api/nilai/dosen` hanya untuk `['dosen']` dan `/api/koreksi`, `/api/sertifikat` hanya untuk `['student']`.
+Pintu `POST /api/usulan` (dosen mengusulkan nilai) dihapus.
+
+### Persetujuan dua lapis
+
+Pengajuan koreksi nilai dan akses cetak sertifikat diputuskan dua orang: admin Kemahasiswaan lebih dulu (lapis 1),
+lalu Super Admin (lapis 2). Pintunya `['admin']` (`/api/koreksi/keputusan`, `/api/sertifikat/keputusan`), dan
+lapisnya ditentukan perannya: admin biasa hanya bisa memutuskan yang `MENUNGGU_ADMIN`, super admin hanya yang
+`MENUNGGU_SUPERADMIN`. Keputusan untuk lapis lain dijawab `{ ok: false }`, begitu juga keputusan kedua atas hal yang
+sama, karena perubahannya memakai `updateMany` bersyarat status lama. Menolak di lapis mana pun wajib beralasan
+minimal 10 karakter, dan alasannya terbaca mahasiswa.
+
+| | Lapis 1 (admin) | Lapis 2 (Super Admin) |
+|---|---|---|
+| Pengajuan koreksi (`PengajuanKoreksi`, enum `StatusKoreksi`) | meneruskan dengan **nilai usulan** (bawaannya nilai yang diharapkan mahasiswa); nilai mahasiswa belum berubah | menyetujui: nilai usulan, boleh diubah, langsung masuk sebagai satu batch bercara `koreksi` lewat jalur yang sama dengan Input Nilai, jadi tercatat di AuditLog, muncul di Riwayat batch, dan bisa di-rollback; data final atau angkatan yang sudah disahkan menuntut catatan minimal 10 karakter |
+| Akses cetak sertifikat (`PermintaanSertifikat`, enum `StatusSertifikat`) | meneruskan; kelayakan dihitung ulang dan permintaan yang syaratnya sudah tidak terpenuhi ditahan (409) | menyetujui: `SIAP_DICETAK`, kelayakan dihitung ulang lagi |
+
+Status di layar ditulis huruf kecil (`menunggu_admin`, `menunggu_superadmin`, `disetujui`/`siap_dicetak`,
+`ditolak`), labelnya di `src/lib/duaLapis.js`. Antrean tiap akun hanya berisi giliran akun itu
+(`giliranSaya()`): lonceng dan Ringkasan admin, lencana menu nilai dan *Cetak Sertifikat*, lencana Persetujuan dan
+kartu *Keputusan Anda* di panel Super Admin, serta halaman Persetujuan super admin, yang memuat dua kartu tambahan
+(pengajuan ubah nilai dan akses cetak sertifikat).
+Tiap keputusan tercatat di Log Aktivitas: `TERUSKAN_KOREKSI`, `SETUJUI_KOREKSI` (nilai lama dan baru, id batch),
+`TOLAK_KOREKSI`, `SETUJUI_SERTIFIKAT` dan `TOLAK_SERTIFIKAT` (masing-masing dengan `lapis` 1 atau 2).
+
+Satu komponen hanya boleh punya satu pengajuan koreksi yang berjalan, dan satu mahasiswa satu permintaan akses
+cetak yang berjalan atau sudah siap dicetak (409); yang ditolak atau dicabut boleh diajukan lagi.
+
+**Pencabutan.** Akses yang sudah `SIAP_DICETAK` bisa dicabut (`POST /api/sertifikat/cabut`, status `DICABUT`),
+misalnya karena laporan sikap datang sesudah disetujui. Cukup satu orang: admin biasa atau super admin, langsung,
+dengan alasan minimal 10 karakter yang terbaca mahasiswa. Sesudahnya mahasiswa boleh meminta lagi, dan permintaan
+barunya melewati kedua lapis dari awal. Pencabutan tercatat sebagai `CABUT_SERTIFIKAT` beserta jumlah cetak saat
+itu, karena sertifikat yang sudah telanjur tercetak tidak ikut tertarik.
+
+**Catatan cetak.** Layar memanggil `POST /api/sertifikat/cetak` tepat sebelum dialog cetak dibuka, baik oleh
+mahasiswa pemilik maupun Kemahasiswaan. Server menambah `jumlahCetak` dan mencatat waktu serta pelakunya
+(`CETAK_SERTIFIKAT` di Log Aktivitas), dan sekaligus menjadi gerbang terakhir: akses yang dicabut, belum disetujui, atau
+syaratnya gugur dijawab 409, termasuk dari halaman yang dimuat sebelum pencabutan. Kolom *Akses cetak* di Cetak
+Sertifikat menyebut berapa kali sertifikat sudah dibuka untuk dicetak dan kapan terakhir. Website hanya tahu dialog
+cetak dibuka, bukan apakah kertasnya benar-benar keluar.
+
+Migrasi `persetujuan_dua_lapis` memindahkan pengajuan yang masih `MENUNGGU` ke `MENUNGGU_ADMIN` dalam tiga langkah,
+karena MySQL tanpa mode strict mengosongkan nilai enum yang hilang dari daftar bila diubah dengan satu `MODIFY`.
+Migrasi `cabut_sertifikat` hanya menambah kolom pencabutan dan cetak serta nilai `DICABUT` di ujung enum. Setelah
+menarik migrasi ini, hentikan `npm run dev` lebih dulu, lalu jalankan `npx prisma migrate deploy` dan
+`npx prisma generate`. Di Windows `generate` gagal (EPERM) selama server dev memuat mesin Prisma, dan server yang
+sudah jalan belum mengenal tabel dan status baru.
+
+### Persetujuan super admin
+
+Tindakan admin biasa yang perlu persetujuan tidak langsung disimpan, tetapi menjadi `PermintaanAdmin` berstatus
+`MENUNGGU`; datanya belum berubah sampai super admin menyetujuinya. Super admin sendiri tidak pernah tertahan.
+Sebagian tindakan selalu diajukan, sebagian hanya bila menyentuh mahasiswa yang programnya sudah lewat Semester 3
+(`programSelesai()` di `src/lib/data.js`: `semesterKalender > TOTAL_SEMESTER_PROGRAM`). Mahasiswa seperti itu
+diurus Kemahasiswaan, bukan dosen: ia tidak termuat di data dosen (`muatData()`), dan unggahan nilai untuknya
+ditolak server (`unggahNilaiDosen()`).
 
 | Tindakan (`aksi`) | Pintu API | Ditahan bila |
 |---|---|---|
-| `SIMPAN_NILAI` | `/api/nilai` | ada baris untuk mahasiswa yang sudah lewat Semester 3 |
-| `ROLLBACK_NILAI` | `/api/nilai/rollback` | batch-nya menyentuh mahasiswa itu |
-| `UBAH_PENGUNCIAN` | `/api/penguncian` | tanda final/sementara mahasiswa itu **sungguh berubah** (Input Nilai memanggil pintu ini setelah setiap simpan; yang tidak berubah tidak diantre) |
-| `PUTUSKAN_USULAN` | `/api/usulan/keputusan` | menyetujui usulan untuk mahasiswa itu (menolak tidak ditahan) |
-| `KUNCI_ANGKATAN` | `/api/angkatan/kunci` | selalu, karena angkatan baru boleh dikunci sesudah Semester 3 |
-| `UBAH_BOBOT` | `/api/kurikulum/bobot` | nilai mahasiswa itu ikut berubah menurut pratinjau dampak |
+| `UBAH_PENGUNCIAN` | `/api/penguncian` | **selalu** untuk admin biasa, bila tanda final/sementara **sungguh berubah**; tanda final untuk aspek yang komponennya belum lengkap ditolak saat diajukan |
+| `UBAH_BOBOT` | `/api/kurikulum/bobot` | **selalu** untuk admin biasa; ringkasannya menyebut berapa mahasiswa yang nilainya berubah |
 | `UBAH_PENILAIAN` | `/api/kurikulum/penilaian` | **selalu** untuk admin biasa, apa pun mahasiswanya (lihat Mengubah penilaian dari Input Manual) |
 | `KELOLA_ASPEK` | `/api/kurikulum/aspek` | **selalu** untuk admin biasa: tambah, ubah struktur, arsipkan, atau pulihkan aspek (lihat Mengelola aspek CPMK) |
+| `KUNCI_ANGKATAN` | `/api/angkatan/kunci` | selalu, karena angkatan baru boleh disahkan (dikunci) sesudah Semester 3 |
+| `AKSES_DATA_MASTER` | `/api/master/akses` | **selalu**: admin meminta izin lihat data master; bila disetujui, `bukaAksesMaster()` menyalakan izinnya |
+| `PERBAIKAN_NILAI_DOSEN` | `/api/nilai/dosen` | dari **dosen**, untuk nilai angkatan yang programnya sudah selesai atau sudah disahkan, atau aspek final; dibuat `unggahNilaiDosen()` lewat `ajukanDalam()` dalam transaksi yang sama dengan bagian unggahan yang langsung tersimpan. Disetujui: `terapkanPerbaikanDosen()` menulisnya atas nama dosen sebagai unggahan dosen, dengan alasan dosen sebagai alasan perubahan data terkunci |
+| `SIMPAN_NILAI`, `ROLLBACK_NILAI`, `PUTUSKAN_USULAN` | – | tidak lagi diajukan, karena pintunya kini hanya untuk super admin; tetap terdaftar supaya permintaan lama yang masih menunggu bisa diputuskan |
 
 Gerbangnya `denganPersetujuan(aksi)` di `src/server/persetujuan.js`, dipasang di pintu API
-(`tangani(request, ['admin'], denganPersetujuan('SIMPAN_NILAI'))`), jadi tidak bisa dilewati dengan
+(`tangani(request, ['admin'], denganPersetujuan('UBAH_BOBOT'))`), jadi tidak bisa dilewati dengan
 memanggil API langsung. Alurnya:
 
 1. **Mengajukan.** Isi yang pasti gagal (baris nilai tidak sah, konfirmasi kunci salah, versi
@@ -365,10 +435,10 @@ memanggil API langsung. Alurnya:
 
 Halaman `/admin/persetujuan`: super admin melihat semua permintaan (menu **Persetujuan Admin**,
 juga di bilah atas, dengan lencana jumlah yang menunggu) beserta tombol Setujui/Tolak; admin biasa
-melihat miliknya (menu **Permintaan Saya**). Di Input Nilai, Detail Mahasiswa, Persetujuan Nilai
-Dosen, Angkatan, dan Kurikulum, admin biasa diberi tahu sebelum menyimpan bahwa angkatannya sudah
-lewat Semester 3, dan sesudahnya melihat "Permintaan P-.. dikirim ke Super Admin". Pelaku
-ditulis dengan email, karena semua akun admin bernama "Biro Kemahasiswaan".
+melihat miliknya (menu **Permintaan Saya**). Di Detail Mahasiswa (tanda final), Kurikulum (bobot), Angkatan
+(pengesahan), dan Data Master (minta akses), admin biasa diberi tahu sebelum menyimpan bahwa perubahannya akan
+diajukan, dan sesudahnya melihat "Permintaan P-.. dikirim ke Super Admin". Pelaku ditulis dengan email, karena
+semua akun admin bernama "Biro Kemahasiswaan".
 
 Setelah masuk, server memasang cookie httpOnly bertanda tangan (berlaku 8 jam, diperpanjang
 setiap halaman dimuat). Setiap pintu API membaca ulang pemilik cookie dari basis data, jadi akun
@@ -426,10 +496,15 @@ di `src/server/akses.js`. Bila server menjawab 404, halaman menyatakan fiturnya 
 (`galat.status` dari `kirim()`).
 
 - `POST /api/akses`, hanya super admin (`tangani(request, ['superadmin'], …)`). Jawaban:
-  `{ akun: [{ id, email, peran, aktif, nama?, nip?, nim?, prodi?, angkatan? }] }` untuk semua akun,
-  dengan `peran` `'mahasiswa'`, `'dosen'`, `'admin'`, atau `'superadmin'`. `nama` dan `prodi` ada
-  untuk dosen dan mahasiswa; `nip` hanya dosen; `nim` dan `angkatan` (label angkatan) hanya mahasiswa.
-  Daftarnya belum berhalaman: seluruh akun dikirim sekaligus, lalu dicari dan disaring di peramban.
+  `{ akun: [{ id, email, peran, aktif, nama?, nip?, nim?, prodi?, angkatan?, sumber?, semester?,
+  angkatanDiampu? }] }` untuk semua akun, dengan `peran` `'mahasiswa'`, `'dosen'`, `'admin'`, atau
+  `'superadmin'`. `nama` dan `prodi` ada untuk dosen dan mahasiswa; `nip`, `sumber`, `semester`, dan
+  `angkatanDiampu` (`[{ id, label }]`, kosong = otomatis) hanya dosen; `nim` dan `angkatan` (label angkatan) hanya
+  mahasiswa. Daftarnya belum berhalaman: seluruh akun dikirim sekaligus, lalu dicari dan disaring di peramban.
+- `POST /api/akses/kelas` dengan isi `{ id, prodi, sumber, semester, angkatan: [id angkatan] }`, hanya super admin
+  (`ubahKelasDosen()`): mengganti kelas satu akun dosen (409 untuk akun lain, 400 untuk angkatan yang tidak ada).
+  Tercatat `UBAH_KELAS_DOSEN` beserta kelas sebelum dan sesudahnya; nilai yang sudah tersimpan tidak berubah. Di
+  layar: tombol *Ubah kelas* pada baris dosen, dan pilihan *Angkatan yang diampu* juga ada di form tambah dosen.
 - `POST /api/akses/ubah` dengan isi `{ id, aktif, alasan }`, hanya super admin. Tolak (403) bila
   akunnya milik sendiri atau berperan `SUPER_ADMIN`; tolak (400) bila `alasan` kurang dari 10
   karakter; 404 bila akun tidak ada. Dicatat ke `LogAktivitas` dengan aksi `UBAH_AKSES` beserta email,
@@ -459,12 +534,13 @@ di `src/server/akses.js`. Bila server menjawab 404, halaman menyatakan fiturnya 
   akses". Panelnya meminta alasan sebelum tombol "Hapus permanen" aktif. Penolakan dari server tampil
   di panel itu; bila berhasil, barisnya hilang dan pesan status muncul di atas daftar.
 - `POST /api/akses/izin` dengan isi `{ id, aktif, alasan }`, hanya super admin (`aturIzinMaster()`).
-  Memberi (`aktif: true`) atau mencabut izin kelola data master satu akun admin biasa (kolom
+  Memberi (`aktif: true`) atau mencabut izin lihat data master satu akun admin biasa (kolom
   `Pengguna.kelolaMaster`); lihat Data master. Tolak (403) akun `SUPER_ADMIN` (selalu punya izin) dan
   akun selain admin; tolak (400) alasan kurang dari 10 karakter; tolak (409) memberi izin ke akun yang
   aksesnya dicabut. Dicatat dengan aksi `UBAH_IZIN`; bila statusnya sudah sama, tidak ada yang dicatat.
   Jawaban: `{ akun }`, dan setiap akun admin di `POST /api/akses` membawa `kelolaMaster`. Di layar, baris
-  admin biasa punya tombol "Beri izin data master"/"Cabut izin data master" dan lencana "Izin data master".
+  admin biasa punya tombol "Beri izin lihat data master"/"Cabut izin lihat data master" dan lencana "Izin lihat
+  data master".
 
 **Tampilan panel super admin** mengambil pola dasbor modern di Dribbble (sapaan bertanggal, satu kartu
 fokus, angka dengan meter, grafik batang dengan tooltip, linimasa berikon, kepingan periode) tanpa
@@ -560,9 +636,10 @@ tabel dengan alat saring di kepalanya. Visualnya tetap VIBE: navy, toska hanya u
 besar.
 
 - **Menu samping putih** selebar 280px (`AdminLayout.jsx`; menu super admin navy, supaya dua panel itu
-  tidak tertukar). Dua kelompok: *Kerja harian* (Overview, Data Mahasiswa, Input & Import Nilai,
-  Persetujuan Nilai Dosen, Permintaan Saya atau Persetujuan Admin, Cetak Sertifikat, Angkatan) dan
-  *Rujukan & catatan* (Kurikulum CPMK, Program Studi, Log Aktivitas). Lencana toska hanya untuk
+  tidak tertukar). Dua kelompok: *Kerja harian* (Overview, Data Mahasiswa, Input & Import Nilai bagi super admin
+  atau Nilai Mahasiswa bagi admin biasa, Persetujuan Nilai Dosen bagi super admin selama masih ada usulan lama,
+  Permintaan Saya atau Persetujuan Admin, Cetak Sertifikat, Angkatan) dan *Rujukan & catatan* (Kurikulum CPMK,
+  Program Studi, Data Master, Log Aktivitas). Lencana toska hanya untuk
   pekerjaan yang menunggu (koreksi, usulan dosen, permintaan). Label menu tidak pernah dipotong "…": bila
   tidak muat, misalnya saat berlencana, ia turun ke baris kedua (`MenuSamping.jsx`). Di bawah 1024px menu
   pindah ke laci di balik tombol garis tiga.
@@ -620,9 +697,15 @@ besar.
     (`<Transkrip untukAdmin />`), syarat sertifikat, dan riwayat perubahan nilai yang menampilkan 10
     terbaru lebih dulu (tombol *Tampilkan semua*). Versi admin tidak memuat kartu "Ajukan koreksi nilai"
     milik mahasiswa: pengajuan dari akun admin selalu ditolak server (403).
-  - *Cetak Sertifikat*: tab Semua, Berhak, dan Belum berhak beserta jumlahnya, kolom cari dan pilihan
-    angkatan, lalu tabel berhalaman. Tombol Cetak di tiap baris menyebut nama mahasiswanya bagi pembaca
-    layar.
+  - *Cetak Sertifikat*: tab Semua, Menunggu Anda (permintaan akses cetak yang menjadi giliran akun ini,
+    dibuka langsung lewat `?tab=permintaan`), Berhak, dan Belum berhak beserta jumlahnya, kolom cari dan
+    pilihan angkatan, lalu tabel berhalaman dengan kolom *Akses cetak*. Baris yang menjadi giliran akun ini
+    memakai tombol Tinjau, yang membuka panel keputusan di baris bawahnya; panel itu ikut hilang bila
+    permintaannya diputuskan dari jendela lain. Tombol Cetak di baris lain menyebut nama mahasiswanya bagi
+    pembaca layar dan hanya hidup untuk yang sudah Siap dicetak (lihat Sertifikat). Baris yang Siap dicetak juga
+    punya tombol Cabut akses, yang membuka panel berisi jumlah cetak sejauh ini dan isian alasan. Panel ini
+    selebar bagian tabel yang terlihat dan menempel di kiri (`sticky`, `100cqi`), karena di HP tabelnya digulir ke
+    kanan untuk mencapai tombol di kolom terakhir.
   - *Program Studi*: tiga angka ringkasan, tab satuan analisis (program studi, fakultas, angkatan), dan
     penyaring ringkas tanpa kolom cari.
   - *Persetujuan Nilai Dosen*: tiga angka (menunggu keputusan, disetujui, ditolak) lalu tab Menunggu dan
@@ -754,90 +837,122 @@ berikut, lalu disesuaikan dengan pola LMS yang sudah dikenal dosen (Moodle, Goog
   sekitar 40px); ukuran tulisan sampai 150% dan jarak teks (WCAG 1.4.12) tersedia di menu aksesibilitas.
 - GOV.UK: satu hal per layar, dan halaman periksa sebelum mengirim.
 
-Pekerjaan dibagi dua tahap. Tahap 1 (kerangka dan Penilaian) sudah selesai. Tahap 2 (Beranda, Riwayat
-Pengiriman, serta Profil dan bantuan) menyusul; judul Beranda dan Riwayat Pengiriman sudah disamakan dengan
-nama menunya.
+Rapat 24 Okt 2026 menilai panel ini terlalu ribet dan mengubah perannya. Integrasi eLearning dan MyUMN tidak
+mendapat akses dari IT, jadi dosen **mengunggah rekap Excel kelasnya** dan nilainya **langsung tersimpan**, tanpa
+persetujuan (tercatat di log, dan Super Admin bisa membatalkan satu unggahan). Dosen tidak lagi mengisi nilai satu
+per satu, tidak lagi mengusulkan nilai, dan tidak lagi melihat pengumpulan berkas; selebihnya panel ini hanya
+memantau. Halamannya tinggal tiga: Beranda, Unggah Nilai, dan Profil. Alamat lama `/dosen/usulan` (Riwayat
+Pengiriman) diteruskan ke Unggah Nilai di peramban, seperti `app/page.jsx`.
 
 ### Kerangka
 
 - **Menu samping putih** seperti panel Kemahasiswaan (`DosenLayout.jsx`, selebar 264px seperti panel super admin
-  dan mahasiswa) berisi Beranda, Penilaian, Riwayat Pengiriman, dan Profil. Satu lencana saja, di Penilaian:
-  jumlah pengumpulan yang belum dinilai atau ditolak. Di atas menu ada kotak *Kelas Anda* (unit penilai,
-  semester, dan program studi).
-- **Bilah bawah berlabel di HP** (`BilahBawah.jsx`), bukan tombol garis tiga.
+  dan mahasiswa) berisi Beranda, Unggah Nilai, dan Profil, tanpa lencana. Di atas menu ada kotak *Kelas Anda*
+  (unit penilai, semester, dan program studi).
+- **Bilah bawah berlabel di HP** (`BilahBawah.jsx`, label pendek "Unggah"), bukan tombol garis tiga.
 - **Bilah atas**: pemilih bahasa, tema, menu aksesibilitas, dan menu akun dalam ukuran bawaannya. Di HP logonya
   hanya logo PDP, supaya semuanya muat sampai lebar 360px.
 - **Footer melayang seperti panel mahasiswa** (`<Footer pintasan melayang />`, komponen dan ukurannya sama):
-  pintasan berikon ke empat halaman dosen, alamat Helpdesk, telepon dan surel, identitas unit, dan baris hak
+  pintasan berikon ke tiga halaman dosen, alamat Helpdesk, telepon dan surel, identitas unit, dan baris hak
   cipta. Mulai layar laptop ia menjadi kartu bersudut bulat berjarak 16px, sepasang dengan menu samping. Di HP
   baris hak cipta diberi ruang 84px di bawahnya, supaya tidak tertutup tombol bantuan saat halaman digulir ke
   ujung; ini berlaku juga di panel mahasiswa, yang sebelumnya tertutup.
 - **Kontras**: teks redup memakai warna panel admin (`--text-muted` #63677f, 5,6:1 di kartu putih; sebelumnya
-  #8a8ea9, 3,2:1), begitu juga nada `Badge`. Ikon di atas isian `--brand-ink` (langkah yang selesai, pilihan cara
-  isi yang aktif) memakai warna `--surface`, bukan putih: di tema gelap `--brand-ink` biru muda, dan centang putih
-  di atasnya hanya 1,8:1.
-- **Bilah bawah, bilah aksi, footer, dan tombol bantuan tidak saling menutupi**: tinggi bilah bawah disimpan
-  sebagai `--tinggi-bilah-bawah` (68px tautan + 1px garis atas). Kolom isi (`.kolom-dosen`) berakhir setinggi bilah
-  bawah di atas dasar layar, supaya baris hak cipta footer tidak tertutup. Tombol bantuan (`posisi="bantuan-dosen"`,
-  prop `posisi` milik `LayananTambahan`) melayang 8px di atas bilah aksi Penilaian selama bilah itu menempel atau
-  baru lepas, lalu kembali ke tempatnya: `useBantuanDiAtasBilah` di `Nilai.jsx` menulis `--naik-bantuan`, jadi di
-  ujung halaman tombol itu tidak menutupi footer.
+  #8a8ea9, 3,2:1), begitu juga nada `Badge`, dan galat memakai `--teks-kritis`.
+- **Bilah bawah, footer, dan tombol bantuan tidak saling menutupi**: tinggi bilah bawah disimpan sebagai
+  `--tinggi-bilah-bawah` (68px tautan + 1px garis atas). Kolom isi (`.kolom-dosen`) berakhir setinggi bilah bawah di
+  atas dasar layar, supaya baris hak cipta footer tidak tertutup, dan tombol bantuan (`posisi="bantuan-dosen"`,
+  prop `posisi` milik `LayananTambahan`) melayang 20px di atas bilah bawah.
 
-### Penilaian
+### Kelas dosen
 
-`/dosen/nilai` terdiri dari tiga langkah yang selalu terlihat di bagian atas (*Pilih tugas*, *Isi nilai*,
-*Periksa & kirim*). Setiap langkah punya alamatnya sendiri, jadi tombol Kembali peramban bekerja:
+Akun dosen berisi prodi, sumber (MK atau PDP), semester yang diampu, dan sejak 25 Okt 2026 **angkatan yang
+diampu** (tabel `DosenAngkatan`, migrasi `dosen_angkatan`), dipilih Super Admin saat menambah akun atau lewat
+*Ubah kelas* di Akses Pengguna (`POST /api/akses/kelas`, `ubahKelasDosen()` di `src/server/akses.js`, tercatat
+`UBAH_KELAS_DOSEN`). Mahasiswa kelasnya:
 
-| Alamat | Langkah |
-|---|---|
-| `/dosen/nilai` | kartu per tugas dengan jumlah belum dinilai, menunggu persetujuan, dan tercatat, serta bilah progres. Tugas yang masih punya pekerjaan ditaruh paling atas. |
-| `?komponen=<id>` (opsional `&cari=<NIM>`, dipakai tautan dari Beranda) | isi nilai |
-| `?komponen=<id>&periksa=1` | periksa lalu kirim |
-| `?komponen=<id>&terkirim=<id usulan>` | layar berhasil dan langkah berikutnya |
+- **Angkatan sudah dipilih**: mahasiswa prodinya pada angkatan itu saja, termasuk angkatan yang programnya sudah
+  selesai atau sudah disahkan. Dengan begitu dosen tetap melihat data dan riwayat angkatan lamanya, dan bisa
+  mengunggah perbaikan nilainya lewat persetujuan Super Admin (lihat Unggah Nilai).
+- **Belum dipilih** (otomatis, termasuk akun dari sebelum fitur ini): angkatan yang sudah sampai semester kelas itu
+  dan programnya belum lewat Semester 3.
 
-Saat langkah berganti, fokus pindah ke judul langkah, supaya pembaca layar dan pengguna papan ketik ikut
-berpindah. Penandanya disimpan di `sessionStorage`, yang dibungkus `try/catch` karena bisa ditolak peramban.
+Aturan itu satu fungsi di server, `diKelasDosen()` (`src/server/muat.js`), dipakai `muatData()` dan unggahan; sisi
+layar memakai `mahasiswaKelas()` di `src/lib/data.js` dengan aturan yang sama. Tugas kelasnya `komponenDosen()`:
+komponen bersumber unit dosen itu pada aspek semester kelasnya. Setelah menarik migrasi `dosen_angkatan`, hentikan
+`npm run dev`, jalankan `npx prisma migrate deploy` dan `npx prisma generate`, lalu nyalakan lagi: server yang masih
+memakai klien Prisma lama gagal di setiap permintaan, karena pengguna sesi kini dimuat beserta angkatan dosennya.
 
-**Isi nilai**
+### Beranda (`Pantau.jsx`)
 
-- Kotak nilai berupa `<input type="text" inputmode="decimal">` setinggi 40px, bukan `type="number"`. Diuji di
-  Chrome: pada `type="number"` yang sedang fokus, tiga putaran roda tetikus mengubah 85 menjadi 82, dan "85,5"
-  dibaca menurut bahasa peramban (85,5 di Chrome berbahasa Indonesia, 855 di Chrome berbahasa Inggris).
-- `bacaNilai()` menerima "85", "85,5", dan "85.5" (paling banyak dua angka desimal, 0 sampai 100). "85," dibaca
-  85, supaya tanda salah tidak berkedip di tengah mengetik.
-- Galat muncul di bawah kotaknya setelah kotak ditinggalkan, beserta cara membetulkannya.
-- Enter dan panah bawah pindah ke baris berikutnya, Shift+Enter dan panah atas ke baris sebelumnya, seperti
-  lembar kerja.
-- **Draf tersimpan otomatis** di peramban, per dosen dan per tugas (`sk5c.draf-nilai.<nip>.<komponenId>`). Setiap
-  kotak yang benar bertanda "Tersimpan sebagai draf", dan pukul terakhir tersimpan ditulis. Draf dihapus setelah
-  terkirim. Draf hanya ada di perangkat itu; menyimpannya di server butuh dukungan back-end.
-- **Bila peramban menolak menyimpan** (penyimpanan penuh atau diblokir), tanda "Tersimpan sebagai draf" tidak
-  muncul dan bilah info meminta dosen mengirim sebelum menutup halaman. Drafnya dipegang di memori (`cadangan`),
-  karena setiap langkah membaca drafnya sendiri. Tanpa cadangan ini, nilai yang diketik hilang saat pindah ke
-  *Periksa & kirim*.
-- **Bilah aksi** menempel di dasar layar, berisi "N dari M nilai sudah diisi" dan tombol *Periksa & kirim*. Bila
-  masih ada nilai yang salah, tombol itu menahan langkah, mengosongkan pencarian bila baris yang salah
-  tersaring, dan memindah fokus ke kotak yang salah.
-- **Unggah CSV** (cara kedua): templat berisi NIM dan nama yang belum dinilai, dengan kode tugas sebagai judul
-  kolom nilainya, sehingga kolom itu tertebak sendiri saat berkasnya diunggah kembali. Kolom NIM, kolom nilai,
-  dan skala tetap bisa dibetulkan. Hasilnya dimasukkan ke tabel yang sama untuk diperiksa, tidak langsung
-  terkirim. Usulannya tercatat `cara: 'import'` bila nilainya berasal dari berkas.
-  - Sel nilai yang kosong dilewati dan hanya disebut jumlahnya ("2 baris tanpa nilai dilewati"), seperti Import
-    CSV Kemahasiswaan. Yang disebut bermasalah hanya baris yang sungguh tidak bisa dipakai, beserta sebabnya.
-  - Nilai disimpan sampai dua desimal (`konversi(n, skala, 2)`), sama dengan isian manual: 92,5 tetap 92,5.
-    Import CSV Kemahasiswaan tetap membulatkan ke bilangan bulat seperti sebelumnya.
-- Baris yang menunggu persetujuan atau sudah tercatat tampil sebagai bacaan saja. Waktu kumpul dan pukul draf
-  mengikuti bahasa aktif: "6 Sep 2026, 16.35" atau "6 Sept 2026, 16:35".
+Hanya memantau. Semua angkanya dihitung dari nilai tersimpan (`ringkasKelas()` di `src/lib/unggahDosen.js`):
 
-**Periksa & kirim** menampilkan ringkasan nama, NIM, dan nilai, kolom catatan opsional, dan penjelasan bahwa
-nilai belum terlihat mahasiswa sampai disetujui. Pengirimannya tetap `usulkanNilai()` seperti sebelumnya (lihat
-Catatan kode › Usulan nilai dosen).
+- **Titik fokus**: "Nilai terisi *x* dari *y* nilai" dengan bilah, kalimat keadaan ("12 nilai belum masuk."), satu
+  tombol *Unggah nilai*, dan unggahan terakhir.
+- **Tiga angka**: jumlah mahasiswa kelas, rata-rata kelas, dan jumlah mahasiswa yang rata-rata nilai tugasnya di
+  bawah `CONFIG.AMBANG_SERTIFIKAT`.
+- **Kelengkapan per tugas**: berapa mahasiswa yang nilainya sudah masuk untuk tiap tugas, dan rata-ratanya. Kelas
+  tanpa mahasiswa mendapat satu keterangan, bukan sepuluh baris "0 dari 0".
+- **Nilai mahasiswa**: pencarian nama/NIM, 15 per halaman, terisi, rata-rata, dan nilai terendah, dengan *Rincian*
+  per tugas (tombol setinggi 44px, `aria-expanded`).
 
-**Uji**: `scripts/smoke.run.cjs` memeriksa langkah 1 dan langkah 2 (`/dosen/nilai?komponen=A1-MK-T1`). Setiap
-kotak nilai berlabel, `inputmode="decimal"`, tidak ada `type="number"`, dan tidak ada tombol "Simpan nilai".
-`ujiBilahBawah` memastikan bilah bawah berisi 4 tautan berlabel, menandai halaman aktif, dan tanpa tombol garis
-tiga. Halaman Beranda dosen juga diperiksa: footer berpintasan, Helpdesk, dan tombol menu aksesibilitas di bilah
-atas.
+### Unggah Nilai (`Unggah.jsx`)
+
+Kelas tanpa mahasiswa tidak mendapat templat (yang isinya akan kosong) maupun kotak unggah (setiap NIM akan
+ditolak), melainkan keterangan sebabnya: belum ada mahasiswa prodinya yang sampai semester kelas itu dan programnya
+belum selesai (otomatis), atau angkatan pilihannya belum berisi mahasiswa, beserta arahan meminta Super Admin
+memilih atau mengubah angkatannya di Akses Pengguna. Selebihnya empat langkah:
+
+1. **Unduh templat (.xlsx)**. `lembarTemplat()` menyusun lembar *Nilai mahasiswa* (NIM, Nama, lalu satu kolom per
+   tugas berjudul `KODE · nama tugas`, nilai tersimpan ikut terisi, baris judul dan dua kolom pertama dibekukan)
+   dan lembar *Petunjuk*, dalam bahasa aktif. NIM ditulis sebagai teks supaya nol di depannya tidak hilang.
+2. **Unggah berkas**: .xlsx (dibaca lembar pertamanya) atau .csv, paling besar 5 MB, lewat tombol atau ditarik ke
+   kotaknya. Berkas .xls lama ditolak dengan arahan menyimpannya ulang sebagai .xlsx. Membaca berkas belum
+   menyimpan apa pun.
+3. **Periksa sebelum menyimpan**. `bacaRekap()` di `src/lib/unggahDosen.js`:
+   - Kolom tugas dikenali berurutan dari kode tugas di awal judul, dari nama tugas yang persis, lalu dari
+     kemiripan yang sangat yakin (`skorKecocokan` minimal 80 dan unggul lebih dari 15 dari peringkat kedua);
+     yang terakhir ditandai "periksa lagi". Kolom NIM wajib (nim, npm, nomor induk mahasiswa, student id);
+     kolom Nama dan kolom pelengkap (No, Prodi, Kelas, Angkatan, Email, Keterangan, Catatan) tidak dibaca.
+   - **Ditolak seluruhnya** (tombol Simpan mati) bila ada kolom berisi angka yang tidak dikenali, angka di kolom
+     tanpa judul (termasuk di luar baris judul CSV; biasanya tempelan dari rekap lain yang bergeser, yang membuat
+     nilai di sebelahnya masuk ke tugas yang salah), dua kolom untuk satu tugas, NIM yang kosong, tidak terdaftar di
+     kelas, atau ganda, nilai yang bukan angka 0 sampai 100, atau aspek yang belum dibuka (disebut sekali per baris
+     untuk tiap aspek). Pesannya menyebut baris, NIM, dan kolomnya (kolom tanpa judul dengan huruf Excel-nya, misalnya
+     "I, J"), dan ditulis sebagai kalimat kamus beserta isiannya (`{ teks, isi }`) supaya ikut diterjemahkan. Teks
+     di kolom tanpa judul, misalnya catatan, tidak menghalangi.
+   - **Diajukan, tidak ditolak**: nilai untuk angkatan yang sudah disahkan, angkatan yang programnya sudah selesai,
+     atau aspek yang sudah final ditandai di pratinjau beserta sebabnya (`sebabPersetujuan()`), dan isian alasan
+     (minimal 10 karakter) menjadi wajib. Tombolnya menjadi *Simpan n nilai, ajukan m* atau *Ajukan m nilai ke Super
+     Admin*.
+   - NIM yang kehilangan nol depannya karena Excel tetap cocok, koma desimal terbaca, dan nilai dibulatkan dua
+     desimal. Hanya sel yang berbeda dari nilai tersimpan yang ditulis; sel kosong dilewati dan tidak menghapus
+     nilai. Mengunggah berkas yang sama lagi tidak membuat unggahan baru.
+   - **Peringatan** yang tidak menghalangi: bila semua nilai baru di satu kolom 10 atau kurang, rekapnya mungkin
+     berskala 0–10 atau 0–4.
+   - Pratinjaunya: jumlah nilai berubah, mahasiswa terdampak, sama dengan tersimpan, dan sel kosong; kolom yang
+     dibaca (yang sama persis dengan templat cukup dihitung); lalu daftar "nilai sekarang → nilai baru". Daftar,
+     bukan tabel, supaya kedua nilainya terbaca di HP tanpa menggeser ke samping.
+4. **Simpan**: `unggahNilaiDosen()` (`POST /api/nilai/dosen`, hanya peran dosen) di `src/server/pengajuan.js`
+   memeriksa ulang semuanya: komponen milik kelasnya, mahasiswa di kelasnya (`diKelasDosen()`), dan aturan
+   `periksaUsulan()`; nilai yang sama dilewati. Sisanya dipilah dalam satu transaksi: yang biasa menjadi satu batch
+   `cara: 'unggah-dosen'` atas nama dosen, sedangkan yang angkatannya sudah selesai atau disahkan, atau aspeknya
+   sudah final, menjadi satu permintaan `PERBAIKAN_NILAI_DOSEN` ke Super Admin (lihat Persetujuan super admin) yang
+   belum mengubah nilai apa pun. **Riwayat unggahan** (30 terakhir) datang dari `/api/data` dan memuat juga
+   permintaan itu beserta statusnya; yang masih menunggu bisa ditarik dosen (`POST /api/persetujuan/batal`).
+
+Pustakanya `read-excel-file` dan `write-excel-file` (MIT), dimuat hanya saat dipakai lewat `import()`. `exceljs`
+tidak dipakai karena celah keamanan 2026 pada versi sampai 4.4.0, begitu juga paket `xlsx` di npm (0.18.5) yang
+celahnya tidak ditambal di npm.
+
+**Uji**: `scripts/smoke.run.cjs` memeriksa isi Beranda dan Unggah Nilai, keadaan kosongnya, dan bilah bawah
+(3 tautan berlabel, halaman aktif ditandai, tanpa tombol garis tiga). `ujiAlurDosen` menguji alur unggahan
+terhadap data mahasiswa (templat dibaca kembali tanpa perubahan, rekap dosen sendiri, sembilan jenis penolakan,
+aspek yang belum dibuka disebut sekali per baris, aspek final yang diajukan, kelas dari angkatan yang diampu,
+unggahan campuran yang sebagian diajukan, simpan, unggah ulang, ringkasan Beranda, dan pembatalan), dan
+`ujiLayarUnggah` memilih berkas CSV lewat kotak berkas di layar, lalu memeriksa keterangan kelas kosong (otomatis dan
+angkatan pilihan) yang tidak menawarkan templat maupun kotak unggah.
+`npm run test:db` bagian 6, 8, dan 21 menguji pintu API-nya terhadap basis data, termasuk persetujuan perbaikannya.
 
 ## Menu aksesibilitas
 
@@ -1029,19 +1144,21 @@ padanya:
 
 ## Data master
 
-Angkatan, fakultas, program studi, dan data mahasiswa bisa ditambah dan diubah dari `/admin/data-master`
-(`src/halaman/admin/DataMaster.jsx`, tab Angkatan, Fakultas & Prodi, dan Mahasiswa) oleh **super admin**
-dan **admin yang diberi izin** olehnya di Akses Pengguna. Izinnya satu untuk semua jenis data master,
-berlaku sampai dicabut, dan tidak mencakup menghapus.
+Angkatan, fakultas, program studi, dan data mahasiswa ada di `/admin/data-master`
+(`src/halaman/admin/DataMaster.jsx`, tab Angkatan, Fakultas & Prodi, dan Mahasiswa). Sejak rapat 24 Okt 2026
+**hanya super admin yang menambah dan mengubahnya**. Admin boleh **melihat** untuk mencocokkan ulang data, tanpa
+tombol tambah atau ubah, setelah diberi izin super admin di Akses Pengguna atau setelah permintaan aksesnya
+disetujui. Tidak ada yang bisa menghapus.
 
-- **Izin.** Kolom `Pengguna.kelolaMaster` (migrasi `20261023030000_izin_data_master`, bawaannya `false`).
-  `penggunaDariId()` di `src/server/api.js` membacanya ulang di setiap permintaan (`punyaIzinMaster()`:
-  `SUPER_ADMIN` selalu, `ADMIN` bila kolomnya `true`), dan penjaga `['master']` di `tangani()` hanya
-  meloloskan pemiliknya. Mencabut izin langsung berlaku di permintaan berikutnya tanpa masuk ulang. Sesi
-  (`masuk.js`, `auth.jsx`) ikut membawa `kelolaMaster` hanya untuk menampilkan menu Data Master; menu dan
-  tombolnya baru berubah setelah halaman dimuat ulang. Admin tanpa izin yang membuka alamatnya hanya
-  melihat penjelasan.
-- **Pintu API** (semuanya `POST`, penjaga `['master']`, isi `aksi: 'tambah' | 'ubah'`; logika di
+- **Izin lihat.** Kolom `Pengguna.kelolaMaster` (migrasi `20261023030000_izin_data_master`, bawaannya `false`;
+  namanya dari masa izin ini masih berarti boleh mengubah). `penggunaDariId()` di `src/server/api.js` membacanya
+  ulang di setiap permintaan. Sesi (`masuk.js`, `auth.jsx`) membawanya untuk tampilan: menu Data Master selalu
+  ada, admin berizin melihat datanya, dan admin tanpa izin melihat kartu **Minta akses baca data master**
+  (keperluan minimal 10 karakter, `POST /api/master/akses`, permintaan `AKSES_DATA_MASTER`). Bila super admin
+  menyetujuinya, `bukaAksesMaster()` di `src/server/akses.js` menyalakan kolomnya; tampilannya berubah setelah
+  halaman dimuat ulang. Mencabut izin di Akses Pengguna langsung berlaku. Penjaga `['master']` di `tangani()`
+  masih ada tetapi tidak lagi dipakai pintu mana pun.
+- **Pintu API** (semuanya `POST`, penjaga `['superadmin']`, isi `aksi: 'tambah' | 'ubah'`; logika di
   `src/server/dataMaster.js`; setiap perubahan dan log-nya dalam satu transaksi):
   - `/api/master/angkatan`: tambah `{ tahun, semester: 'Ganjil' | 'Genap' }`. Kode, label, dan periode
     dibentuk server (`2027`/`2027B`, `2027`/`2027 Genap`, `2027/2028`), tahunnya 2000 sampai satu tahun
@@ -1258,6 +1375,13 @@ mahasiswa dan tidak memercayai hitungan layar.
 
 ## Input nilai
 
+Sejak rapat 24 Okt 2026 halaman ini milik **super admin** (menu *Input & Import Nilai*). Admin biasa membukanya
+sebagai **Nilai Mahasiswa**: tab *Lihat nilai* menampilkan tabel yang sama tanpa kotak isian dan tanpa tanda per
+baris (sel kosong tertulis "belum ada"), tab *Pengajuan koreksi* tetap bisa diputuskan pada lapis pertama, tab
+Import tidak ada, dan Riwayat Batch tampil tanpa tombol rollback. Server menegakkannya: `/api/nilai` dan
+`/api/nilai/rollback` hanya untuk `['superadmin']`. Unggahan dosen ikut tercatat di Riwayat Batch dengan cara
+*unggahan dosen*, dan koreksi yang disetujui super admin dengan cara *pengajuan koreksi*.
+
 Halaman `/admin/nilai` menuntut **semester dipilih lebih dahulu** — selama belum ada tombol
 semester yang dipilih (langkah 1), area kerja tidak ditampilkan sama sekali. Alasannya bukan kosmetik: tiap aspek CPMK
 hanya dinilai pada satu semester, jadi tanpa semester sistem tidak tahu komponen mana yang
@@ -1286,7 +1410,9 @@ Setelah semester, sumber, dan angkatan dipilih, tersedia tiga cara kerja:
     mengenali skala tiap kolom (0–4 / 0–10 / 0–100), lalu mengonversi dan mengisinya
     otomatis. Beberapa kolom yang jatuh ke satu komponen digabung (rata-rata, tertinggi,
     atau kolom terakhir).
-- **Pengajuan koreksi** — antrean sanggahan mahasiswa dengan aksi setujui/tolak.
+- **Pengajuan koreksi** — antrean sanggahan mahasiswa, dua lapis (lihat Persetujuan dua lapis): admin
+  meneruskan dengan nilai usulan atau menolak, super admin menyetujui dan menerapkan nilainya atau menolak. Yang
+  menjadi giliran akun ini ada di atas, lalu yang menunggu lapis lain, lalu yang sudah diputuskan.
 
 Setiap penyimpanan menjadi satu **batch** yang tercatat di audit log dan bisa **di-rollback
 utuh** setelah dikonfirmasi (dulu tombol Rollback langsung membatalkan batch). Batch bertahan
@@ -1448,7 +1574,7 @@ dengan perubahannya: tidak ada perubahan tanpa jejak, dan tidak ada jejak tanpa 
 | `HAPUS_AKUN` | super admin menghapus permanen akun yang aksesnya sudah dicabut dan belum punya data | email, peran, nama, NIM/NIP, prodi, angkatan, alasan |
 | `TAMBAH_AKUN` | akun baru dibuat dari Akses Pengguna atau Data Master | email, peran, nama, NIM/NIP, prodi, angkatan (tanpa sandi) |
 | `UBAH_AKUN` | data mahasiswa diubah dari Data Master | NIM, nama/email/prodi/angkatan sebelum dan sesudah (hanya yang berubah), alasan |
-| `UBAH_IZIN` | super admin memberi atau mencabut izin kelola data master (lihat Data master) | email, izin, sebelum/sesudah, alasan |
+| `UBAH_IZIN` | super admin memberi atau mencabut izin lihat data master (lihat Data master) | email, izin, sebelum/sesudah, alasan |
 | `TAMBAH_ANGKATAN`, `UBAH_ANGKATAN` | angkatan ditambah atau labelnya diubah | kode, label, periode; untuk ubah: label sebelum/sesudah dan alasan |
 | `TAMBAH_FAKULTAS`, `UBAH_FAKULTAS` | fakultas ditambah atau namanya diubah | nama; untuk ubah: sebelum/sesudah dan alasan |
 | `TAMBAH_PRODI`, `UBAH_PRODI` | program studi ditambah atau diubah | nama, jenjang, fakultas; untuk ubah: hanya yang berubah, sebelum/sesudah, dan alasan |
@@ -1467,6 +1593,30 @@ Pintunya memakai POST karena kerangka API (`tangani`) hanya membaca isi perminta
 tidak diubah olehnya. Supaya pengurutan dan penyaringan tetap cepat, `AuditLog` diberi indeks pada
 `waktu` dan `aktorId` (migrasi `indeks_audit`). Halaman Log Aktivitas (`Log.jsx`, di `/admin/log` dan
 `/super/log`) membaca pintu ini; susunannya ada di Panel Kemahasiswaan › Tampilan.
+
+## Sertifikat
+
+Kelayakan dihitung `kelayakanSertifikat()` di `src/lib/rules.js`, dengan lima syarat: sudah menempuh Semester 3,
+seluruh aspek final, tidak ada komponen kosong, nilai akhir minimal `CONFIG.AMBANG_SERTIFIKAT`, dan nilai
+angkatannya sudah disahkan. Sejak rapat 24 Okt 2026 memenuhi syarat saja belum cukup:
+
+1. Mahasiswa yang layak menekan **Minta akses cetak** di halaman Sertifikat (`POST /api/sertifikat`). Server
+   menghitung ulang kelayakannya; yang belum layak dijawab 409 beserta sebabnya.
+2. Admin Kemahasiswaan meninjaunya di *Cetak Sertifikat* (tab Menunggu Anda), lalu meneruskan atau menolak dengan
+   alasan.
+3. Super Admin menyetujuinya dari halaman Persetujuan atau dari *Cetak Sertifikat*, dan statusnya menjadi Siap
+   dicetak.
+4. Bila sesudah itu ada masalah (misalnya laporan sikap), admin atau Super Admin bisa **mencabut** aksesnya dari
+   *Cetak Sertifikat* dengan alasan. Mahasiswa membaca alasannya dan boleh meminta lagi lewat kedua lapis.
+
+Halaman mahasiswa menyebut keadaannya (`keadaanSertifikat()` di `src/lib/duaLapis.js`): belum layak, bisa diminta,
+menunggu admin, menunggu Super Admin, siap dicetak, ditolak, atau dicabut, dua yang terakhir beserta alasan dan
+pemutusnya, lengkap dengan tiga langkah bernomor; ubin Sertifikat di Dashboard memakai keadaan yang sama. Kelayakan
+selalu didahulukan: bila nilai berubah dan syaratnya gugur, akses yang sudah disetujui tidak bisa dipakai mencetak.
+Sertifikat dicetak, atau disimpan sebagai PDF lewat dialog cetak, dari tombol di website ini dan tidak dikirim lewat
+surel. Setiap pembukaan dialog cetak tercatat, dan lembarnya baru dipasang sesudah server mengizinkan, jadi Ctrl+P
+biasa tidak mencetak sertifikat (lihat Catatan kode › Cetak). Aturan keputusan, pencabutan, catatan cetak, log, dan
+migrasinya ada di Persetujuan dua lapis.
 
 ## Penyimpanan perubahan
 
@@ -1553,14 +1703,14 @@ begitu Kemahasiswaan menyimpan satu batch, semuanya ikut menghitung ulang:
 Mahasiswa tidak perlu melakukan apa pun; halaman miliknya sudah terisi. Rollback batch
 membatalkan seluruh rambatan itu sekaligus.
 
-Untuk memperagakan: masuk sebagai `admin@umn.ac.id`, buka Input Nilai, pilih semester dan
+Untuk memperagakan: masuk sebagai `super.admin@umn.ac.id`, buka Input & Import Nilai, pilih semester dan
 angkatan mahasiswa yang ada di basis data, isi nilainya, lalu simpan. Nilai tercatat di tabel
 `Nilai` dan `AuditLog`; masuk sebagai mahasiswa itu di jendela lain (atau muat ulang) dan
 angkanya sudah berubah.
 
-Usulan nilai dosen hanya bisa dibuat untuk mahasiswa yang sudah mengumpulkan berkas, dan
-belum ada halaman bagi mahasiswa untuk mengumpulkannya. Sampai halaman itu dibuat, baris
-`Pengumpulan` diisi langsung di basis data.
+Unggahan dosen hanya menyasar kelasnya: mahasiswa prodi dosen itu yang sudah sampai semester kelasnya dan
+programnya belum lewat Semester 3 (lihat Panel Dosen › Kelas dosen). Bila basis data belum punya mahasiswa
+seperti itu, Beranda dan templat dosen kosong.
 
 ## Catatan migrasi dari Vite + react-router
 
@@ -1619,19 +1769,19 @@ di peramban harus menunggu komponen menempel:
 - Setiap penulisan dikirim ke API, lalu seluruh data dimuat ulang dari basis data. Pemuatan yang
   sudah didahului pemuatan lebih baru diabaikan. Saat keluar, data dikosongkan supaya akun
   berikutnya tidak melihat sisa akun sebelumnya.
-- Status pengumpulan (`masuk`, `menunggu`, `ditolak`, `dinilai`) **dihitung**, tidak disimpan.
-  Sebagai kolom tersendiri ia akan jadi sumber kebenaran kedua yang bisa berselisih dengan nilai
-  setelah satu rollback saja.
 - Mode lokal hanya untuk skrip uji (`scripts/modeLokal.js`); website selalu lewat server.
 
 ### Usulan nilai dosen
 
-- Dosen **tidak pernah menulis ke transkrip**. Halaman dosen hanya memanggil `usulkanNilai()`,
-  dan nilainya masuk ke antrean usulan.
-- Kemahasiswaan memutuskan di `/admin/usulan`. *Disetujui*: nilainya ditulis lewat
-  `simpanBatch()`, jalur yang sama dengan input admin, jadi tercatat di audit log dan bisa
-  di-rollback. *Ditolak*: tidak ada nilai yang berpindah; usulannya tetap tersimpan beserta
-  alasannya.
+Sejak rapat 24 Okt 2026 dosen tidak lagi mengusulkan nilai: rekap Excel-nya langsung tersimpan (lihat Panel Dosen),
+dan `usulkanNilai()` serta pintu `POST /api/usulan` sudah dihapus. Usulan lama yang masih menunggu tetap bisa
+diputuskan, dengan aturan berikut:
+
+- Yang memutuskan **hanya super admin**, di `/admin/usulan` (menu *Persetujuan Nilai Dosen*, tampil selama masih
+  ada usulan; `/api/usulan/keputusan` hanya untuk `['superadmin']`). Admin biasa yang membuka alamatnya hanya
+  melihat isinya. *Disetujui*: nilainya ditulis lewat `simpanBatch()`, jalur yang sama dengan input admin, jadi
+  tercatat di audit log dan bisa di-rollback. *Ditolak*: tidak ada nilai yang berpindah; usulannya tetap
+  tersimpan beserta alasannya.
 - Konfirmasinya dua lapis. **Sistem** memeriksa yang bisa diperiksa mesin (NIM terdaftar,
   komponen cocok dengan unit asesmennya, nilai 0 sampai 100, dan R1); **orang** menilai apakah
   angkanya masuk akal. Pemeriksaan sistem memakai `validasiBatchImport()` yang sama dengan
@@ -1862,14 +2012,16 @@ panah kiri/kanan). Bagian yang mudah rusak:
 - Latar belang tabel memakai `print-color-adjust: exact`; tanpa itu peramban membuang warna latar.
 - Alamat kampus di kaki lembar adalah `div` dengan posisi `fixed` (diulang di setiap halaman),
   bukan `<footer>`, karena aturan cetak global menyembunyikan semua `<footer>`.
-- Sertifikat dicetak A4 lanskap dan tidak dirender sama sekali selama belum layak, jadi Ctrl+P
-  tidak pernah menghasilkan sertifikat.
+- Sertifikat dicetak A4 lanskap. Di halaman mahasiswa lembarnya baru dipasang sesudah tombol Cetak sertifikat
+  ditekan dan `POST /api/sertifikat/cetak` mengizinkan, lalu dilepas pada `afterprint`. Jadi Ctrl+P biasa tidak
+  pernah menghasilkan sertifikat (kertasnya hanya berisi petunjuk memakai tombol), setiap cetak tercatat, dan akses
+  yang sudah dicabut tidak bisa dipakai dari halaman yang terbuka lama (lihat Sertifikat).
 - Kemahasiswaan mencetak sertifikat atas nama mahasiswa di halaman **Cetak Sertifikat**
-  (`/admin/sertifikat`), untuk mahasiswa yang kesulitan mencetak sendiri. Halaman ini bisa dicari
-  per nama atau NIM, disaring per angkatan dan kelayakan, dan menerima `?cari=` (dipakai tautan
-  dari halaman detail mahasiswa). Syaratnya sama persis dan lembarnya sama
-  (`LembarSertifikat.jsx`). Lembar itu baru dipasang langsung di `<body>` saat tombol ditekan dan
-  dilepas lagi pada `afterprint`. Selama terpasang, aturan cetak di `index.css` menyembunyikan
+  (`/admin/sertifikat`), untuk mahasiswa yang kesulitan mencetak sendiri, juga hanya yang sudah Siap
+  dicetak. Halaman ini bisa dicari per nama atau NIM, disaring per angkatan dan kelayakan, dan menerima
+  `?cari=` (dipakai tautan dari halaman detail mahasiswa). Syaratnya sama persis dan lembarnya sama
+  (`LembarSertifikat.jsx`). Lembar itu baru dipasang langsung di `<body>` saat tombol ditekan dan pencetakannya
+  tercatat, lalu dilepas lagi pada `afterprint`. Selama terpasang, aturan cetak di `index.css` menyembunyikan
   seluruh aplikasi, sehingga hanya sertifikat yang tercetak.
 - Nilai yang belum ada ditulis "...", bukan 0 (R2).
 
@@ -1900,16 +2052,19 @@ panah kiri/kanan). Bagian yang mudah rusak:
 | 2 | Pembersihan model poin, rute & menu baru | selesai |
 | 3 | Transkrip mahasiswa dengan drill-down & gating | selesai |
 | 4 | Peta Perjalanan, Riwayat | selesai |
-| 5 | Sertifikat | selesai: halaman mahasiswa dan cetak dari panel Kemahasiswaan |
+| 5 | Sertifikat | selesai: halaman mahasiswa, akses cetak dua lapis (rapat 24 Okt 2026), dan cetak dari panel Kemahasiswaan |
 | 6 | Admin: panel input nilai | selesai (lihat fase 7) |
 | 7 | Input & Import Nilai: gerbang semester, input manual, import CSV, rollback, koreksi | selesai |
 | 8 | Kurikulum, Angkatan & Sertifikat, Log | sebagian: halaman Angkatan, ubah bobot di halaman Kurikulum, aturan data terkunci, pencatatan dan pembacaan log, halaman Log Aktivitas, serta kurikulum yang dibaca dari basis data sudah ada |
 | 9 | Poles cetak, responsif, aksesibilitas | sebagian (cetak & reduced-motion sudah) |
 | — | Panel Kemahasiswaan lainnya: Overview, Data Mahasiswa beserta detailnya, Program Studi, Persetujuan Nilai Dosen | selesai |
-| — | Panel dosen: Beranda, Penilaian (usulan nilai), Riwayat Pengiriman | selesai; tampilan baru: kerangka, Penilaian, footer, dan menu aksesibilitas selesai, Beranda dan Riwayat Pengiriman menyusul (lihat Panel Dosen) |
-| — | Basis data MySQL: 21 tabel, 12 migrasi, 30 pintu API, sesi cookie | selesai |
+| — | Panel dosen: Beranda (pantau) dan Unggah Nilai (rekap Excel, langsung tersimpan) | selesai, sesuai rapat 24 Okt 2026; Penilaian tiga langkah dan Riwayat Pengiriman dihapus (lihat Panel Dosen) |
+| — | Hak peran rapat 24 Okt 2026: admin hanya melihat nilai, tanda final dan bobot dari admin diajukan, data master hanya super admin | selesai (lihat Hak peran) |
+| — | Persetujuan dua lapis rapat 24 Okt 2026: pengajuan ubah nilai dan akses cetak sertifikat, beserta pencabutan akses cetak dan catatan cetak | selesai (lihat Persetujuan dua lapis) |
+| — | Basis data MySQL: 23 tabel, 15 migrasi, 36 pintu API, sesi cookie | selesai |
+| — | Kelas dosen per angkatan yang diampu, dan perbaikan nilai angkatan yang sudah disahkan lewat Super Admin | selesai (lihat Kelas dosen) |
 | — | Mengelola aspek CPMK: tambah, ubah kode/semester/cluster, arsip, pulihkan | selesai; super admin langsung, admin biasa lewat persetujuan, angkatan terkunci tetap memakai aspek saat dikunci |
-| — | Data master (angkatan, fakultas, prodi, mahasiswa) oleh super admin dan admin yang diberi izin | selesai; tanpa hapus, NIM tetap (lihat Data master) |
+| — | Data master (angkatan, fakultas, prodi, mahasiswa) oleh super admin; admin berizin hanya melihat | selesai; tanpa hapus, NIM tetap (lihat Data master) |
 | — | Penilaian per aspek dari Input Manual (teks aspek, komponen, arsip, bobot) | selesai; super admin langsung, admin biasa lewat persetujuan |
 | — | Super admin | sebagian: Tahap 1 (akun berperan `SUPER_ADMIN`, penjaga `'superadmin'`) dan Tahap 2 (persetujuan perubahan data mahasiswa yang sudah lewat Semester 3, halaman Persetujuan Admin, dosen lepas tangan) selesai; halaman pengawasan selesai di panel `/super` (Pusat Kendali, Persetujuan, Log Aktivitas, Peran & Wewenang, Aturan Sistem) |
 
@@ -1918,12 +2073,11 @@ Yang belum dikerjakan:
 - mengubah indikator perilaku dan pengaturan selain bobot (ambang sertifikat, mode penguncian,
   mode agregasi, dan lain-lain) dari layar; menambah cluster, area, atau fase baru. Aspek (tambah,
   kode, semester, cluster, arsip), teks aspek, komponen, dan bobot sudah bisa diubah;
-- halaman bagi mahasiswa untuk mengumpulkan berkas (kini baris `Pengumpulan` diisi langsung di
-  basis data);
+- sisa keputusan rapat 24 Okt 2026: notifikasi per akun dan kolom bahasa Inggris untuk nama tugas dan aspek;
 - penerbitan sertifikat yang membekukan nomor, tanggal, dan nilai — kini kelayakan dihitung
   langsung, jadi sertifikat ikut berubah bila nilai diubah sesudah angkatan dikunci;
 - ganti dan lupa kata sandi di aplikasi ini, masuk lewat SSO kampus, serta pembatasan percobaan
   masuk;
 - menghapus angkatan, fakultas, atau prodi, mengganti NIM, dan mengelola akun dosen dari panel
-  Kemahasiswaan. Angkatan, fakultas, prodi, dan data mahasiswa sudah bisa ditambah dan diubah oleh admin
-  yang diberi izin super admin (lihat Data master).
+  Kemahasiswaan. Angkatan, fakultas, prodi, dan data mahasiswa sudah bisa ditambah dan diubah oleh super
+  admin (lihat Data master).

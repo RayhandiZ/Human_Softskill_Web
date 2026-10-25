@@ -1,15 +1,24 @@
 import { useState } from 'react'
 import { Badge, Card, CardHeader, CatatanKaki, EmptyState, JudulHalaman, SearchInput, Select, Tabs } from '../../components/Ui'
-import { IconAlert, IconCalendar, IconBuilding, IconCheck, IconLock, IconPencil, IconPlus, IconUsers } from '../../components/Icons'
+import { IconAlert, IconCalendar, IconBuilding, IconCheck, IconClock, IconEye, IconLock, IconPencil, IconPlus, IconUsers } from '../../components/Icons'
 import { COHORTS, FACULTIES, PERIODE_AKTIF, PROGRAMS, STUDENTS, getAngkatan, labelPeriode } from '../../lib/data'
-import { ALASAN_AKSES_MIN, SANDI_AWAL_MIN, simpanAngkatan, simpanMahasiswa, simpanProdi, useStore } from '../../lib/store'
+import {
+  ALASAN_AKSES_MIN,
+  PERMINTAAN,
+  SANDI_AWAL_MIN,
+  mintaAksesMaster,
+  simpanAngkatan,
+  simpanMahasiswa,
+  simpanProdi,
+  useStore,
+} from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 
-/* Data Master: tambah dan ubah angkatan, fakultas, program studi, dan mahasiswa. Hanya untuk super admin dan admin
-   yang diberi izin kelola data master di Akses Pengguna; pintu /api/master/* memeriksa izin itu lagi di server
-   (src/server/dataMaster.js), jadi menyembunyikan menu saja bukan penjaganya. Tidak ada hapus. Lihat README.md ›
-   Data master. */
+/* Data Master: angkatan, fakultas, program studi, dan mahasiswa. Sejak rapat 24 Okt 2026 data master dipegang penuh
+   super admin: hanya ia yang menambah dan mengubahnya (pintu /api/master/* ['superadmin'], src/server/dataMaster.js).
+   Admin yang diberi izin di Akses Pengguna melihatnya tanpa tombol ubah (`bacaSaja`); admin tanpa izin melihat kartu
+   untuk meminta akses baca (permintaan AKSES_DATA_MASTER). Tidak ada hapus. Lihat README.md › Data master. */
 
 const TAB = [
   { value: 'angkatan', label: 'Angkatan' },
@@ -26,16 +35,9 @@ export default function DataMaster() {
   const [tab, setTab] = useState('angkatan')
   const [pesan, setPesan] = useState('')
 
-  if (!user?.superAdmin && !user?.kelolaMaster) {
-    return (
-      <Card>
-        <EmptyState title={t('Halaman ini butuh izin dari Super Admin')}>
-          {t('Minta Super Admin memberi izin kelola data master di Akses Pengguna, lalu muat ulang halaman ini.')}
-        </EmptyState>
-      </Card>
-    )
-  }
+  if (!user?.superAdmin && !user?.kelolaMaster) return <MintaAkses />
 
+  const bacaSaja = !user?.superAdmin
   const Bagian = { angkatan: BagianAngkatan, prodi: BagianProdi, mahasiswa: BagianMahasiswa }[tab]
 
   return (
@@ -43,7 +45,9 @@ export default function DataMaster() {
       <JudulHalaman
         judul={t('Data Master')}
         keterangan={t(
-          'Tambah dan ubah angkatan, fakultas, program studi, dan data mahasiswa. Setiap perubahan tercatat di Log Aktivitas beserta alasannya.',
+          bacaSaja
+            ? 'Lihat angkatan, fakultas, program studi, dan data mahasiswa untuk mencocokkan ulang. Hanya Super Admin yang menambah dan mengubah data master.'
+            : 'Tambah dan ubah angkatan, fakultas, program studi, dan data mahasiswa. Setiap perubahan tercatat di Log Aktivitas beserta alasannya.',
         )}
       />
 
@@ -62,20 +66,102 @@ export default function DataMaster() {
         {pesan}
       </p>
 
-      <Bagian onBerhasil={setPesan} />
+      <Bagian onBerhasil={setPesan} bacaSaja={bacaSaja} />
 
       <CatatanKaki>
         {t(
-          'Menghapus data master tidak bisa dari sini. NIM tidak bisa diubah karena riwayat usulan nilai dosen menyambung lewat NIM; bila NIM salah, minta Super Admin menghapus akunnya selama belum punya data, lalu tambahkan lagi.',
+          bacaSaja
+            ? 'Anda hanya bisa melihat data master. Bila ada data yang perlu diperbaiki, sampaikan ke Super Admin.'
+            : 'Menghapus data master tidak bisa dari sini. NIM tidak bisa diubah karena riwayat usulan nilai dosen menyambung lewat NIM; bila NIM salah, minta Super Admin menghapus akunnya selama belum punya data, lalu tambahkan lagi.',
         )}
       </CatatanKaki>
     </div>
   )
 }
 
+/* ------------------------------ minta akses baca ----------------------------- */
+
+/* Admin tanpa izin: satu kartu untuk meminta akses baca ke super admin, atau keadaan permintaannya bila sudah ada. Izin
+   yang disetujui baru terbaca sesudah halaman dimuat ulang, karena peran dan izin dibaca dari sesi saat masuk. */
+function MintaAkses() {
+  const t = useTeks()
+  const [alasan, setAlasan] = useState('')
+  const [sibuk, setSibuk] = useState(false)
+  const [galat, setGalat] = useState('')
+  const menunggu = PERMINTAAN.find((p) => p.aksi === 'AKSES_DATA_MASTER' && p.milikSaya && p.status === 'menunggu')
+  const disetujui = PERMINTAAN.find((p) => p.aksi === 'AKSES_DATA_MASTER' && p.milikSaya && p.status === 'disetujui')
+
+  async function kirim(e) {
+    e.preventDefault()
+    if (sibuk) return
+    setSibuk(true)
+    setGalat('')
+    try {
+      await mintaAksesMaster({ alasan })
+      setAlasan('')
+    } catch (err) {
+      setGalat(err.message)
+    } finally {
+      setSibuk(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <JudulHalaman
+        judul={t('Data Master')}
+        keterangan={t('Data master dipegang Super Admin. Untuk mencocokkan ulang data, Anda bisa meminta akses baca.')}
+      />
+      <Card className="overflow-hidden">
+        <CardHeader
+          icon={IconEye}
+          title={t('Minta akses baca data master')}
+          subtitle={t('Akses ini hanya untuk melihat angkatan, fakultas, program studi, dan data mahasiswa, tanpa bisa mengubahnya.')}
+        />
+        <div className="space-y-4 px-5 py-5 sm:px-6">
+          {/* Permintaan yang pernah disetujui bisa berarti halaman belum dimuat ulang, atau izinnya sudah dicabut lagi;
+              layar tidak bisa membedakannya, jadi keduanya disebut dan formulirnya tetap ada. */}
+          {disetujui && !menunggu ? (
+            <p className="flex items-start gap-2 text-[13.5px] leading-relaxed text-ink-2">
+              <IconCheck size={16} className="mt-0.5 shrink-0" />
+              {t('Permintaan {id} pernah disetujui. Bila Data Master belum terbuka, muat ulang halaman ini; bila izinnya sudah dicabut Super Admin, ajukan lagi.', { id: disetujui.id })}
+            </p>
+          ) : null}
+          {menunggu ? (
+            <p role="status" className="flex items-start gap-2 text-[14px] text-ink">
+              <IconClock size={17} className="mt-px shrink-0 text-ink-2" />
+              <span>
+                <strong className="font-bold">{t('Permintaan {id} menunggu Super Admin.', { id: menunggu.id })}</strong>{' '}
+                {t('Anda akan bisa melihat Data Master setelah permintaan ini disetujui.')}
+              </span>
+            </p>
+          ) : (
+            <form onSubmit={kirim} className="max-w-xl space-y-3">
+              <label className="block">
+                <span className="mb-1.5 block label">{t('Keperluan')}</span>
+                <input
+                  className="field !py-2.5"
+                  value={alasan}
+                  onChange={(e) => setAlasan(e.target.value)}
+                  placeholder={t('Wajib, minimal {n} karakter', { n: ALASAN_AKSES_MIN })}
+                />
+              </label>
+              <button type="submit" className="btn-primary" disabled={sibuk || alasan.trim().length < ALASAN_AKSES_MIN}>
+                <IconEye size={16} />
+                {t('Minta akses baca')}
+              </button>
+              <Galat pesan={galat} />
+            </form>
+          )}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 /* -------------------------------- angkatan -------------------------------- */
 
-function BagianAngkatan({ onBerhasil }) {
+function BagianAngkatan({ onBerhasil, bacaSaja }) {
   const t = useTeks()
   const [tambah, setTambah] = useState(false)
   const [ubah, setUbah] = useState(null)
@@ -87,7 +173,7 @@ function BagianAngkatan({ onBerhasil }) {
         title={t('Angkatan')}
         subtitle={t('Semester setiap mahasiswa dihitung dari periode masuk angkatannya, jadi periode itu tidak bisa diubah.')}
         action={
-          tambah ? null : (
+          tambah || bacaSaja ? null : (
             <button type="button" className="btn-primary" onClick={() => setTambah(true)}>
               <IconPlus size={16} />
               {t('Tambah angkatan')}
@@ -125,7 +211,7 @@ function BagianAngkatan({ onBerhasil }) {
                     <Badge tone="neutral" icon={IconLock}>
                       {t('Disahkan')}
                     </Badge>
-                  ) : (
+                  ) : bacaSaja ? null : (
                     <button
                       type="button"
                       className="btn-ghost !px-3 !py-2 text-[13px]"
@@ -204,14 +290,14 @@ function FormAngkatan({ onBatal, onSelesai }) {
 
 /* ---------------------------- fakultas dan prodi ---------------------------- */
 
-function BagianProdi({ onBerhasil }) {
+function BagianProdi({ onBerhasil, bacaSaja }) {
   const t = useTeks()
   const [tambah, setTambah] = useState(null) // 'fakultas' | 'prodi' | null
   const [ubah, setUbah] = useState(null) // 'fakultas:<nama>' | 'prodi:<nama>' | null
   const fakultas = FACULTIES.map((f) => f.name)
 
   const tombolTambah = (jenis, label) =>
-    tambah === jenis ? null : (
+    tambah === jenis || bacaSaja ? null : (
       <button type="button" className="btn-primary" onClick={() => setTambah(jenis)}>
         <IconPlus size={16} />
         {label}
@@ -245,7 +331,7 @@ function BagianProdi({ onBerhasil }) {
                 judul={f.name}
                 rincian={t('{n} program studi', { n: f.programs.length })}
                 terbuka={ubah === 'fakultas:' + f.name}
-                onToggle={() => setUbah(ubah === 'fakultas:' + f.name ? null : 'fakultas:' + f.name)}
+                onToggle={bacaSaja ? null : () => setUbah(ubah === 'fakultas:' + f.name ? null : 'fakultas:' + f.name)}
               />
               {ubah === 'fakultas:' + f.name ? (
                 <FormUbah
@@ -274,11 +360,11 @@ function BagianProdi({ onBerhasil }) {
         {tambah === 'prodi' ? (
           <div className="border-b border-line px-5 py-4 sm:px-6">
             <FormUbah
-              awal={{ nama: '', jenjang: 'S1', fakultas: fakultas[0] ?? '' }}
+              awal={{ nama: '', jenjang: 'S1', fakultas: '' }}
               kolom={[
                 { kunci: 'nama', label: t('Nama program studi') },
                 { kunci: 'jenjang', label: t('Jenjang'), pilihan: JENJANG },
-                { kunci: 'fakultas', label: t('Fakultas'), pilihan: fakultas },
+                { kunci: 'fakultas', label: t('Fakultas'), pilihan: fakultas, kosong: t('Pilih fakultas') },
               ]}
               tanpaAlasan
               tombol={t('Simpan program studi')}
@@ -298,7 +384,7 @@ function BagianProdi({ onBerhasil }) {
                 judul={p.program}
                 rincian={p.jenjang + ' · ' + p.faculty}
                 terbuka={ubah === 'prodi:' + p.program}
-                onToggle={() => setUbah(ubah === 'prodi:' + p.program ? null : 'prodi:' + p.program)}
+                onToggle={bacaSaja ? null : () => setUbah(ubah === 'prodi:' + p.program ? null : 'prodi:' + p.program)}
               />
               {ubah === 'prodi:' + p.program ? (
                 <FormUbah
@@ -326,7 +412,7 @@ function BagianProdi({ onBerhasil }) {
 
 /* -------------------------------- mahasiswa -------------------------------- */
 
-function BagianMahasiswa({ onBerhasil }) {
+function BagianMahasiswa({ onBerhasil, bacaSaja }) {
   const t = useTeks()
   const [tambah, setTambah] = useState(false)
   const [ubah, setUbah] = useState(null)
@@ -347,7 +433,7 @@ function BagianMahasiswa({ onBerhasil }) {
         title={t('Mahasiswa')}
         subtitle={t('Prodi dan angkatan hanya bisa diubah selama mahasiswanya belum punya nilai, pengumpulan, atau usulan nilai.')}
         action={
-          tambah ? null : (
+          tambah || bacaSaja ? null : (
             <button type="button" className="btn-primary" onClick={() => setTambah(true)}>
               <IconPlus size={16} />
               {t('Tambah mahasiswa')}
@@ -358,14 +444,15 @@ function BagianMahasiswa({ onBerhasil }) {
       {tambah ? (
         <div className="border-b border-line px-5 py-4 sm:px-6">
           <FormUbah
-            awal={{ email: '', sandi: '', nama: '', nim: '', prodi: prodi[0] ?? '', angkatanId: angkatanTerbuka[0] ?? '' }}
+            // Prodi dan angkatan dimulai kosong supaya harus dipilih, bukan terisi pilihan pertama diam-diam.
+            awal={{ email: '', sandi: '', nama: '', nim: '', prodi: '', angkatanId: '' }}
             kolom={[
               { kunci: 'email', label: t('Email'), type: 'email' },
               { kunci: 'sandi', label: t('Sandi awal (minimal {n} karakter)', { n: SANDI_AWAL_MIN }), autoComplete: 'new-password' },
               { kunci: 'nama', label: t('Nama lengkap') },
               { kunci: 'nim', label: 'NIM', inputMode: 'numeric' },
-              { kunci: 'prodi', label: t('Program studi'), pilihan: prodi },
-              { kunci: 'angkatanId', label: t('Angkatan'), pilihan: angkatanTerbuka, tampilkan: labelAngkatan },
+              { kunci: 'prodi', label: t('Program studi'), pilihan: prodi, kosong: t('Pilih program studi') },
+              { kunci: 'angkatanId', label: t('Angkatan'), pilihan: angkatanTerbuka, tampilkan: labelAngkatan, kosong: t('Pilih angkatan') },
             ]}
             tanpaAlasan
             tombol={t('Simpan mahasiswa')}
@@ -396,7 +483,7 @@ function BagianMahasiswa({ onBerhasil }) {
                     .filter(Boolean)
                     .join(' · ')}
                   terbuka={ubah === s.nim}
-                  onToggle={() => setUbah(ubah === s.nim ? null : s.nim)}
+                  onToggle={bacaSaja ? null : () => setUbah(ubah === s.nim ? null : s.nim)}
                 />
                 {ubah === s.nim ? (
                   <FormUbah
@@ -473,6 +560,7 @@ function useKirim() {
   return { sibuk, galat, jalankan }
 }
 
+/* `onToggle` null (mode baca) berarti baris tanpa tombol Ubah. */
 function BarisUbah({ judul, rincian, terbuka, onToggle }) {
   const t = useTeks()
   return (
@@ -481,10 +569,12 @@ function BarisUbah({ judul, rincian, terbuka, onToggle }) {
         <p className="break-words text-[14.5px] font-bold text-ink">{judul}</p>
         {rincian ? <p className="mt-0.5 break-words text-[12.5px] text-ink-2">{rincian}</p> : null}
       </div>
-      <button type="button" className="btn-ghost !px-3 !py-2 text-[13px]" aria-expanded={terbuka} onClick={onToggle}>
-        <IconPencil size={15} />
-        {t('Ubah')}
-      </button>
+      {onToggle ? (
+        <button type="button" className="btn-ghost !px-3 !py-2 text-[13px]" aria-expanded={terbuka} onClick={onToggle}>
+          <IconPencil size={15} />
+          {t('Ubah')}
+        </button>
+      ) : null}
     </div>
   )
 }
@@ -501,6 +591,8 @@ function FormUbah({ awal, kolom, simpan, onBatal, onSelesai, tanpaAlasan = false
   const { sibuk, galat, jalankan } = useKirim()
   const pasang = (kunci) => (nilai) => setIsian((x) => ({ ...x, [kunci]: nilai }))
   const kurangAlasan = !tanpaAlasan && alasan.trim().length < ALASAN_AKSES_MIN
+  // Pilihan yang dimulai kosong (`kosong`) harus dipilih dulu sebelum bisa disimpan.
+  const kurangPilihan = kolom.some((k) => k.kosong && !k.tetap && !isian[k.kunci])
 
   function kirim(e) {
     e.preventDefault()
@@ -512,7 +604,7 @@ function FormUbah({ awal, kolom, simpan, onBatal, onSelesai, tanpaAlasan = false
   return (
     <form onSubmit={kirim} className="mt-3 space-y-3 rounded-xl border border-line bg-surface-2/60 p-4">
       <div className="grid gap-3 sm:grid-cols-2">
-        {kolom.map(({ kunci, label, pilihan, tampilkan, tetap, ...sisa }) =>
+        {kolom.map(({ kunci, label, pilihan, tampilkan, tetap, kosong, ...sisa }) =>
           tetap ? (
             <div key={kunci}>
               <span className="mb-1.5 block label">{label}</span>
@@ -522,7 +614,15 @@ function FormUbah({ awal, kolom, simpan, onBatal, onSelesai, tanpaAlasan = false
               </p>
             </div>
           ) : pilihan ? (
-            <Select key={kunci} label={label} value={isian[kunci]} onChange={pasang(kunci)} options={pilihan} tampilkan={tampilkan} />
+            <Select
+              key={kunci}
+              label={label}
+              value={isian[kunci]}
+              onChange={pasang(kunci)}
+              options={pilihan}
+              tampilkan={tampilkan}
+              kosong={kosong}
+            />
           ) : (
             <label key={kunci} className="block">
               <span className="mb-1.5 block label">{label}</span>
@@ -538,7 +638,7 @@ function FormUbah({ awal, kolom, simpan, onBatal, onSelesai, tanpaAlasan = false
           <input className="field !py-2.5" value={alasan} onChange={(e) => setAlasan(e.target.value)} />
         </label>
       )}
-      <TombolForm sibuk={sibuk} nonaktif={kurangAlasan} label={tombol ?? t('Simpan perubahan')} onBatal={onBatal} />
+      <TombolForm sibuk={sibuk} nonaktif={kurangAlasan || kurangPilihan} label={tombol ?? t('Simpan perubahan')} onBatal={onBatal} />
       <Galat pesan={galat} />
     </form>
   )

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
-import { Badge, Card, CardHeader, CatatanKaki } from '../../components/Ui'
+import { Badge, Card, CardHeader, CatatanKaki, GulirTabel } from '../../components/Ui'
 import { IconAlert, IconCalendar, IconCheck, IconChevronRight, IconClock, IconInfo, IconUndo } from '../../components/Icons'
 import { CONFIG, DARI_BASIS_DATA, KUNCI_DAPAT_DIUBAH, MENUNGGU_KONFIRMASI, nilaiBawaan } from '../../lib/config'
 import { ASAL_PERIODE, COHORTS, PERIODE_AKTIF, labelPeriode, periodeSetelah, semesterKalender } from '../../lib/data'
@@ -112,7 +112,7 @@ export default function Aturan() {
       </Card>
 
       <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
+        <GulirTabel>
           <table className="w-full min-w-[760px] text-left">
             <thead>
               <tr className="border-b border-line bg-surface-2 text-[12px] font-bold uppercase tracking-[.06em] text-ink-2">
@@ -171,7 +171,7 @@ export default function Aturan() {
               </tr>
             </tbody>
           </table>
-        </div>
+        </GulirTabel>
       </Card>
 
       <CatatanKaki>
@@ -273,7 +273,7 @@ function KartuPeriode() {
               {t('Dampak bila dipindah ke {periode}', { periode: labelPeriode(tujuan) })}
             </p>
             {dampak.length ? (
-              <div className="overflow-x-auto">
+              <GulirTabel>
                 <table className="w-full min-w-[420px] text-left">
                   <thead>
                     <tr className="border-b border-line text-[12px] font-bold uppercase tracking-[.06em] text-ink-2">
@@ -299,7 +299,7 @@ function KartuPeriode() {
                     })}
                   </tbody>
                 </table>
-              </div>
+              </GulirTabel>
             ) : (
               <p className="text-[13px] text-ink-2">{t('Belum ada angkatan yang terdampak.')}</p>
             )}

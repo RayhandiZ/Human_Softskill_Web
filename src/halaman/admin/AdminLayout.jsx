@@ -16,6 +16,7 @@ import {
   IconCheckShield,
   IconChevronRight,
   IconDocument,
+  IconEye,
   IconGauge,
   IconGrid,
   IconInbox,
@@ -26,7 +27,8 @@ import {
   IconUsers,
 } from '../../components/Icons'
 import { PENGAJUAN_KOREKSI, PERIODE_AKTIF, STUDENTS, labelPeriode } from '../../lib/data'
-import { permintaanMenunggu, useStore, usulanMenunggu } from '../../lib/store'
+import { PERMINTAAN_SERTIFIKAT, permintaanMenunggu, useStore, usulanMenunggu } from '../../lib/store'
+import { giliranSaya } from '../../lib/duaLapis'
 import { useTeks } from '../../lib/bahasa'
 import { kunciSesi, useProfil } from '../../lib/profil'
 import LoncengKemahasiswaan from './LoncengKemahasiswaan'
@@ -40,12 +42,19 @@ const RUJUKAN = 'Rujukan & catatan'
 
 // Halaman tempat bekerja sehari-hari di atas, bahan rujukan yang lebih jarang dibuka di bawah. Lencana hanya
 // untuk pekerjaan yang menunggu; angka ringkasan tidak diulang di menu.
-// Data Master hanya untuk super admin dan admin yang diberi izin olehnya (Akses Pengguna); server tetap memeriksa.
-const menuAdmin = ({ koreksi, usulan, permintaan, superAdmin, kelolaMaster }) => [
+// Sejak rapat 24 Okt 2026 admin hanya membaca nilai: halaman nilainya bernama "Nilai Mahasiswa" tanpa input dan
+// import, dan usulan dosen lama hanya diputuskan super admin (menunya tampil selama masih ada yang menunggu). Data
+// Master tampil untuk semua admin: yang belum diberi izin melihat kartu untuk memintanya; server tetap memeriksa.
+// Lencana koreksi dan sertifikat hanya menghitung yang menunggu lapis akun ini (admin lapis 1, super admin lapis 2).
+const menuAdmin = ({ koreksi, usulan, permintaan, sertifikat, superAdmin }) => [
   { to: '/admin', label: 'Overview', icon: IconGauge, end: true, kelompok: KERJA },
   { to: '/admin/mahasiswa', label: 'Data Mahasiswa', icon: IconUsers, kelompok: KERJA },
-  { to: '/admin/nilai', label: 'Input & Import Nilai', icon: IconUpload, lencana: koreksi || null, kelompok: KERJA },
-  { to: '/admin/usulan', label: 'Persetujuan Nilai Dosen', icon: IconCheckShield, lencana: usulan || null, kelompok: KERJA },
+  superAdmin
+    ? { to: '/admin/nilai', label: 'Input & Import Nilai', icon: IconUpload, lencana: koreksi || null, kelompok: KERJA }
+    : { to: '/admin/nilai', label: 'Nilai Mahasiswa', icon: IconEye, lencana: koreksi || null, kelompok: KERJA },
+  ...(superAdmin && usulan
+    ? [{ to: '/admin/usulan', label: 'Persetujuan Nilai Dosen', icon: IconCheckShield, lencana: usulan, kelompok: KERJA }]
+    : []),
   {
     to: '/admin/persetujuan',
     // Super admin memutuskan permintaan admin; admin biasa melihat permintaannya sendiri.
@@ -54,11 +63,11 @@ const menuAdmin = ({ koreksi, usulan, permintaan, superAdmin, kelolaMaster }) =>
     lencana: permintaan || null,
     kelompok: KERJA,
   },
-  { to: '/admin/sertifikat', label: 'Cetak Sertifikat', icon: IconPrint, kelompok: KERJA },
+  { to: '/admin/sertifikat', label: 'Cetak Sertifikat', icon: IconPrint, lencana: sertifikat || null, kelompok: KERJA },
   { to: '/admin/angkatan', label: 'Angkatan', icon: IconCalendar, kelompok: KERJA },
   { to: '/admin/kurikulum', label: 'Kurikulum CPMK', icon: IconDocument, kelompok: RUJUKAN },
   { to: '/admin/program-studi', label: 'Program Studi', icon: IconBuilding, kelompok: RUJUKAN },
-  ...(kelolaMaster ? [{ to: '/admin/data-master', label: 'Data Master', icon: IconGrid, kelompok: RUJUKAN }] : []),
+  { to: '/admin/data-master', label: 'Data Master', icon: IconGrid, kelompok: RUJUKAN },
   { to: '/admin/log', label: 'Log Aktivitas', icon: IconList, kelompok: RUJUKAN },
 ]
 
@@ -143,11 +152,11 @@ export default function AdminLayout({ children }) {
   const a11y = useAkarAksesibilitas()
 
   const menu = menuAdmin({
-    koreksi: PENGAJUAN_KOREKSI.filter((k) => k.status === 'menunggu').length,
+    koreksi: giliranSaya(PENGAJUAN_KOREKSI, user).length,
     usulan: usulanMenunggu().length,
     permintaan: permintaanMenunggu().length,
+    sertifikat: giliranSaya(PERMINTAAN_SERTIFIKAT, user).length,
     superAdmin,
-    kelolaMaster: superAdmin || user?.kelolaMaster === true,
   })
 
   return (
@@ -211,11 +220,14 @@ export default function AdminLayout({ children }) {
                 keMahasiswa={(s) => '/admin/mahasiswa/' + s.id}
               />
               <LoncengKemahasiswaan nada="terang" />
-              {/* Di HP pemilih bahasa pindah ke laci supaya bilah atas tidak melebar. */}
+              {/* Di HP pemilih bahasa dan tombol tema pindah ke laci supaya bilah atas tidak melebar: sejak tombol
+                  aksesibilitas ditambahkan, lonceng yang muncul membuat bilah 382px di layar 360px. */}
               <span className="hidden sm:block">
                 <TombolBahasa nada="terang" />
               </span>
-              <TombolTema />
+              <span className="hidden sm:block">
+                <TombolTema />
+              </span>
               <MenuAksesibilitas />
               <MenuAkun
                 foto={foto}
@@ -275,8 +287,9 @@ export default function AdminLayout({ children }) {
           >
             {t('Keluar')}
           </button>
-          <div className="mt-3 px-3.5 sm:hidden">
+          <div className="mt-3 flex items-center gap-2 px-3.5 sm:hidden">
             <TombolBahasa nada="terang" />
+            <TombolTema />
           </div>
         </nav>
       </Laci>

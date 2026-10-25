@@ -9,34 +9,27 @@ import MenuAksesibilitas, { PemanduBaca, useAkarAksesibilitas } from '../../comp
 import MenuSamping from '../../components/MenuSamping'
 import TombolBahasa from '../../components/TombolBahasa'
 import TombolTema from '../../components/TombolTema'
-import { IconChevronRight, IconClock, IconGauge, IconPencil, IconUsers } from '../../components/Icons'
+import { IconChevronRight, IconGauge, IconUpload, IconUsers } from '../../components/Icons'
 import { useAuth } from '../../lib/auth'
 import { SUMBER } from '../../lib/curriculum'
-import { PERIODE_AKTIF, dosenSesi, labelPeriode, pengumpulanDosen } from '../../lib/data'
-import { statusPengumpulan, useStore } from '../../lib/store'
+import { PERIODE_AKTIF, dosenSesi, labelPeriode } from '../../lib/data'
+import { useStore } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
 import { kunciSesi, useProfil } from '../../lib/profil'
 import StatusData from '../admin/StatusData'
 
 /* Panel dosen. Ukurannya sama dengan panel super admin; kebutuhan tulisan yang lebih besar, kontras, dan alat bantu
    lain dinyalakan sendiri lewat menu aksesibilitas di bilah atas. Menu samping berlabel di layar lebar, bilah bawah
-   berlabel di HP (bukan tombol garis tiga), dan footer melayang seperti panel mahasiswa. Lihat README.md › Panel
-   Dosen. */
+   berlabel di HP (bukan tombol garis tiga), dan footer melayang seperti panel mahasiswa. Sejak rapat 24 Okt 2026
+   menunya tinggal tiga: Beranda memantau, Unggah Nilai menerima rekap Excel. Lihat README.md › Panel Dosen. */
 
-const menuDosen = ({ perluDinilai }) => [
+const MENU = [
   { to: '/dosen', label: 'Beranda', icon: IconGauge, end: true },
-  // Satu lencana saja, untuk pekerjaan yang menunggu Anda: pengumpulan yang belum dinilai atau ditolak.
-  { to: '/dosen/nilai', label: 'Penilaian', icon: IconPencil, lencana: perluDinilai || null },
-  { to: '/dosen/usulan', label: 'Riwayat Pengiriman', pendek: 'Riwayat', icon: IconClock },
+  { to: '/dosen/nilai', label: 'Unggah Nilai', pendek: 'Unggah', icon: IconUpload },
   { to: '/dosen/profil', label: 'Profil', icon: IconUsers },
 ]
 
-const PINTASAN = [
-  { ke: '/dosen', label: 'Beranda', icon: IconGauge },
-  { ke: '/dosen/nilai', label: 'Penilaian', icon: IconPencil },
-  { ke: '/dosen/usulan', label: 'Riwayat Pengiriman', icon: IconClock },
-  { ke: '/dosen/profil', label: 'Profil', icon: IconUsers },
-]
+const PINTASAN = MENU.map(({ to, label, icon }) => ({ ke: to, label, icon }))
 
 const cocok = (m, jalur) => (m.end ? jalur === m.to : jalur === m.to || jalur.startsWith(m.to + '/'))
 
@@ -99,10 +92,6 @@ export default function DosenLayout({ children }) {
   const a11y = useAkarAksesibilitas()
 
   const dosen = dosenSesi(user)
-  const perluDinilai = dosen
-    ? pengumpulanDosen(dosen.nip).filter((p) => ['masuk', 'ditolak'].includes(statusPengumpulan(p).id)).length
-    : 0
-  const menu = menuDosen({ perluDinilai })
 
   const kelas = dosen
     ? t('{unit} Semester {semester}, {prodi}', {
@@ -133,7 +122,7 @@ export default function DosenLayout({ children }) {
           ) : null}
 
           <nav aria-label={t('Menu dosen')}>
-            <MenuSamping items={menu} />
+            <MenuSamping items={MENU} />
           </nav>
         </div>
       </aside>
@@ -144,7 +133,7 @@ export default function DosenLayout({ children }) {
         <header className="bilah-kaca sticky top-0 z-20 print:hidden">
           <div className="mx-auto flex h-[72px] w-full max-w-[1200px] items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:px-8">
             <Logo ringkas className="lg:hidden" />
-            <Remah menu={menu} jalur={jalur} />
+            <Remah menu={MENU} jalur={jalur} />
 
             <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
               <TombolBahasa nada="terang" />
@@ -161,8 +150,7 @@ export default function DosenLayout({ children }) {
         </header>
 
         {/* isi-zoom: "Ukuran tulisan" di menu aksesibilitas memperbesar isi halaman dan footer saja. Bilah atas, menu
-            samping, dan bilah bawah tetap, supaya kendalinya tidak terdorong keluar layar HP. --skala dipakai bilah
-            aksi Penilaian untuk tetap menempel tepat di atas bilah bawah. */}
+            samping, dan bilah bawah tetap, supaya kendalinya tidak terdorong keluar layar HP. */}
         <div className="isi-zoom flex flex-1 flex-col" style={a11y.gayaIsi}>
           <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 pb-4 pt-2 sm:px-6 lg:px-8">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
@@ -181,7 +169,7 @@ export default function DosenLayout({ children }) {
         </div>
       </div>
 
-      <BilahBawah items={menu} label={t('Menu dosen')} />
+      <BilahBawah items={MENU} label={t('Menu dosen')} />
       <LayananTambahan posisi="bantuan-dosen right-5 sm:right-6" />
       {a11y.pemandu ? <PemanduBaca /> : null}
     </div>

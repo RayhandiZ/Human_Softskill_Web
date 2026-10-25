@@ -388,7 +388,7 @@ const PENGAJUAN_KOREKSI = [
   {
     id: 'K-3301', nim: ME.nim, nama: ME.name, komponenId: 'A2-MK-SIKAP', komponenLabel: 'Sikap: nilai dosen + peer review 2 aspek',
     aspekId: 'A2', alasan: 'Peer review kelompok saya belum terhitung, hanya nilai dosen yang masuk.',
-    nilaiDiharapkan: null, status: 'menunggu', diajukan: '2026-08-26', keputusan: null,
+    nilaiDiharapkan: null, status: 'menunggu_admin', diajukan: '2026-08-26', keputusan: null,
   },
   {
     id: 'K-3298', nim: ME.nim, nama: ME.name, komponenId: 'A1-ENG-HADIR', komponenLabel: 'Mentoring 5C: Kehadiran',
@@ -401,7 +401,7 @@ const PENGAJUAN_KOREKSI = [
     komponenLabel: 'Tugas 1: Nilai Refleksi Proposal SLH', aspekId: 'A1',
     alasan: 'Nilai tugas berbeda dengan yang tertera di kelas.', nilaiDiharapkan: 85,
     status: 'ditolak', diajukan: '2026-02-20',
-    keputusan: { oleh: AKTOR[1], tanggal: '2026-02-25', catatan: 'Nilai yang tercatat sudah sesuai berita acara.' },
+    keputusan: { oleh: AKTOR[0], tanggal: '2026-02-25', catatan: 'Nilai yang tercatat sudah sesuai berita acara.' },
   },
 ]
 

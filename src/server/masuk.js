@@ -18,7 +18,7 @@ export class GalatMasuk extends Error {
 
 const SERTA = {
   mahasiswa: { include: { prodi: { include: { fakultas: true } }, angkatan: true } },
-  dosen: { include: { prodi: { include: { fakultas: true } } } },
+  dosen: { include: { prodi: { include: { fakultas: true } }, angkatan: true } },
 }
 
 export async function periksaMasuk({ email, password } = {}) {
@@ -89,6 +89,8 @@ function susunAkun(akun) {
           semester: d.semester,
           prodi: d.prodi.nama,
           fakultas: d.prodi.fakultas.nama,
+          // Angkatan yang diampu (id), dipilih Super Admin; kosong = angkatan yang sedang di semesternya.
+          angkatan: d.angkatan.map((a) => a.angkatanId).sort(),
         }
       : null,
   }

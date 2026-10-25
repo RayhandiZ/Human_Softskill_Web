@@ -50,7 +50,20 @@ enum StatusPermintaan {         // permintaan admin kepada super admin
   DIBATALKAN                    // ditarik admin sebelum diputuskan
   GAGAL                         // disetujui, tetapi tidak bisa dijalankan (mis. datanya sudah berubah)
   }
-enum StatusAngkatan { 
+enum StatusKoreksi {            // pengajuan ubah nilai dua lapis (rapat 24 Okt 2026): admin lalu super admin
+  MENUNGGU_ADMIN
+  MENUNGGU_SUPERADMIN
+  DISETUJUI                     // disetujui super admin; nilainya sudah diterapkan
+  DITOLAK
+  }
+enum StatusSertifikat {         // akses cetak sertifikat dua lapis: admin lalu super admin
+  MENUNGGU_ADMIN
+  MENUNGGU_SUPERADMIN
+  SIAP_DICETAK
+  DITOLAK
+  DICABUT                       // akses yang sudah disetujui ditarik admin atau super admin, misalnya karena laporan sikap
+  }
+enum StatusAngkatan {
   AKTIF 
   TERKUNCI 
   }
@@ -109,6 +122,7 @@ model Angkatan {
   dikunciPada     DateTime?
   aspekSaatKunci  Json?                       // ID aspek aktif saat dikunci; transkrip angkatan terkunci memakai daftar ini
   mahasiswa       Mahasiswa[]
+  dosen           DosenAngkatan[]
 }
 
 model Mahasiswa {
@@ -125,6 +139,7 @@ model Mahasiswa {
   penguncian Penguncian[]
   koreksi    PengajuanKoreksi[]
   pengumpulan Pengumpulan[]
+  sertifikat PermintaanSertifikat[]
   @@index([angkatanId, prodiId])
 }
 
@@ -139,6 +154,16 @@ model Dosen {
   prodiId    Int
   pengguna   Pengguna     @relation(fields: [penggunaId], references: [id])
   prodi      ProgramStudi @relation(fields: [prodiId], references: [id])
+  angkatan   DosenAngkatan[]
+}
+
+model DosenAngkatan {           // angkatan yang diampu seorang dosen; tanpa baris, kelasnya angkatan yang sedang di semesternya
+  dosenId    Int
+  angkatanId String
+  dosen      Dosen    @relation(fields: [dosenId], references: [id], onDelete: Cascade)
+  angkatan   Angkatan @relation(fields: [angkatanId], references: [id], onDelete: Cascade)
+  @@id([dosenId, angkatanId])
+  @@index([angkatanId])
 }
 
 model Komponen {                // sumber daftar tugas tiap aspek; isi awalnya ditanam seed dari curriculum.js
@@ -247,18 +272,46 @@ model Penguncian {              // keputusan final/sementara per aspek
   @@id([mahasiswaId, aspekId])
 }
 
-model PengajuanKoreksi {
+model PengajuanKoreksi {         // mahasiswa mengajukan, admin meneruskan (lapis 1), super admin menerapkan (lapis 2)
   id              Int               @id @default(autoincrement())
   mahasiswaId     Int
   komponenId      String
   alasan          String            @db.Text
   nilaiDiharapkan Float?
-  status          StatusPersetujuan @default(MENUNGGU)
+  status          StatusKoreksi     @default(MENUNGGU_ADMIN)
   diajukan        DateTime          @default(now())
-  diputuskanOleh  Int?
+  adminOleh       Int?                       // lapis 1: admin yang meneruskan
+  adminPada       DateTime?
+  adminCatatan    String?           @db.Text
+  nilaiUsulan     Float?                     // nilai yang diteruskan admin ke super admin
+  diputuskanOleh  Int?                       // keputusan akhir: super admin yang menyetujui, atau siapa pun yang menolak
   diputuskanPada  DateTime?
   catatan         String?           @db.Text
+  batchId         String?                    // batch yang menerapkan nilai barunya
   mahasiswa       Mahasiswa         @relation(fields: [mahasiswaId], references: [id])
+}
+
+model PermintaanSertifikat {     // mahasiswa yang layak meminta akses cetak; admin lalu super admin menyetujui
+  id          Int              @id @default(autoincrement())
+  mahasiswaId Int
+  status      StatusSertifikat @default(MENUNGGU_ADMIN)
+  diajukan    DateTime         @default(now())
+  adminOleh   Int?                          // lapis 1
+  adminPada   DateTime?
+  superOleh   Int?                          // lapis 2
+  superPada   DateTime?
+  ditolakOleh Int?
+  ditolakPada DateTime?
+  catatan     String?          @db.Text     // alasan penolakan
+  dicabutOleh Int?                          // pencabutan sesudah SIAP_DICETAK
+  dicabutPada DateTime?
+  alasanCabut String?          @db.Text
+  jumlahCetak Int              @default(0)  // berapa kali dibuka untuk dicetak, oleh mahasiswa atau admin
+  cetakTerakhir     DateTime?
+  cetakTerakhirOleh Int?
+  mahasiswa   Mahasiswa        @relation(fields: [mahasiswaId], references: [id])
+  @@index([status])
+  @@index([mahasiswaId])
 }
 
 model Pengumpulan {             // berkas yang dikirim mahasiswa ke dosen

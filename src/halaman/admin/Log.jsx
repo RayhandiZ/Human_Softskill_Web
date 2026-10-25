@@ -38,6 +38,15 @@ export const LABEL_LOG = {
   UBAH_ASPEK: 'Ubah struktur aspek',
   ARSIPKAN_ASPEK: 'Arsipkan aspek',
   PULIHKAN_ASPEK: 'Pulihkan aspek',
+  // Persetujuan dua lapis (rapat 24 Okt 2026): admin meneruskan, super admin menyetujui.
+  TERUSKAN_KOREKSI: 'Teruskan pengajuan ubah nilai',
+  SETUJUI_KOREKSI: 'Setujui dan terapkan ubah nilai',
+  TOLAK_KOREKSI: 'Tolak pengajuan ubah nilai',
+  SETUJUI_SERTIFIKAT: 'Setujui akses cetak sertifikat',
+  TOLAK_SERTIFIKAT: 'Tolak akses cetak sertifikat',
+  CABUT_SERTIFIKAT: 'Cabut akses cetak sertifikat',
+  UBAH_KELAS_DOSEN: 'Ubah kelas dosen',
+  CETAK_SERTIFIKAT: 'Buka sertifikat untuk dicetak',
 }
 
 /* Sasaran log ditulis server sebagai teks Indonesia jadi ('akun x@umn.ac.id', 'penguncian (2 mahasiswa)'; lihat

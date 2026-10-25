@@ -11,6 +11,7 @@ import {
   JudulHalaman,
   SearchInput,
   Select,
+  StatusTeks,
   Tabs,
   TandaDraft,
 } from '../../components/Ui'
@@ -27,7 +28,7 @@ import {
   IconX,
 } from '../../components/Icons'
 import { CONFIG } from '../../lib/config'
-import { KOMPONEN, SUMBER, SUMBER_LIST, getAspek, getAspekSemester, getKomponen, getKomponenById } from '../../lib/curriculum'
+import { KOMPONEN, SUMBER, SUMBER_LIST, getAspekSemester, getKomponen, getKomponenById } from '../../lib/curriculum'
 import { bolehTandaiFinal, validasiBatchImport } from '../../lib/rules'
 import { susunCSV, unduhBerkas } from '../../lib/csv'
 import {
@@ -56,7 +57,6 @@ import {
   bersihkanPerubahan,
   menungguPersetujuan,
   peringatanSesi,
-  putuskanKoreksi,
   setPenguncianBanyak,
   rollbackBatch,
   simpanBatch,
@@ -68,6 +68,8 @@ import { useTeks } from '../../lib/bahasa'
 import { CatatanPersetujuan, PesanMenunggu, usePerluPersetujuan } from './PermintaanTerkirim'
 import EditorPenilaian from './EditorPenilaian'
 import { AspekSemester } from './KelolaAspek'
+import DaftarKoreksi from './DaftarKoreksi'
+import { giliranSaya } from '../../lib/duaLapis'
 
 const PAGE_SIZE = 10
 const SEMESTER_KOSONG = '— Pilih semester —'
@@ -168,8 +170,11 @@ export default function Nilai() {
   const t = useTeks()
   const versi = useStore()
 
-  const { admin } = useAuth()
+  const { admin, user } = useAuth()
   const aktor = admin.officer
+  // Rapat 24 Okt 2026: admin biasa hanya membaca nilai. Input manual dan import hanya untuk super admin; server menolak
+  // simpanan admin biasa (pintu /api/nilai ['superadmin']).
+  const bacaSaja = !user?.superAdmin
 
   /* Sasaran boleh datang dari URL; nilai yang tidak dikenal jatuh ke bawaan; lihat README.md › Input nilai. */
   const params = useSearchParams()
@@ -192,7 +197,7 @@ export default function Nilai() {
   const [faculty, setFaculty] = useState(() => awal('fakultas') ?? 'Semua')
   const [program, setProgram] = useState(() => awal('prodi') ?? 'Semua')
   const [tab, setTab] = useState(() =>
-    ['manual', 'import', 'koreksi'].includes(awal('tab')) ? awal('tab') : 'manual',
+    (bacaSaja ? ['manual', 'koreksi'] : ['manual', 'import', 'koreksi']).includes(awal('tab')) ? awal('tab') : 'manual',
   )
 
   const semester = semesterPilihan === SEMESTER_KOSONG ? null : Number(semesterPilihan.replace(/\D/g, ''))
@@ -239,15 +244,20 @@ export default function Nilai() {
   const belumMulai = kalender < 1
   const angkatanSiap = kalender >= (semester ?? 1)
 
-  const koreksiAntre = PENGAJUAN_KOREKSI.filter((k) => k.status === 'menunggu')
+  // Hanya pengajuan yang menunggu lapis akun ini (admin lapis 1, super admin lapis 2).
+  const koreksiAntre = giliranSaya(PENGAJUAN_KOREKSI, user)
   const koreksiMenunggu = koreksiAntre.length
   const areaKerja = Boolean(semester && komponenSumber.length && STUDENTS.length && mahasiswa.length && angkatanSiap)
 
   return (
     <div className="space-y-6">
       <JudulHalaman
-        judul={t('Input & Import Nilai')}
-        keterangan={t('Pilih semester, sumber penilaian, dan angkatan, lalu isi nilai satu per satu atau unggah rekapnya.')}
+        judul={t(bacaSaja ? 'Nilai Mahasiswa' : 'Input & Import Nilai')}
+        keterangan={t(
+          bacaSaja
+            ? 'Pilih semester, sumber penilaian, dan angkatan untuk melihat nilai yang tersimpan. Nilai diunggah dosen lewat Excel; perubahan nilai lewat Super Admin.'
+            : 'Pilih semester, sumber penilaian, dan angkatan, lalu isi nilai satu per satu atau unggah rekapnya.',
+        )}
       />
 
       {/* ------------- langkah memilih sasaran: semester, sumber, angkatan ------------- */}
@@ -456,11 +466,18 @@ export default function Nilai() {
               <Tabs
                 value={tab}
                 onChange={setTab}
-                items={[
-                  { value: 'manual', label: t('Input manual') },
-                  { value: 'import', label: t('Import CSV') },
-                  { value: 'koreksi', label: t('Pengajuan koreksi'), count: koreksiMenunggu },
-                ]}
+                items={
+                  bacaSaja
+                    ? [
+                        { value: 'manual', label: t('Lihat nilai') },
+                        { value: 'koreksi', label: t('Pengajuan koreksi'), count: koreksiMenunggu },
+                      ]
+                    : [
+                        { value: 'manual', label: t('Input manual') },
+                        { value: 'import', label: t('Import CSV') },
+                        { value: 'koreksi', label: t('Pengajuan koreksi'), count: koreksiMenunggu },
+                      ]
+                }
               />
             </div>
 
@@ -474,8 +491,9 @@ export default function Nilai() {
                 aktor={aktor}
                 awalAspek={awal('aspek')}
                 awalCari={awal('cari') ?? ''}
+                bacaSaja={bacaSaja}
               />
-            ) : tab === 'import' ? (
+            ) : tab === 'import' && !bacaSaja ? (
               <ImportCerdas
                 semester={semester}
                 sumber={sumber}
@@ -486,11 +504,11 @@ export default function Nilai() {
                 program={program}
               />
             ) : (
-              <Koreksi aktor={aktor} />
+              <DaftarKoreksi aktor={aktor} />
             )}
           </Card>
 
-          <RiwayatBatch />
+          <RiwayatBatch bacaSaja={bacaSaja} />
         </>
       )}
     </div>
@@ -673,6 +691,7 @@ function InputManual({
   aktor,
   awalAspek = null,
   awalCari = '',
+  bacaSaja = false,
 }) {
   const teks = useTeks()
   const perluPersetujuan = usePerluPersetujuan(angkatan?.intake)
@@ -802,8 +821,14 @@ function InputManual({
             n: kolom.length,
             unit: SUMBER[sumber].label,
           })}{' '}
-          {teks('Kosongkan sel yang belum dinilai; sel kosong tidak dihitung sebagai nol.')}{' '}
-          {teks('Baris yang tidak ditandai mengikuti aturan sistem: aspeknya menjadi final sendiri begitu seluruh komponennya terisi.')}
+          {bacaSaja ? (
+            teks('Sel kosong berarti nilainya belum diunggah dosen. Admin hanya melihat; perubahan nilai lewat Super Admin.')
+          ) : (
+            <>
+              {teks('Kosongkan sel yang belum dinilai; sel kosong tidak dihitung sebagai nol.')}{' '}
+              {teks('Baris yang tidak ditandai mengikuti aturan sistem: aspeknya menjadi final sendiri begitu seluruh komponennya terisi.')}
+            </>
+          )}
         </p>
         {user?.role === 'admin' ? (
           <div className="sm:col-span-2">
@@ -856,12 +881,14 @@ function InputManual({
                   ) : null}
                 </th>
               ))}
-              <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-[.07em] text-ink-3">
-                {teks('Tanda')}
-                <span className="mt-1 block max-w-[150px] normal-case font-semibold leading-snug text-ink-3">
-                  {teks('sementara atau final')}
-                </span>
-              </th>
+              {bacaSaja ? null : (
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-[.07em] text-ink-3">
+                  {teks('Tanda')}
+                  <span className="mt-1 block max-w-[150px] normal-case font-semibold leading-snug text-ink-3">
+                    {teks('sementara atau final')}
+                  </span>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -889,6 +916,13 @@ function InputManual({
                   const buruk =
                     String(nilaiInput).trim() !== '' && (!Number.isFinite(angka) || angka < 0 || angka > 100)
                   const berubah = isi !== undefined && String(isi) !== String(tersimpan)
+                  if (bacaSaja) {
+                    return (
+                      <td key={k.id} className="px-3 py-2.5 text-[13.5px] font-semibold tabular-nums text-ink">
+                        {tersimpan === '' ? <span className="text-ink-2">{teks('belum ada')}</span> : tersimpan}
+                      </td>
+                    )
+                  }
                   return (
                     <td key={k.id} className="px-3 py-2.5">
                       <input
@@ -917,19 +951,21 @@ function InputManual({
                   )
                 })}
 
-                <td className="px-3 py-2.5 align-middle">
-                  <TandaBaris
-                    nama={s.name}
-                    nilai={tanda[s.nim] ?? null}
-                    aktif={barisDiisi}
-                    buka={tandaBuka === s.nim}
-                    onBuka={() => setTandaBuka((n) => (n === s.nim ? null : s.nim))}
-                    onPilih={(v) => {
-                      setTanda((t) => ({ ...t, [s.nim]: v }))
-                      setTandaBuka(null)
-                    }}
-                  />
-                </td>
+                {bacaSaja ? null : (
+                  <td className="px-3 py-2.5 align-middle">
+                    <TandaBaris
+                      nama={s.name}
+                      nilai={tanda[s.nim] ?? null}
+                      aktif={barisDiisi}
+                      buka={tandaBuka === s.nim}
+                      onBuka={() => setTandaBuka((n) => (n === s.nim ? null : s.nim))}
+                      onPilih={(v) => {
+                        setTanda((t) => ({ ...t, [s.nim]: v }))
+                        setTandaBuka(null)
+                      }}
+                    />
+                  </td>
+                )}
               </tr>
               )
             })}
@@ -937,10 +973,12 @@ function InputManual({
         </table>
       </GulirTabel>
 
-      <div className="space-y-3 border-t border-line px-5 py-4 sm:px-6">
-        {perluPersetujuan ? <CatatanPersetujuan /> : null}
-        <IsianAlasan nilai={alasanUbah} onChange={setAlasanUbah} />
-      </div>
+      {bacaSaja ? null : (
+        <div className="space-y-3 border-t border-line px-5 py-4 sm:px-6">
+          {perluPersetujuan ? <CatatanPersetujuan /> : null}
+          <IsianAlasan nilai={alasanUbah} onChange={setAlasanUbah} />
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-6">
         <div className="flex items-center gap-2">
@@ -960,27 +998,32 @@ function InputManual({
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {tidakSah.length ? (
-            <span className="text-[12.5px] font-semibold text-[var(--critical)]">
-              {teks('{n} sel di luar rentang 0–100', { n: tidakSah.length })}
+        {bacaSaja ? null : (
+          <div className="flex flex-wrap items-center gap-3">
+            {tidakSah.length ? (
+              <span className="text-[12.5px] font-semibold text-[var(--critical)]">
+                {teks('{n} sel di luar rentang 0–100', { n: tidakSah.length })}
+              </span>
+            ) : null}
+            <span className="text-[12.5px] text-ink-2">
+              {sah.length
+                ? teks('{n} nilai siap disimpan', { n: sah.length })
+                : teks('Belum ada perubahan')}
             </span>
-          ) : null}
-          <span className="text-[12.5px] text-ink-2">
-            {sah.length
-              ? teks('{n} nilai siap disimpan', { n: sah.length })
-              : teks('Belum ada perubahan')}
-          </span>
-          <button type="button" className="btn-primary" disabled={!sah.length || tidakSah.length > 0 || sibuk} onClick={simpan}>
-            <IconCheck size={17} />
-            {teks('Simpan nilai')}
-          </button>
-        </div>
+            <button type="button" className="btn-primary" disabled={!sah.length || tidakSah.length > 0 || sibuk} onClick={simpan}>
+              <IconCheck size={17} />
+              {teks('Simpan nilai')}
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="px-5 pb-4 sm:px-6">
-        <CatatanKaki>{teks(peringatanSesi())}</CatatanKaki>
-      </div>
+      {/* Catatan tentang menyimpan; admin biasa tidak menyimpan, dan keterangan di atas tabel sudah menjelaskannya. */}
+      {bacaSaja ? null : (
+        <div className="px-5 pb-4 sm:px-6">
+          <CatatanKaki>{teks(peringatanSesi())}</CatatanKaki>
+        </div>
+      )}
     </div>
   )
 }
@@ -1517,118 +1560,14 @@ function namaKolomMentah(k) {
   return 'Nilai'
 }
 
-/* --------------------------- pengajuan koreksi ---------------------------- */
-
-function Koreksi({ aktor }) {
-  const t = useTeks()
-  const [catatan, setCatatan] = useState({})
-  const [galat, setGalat] = useState('')
-
-  const putuskan = async (id, keputusan) => {
-    try {
-      const berhasil = await putuskanKoreksi(id, keputusan, {
-        aktor,
-        catatan: catatan[id]?.trim() || null,
-      })
-      if (!berhasil) {
-        setGalat(t('Pengajuan tidak ditemukan. Mungkin sudah diputuskan di jendela lain.'))
-        return
-      }
-      setGalat('')
-    } catch (e) {
-      setGalat(e.message)
-    }
-  }
-
-  if (!PENGAJUAN_KOREKSI.length) {
-    return <EmptyState title={t('Belum ada pengajuan koreksi dari mahasiswa.')} />
-  }
-
-  return (
-    <ul className="divide-y divide-line">
-      {galat ? (
-        <li className="px-5 pt-4 sm:px-6">
-          <p
-            role="alert"
-            className="flex items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--critical)_10%,transparent)] px-3.5 py-3 text-[13px] font-semibold text-[var(--critical)]"
-          >
-            <IconAlert size={16} className="mt-px shrink-0" />
-            {galat}
-          </p>
-        </li>
-      ) : null}
-      {PENGAJUAN_KOREKSI.map((k) => (
-        <li key={k.id} className="px-5 py-4 sm:px-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-[240px] flex-1">
-              <p className="text-[14px] font-bold text-ink">{k.komponenLabel}</p>
-              <p className="mt-1 text-[12.5px] text-ink-2">
-                {/* Kode aspek, bukan id-nya (dulu tertulis id mentah seperti "aspek A1"). */}
-                {k.nama} · {k.nim} · {t('aspek {kode}', { kode: daftarKode([getAspek(k.aspekId) ?? k.aspekId]) })} ·{' '}
-                {t('diajukan {tanggal}', { tanggal: k.diajukan })}
-              </p>
-              <p className="mt-2 max-w-2xl rounded-lg bg-surface-2 px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-2">
-                “{k.alasan}”
-                {k.nilaiDiharapkan != null ? (
-                  <span className="mt-1 block text-[12.5px] font-semibold text-ink-3">
-                    {t('Nilai yang diharapkan')}: {k.nilaiDiharapkan}
-                  </span>
-                ) : null}
-              </p>
-            </div>
-            <Badge
-              tone={k.status === 'disetujui' ? 'good' : k.status === 'ditolak' ? 'critical' : 'warning'}
-              icon={k.status === 'disetujui' ? IconCheck : k.status === 'ditolak' ? IconX : IconAlert}
-            >
-              {t(
-                k.status === 'menunggu'
-                  ? 'Menunggu'
-                  : k.status === 'disetujui'
-                    ? 'Disetujui'
-                    : 'Ditolak',
-              )}
-            </Badge>
-          </div>
-
-          {k.status === 'menunggu' ? (
-            <div className="mt-3 flex flex-wrap items-end gap-2.5">
-              <label className="min-w-[240px] flex-1">
-                <span className="mb-1.5 block label">{t('Catatan keputusan')}</span>
-                <input
-                  className="field !py-2.5"
-                  value={catatan[k.id] ?? ''}
-                  onChange={(e) => setCatatan((c) => ({ ...c, [k.id]: e.target.value }))}
-                  placeholder={t('Alasan menyetujui atau menolak…')}
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => putuskan(k.id, 'ditolak')}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-line px-3.5 py-2.5 text-[13px] font-bold text-ink-2 transition hover:border-[var(--critical)] hover:text-[var(--critical)]"
-              >
-                <IconX size={15} />
-                {t('Tolak')}
-              </button>
-              <button type="button" className="btn-primary !py-2.5" onClick={() => putuskan(k.id, 'disetujui')}>
-                <IconCheck size={15} />
-                {t('Setujui')}
-              </button>
-            </div>
-          ) : k.keputusan ? (
-            <p className="mt-2 text-[12.5px] text-ink-3">
-              {k.keputusan.oleh} · {k.keputusan.tanggal}
-              {k.keputusan.catatan ? '. ' + k.keputusan.catatan : ''}
-            </p>
-          ) : null}
-        </li>
-      ))}
-    </ul>
-  )
-}
-
 /* ----------------------------- riwayat batch ------------------------------ */
 
-function RiwayatBatch() {
+/* Cara masuknya nilai satu batch, untuk dibaca orang. Sejak rapat 24 Okt 2026: 'unggah-dosen' dari /api/nilai/dosen,
+   'koreksi' dari pengajuan koreksi yang disetujui super admin. */
+const CARA_BATCH = { manual: 'input manual', 'unggah-dosen': 'unggahan dosen', koreksi: 'pengajuan koreksi' }
+
+/* `bacaSaja` (admin biasa): riwayatnya tetap terbaca, tetapi membatalkan batch hanya oleh super admin. */
+function RiwayatBatch({ bacaSaja = false }) {
   const t = useTeks()
   const [galat, setGalat] = useState('')
   const [alasanRollback, setAlasanRollback] = useState('')
@@ -1637,11 +1576,15 @@ function RiwayatBatch() {
     <Card>
       <CardHeader
         title={t('Riwayat batch')}
-        subtitle={t('Batch yang Anda buat bisa dibatalkan; batch periode lalu hanya tercatat')}
+        subtitle={t(
+          bacaSaja
+            ? 'Setiap penyimpanan nilai tercatat sebagai satu batch; hanya Super Admin yang bisa membatalkannya'
+            : 'Batch yang Anda buat bisa dibatalkan; batch periode lalu hanya tercatat',
+        )}
         icon={IconUndo}
         action={
           /* Hanya mode lokal: di basis data batch dibatalkan satu per satu. */
-          BATCH_SESI.length && modeLokal() ? (
+          BATCH_SESI.length && modeLokal() && !bacaSaja ? (
             <button
               type="button"
               onClick={() => {
@@ -1683,7 +1626,7 @@ function RiwayatBatch() {
         </div>
       ) : null}
 
-      {BATCH_SESI.length && !modeLokal() ? (
+      {BATCH_SESI.length && !modeLokal() && !bacaSaja ? (
         <div className="border-b border-line px-5 py-4 sm:px-6">
           <IsianAlasan label="Alasan rollback" nilai={alasanRollback} onChange={setAlasanRollback} />
         </div>
@@ -1696,13 +1639,19 @@ function RiwayatBatch() {
               <span className="font-mono text-[12.5px] font-bold text-ink">{b.id}</span>
               <span className="min-w-[200px] flex-1 text-[13px] text-ink-2">
                 {SUMBER[b.sumber].label} · {t('Semester {n}', { n: b.semester })} ·{' '}
-                {t('angkatan {id}', { id: b.angkatanId })} ·{' '}
-                {t(b.cara === 'manual' ? 'input manual' : 'import CSV')} ·{' '}
+                {/* Unggahan dosen untuk beberapa angkatan sekaligus disimpan dengan angkatanId 'campuran'. */}
+                {b.angkatanId === 'campuran'
+                  ? t('beberapa angkatan')
+                  : t('angkatan {id}', { id: getAngkatan(b.angkatanId)?.label ?? b.angkatanId })}{' '}
+                ·{' '}
+                {t(CARA_BATCH[b.cara] ?? 'import CSV')} ·{' '}
                 {t('{n} nilai', { n: b.jumlah })}
               </span>
               <span className="text-[12.5px] tabular-nums text-ink-3">{b.waktu}</span>
               {b.status === 'dibatalkan' ? (
                 <Badge tone="neutral">{t('Dibatalkan')}</Badge>
+              ) : bacaSaja ? (
+                <StatusTeks>{t('Tersimpan')}</StatusTeks>
               ) : (
                 <button
                   type="button"

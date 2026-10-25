@@ -32,6 +32,7 @@ async function main() {
   await db.batch.deleteMany()
   await db.penguncian.deleteMany()
   await db.pengajuanKoreksi.deleteMany()
+  await db.permintaanSertifikat.deleteMany()
   await db.pengumpulan.deleteMany()
   await db.usulanEntri.deleteMany()
   await db.usulan.deleteMany()

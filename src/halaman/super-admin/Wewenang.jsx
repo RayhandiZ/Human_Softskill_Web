@@ -1,4 +1,4 @@
-import { Card, CardHeader } from '../../components/Ui'
+import { Card, CardHeader, GulirTabel } from '../../components/Ui'
 import {
   IconBook,
   IconBuilding,
@@ -6,7 +6,7 @@ import {
   IconCheckShield,
   IconClock,
   IconMinus,
-  IconPencil,
+  IconUpload,
 } from '../../components/Icons'
 import { useTeks } from '../../lib/bahasa'
 
@@ -16,27 +16,58 @@ import { useTeks } from '../../lib/bahasa'
 const PERAN = ['Mahasiswa', 'Dosen', 'Kemahasiswaan', 'Super Admin']
 const SUPER = PERAN.indexOf('Super Admin')
 
-// Ikon per peran, menurut pekerjaan utamanya: melihat capaian, mengusulkan nilai, mengelola, mengawasi.
-const IKON_PERAN = { Mahasiswa: IconBook, Dosen: IconPencil, Kemahasiswaan: IconBuilding, 'Super Admin': IconCheckShield }
+// Ikon per peran, menurut pekerjaan utamanya: melihat capaian, mengunggah nilai, mengelola, mengawasi.
+const IKON_PERAN = { Mahasiswa: IconBook, Dosen: IconUpload, Kemahasiswaan: IconBuilding, 'Super Admin': IconCheckShield }
 
+// Susunan sejak rapat 24 Okt 2026: dosen mengunggah nilai kelasnya, admin hanya membaca nilai dan data master, super
+// admin memegang keduanya.
 const RINGKAS_PERAN = {
-  Mahasiswa: 'Melihat capaiannya sendiri dan mengajukan koreksi bila nilainya keliru.',
-  Dosen: 'Mengusulkan nilai mahasiswa di kelasnya sampai program angkatannya selesai.',
-  Kemahasiswaan: 'Mengelola nilai, angkatan, kurikulum, dan sertifikat sehari-hari.',
-  'Super Admin': 'Wewenang tertinggi: menyetujui permintaan admin, mengatur penilaian dan akses, dan mengawasi seluruh jejak.',
+  Mahasiswa: 'Melihat capaiannya sendiri, mengajukan koreksi bila nilainya keliru, dan meminta akses cetak sertifikat.',
+  Dosen: 'Mengunggah nilai angkatan yang diampunya lewat Excel dan memantau hasilnya; perbaikan untuk angkatan yang sudah disahkan diajukan ke Super Admin.',
+  Kemahasiswaan:
+    'Membaca nilai dan memantau kelengkapannya, memutuskan lapis pertama pengajuan koreksi dan akses cetak sertifikat, serta mengurus angkatan dan kurikulum.',
+  'Super Admin':
+    'Wewenang tertinggi: memegang nilai dan data master, memutuskan lapis kedua koreksi dan akses cetak sertifikat, menyetujui permintaan admin, mengatur penilaian dan akses, dan mengawasi seluruh jejak.',
 }
 
 // ya: boleh langsung · syarat: boleh, kecuali yang ditulis di catatan · minta: selalu lewat persetujuan Super Admin.
-const LEWAT_S3 = 'kecuali mahasiswa yang sudah lewat Semester 3: perlu persetujuan'
 const MATRIKS = [
   { tindakan: 'Melihat capaian mahasiswa', izin: [['syarat', 'hanya miliknya'], ['syarat', 'mahasiswa di kelasnya'], ['ya'], ['ya']] },
   { tindakan: 'Mengajukan koreksi nilai', izin: [['ya'], ['tidak'], ['tidak'], ['tidak']] },
-  { tindakan: 'Mengusulkan nilai', izin: [['tidak'], ['syarat', 'sampai program angkatan selesai'], ['tidak'], ['tidak']] },
-  { tindakan: 'Menyetujui usulan nilai dosen', izin: [['tidak'], ['tidak'], ['syarat', LEWAT_S3], ['ya']] },
-  { tindakan: 'Menyimpan dan mengimpor nilai', izin: [['tidak'], ['tidak'], ['syarat', LEWAT_S3], ['ya']] },
-  { tindakan: 'Membatalkan batch nilai', izin: [['tidak'], ['tidak'], ['syarat', LEWAT_S3], ['ya']] },
-  { tindakan: 'Mengubah tanda final/sementara', izin: [['tidak'], ['tidak'], ['syarat', LEWAT_S3], ['ya']] },
-  { tindakan: 'Mengubah bobot kurikulum', izin: [['tidak'], ['tidak'], ['syarat', 'perlu persetujuan bila nilai mahasiswa yang sudah lewat Semester 3 ikut berubah'], ['ya']] },
+  // Dua lapis sejak rapat 24 Okt 2026 (putuskanKoreksi di src/server/pengajuan.js).
+  {
+    tindakan: 'Memutuskan pengajuan koreksi nilai',
+    izin: [['tidak'], ['tidak'], ['syarat', 'lapis pertama: meneruskan atau menolak'], ['syarat', 'lapis kedua: menyetujui dan menerapkan nilai, atau menolak']],
+  },
+  // /api/sertifikat dan /api/sertifikat/keputusan (src/server/sertifikat.js).
+  { tindakan: 'Meminta akses cetak sertifikat', izin: [['syarat', 'bila seluruh syarat terpenuhi'], ['tidak'], ['tidak'], ['tidak']] },
+  {
+    tindakan: 'Menyetujui akses cetak sertifikat',
+    izin: [['tidak'], ['tidak'], ['syarat', 'lapis pertama'], ['syarat', 'lapis kedua, sesudah admin']],
+  },
+  // /api/sertifikat/cabut: akses yang sudah Siap dicetak, satu orang cukup; mahasiswa boleh meminta lagi lewat dua lapis.
+  {
+    tindakan: 'Mencabut akses cetak sertifikat',
+    izin: [['tidak'], ['tidak'], ['syarat', 'langsung, wajib beralasan'], ['syarat', 'langsung, wajib beralasan']],
+  },
+  { tindakan: 'Mencetak sertifikat', izin: [['syarat', 'sesudah akses cetaknya disetujui'], ['tidak'], ['syarat', 'sesudah akses cetaknya disetujui'], ['syarat', 'sesudah akses cetaknya disetujui']] },
+  // /api/nilai/dosen (unggahNilaiDosen di src/server/pengajuan.js); kelasnya angkatan yang diampu (/api/akses/kelas).
+  {
+    tindakan: 'Mengunggah nilai kelasnya dari Excel',
+    izin: [['tidak'], ['syarat', 'langsung tersimpan untuk angkatan berjalan'], ['tidak'], ['tidak']],
+  },
+  {
+    tindakan: 'Memperbaiki nilai angkatan yang sudah disahkan atau selesai, atau aspek final',
+    izin: [['tidak'], ['minta'], ['tidak'], ['ya']],
+  },
+  { tindakan: 'Mengatur kelas dosen dan angkatan yang diampu', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
+  // Usulan dari sebelum unggahan langsung yang masih menunggu.
+  { tindakan: 'Memutuskan usulan nilai dosen yang tersisa', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
+  // /api/nilai dan /api/nilai/rollback, penjaga ['superadmin']: admin hanya membaca nilai.
+  { tindakan: 'Menyimpan dan mengimpor nilai', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
+  { tindakan: 'Membatalkan batch nilai, termasuk unggahan dosen', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
+  { tindakan: 'Mengubah tanda final/sementara', izin: [['tidak'], ['tidak'], ['minta'], ['ya']] },
+  { tindakan: 'Mengubah bobot kurikulum', izin: [['tidak'], ['tidak'], ['minta'], ['ya']] },
   { tindakan: 'Mengubah penilaian aspek', izin: [['tidak'], ['tidak'], ['minta'], ['ya']] },
   { tindakan: 'Mengesahkan nilai angkatan', izin: [['tidak'], ['tidak'], ['minta'], ['ya']] },
   { tindakan: 'Memutuskan permintaan admin', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
@@ -46,13 +77,15 @@ const MATRIKS = [
   { tindakan: 'Memindahkan periode akademik', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
   // /api/akses/ubah, hanya super admin; akun Super Admin dan akun sendiri ditolak (src/server/akses.js).
   { tindakan: 'Mencabut dan memulihkan akses mahasiswa, dosen, dan admin', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
-  // /api/master/*, penjaga ['master']: super admin, dan admin yang diberi izin di Akses Pengguna (src/server/dataMaster.js).
+  // /api/master/*, penjaga ['superadmin'] (src/server/dataMaster.js).
+  { tindakan: 'Menambah dan mengubah angkatan, fakultas, prodi, dan data mahasiswa', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
+  // Halaman Data Master tanpa tombol ubah; izinnya dari Akses Pengguna atau permintaan AKSES_DATA_MASTER.
   {
-    tindakan: 'Menambah dan mengubah angkatan, fakultas, prodi, dan data mahasiswa',
-    izin: [['tidak'], ['tidak'], ['syarat', 'bila diberi izin oleh Super Admin; tanpa hapus'], ['ya']],
+    tindakan: 'Melihat halaman Data Master',
+    izin: [['tidak'], ['tidak'], ['syarat', 'bila diberi izin atau permintaannya disetujui Super Admin'], ['ya']],
   },
   // /api/akses/izin, hanya super admin, dan hanya untuk akun admin (aturIzinMaster di src/server/akses.js).
-  { tindakan: 'Memberi dan mencabut izin kelola data master', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
+  { tindakan: 'Memberi dan mencabut izin lihat data master', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
   // Peran SUPER_ADMIN hanya dipasang langsung di basis data; tidak ada tombolnya di website.
   { tindakan: 'Mengangkat Super Admin dari website', izin: [['tidak'], ['tidak'], ['tidak'], ['tidak']] },
 ]
@@ -171,7 +204,7 @@ export default function Wewenang() {
           title={t('Matriks wewenang')}
           subtitle={t('Mengikuti aturan yang dijaga server saat ini.')}
         />
-        <div className="overflow-x-auto">
+        <GulirTabel>
           <table className="w-full min-w-[820px] text-left">
             <thead>
               <tr className="border-b border-line bg-surface-2 text-[12px] font-bold uppercase tracking-[.06em] text-ink-2">
@@ -202,7 +235,7 @@ export default function Wewenang() {
               ))}
             </tbody>
           </table>
-        </div>
+        </GulirTabel>
       </Card>
 
       <Card className="card-pad">

@@ -4,7 +4,7 @@ import { IconAlert, IconCheck, IconLock, IconUndo } from '../../components/Icons
 import { SUMBER, getAspek, getAspekList, getKomponen } from '../../lib/curriculum'
 import { ISI_PENGATURAN, bedaBobot, dampakBobot, periksaBobot, porsiBobot, susunanBobot } from '../../lib/bobot'
 import { bobotKomponen } from '../../lib/scoring'
-import { STUDENTS, getAngkatan, getStudentByNim, programSelesai } from '../../lib/data'
+import { STUDENTS } from '../../lib/data'
 import { menungguPersetujuan, simpanBobot, useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
@@ -103,14 +103,9 @@ export default function Kurikulum({ tertanam = false, aspekAwal, onPilihAspek, o
     return dampakBobot(STUDENTS, u, STUDENTS.length)
   }, [drafTunda, versi])
   const dampakSiap = drafTunda === draf && dampak != null
-  // Nilai mahasiswa yang programnya sudah selesai ikut berubah: simpanan admin biasa menunggu super admin.
-  const perluPersetujuan =
-    adminBiasa &&
-    dampakSiap &&
-    dampak.daftar.some((x) => {
-      const intake = getAngkatan(getStudentByNim(x.nim)?.angkatanId)?.intake
-      return intake ? programSelesai(intake) : false
-    })
+  // Bobot dari admin biasa SELALU menunggu super admin, apa pun angkatannya (rapat 24 Okt 2026; UBAH_BOBOT di
+  // src/server/persetujuan.js): bobot menentukan nilai, dan admin hanya membaca nilai.
+  const perluPersetujuan = adminBiasa && dampakSiap
   const alasanWajib = dampakSiap && (dampak.terkunci > 0 || perluPersetujuan)
 
   const aspek = daftarAspek.find((a) => a.id === pilih) ?? daftarAspek[0]
@@ -243,7 +238,7 @@ export default function Kurikulum({ tertanam = false, aspekAwal, onPilihAspek, o
         <div className="space-y-4 px-5 py-5 sm:px-6">
           {!adaPerubahan ? (
             menunggu ? (
-              <PesanMenunggu hasil={menunggu} />
+              <PesanMenunggu hasil={menunggu} keterangan={t('Perubahan bobot dari admin baru berlaku setelah Super Admin menyetujuinya.')} />
             ) : pesan ? (
               <p role="status" className="animate-rise text-[14.5px] font-bold text-ink">
                 {pesan}
@@ -263,7 +258,11 @@ export default function Kurikulum({ tertanam = false, aspekAwal, onPilihAspek, o
 
           {adaPerubahan && !masalah.length ? (
             <form onSubmit={simpan} className="space-y-4">
-              {perluPersetujuan ? <CatatanPersetujuan /> : null}
+              {perluPersetujuan ? (
+                <CatatanPersetujuan
+                  pesan={t('Perubahan bobot dari admin dikirim ke Super Admin sebagai permintaan dan baru berlaku setelah disetujui. Alasan wajib diisi.')}
+                />
+              ) : null}
               <label className="block max-w-xl">
                 <span className="mb-1.5 block label">
                   {t(alasanWajib ? 'Alasan perubahan (wajib)' : 'Alasan perubahan (opsional)')}

@@ -21,7 +21,8 @@ export async function penggunaDari(request) {
 
 /** Akun `id` dalam bentuk yang diterima setiap `kerja`; null bila tidak ada atau nonaktif. */
 export async function penggunaDariId(id) {
-  const p = await db.pengguna.findUnique({ where: { id }, include: { mahasiswa: true, dosen: true } })
+  // dosen.angkatan: angkatan yang diampu (DosenAngkatan), penentu kelasnya; lihat diKelasDosen di muat.js.
+  const p = await db.pengguna.findUnique({ where: { id }, include: { mahasiswa: true, dosen: { include: { angkatan: true } } } })
   if (!p || !p.aktif) return null
   return {
     id: p.id,
@@ -29,8 +30,9 @@ export async function penggunaDariId(id) {
     // Peran SUPER_ADMIN dibaca sebagai admin bertanda superAdmin, jadi semua pintu admin tetap
     // terbuka untuknya.
     superAdmin: p.peran === 'SUPER_ADMIN',
-    // Izin menambah/mengubah data master: super admin selalu punya, admin biasa hanya bila diberi super admin
-    // (aturIzinMaster di src/server/akses.js). Dibaca ulang setiap permintaan, jadi pencabutan langsung berlaku.
+    // Izin melihat halaman Data Master: super admin selalu punya, admin biasa hanya bila diberi super admin
+    // (aturIzinMaster di src/server/akses.js). Sejak rapat 24 Okt 2026 hanya super admin yang menulis data master,
+    // jadi izin ini tidak membuka pintu tulis. Dibaca ulang setiap permintaan, jadi pencabutan langsung berlaku.
     kelolaMaster: punyaIzinMaster(p),
     email: p.email,
     mahasiswa: p.mahasiswa,
@@ -38,12 +40,12 @@ export async function penggunaDariId(id) {
   }
 }
 
-/** Izin kelola data master dari baris Pengguna (basis data); sama dengan yang dikirim ke sesi oleh masuk.js. */
+/** Izin lihat data master dari baris Pengguna (basis data); sama dengan yang dikirim ke sesi oleh masuk.js. */
 export const punyaIzinMaster = (p) => p.peran === 'SUPER_ADMIN' || (p.peran === 'ADMIN' && p.kelolaMaster === true)
 
 /**
  * Apakah `pengguna` memenuhi salah satu `peran`. 'superadmin' hanya dipenuhi akun berperan SUPER_ADMIN;
- * 'master' dipenuhi akun yang punya izin kelola data master (super admin, atau admin yang diberi izin).
+ * 'master' dipenuhi akun yang punya izin lihat data master (super admin, atau admin yang diberi izin).
  */
 export const bolehPeran = (pengguna, peran) =>
   !peran ||
@@ -67,7 +69,7 @@ export function jawabGalat(e) {
  * Kerangka setiap pintu API yang butuh sesi: membaca pemilik cookie, memeriksa perannya,
  * lalu menjalankan `kerja(pengguna, isi)`. `peran` null berarti semua peran boleh; ['admin']
  * juga meloloskan super admin; ['superadmin'] hanya super admin; ['master'] super admin dan admin
- * yang diberi izin kelola data master.
+ * yang diberi izin lihat data master (tidak dipakai pintu tulis mana pun sejak rapat 24 Okt 2026).
  */
 export async function tangani(request, peran, kerja) {
   try {

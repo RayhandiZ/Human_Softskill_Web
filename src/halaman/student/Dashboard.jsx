@@ -13,7 +13,8 @@ import { SUMBER, getArea } from '../../lib/curriculum'
 import { kelayakanSertifikat } from '../../lib/rules'
 import { PERIODE_AKTIF, labelPeriode, transkripOf } from '../../lib/data'
 import { useStudent } from './StudentLayout'
-import { useStore } from '../../lib/store'
+import { sertifikatMilik, useStore } from '../../lib/store'
+import { keadaanSertifikat } from '../../lib/duaLapis'
 import { useTeks } from '../../lib/bahasa'
 import { jalurMulus, jendelaNilai } from '../../lib/kurva'
 import { nilaiKumulatif } from '../../lib/scoring'
@@ -433,6 +434,18 @@ function StatusAspek({ a }) {
 
 export const BATAS_BARIS_ASPEK = 5
 
+/* Ubin Sertifikat: [isi, keterangan] per keadaan (keadaanSertifikat di src/lib/duaLapis.js). Keterangan 'belum_layak'
+   dirakit dengan jumlah syarat, jadi tidak di sini. */
+const UBIN_SERTIFIKAT = {
+  belum_layak: ['Belum tersedia', null],
+  bisa_diminta: ['Bisa diminta', 'Minta akses cetak di halaman ini'],
+  menunggu_admin: ['Menunggu persetujuan', 'Sedang ditinjau admin Kemahasiswaan'],
+  menunggu_superadmin: ['Menunggu persetujuan', 'Menunggu persetujuan Super Admin'],
+  siap_dicetak: ['Siap dicetak', 'Buka untuk mencetak'],
+  ditolak: ['Permintaan ditolak', 'Buka untuk melihat alasannya'],
+  dicabut: ['Akses dicabut', 'Buka untuk melihat alasannya'],
+}
+
 const TAB = [
   { id: 'semua', label: 'Semua', cocok: () => true },
   { id: 'final', label: 'Final', cocok: (a) => a.status === 'final' },
@@ -452,7 +465,7 @@ function BarisAspek({ a, terbuka, onToggle }) {
         onClick={onToggle}
         aria-expanded={terbuka}
         aria-controls={idRinci}
-        className="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-surface-2 sm:px-6"
+        className="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-surface-2 focus-visible:outline-offset-[-3px] sm:px-6"
       >
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-surface-2 text-[13px] font-bold text-ink">
           {a.aspek.kode}
@@ -560,8 +573,10 @@ function AspekSaya({ t }) {
                 setTab(x.id)
                 setBukaId(null)
               }}
+              /* Cincin fokus ke dalam: wadah tab ini menggulir, jadi cincin bawaan (2px ke luar) terpotong atasnya. -3px,
+                 bukan -2px: -mb-px membuat 1px bawah tombol tertutup tepi wadah. */
               className={
-                '-mb-px whitespace-nowrap border-b-2 px-3 py-2.5 text-[14px] font-bold transition ' +
+                '-mb-px whitespace-nowrap border-b-2 px-3 py-2.5 text-[14px] font-bold transition focus-visible:outline-offset-[-3px] ' +
                 (pilih ? 'border-brand-ink text-brand-ink' : 'border-transparent text-ink-2 hover:text-ink')
               }
             >
@@ -591,7 +606,7 @@ function AspekSaya({ t }) {
 
       <Link
         href="/mahasiswa/transkrip"
-        className="flex items-center justify-center gap-1.5 border-t border-line px-5 py-3.5 text-[14px] font-bold text-brand-ink transition hover:bg-surface-2"
+        className="flex items-center justify-center gap-1.5 border-t border-line px-5 py-3.5 text-[14px] font-bold text-brand-ink transition hover:bg-surface-2 focus-visible:outline-offset-[-3px]"
       >
         {teks(sisa > 0 ? 'Lihat Selengkapnya' : 'Lihat transkrip lengkap')}
         <IconChevronRight size={16} />
@@ -735,6 +750,9 @@ export default function Dashboard() {
   const student = useStudent()
   const t = transkripOf(student)
   const sertifikat = kelayakanSertifikat(student)
+  // Sejak rapat 24 Okt 2026 sertifikat yang layak pun baru bisa dicetak setelah akses cetaknya disetujui dua lapis.
+  const keadaan = keadaanSertifikat(sertifikat.layak, sertifikatMilik(student.nim))
+  const kataSertifikat = keadaan === 'siap_dicetak' ? teks('siap') : teks('belum')
   const { akhir } = t
 
   const terkunci = t.aspek.filter((a) => a.terkunci).length
@@ -804,7 +822,7 @@ export default function Dashboard() {
                 n: akhir.aspekDinilai,
                 total: akhir.aspekTotal,
                 final: akhir.aspekFinal,
-                keadaan: teks(sertifikat.layak ? 'siap' : 'belum'),
+                keadaan: kataSertifikat,
               })}
             </span>
             <span className="shrink-0 text-[13.5px] font-bold text-brand-ink">
@@ -858,15 +876,13 @@ export default function Dashboard() {
             judul="Sertifikat"
             ke="/mahasiswa/sertifikat"
             nilai={
-              <span className="text-[16px] font-extrabold leading-tight text-ink">
-                {teks(sertifikat.layak ? 'Siap diunduh' : 'Belum tersedia')}
-              </span>
+              <span className="text-[16px] font-extrabold leading-tight text-ink">{teks(UBIN_SERTIFIKAT[keadaan][0])}</span>
             }
           >
             <p className="mt-2 flex items-center gap-1 text-[12.5px] leading-snug text-ink-2">
-              {sertifikat.layak
-                ? teks('Buka untuk mengunduh')
-                : teks('{n} syarat belum terpenuhi', { n: sertifikat.gagal.length })}
+              {keadaan === 'belum_layak'
+                ? teks('{n} syarat belum terpenuhi', { n: sertifikat.gagal.length })
+                : teks(UBIN_SERTIFIKAT[keadaan][1])}
               <IconChevronRight size={14} className="shrink-0" />
             </p>
           </UbinRingkas>

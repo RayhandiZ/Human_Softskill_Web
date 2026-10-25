@@ -73,7 +73,7 @@ function sesiDari(akun) {
   if (akun.peran === 'admin') {
     return {
       role: 'admin',
-      // Izin kelola data master dari super admin; hanya menentukan tombol yang tampil, server tetap memeriksa.
+      // Izin lihat data master dari super admin; hanya menentukan tampilan Data Master, server tetap memeriksa.
       kelolaMaster: akun.kelolaMaster === true,
       email: akun.email,
       name: ADMIN_PROFILE.name,
@@ -95,6 +95,8 @@ function sesiDari(akun) {
       semester: d.semester,
       prodi: d.prodi,
       fakultas: d.fakultas,
+      // Angkatan yang diampu (id); kosong = angkatan yang sedang di semesternya. Lihat mahasiswaKelas di data.js.
+      angkatan: d.angkatan ?? [],
     }
   }
 

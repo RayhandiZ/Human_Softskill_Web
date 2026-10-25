@@ -38,6 +38,8 @@ export const AKSI_LOG = [
   'TAMBAH_AKUN',
   'UBAH_AKUN',
   'HAPUS_AKUN',
+  // Kelas dosen (prodi, sumber, semester, angkatan yang diampu) dari Akses Pengguna (ubahKelasDosen di akses.js).
+  'UBAH_KELAS_DOSEN',
   // Izin kelola data master (akses.js) dan perubahan data master oleh pemegangnya (dataMaster.js).
   'UBAH_IZIN',
   'TAMBAH_ANGKATAN',
@@ -51,6 +53,15 @@ export const AKSI_LOG = [
   'UBAH_ASPEK',
   'ARSIPKAN_ASPEK',
   'PULIHKAN_ASPEK',
+  // Persetujuan dua lapis (pengajuan.js, sertifikat.js): admin meneruskan, super admin menyetujui.
+  'TERUSKAN_KOREKSI',
+  'SETUJUI_KOREKSI',
+  'TOLAK_KOREKSI',
+  'SETUJUI_SERTIFIKAT',
+  'TOLAK_SERTIFIKAT',
+  // Sesudah disetujui: pencabutan oleh admin atau super admin, dan setiap kali sertifikat dibuka untuk dicetak.
+  'CABUT_SERTIFIKAT',
+  'CETAK_SERTIFIKAT',
 ]
 
 const UKURAN_BAWAAN = 25

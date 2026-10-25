@@ -21,9 +21,9 @@ import {
   IconUndo,
   IconUsers,
 } from '../../components/Icons'
-import { AUDIT_LOG, COHORTS, PERIODE_AKTIF, daftarPeriode, rentangPeriode, samaPeriode } from '../../lib/data'
+import { AUDIT_LOG, COHORTS, PENGAJUAN_KOREKSI, PERIODE_AKTIF, daftarPeriode, rentangPeriode, samaPeriode } from '../../lib/data'
 import { KUNCI_DAPAT_DIUBAH, MENUNGGU_KONFIRMASI } from '../../lib/config'
-import { PERMINTAAN, bacaLog, permintaanMenunggu, useStore } from '../../lib/store'
+import { PERMINTAAN, PERMINTAAN_SERTIFIKAT, bacaLog, permintaanMenunggu, useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useBahasa } from '../../lib/bahasa'
 import { LABEL_AKSI } from '../admin/PersetujuanAdmin'
@@ -37,9 +37,9 @@ import { LABEL_LOG, labelSasaran, tanggalWib } from '../admin/Log'
    saat ini. Lihat README.md › Panel Super Admin. */
 
 const RANTAI = [
-  { peran: 'Super Admin', tugas: 'Menyetujui permintaan admin dan mengawasi seluruh jejak tindakan.' },
-  { peran: 'Kemahasiswaan', tugas: 'Mengelola nilai, angkatan, kurikulum, dan sertifikat.' },
-  { peran: 'Dosen', tugas: 'Mengusulkan nilai mahasiswa di kelasnya.' },
+  { peran: 'Super Admin', tugas: 'Memegang nilai dan data master, menyetujui permintaan admin, dan mengawasi seluruh jejak.' },
+  { peran: 'Kemahasiswaan', tugas: 'Membaca nilai, mengurus koreksi, angkatan, kurikulum, dan sertifikat.' },
+  { peran: 'Dosen', tugas: 'Mengunggah nilai kelasnya lewat Excel dan memantau hasilnya.' },
   { peran: 'Mahasiswa', tugas: 'Melihat capaian dan mengajukan koreksi nilai.' },
 ]
 
@@ -326,8 +326,11 @@ function PilihPeriode({ nilai, onPilih, t, bahasa }) {
 
 /* ------------------------- 1. titik fokus: keputusan ------------------------ */
 
-function KeputusanAnda({ menunggu, saatIni, t, bahasa }) {
-  const ada = menunggu.length > 0
+/* `lapisDua`: pengajuan ubah nilai dan akses cetak sertifikat yang sudah diteruskan admin dan menunggu Anda (dua
+   lapis, rapat 24 Okt 2026). Antrean keduanya di halaman Persetujuan; di sini cukup jumlahnya. */
+function KeputusanAnda({ menunggu, lapisDua, saatIni, t, bahasa }) {
+  const lain = lapisDua.koreksi + lapisDua.sertifikat
+  const ada = menunggu.length > 0 || lain > 0
   const terlama = menunggu[0]
   const lamaHari = terlama ? Math.max(0, -selisihHari(String(terlama.diajukanPada ?? '').slice(0, 10), tanggalWib(0))) : 0
   const terakhir = [...PERMINTAAN]
@@ -357,7 +360,7 @@ function KeputusanAnda({ menunggu, saatIni, t, bahasa }) {
               ) : null}
             </h2>
             <p className="mt-1 text-[13px] leading-snug text-white/75">
-              {t('Permintaan admin, diurutkan dari yang paling lama menunggu.')}
+              {t('Permintaan admin dan dosen, diurutkan dari yang paling lama menunggu.')}
             </p>
           </div>
         </div>
@@ -366,7 +369,7 @@ function KeputusanAnda({ menunggu, saatIni, t, bahasa }) {
           <span className="text-[56px] font-extrabold leading-none tracking-tight">{menunggu.length}</span>
           <span className="text-[15px] font-semibold text-white/85">{t('permintaan menunggu')}</span>
         </p>
-        {ada ? (
+        {menunggu.length ? (
           <p className="mt-2 text-[13.5px] font-semibold text-[var(--accent)]">
             {lamaHari
               ? t('Terlama menunggu {n} hari, sejak {tanggal}.', {
@@ -376,10 +379,15 @@ function KeputusanAnda({ menunggu, saatIni, t, bahasa }) {
               : t('Yang terlama diajukan hari ini.')}
           </p>
         ) : null}
+        {lain ? (
+          <p className="mt-2 text-[13.5px] leading-snug text-white/85">
+            {t('Juga menunggu Anda: {koreksi} pengajuan ubah nilai dan {sertifikat} akses cetak sertifikat.', lapisDua)}
+          </p>
+        ) : null}
       </div>
 
       <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1">
-        {ada ? (
+        {menunggu.length ? (
           <>
             <ul className="space-y-2">
               {menunggu.slice(0, 3).map((p) => (
@@ -405,8 +413,12 @@ function KeputusanAnda({ menunggu, saatIni, t, bahasa }) {
               <IconCheck size={22} />
             </span>
             <div>
-              <p className="font-semibold text-white">{t('Tidak ada yang perlu Anda putuskan sekarang.')}</p>
-              <p className="mt-1">{t('Permintaan admin untuk mahasiswa yang sudah lewat Semester 3 akan muncul di sini.')}</p>
+              <p className="font-semibold text-white">
+                {t(lain ? 'Tidak ada permintaan admin yang menunggu.' : 'Tidak ada yang perlu Anda putuskan sekarang.')}
+              </p>
+              <p className="mt-1">
+                {t('Permintaan admin, pengajuan ubah nilai, dan akses cetak sertifikat yang perlu keputusan Anda muncul di halaman Persetujuan.')}
+              </p>
               {terakhir ? (
                 <p className="mt-1">
                   {t('Keputusan terakhir: {status}, {kapan}.', {
@@ -789,6 +801,10 @@ export default function Kendali() {
 
   // Terlama di atas: yang paling lama menunggu diputuskan lebih dulu.
   const menunggu = [...permintaanMenunggu()].sort((a, b) => String(a.diajukanPada).localeCompare(String(b.diajukanPada)))
+  const lapisDua = {
+    koreksi: PENGAJUAN_KOREKSI.filter((k) => k.status === 'menunggu_superadmin').length,
+    sertifikat: PERMINTAAN_SERTIFIKAT.filter((p) => p.status === 'menunggu_superadmin').length,
+  }
   const hariIni = tanggalWib(0)
 
   return (
@@ -813,7 +829,7 @@ export default function Kendali() {
       {/* Urutan di HP: keputusan, ringkasan angka, grafik, linimasa, rantai. Di layar lebar ringkasan pindah
           ke kanan grafik (col-start-9) dan grid-flow-dense mengisi sisi kirinya dengan grafik. */}
       <div className="grid gap-6 xl:grid-flow-row-dense xl:grid-cols-12">
-        <KeputusanAnda menunggu={menunggu} saatIni={periodeLain} t={t} bahasa={bahasa} />
+        <KeputusanAnda menunggu={menunggu} lapisDua={lapisDua} saatIni={periodeLain} t={t} bahasa={bahasa} />
         <KeadaanSistem t={t} rentang={rentang} label={labelPeriode} periodeLain={periodeLain} />
         <div className="flex flex-col xl:col-span-8 [&>section]:flex-1">
           <GrafikPerubahan periode={periode} t={t} bahasa={bahasa} />

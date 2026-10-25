@@ -152,11 +152,14 @@ export default function FilterBar({ value, onChange, withSearch = true, classNam
         />
         {withSearch ? (
           <div>
-            <span className="mb-1.5 block label">{t('Cari mahasiswa')}</span>
+            {/* Nama kolomnya lewat `label` (span ini tidak terkait ke kotak isian), jadi span disembunyikan dari
+                pembaca layar supaya tidak dibaca dua kali. */}
+            <span aria-hidden="true" className="mb-1.5 block label">{t('Cari mahasiswa')}</span>
             <SearchInput
               value={value.query}
               onChange={set('query')}
               placeholder={t('Nama, NIM, atau prodi…')}
+              label={t('Cari mahasiswa')}
             />
           </div>
         ) : null}

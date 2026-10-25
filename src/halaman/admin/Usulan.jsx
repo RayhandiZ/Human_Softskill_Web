@@ -31,7 +31,9 @@ import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 
 /* Dua lapis konfirmasi: sistem lalu orang; lihat README.md › Usulan nilai dosen. Susunannya mengikuti halaman
-   daftar lain di panel ini: kepala halaman, tiga angka, lalu satu kartu antrean dengan tab berjumlah. */
+   daftar lain di panel ini: kepala halaman, tiga angka, lalu satu kartu antrean dengan tab berjumlah. Sejak rapat
+   24 Okt 2026 dosen mengunggah nilai langsung, jadi halaman ini hanya untuk usulan lama, dan yang memutuskan hanya
+   Super Admin (server menolak admin biasa); admin biasa yang membukanya lewat alamat hanya bisa melihat. */
 
 const RUPA = {
   menunggu: { label: 'Menunggu keputusan', tone: 'warning', icon: IconClock },
@@ -42,8 +44,9 @@ const RUPA = {
 export default function Usulan() {
   const t = useTeks()
   const versi = useStore()
-  const { admin } = useAuth()
+  const { admin, user } = useAuth()
   const aktor = admin.officer
+  const bacaSaja = !user?.superAdmin
 
   const [tab, setTab] = useState('menunggu')
   const [buka, setBuka] = useState(null)
@@ -60,7 +63,11 @@ export default function Usulan() {
     <div className="space-y-6">
       <JudulHalaman
         judul={t('Persetujuan Nilai Dosen')}
-        keterangan={t('Nilai yang dikirim dosen tertahan di sini sampai disetujui. Sebelum Anda memutuskan, sistem sudah memeriksa tiap barisnya lebih dulu.')}
+        keterangan={t(
+          bacaSaja
+            ? 'Usulan nilai dosen dari sebelum dosen mengunggah langsung. Hanya Super Admin yang memutuskannya; Anda bisa melihat isinya.'
+            : 'Usulan nilai dosen dari sebelum dosen mengunggah langsung. Nilainya tertahan di sini sampai Anda putuskan, dan sistem sudah memeriksa tiap barisnya lebih dulu.',
+        )}
       />
 
       <section aria-label={t('Ringkasan angka')} className="grid gap-5 md:grid-cols-3">
@@ -111,6 +118,7 @@ export default function Usulan() {
                 key={u.id}
                 usulan={u}
                 aktor={aktor}
+                bacaSaja={bacaSaja}
                 terbuka={buka === u.id}
                 onToggle={() => setBuka(buka === u.id ? null : u.id)}
               />
@@ -126,7 +134,7 @@ export default function Usulan() {
           >
             {t(
               tab === 'menunggu'
-                ? 'Usulan baru akan muncul di sini begitu dosen mengirim nilai.'
+                ? 'Dosen kini mengunggah nilai langsung, jadi tidak ada usulan baru yang masuk ke sini.'
                 : 'Keputusan yang sudah diambil akan tercatat di sini lengkap dengan alasannya.',
             )}
           </EmptyState>
@@ -142,7 +150,7 @@ export default function Usulan() {
   )
 }
 
-function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
+function BarisUsulan({ usulan: u, aktor, bacaSaja, terbuka, onToggle }) {
   const t = useTeks()
   const [catatan, setCatatan] = useState('')
   const [galat, setGalat] = useState('')
@@ -290,7 +298,12 @@ function BarisUsulan({ usulan: u, aktor, terbuka, onToggle }) {
           ) : null}
 
           {/* ------------------------------ keputusan --------------------------- */}
-          {u.status === 'menunggu' ? (
+          {u.status === 'menunggu' && bacaSaja ? (
+            <p className="mt-4 flex items-start gap-1.5 text-[13px] leading-relaxed text-ink-2">
+              <IconInfo size={14} className="mt-0.5 shrink-0" />
+              {t('Menunggu keputusan Super Admin.')}
+            </p>
+          ) : u.status === 'menunggu' ? (
             <div className="mt-4 space-y-3">
               <label className="block max-w-2xl">
                 <span className="mb-1.5 block text-[13px] font-semibold text-ink">

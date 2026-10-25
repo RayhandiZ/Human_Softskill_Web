@@ -4,7 +4,7 @@ import { StatusTeks, TandaDraft, Terkunci } from '../../components/Ui'
 import Lipat from '../../components/Lipat'
 import { IconCheck, IconChevronDown, IconChevronRight, IconClock, IconLock } from '../../components/Icons'
 import { CONFIG } from '../../lib/config'
-import { KOMPONEN, SUMBER_LIST, getCluster } from '../../lib/curriculum'
+import { SUMBER_LIST, getCluster } from '../../lib/curriculum'
 import { transkripOf } from '../../lib/data'
 import { useStore } from '../../lib/store'
 import { useStudent } from './StudentLayout'
@@ -149,7 +149,8 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
           onClick={onToggle}
           aria-expanded={terbuka}
           aria-controls={idIsi}
-          className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-surface-2 sm:px-6"
+          /* Cincin fokus ke dalam: tombol ini memenuhi kartu overflow-hidden, jadi cincin bawaan terpotong seluruhnya. */
+          className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-surface-2 focus-visible:outline-offset-[-3px] sm:px-6"
         >
           <span className="min-w-0 flex-1">
             <span className="flex flex-wrap items-center gap-2">
@@ -197,7 +198,9 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
 
             <section>
               <h3 className="text-[14px] font-bold text-ink">{t('Aspek yang dibentuk')}</h3>
-              <ul className="mt-2.5 grid gap-2 sm:grid-cols-2">
+              {/* grid-cols-1, bukan kolom implisit: kolom implisit selebar isinya, jadi nama cluster yang panjang
+                  (truncate) melebarkan baris sampai 377px di HP 360px dan terpotong kartu. */}
+              <ul className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {aspek.map((a) => (
                   <li key={a.aspekId} className="flex items-center gap-3 rounded-2xl bg-surface-2 px-3.5 py-2.5">
                     <span className="shrink-0 text-[12.5px] font-bold text-ink">{a.aspek.kode}</span>

@@ -382,7 +382,8 @@ CONFIG.PENGUNCIAN_ASPEK = 'manual'
 const manual = transkripOf(mhsF).aspekById[aspekF.aspek.id]
 console.log('Mode manual: status', manual.status, '.', manual.alasanSementara)
 cek('Mode manual menahan sampai ditandai', manual.status === 'berjalan')
-cek('Alasan menyebut penguncian', String(manual.alasanSementara).includes('menunggu penguncian'))
+// Sejak rapat 24 Okt 2026 layar tidak memakai kata "kunci"; alasannya menyebut ditetapkan final.
+cek('Alasan menyebut penetapan final', String(manual.alasanSementara).includes('menunggu ditetapkan final'))
 
 await setPenguncian({ nim: mhsF.nim, aspekId: aspekF.aspek.id, status: 'final', aktor: 'Andini Prameswari, M.Psi.' })
 const dikunci = transkripOf(mhsF).aspekById[aspekF.aspek.id]

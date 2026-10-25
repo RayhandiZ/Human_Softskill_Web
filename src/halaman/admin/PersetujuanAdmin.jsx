@@ -1,13 +1,19 @@
 import { useState } from 'react'
-import { Badge, Card, CatatanKaki, EmptyState, JudulHalaman, TabSaring } from '../../components/Ui'
-import { IconAlert, IconCheck, IconInbox, IconUndo, IconX } from '../../components/Icons'
-import { PERMINTAAN, batalkanPermintaan, putuskanPermintaan, useStore } from '../../lib/store'
+import { Badge, Card, CardHeader, CatatanKaki, EmptyState, JudulHalaman, TabSaring } from '../../components/Ui'
+import { IconAlert, IconCertificate, IconCheck, IconInbox, IconUndo, IconX } from '../../components/Icons'
+import { PERMINTAAN, PERMINTAAN_SERTIFIKAT, batalkanPermintaan, putuskanPermintaan, useStore } from '../../lib/store'
+import { getStudentByNim } from '../../lib/data'
+import { kelayakanSertifikat } from '../../lib/rules'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
+import DaftarKoreksi from './DaftarKoreksi'
+import { TinjauPermintaan } from './CetakSertifikat'
 
 /* Permintaan admin kepada super admin; lihat src/server/persetujuan.js dan README.md › Persetujuan super admin.
    Super admin melihat semua permintaan dan memutuskannya; admin biasa melihat miliknya dan bisa menariknya.
-   Susunannya mengikuti halaman daftar lain: kepala halaman, lalu satu kartu dengan tab berjumlah. */
+   Susunannya mengikuti halaman daftar lain: kepala halaman, lalu satu kartu dengan tab berjumlah. Sejak rapat 24 Okt
+   2026 super admin juga memutuskan lapis kedua pengajuan ubah nilai dan akses cetak sertifikat di halaman ini (dua
+   kartu di bawah), supaya semua yang menunggunya ada di satu tempat. */
 
 export const LABEL_AKSI = {
   SIMPAN_NILAI: 'Simpan nilai',
@@ -18,6 +24,9 @@ export const LABEL_AKSI = {
   UBAH_BOBOT: 'Ubah bobot',
   UBAH_PENILAIAN: 'Ubah penilaian aspek',
   KELOLA_ASPEK: 'Kelola aspek CPMK',
+  AKSES_DATA_MASTER: 'Minta akses baca data master',
+  // Dari dosen: nilai untuk angkatan yang sudah selesai atau disahkan, atau aspek final (unggahNilaiDosen).
+  PERBAIKAN_NILAI_DOSEN: 'Perbaikan nilai dari dosen',
 }
 
 const RUPA = {
@@ -31,7 +40,7 @@ const RUPA = {
 export default function PersetujuanAdmin() {
   const t = useTeks()
   useStore()
-  const { user } = useAuth()
+  const { user, admin } = useAuth()
   const superAdmin = Boolean(user?.superAdmin)
   const [tab, setTab] = useState('menunggu')
 
@@ -45,8 +54,8 @@ export default function PersetujuanAdmin() {
         judul={t(superAdmin ? 'Persetujuan Admin' : 'Permintaan Saya')}
         keterangan={t(
           superAdmin
-            ? 'Permintaan admin untuk mengubah data mahasiswa yang sudah lewat Semester 3. Setujui untuk menjalankannya persis seperti yang diajukan, atau tolak dengan catatan.'
-            : 'Perubahan pada mahasiswa yang sudah lewat Semester 3 menunggu persetujuan Super Admin sebelum berlaku. Selama masih menunggu, permintaan bisa Anda tarik.',
+            ? 'Permintaan admin dan dosen yang perlu persetujuan Anda, misalnya tanda final, bobot, pengesahan angkatan, akses data master, dan perbaikan nilai untuk angkatan yang sudah disahkan. Setujui untuk menjalankannya persis seperti yang diajukan, atau tolak dengan catatan.'
+            : 'Perubahan yang Anda ajukan menunggu persetujuan Super Admin sebelum berlaku. Selama masih menunggu, permintaan bisa Anda tarik.',
         )}
       />
 
@@ -72,17 +81,66 @@ export default function PersetujuanAdmin() {
           >
             {t(
               tab === 'menunggu'
-                ? 'Permintaan baru muncul di sini begitu perubahan pada mahasiswa yang sudah lewat Semester 3 diajukan.'
+                ? 'Permintaan baru muncul di sini begitu admin mengajukan perubahan yang perlu persetujuan Super Admin.'
                 : 'Permintaan yang sudah diputuskan atau ditarik tercatat di sini.',
             )}
           </EmptyState>
         )}
       </Card>
 
+      {superAdmin ? (
+        <>
+          <Card className="overflow-hidden">
+            <CardHeader
+              icon={IconUndo}
+              title={t('Pengajuan ubah nilai')}
+              subtitle={t('Sudah diteruskan admin Kemahasiswaan. Setujui untuk menerapkan nilai barunya, atau tolak dengan alasan.')}
+            />
+            <DaftarKoreksi aktor={admin?.officer} hanyaGiliran />
+          </Card>
+          <Card className="overflow-hidden">
+            <CardHeader
+              icon={IconCertificate}
+              title={t('Akses cetak sertifikat')}
+              subtitle={t('Sudah disetujui admin Kemahasiswaan. Setujui untuk membuka akses cetak mahasiswa, atau tolak dengan alasan.')}
+            />
+            <SertifikatLapisDua aktor={admin?.officer} />
+          </Card>
+        </>
+      ) : null}
+
       <CatatanKaki>
         {t('Permintaan yang disetujui dijalankan dengan isi yang sama seperti saat diajukan, atas nama admin pengaju, dan diperiksa ulang lebih dulu. Bila datanya sudah berubah, statusnya gagal dan perlu diajukan ulang. Setiap pengajuan dan keputusan tercatat di log aktivitas.')}
       </CatatanKaki>
     </div>
+  )
+}
+
+/** Permintaan akses cetak yang menunggu lapis kedua (super admin), masing-masing dengan panel keputusannya. */
+function SertifikatLapisDua({ aktor }) {
+  const t = useTeks()
+  const daftar = PERMINTAAN_SERTIFIKAT.filter((p) => p.status === 'menunggu_superadmin')
+  if (!daftar.length) return <EmptyState title={t('Tidak ada permintaan akses cetak yang menunggu Anda')} />
+  return (
+    <ul className="divide-y divide-line">
+      {daftar.map((p) => {
+        const s = getStudentByNim(p.nim)
+        const k = s ? kelayakanSertifikat(s) : null
+        return (
+          <li key={p.id} className="px-5 py-4 sm:px-6">
+            <p className="text-[14.5px] font-bold text-ink">
+              {p.nama} · <span className="tabular-nums">{p.nim}</span>
+            </p>
+            <p className="mb-3 mt-0.5 text-[12.5px] text-ink-2">
+              {[s?.program, s ? t('Angkatan {label}', { label: s.angkatanLabel }) : null, k ? t('Nilai akhir {nilai}', { nilai: k.transkrip.akhir.nilai ?? '–' }) : null, t('diajukan {tanggal}', { tanggal: p.diajukan })]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+            <TinjauPermintaan p={p} layak={Boolean(k?.layak)} superAdmin aktor={aktor} />
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 

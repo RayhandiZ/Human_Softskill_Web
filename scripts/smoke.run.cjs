@@ -117,50 +117,36 @@ const ISI = {
     [/<input(?=[^>]*name="sumber")(?=[^>]*value="ENGAGEMENT")[^>]*>/, 'Kemahasiswaan tanpa komponen tidak ditawarkan sebagai sumber', false, true],
   ],
 
+  /* Panel dosen sejak rapat 24 Okt 2026: Beranda hanya memantau, nilai masuk lewat Unggah Nilai dan langsung
+     tersimpan. Lihat README.md › Panel Dosen. */
   '/dosen': [
-    /* Judulnya kini sama dengan nama menunya (Beranda); lihat README.md › Panel Dosen. */
     [/<h1[^>]*>Beranda<\/h1>/, 'judul halaman Beranda, sama dengan menunya', true, true],
-    [/Menunggu dinilai/, 'angka utama: yang belum dinilai'],
-    [/Nilai tidak pernah datang dari mahasiswa/, 'R8 dinyatakan di halaman dosen'],
+    [/Nilai terisi[\s\S]{0,400}dari \d+ nilai/, 'angka utama: nilai yang sudah masuk dari seluruhnya'],
     [/MK Humaniora Semester 1, Sistem Informasi/, 'kelas yang dipegang disebut di kerangka'],
-    [/Tugas yang dikumpulkan/, 'kolom tugas ada di tabel'],
-    [/Belum dinilai/, 'status pengumpulan berlabel, bukan warna saja'],
-    [/tidak langsung masuk transkrip/, 'dijelaskan bahwa nilainya perlu disetujui'],
-    [/aria-label="Nilai untuk /, 'tidak ada kolom nilai di daftar pengumpulan', false, true],
-    /* Footer melayang seperti panel mahasiswa; pintasannya keempat halaman dosen. */
-    [/<footer[\s\S]*?Penilaian[\s\S]{0,900}Riwayat Pengiriman/, 'footer punya pintasan berikon', true, true],
+    [/href="\/dosen\/nilai"[^>]*>[\s\S]{0,300}Unggah nilai/, 'satu tombol menuju Unggah Nilai', true, true],
+    [/Kelengkapan per tugas/, 'kelengkapan per tugas'],
+    [/Nilai mahasiswa/, 'daftar nilai per mahasiswa'],
+    [/aria-expanded="false"[^>]*>Rincian/, 'rincian per mahasiswa bisa dibuka', true, true],
+    [/langsung tersimpan/, 'dijelaskan bahwa unggahan langsung tersimpan'],
+    [/Menunggu dinilai|Penilaian|Riwayat Pengiriman/, 'tidak ada sisa alur pengumpulan dan usulan lama', false],
+    [/<input(?=[^>]*inputmode="decimal")/, 'tidak ada kotak isi nilai di Beranda', false, true],
+    /* Footer melayang seperti panel mahasiswa; pintasannya ketiga halaman dosen. */
+    [/<footer[\s\S]*?Beranda[\s\S]{0,900}Unggah Nilai[\s\S]{0,900}Profil/, 'footer punya pintasan berikon', true, true],
     [/Helpdesk[\s\S]{0,300}vibe@umn\.ac\.id/, 'helpdesk dan kontak tercantum'],
     /* Ukuran panel seperti super admin; tulisan besar, kontras, dan alat lain lewat menu aksesibilitas. */
     [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
   ],
 
-  /* Penilaian dosen kini tiga langkah (README.md › Panel Dosen › Penilaian). Langkah 1 memilih tugas; langkah 2
-     (?komponen=) mengisi nilai. Janji lamanya tetap dijaga: tidak ada tombol simpan langsung, akibat pengiriman
-     dijelaskan, dan setiap kotak nilai berlabel. */
   '/dosen/nilai': [
-    [/Pilih tugas yang ingin Anda nilai/, 'langkah pertama: memilih tugas'],
-    [/aria-label="Langkah penilaian"/, 'langkah-langkah penilaian tertulis', true, true],
-    [/Pilih tugas[\s\S]*Isi nilai[\s\S]*Periksa &amp; kirim/, 'tiga langkah: pilih tugas, isi nilai, periksa & kirim'],
-    [/Nilai tugas ini/, 'tiap tugas punya tombol untuk mulai menilai'],
-    [/Simpan nilai/, 'tidak ada tombol simpan langsung', false],
-    [/Nilai baru masuk transkrip setelah disetujui/, 'dijelaskan bahwa nilainya perlu disetujui'],
-  ],
-
-  '/dosen/nilai?komponen=A1-MK-T1': [
-    [/Tugas yang sedang dinilai/, 'langkah kedua: tugas yang dinilai disebut'],
-    [/Ketik nilai satu per satu/, 'ada cara mengetik'],
-    [/Unggah dari berkas CSV/, 'ada cara mengunggah'],
-    [/Periksa &amp; kirim/, 'tombolnya menuju periksa dan kirim, bukan simpan'],
-    [/Simpan nilai/, 'tidak ada tombol simpan langsung', false],
-    [/belum terlihat oleh mahasiswa/, 'akibat pengiriman dijelaskan'],
-    [/aria-label="Nilai untuk /, 'tiap kotak nilai punya label untuk pembaca layar', true, true],
-    [/inputmode="decimal"/, 'kotak nilai menerima koma desimal', true, true],
-    [/type="number"/, 'tidak ada kotak type=number (roda tetikus bisa mengubah angkanya)', false, true],
-  ],
-
-  '/dosen/usulan': [
-    [/Riwayat pengiriman/, 'judul halaman Riwayat pengiriman, sama dengan menunya'],
-    [/Menunggu keputusan/, 'angka utama: yang menunggu diputuskan'],
+    [/<h1[^>]*>Unggah Nilai<\/h1>/, 'judul halaman Unggah Nilai, sama dengan menunya', true, true],
+    [/Unduh templat \(\.xlsx\)/, 'templat Excel kelas bisa diunduh'],
+    [/Templat berisi \d+ mahasiswa kelas Anda/, 'isi templat dijelaskan'],
+    [/Berkas \.xlsx atau \.csv, paling besar 5 MB/, 'jenis dan batas berkas disebut'],
+    [/accept="\.xlsx,\.csv/, 'kotak berkas menerima .xlsx dan .csv', true, true],
+    [/belum ada yang tersimpan/, 'dijelaskan bahwa berkas diperiksa dulu sebelum disimpan'],
+    [/Periksa sebelum menyimpan/, 'pratinjau baru muncul setelah ada berkas', false],
+    [/Riwayat unggahan/, 'riwayat unggahan ada di halaman yang sama'],
+    [/Super Admin membatalkan/, 'jalan keluar bila keliru dijelaskan'],
   ],
 
   '/admin/usulan': [
@@ -212,7 +198,7 @@ const ISI = {
     [/Ajukan ke Super Admin/, 'super admin tidak diminta mengajukan', false],
   ],
   '/admin/data-master': [
-    [/Halaman ini butuh izin dari Super Admin/, 'admin tanpa izin hanya melihat penjelasan'],
+    [/Minta akses baca data master/, 'admin tanpa izin hanya melihat permintaan akses baca'],
     [/Simpan angkatan/, 'formulir data master tidak tampil tanpa izin', false],
   ],
   '/super/akses': [
@@ -247,7 +233,9 @@ const ISI = {
     [/Cetak [Ss]ertifikat/, 'judul halaman cetak sertifikat'],
     [/[0-9]+ dari [0-9]+ mahasiswa sudah berhak atas sertifikat/, 'jumlah yang berhak tertulis'],
     [/Semua [0-9]+[\s\S]{0,40}Berhak [0-9]+[\s\S]{0,40}Belum berhak [0-9]+/, 'tab kelayakan lengkap dengan jumlahnya'],
-    [/Simpan sebagai PDF/, 'petunjuk simpan PDF untuk dikirim ke mahasiswa'],
+    /* Rapat 24 Okt 2026: cetak menunggu persetujuan dua lapis, dan sertifikat tidak dikirim lewat surel. */
+    [/hanya aktif untuk sertifikat yang akses cetaknya sudah disetujui admin Kemahasiswaan dan Super Admin/, 'petunjuk: tombol cetak menunggu persetujuan dua lapis'],
+    [/jangan kirim lewat surel/, 'petunjuk: sertifikat tidak dikirim lewat surel'],
     [/aria-label="Cetak sertifikat [^"]+"/, 'tiap baris punya tombol cetak berlabel nama mahasiswa', true, true],
   ],
 }
@@ -281,16 +269,14 @@ const RUTE = [
   ['super', '/super/aturan', 'Aturan sistem'],
   ['super', '/super/profil', 'Profil super admin'],
   ['dosen', '/dosen', 'Beranda dosen'],
-  ['dosen', '/dosen/nilai', 'Penilaian dosen: pilih tugas'],
-  ['dosen', '/dosen/nilai?komponen=A1-MK-T1', 'Penilaian dosen: isi nilai'],
-  ['dosen', '/dosen/usulan', 'Riwayat pengiriman dosen'],
+  ['dosen', '/dosen/nilai', 'Unggah nilai dosen'],
   ['dosen', '/dosen/profil', 'Profil dosen'],
 ]
 
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiBilahBawah, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiBilahBawah, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiLayarUnggah, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAlurSertifikat,ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -317,9 +303,8 @@ const RUTE = [
     '/admin/usulan': [[/Belum ada usulan dari dosen/, 'antrean usulan kosong']],
     '/admin/sertifikat': [[/Belum ada data mahasiswa/, 'halaman cetak sertifikat kosong'], [/0 dari 0 mahasiswa/, 'jumlahnya nol, bukan angka contoh']],
     '/admin/angkatan': [[/Angkatan ini belum punya mahasiswa/, 'angkatan tanpa mahasiswa disebut apa adanya'], [/2025 Genap/, 'angkatan tetap dari data master']],
-    '/dosen': [[/Belum ada pengumpulan/, 'pengumpulan kosong'], [/MK Humaniora Semester 1, Sistem Informasi/, 'kelas dosen tetap dari sesi login']],
-    '/dosen/nilai': [[/Belum ada yang mengumpulkan tugas ini/, 'input nilai dosen kosong']],
-    '/dosen/usulan': [[/Belum ada usulan terkirim/, 'status usulan kosong']],
+    '/dosen': [[/Belum ada mahasiswa di kelas Anda/, 'daftar mahasiswa kelas kosong'], [/MK Humaniora Semester 1, Sistem Informasi/, 'kelas dosen tetap dari sesi login']],
+    '/dosen/nilai': [[/Belum ada mahasiswa di kelas Anda/, 'halaman unggah menjelaskan kelasnya belum punya mahasiswa'], [/Templat berisi 0 mahasiswa/, 'templat berisi 0 mahasiswa tidak ditawarkan', false], [/Belum ada unggahan/, 'riwayat unggahan kosong']],
   }
   /* Nama penilai dan dosen contoh yang dulu tampil di antrean dan riwayat. */
   const NAMA_CONTOH = /Rahmat Nugroho|Maria Ulfah|Bambang Setiawan|Yohanes Kurniawan|Tim PDP|Student Service:/
@@ -335,7 +320,8 @@ const RUTE = [
         ['terbuka tanpa galat', !html.includes('Aplikasi gagal dimuat')],
         ['tidak ada NIM data contoh', bocor.length === 0, bocor.slice(0, 3).join(', ')],
         ['tidak ada nama penilai contoh', !NAMA_CONTOH.test(teks), (teks.match(NAMA_CONTOH) || [])[0]],
-        ...(ISI_KOSONG[rute] || []).map(([pola, ket]) => [ket, pola.test(teks)]),
+        // Seperti ISI: unsur ketiga false berarti polanya tidak boleh ada.
+        ...(ISI_KOSONG[rute] || []).map(([pola, ket, harusAda = true]) => [ket, pola.test(teks) === harusAda]),
       ]
       const rusak = cek.filter(([, ok]) => !ok)
       gagal += rusak.length
@@ -479,7 +465,7 @@ const RUTE = [
     const wajib = [
       ['tidak ada tombol garis tiga', !b.adaHamburger],
       ['bilah bawah ada', b.ada],
-      ['bilah bawah memuat 4 tautan', b.tautan.length === 4, b.tautan.join(', ')],
+      ['bilah bawah memuat 3 tautan', b.tautan.length === 3, b.tautan.join(', ')],
       ['setiap tautan berlabel teks', b.tautan.every((x) => x.length > 0), b.tautan.join(', ')],
       ['halaman yang terbuka ditandai aria-current', b.aktif === 'Beranda', b.aktif],
     ]
@@ -691,10 +677,23 @@ const RUTE = [
      tautan yang dihasilkan lonceng memang membuka tombol keputusannya. */
   const hk = await ujiKeputusanKoreksi(hl.tautanKoreksi ?? '/admin/nilai?tab=koreksi&semester=1&sumber=MK')
   const cekKoreksi = [
-    ['tombol Setujui ada di tab koreksi', hk.adaTombol],
-    ['menekan Setujui tidak melempar galat', !hk.galat, hk.galat],
-    ['pengajuannya berubah menjadi Disetujui', hk.adaLencanaDisetujui],
-    ['tombol keputusannya hilang setelah diputuskan', hk.tombolnyaHilang],
+    ['admin: tombol Teruskan ke Super Admin ada di tab koreksi', hk.adaTombolTeruskan],
+    ['admin: tidak ada tombol menerapkan nilai', hk.adminTanpaTombolTerapkan],
+    ['admin: meneruskan tanpa nilai usulan ditahan dengan pesan', hk.tanpaNilaiDitahan],
+    ['admin: meneruskan mengubah status ke Menunggu Super Admin', hk.diteruskan],
+    ['admin: nilai usulan dan nama admin tercatat', hk.lapis1Tercatat],
+    ['admin: nilai mahasiswa belum berubah sesudah diteruskan', hk.nilaiBelumBerubah],
+    ['admin: tombolnya hilang dan tertulis menunggu Super Admin', hk.tombolAdminHilang],
+    ['admin: tidak bisa memutuskan lapis kedua', hk.adminTakBisaLapisDua],
+    ['super admin: nilai usulan admin sudah terisi', hk.usulanTerisi],
+    ['super admin: kartu yang sudah terbuka sebelum diteruskan ikut terisi nilai usulan', hk.kartuTerbukaIkutTerisi],
+    ['super admin: menolak tanpa alasan 10 karakter ditahan', hk.tolakPendekDitahan],
+    ['super admin: menyetujui mengubah status ke Disetujui', hk.disetujui],
+    ['super admin: nilainya masuk sebagai batch koreksi', hk.batchKoreksi],
+    ['super admin: nilai mahasiswa berubah ke nilai usulan', hk.nilaiBerubah],
+    ['super admin: pengajuannya hilang dari daftar menunggu', hk.hilangDariDaftar],
+    ['Riwayat batch menyebut batch-nya dari pengajuan koreksi', hk.riwayatBatchMenyebutKoreksi],
+    ['menekan tombol tidak melempar galat', !hk.galat, hk.galat],
   ]
   const rusakKoreksi = cekKoreksi.filter(([, ok]) => !ok)
   gagal += rusakKoreksi.length
@@ -704,8 +703,9 @@ const RUTE = [
   }
 
   /* ---------------- sasaran input: prodi, fakultas, dan tanda -------------- */
+  /* Sejak rapat 24 Okt 2026 hanya super admin yang mengisi nilai dan menandai baris; admin biasa hanya melihat. */
   console.log('')
-  w.localStorage.setItem('sk5c.session', SESI.admin)
+  w.localStorage.setItem('sk5c.session', SESI.super)
   const ht = await ujiSasaranDanTanda(
     '/admin/nilai?semester=1&sumber=MK&angkatan=2026',
     'Sistem Informasi',
@@ -730,6 +730,12 @@ const RUTE = [
     ['memilih Final menandai barisnya', ht.terpilihFinal],
     ['menu menutup sendiri setelah memilih', ht.menuTertutupSesudah],
   ]
+  w.localStorage.setItem('sk5c.session', SESI.admin)
+  const htmlAdminNilai = await render('/admin/nilai?semester=1&sumber=MK&angkatan=2026')
+  cekTanda.push(
+    ['admin biasa: nilai tampil tanpa kotak isian', !/<input[^>]*inputmode="numeric"/.test(htmlAdminNilai) && /Nilai Mahasiswa/.test(htmlAdminNilai)],
+    ['admin biasa: tidak ada tombol tanda per baris', !/aria-label="Tandai status untuk/.test(htmlAdminNilai)],
+  )
   const rusakTanda = cekTanda.filter(([, ok]) => !ok)
   gagal += rusakTanda.length
   console.log((rusakTanda.length ? 'GAGAL  ' : 'OK     ') + 'sasaran input & tanda per baris')
@@ -1051,35 +1057,71 @@ const RUTE = [
   for (const [ket, ok] of cekPk) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
   const srBelum = await ujiSertifikat(null)
-  const srLayak = await ujiSertifikat('DEMO-LAYAK')
   const srKosong = await ujiSertifikat('DEMO-KOSONG')
+  /* Alur dua lapis sampai Siap dicetak; uji cetak mahasiswa dan admin untuk yang layak berjalan di dalamnya. */
+  const alur = await ujiAlurSertifikat()
+  const srLayak = alur.cetakMahasiswa ?? {}
   const cekSr = [
     ['belum layak: tombol cetak ada tapi mati', srBelum.adaTombol && srBelum.mati],
     ['belum layak: klik tidak mencetak apa pun', srBelum.dicetak === 0],
     ['belum layak: tidak ada lembar sertifikat sama sekali', !srBelum.adaLembar],
     ['kelima syarat tercantum beserta statusnya', srBelum.jumlahSyarat === 5 && srBelum.belum === 4],
     ['satu komponen kosong saja sudah mematikan tombol', srKosong.mati && !srKosong.adaLembar],
-    ['layak: tombol hidup dan klik mencetak', !srLayak.mati && srLayak.dicetak === 1],
-    ['layak: lembar sertifikat memuat nama dan nilai', /Kirana Wulandari/.test(srLayak.isiLembar) && /nilai akhir [0-9]+ dan predikat [A-D]/.test(srLayak.isiLembar)],
+    ['alur berjalan tanpa galat', !alur.galat, alur.galat],
+    ['layak tanpa permintaan: hanya tombol Minta akses cetak', alur.awalBisaMinta],
+    ['layak tanpa permintaan: belum ada lembar sertifikat', alur.awalTanpaLembar],
+    ['meminta: tercatat Menunggu Admin', alur.mintaTercatat],
+    ['meminta: tombolnya menjadi Menunggu persetujuan dan mati', alur.menungguMati],
+    ['meminta: langkah pertama yang aktif', alur.langkahPertamaAktif],
+    ['meminta: lembar sertifikat tetap tidak ada', alur.masihTanpaLembar],
+    ['permintaan kedua selagi berjalan ditahan', alur.gandaDitahan],
+    ['admin: tab Menunggu Anda memuat permintaannya dengan tombol Tinjau', alur.adminAdaTinjau],
+    ['admin: Tinjau membuka panel keputusan', alur.tinjauTerbuka],
+    ['admin: menolak tanpa alasan ditahan', alur.tolakTanpaAlasanDitahan],
+    ['admin: menolak dengan alasan tercatat', alur.ditolak],
+    ['mahasiswa melihat alasan penolakan', alur.alasanTampil],
+    ['mahasiswa bisa meminta lagi sesudah ditolak', alur.mintaLagi],
+    ['admin: meneruskan ke Super Admin tercatat atas namanya', alur.diteruskan],
+    ['admin: tidak bisa memutuskan lapis kedua', alur.adminTakBisaLapisDua],
+    ['admin: panel Tinjau di jendela lain ikut hilang sesudah diputuskan', alur.panelJendelaLainHilang],
+    ['sesudah diteruskan mahasiswa belum bisa mencetak', alur.belumBisaCetak],
+    ['super admin: permintaannya ada di halaman Persetujuan', alur.superMelihat],
+    ['super admin: menyetujui membuat sertifikat Siap dicetak', alur.siap],
+    ['super admin: permintaannya hilang dari daftar menunggu', alur.hilangDariDaftar],
+    ['mahasiswa: ketiga langkah selesai', alur.langkahSelesai],
+    ['siap dicetak: lembar belum terpasang sebelum tombol Cetak ditekan', alur.lembarBelumDipasang],
+    ['siap dicetak: tombol hidup dan klik mencetak', srLayak.adaTombol && !srLayak.mati && srLayak.dicetak === 1],
+    ['siap dicetak: lembar sertifikat memuat nama dan nilai', /Kirana Wulandari/.test(srLayak.isiLembar ?? '') && /nilai akhir [0-9]+ dan predikat [A-D]/.test(srLayak.isiLembar ?? '')],
+    ['setiap pembukaan cetak tercatat (mahasiswa lalu admin)', alur.jumlahCetak === 2, alur.jumlahCetak],
+    ['admin: tombol Cabut akses ada untuk yang Siap dicetak', alur.adaTombolCabut],
+    ['admin: Cabut akses membuka panel', alur.panelCabutTerbuka],
+    ['admin: panel menyebut berapa kali sudah dibuka untuk dicetak', alur.jumlahCetakDisebut],
+    ['admin: mencabut tanpa alasan ditahan', alur.cabutTanpaAlasanDitahan],
+    ['admin: mencabut dengan alasan tercatat atas namanya', alur.dicabut],
+    ['admin: barisnya tertulis Dicabut, tombol Cetak mati, tombol Cabut hilang', alur.barisMenyebutDicabut],
+    ['mahasiswa: alasan pencabutan tampil dan bisa meminta lagi', alur.mahasiswaMelihatPencabutan],
+    ['mahasiswa: sesudah dicabut tidak ada lembar sertifikat', alur.tanpaLembarSesudahDicabut],
+    ['sesudah dicabut pencetakan ditolak dan tidak terhitung', alur.cetakSesudahDicabutDitolak],
+    ['sesudah dicabut permintaan baru masuk lagi ke lapis pertama', alur.mintaLagiSesudahDicabut],
   ]
   const rusakSr = cekSr.filter(([, ok]) => !ok)
   gagal += rusakSr.length
-  console.log((rusakSr.length ? 'GAGAL  ' : 'OK     ') + 'Tombol cetak sertifikat')
-  for (const [ket, ok] of cekSr) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
+  console.log((rusakSr.length ? 'GAGAL  ' : 'OK     ') + 'Sertifikat mahasiswa: akses cetak dua lapis')
+  for (const [ket, ok, rinci] of cekSr) console.log('       ' + (ok ? 'v ' : 'x ') + ket + (ok || rinci == null ? '' : '  → ' + rinci))
 
-  const saLayak = await ujiSertifikatAdmin('DEMO-LAYAK')
+  const saLayak = alur.cetakAdmin ?? {}
   const saKosong = await ujiSertifikatAdmin('DEMO-KOSONG')
   const cekSa = [
     ['?cari= mengisi kotak cari dan menyaring ke satu mahasiswa', saLayak.cariTerisi && saLayak.satuBaris && saKosong.satuBaris],
-    ['layak: tertulis Berhak', /^Berhak/.test(saLayak.status)],
+    ['layak: tertulis Berhak', /^Berhak/.test(saLayak.status ?? '')],
     ['belum layak: tertulis Belum berhak beserta alasannya', /^Belum berhak./.test(saKosong.status) && saKosong.alasanTerkait],
     ['belum layak: tombol cetak ada tapi mati', saKosong.adaTombol && saKosong.mati],
     ['belum layak: klik tidak mencetak apa pun', saKosong.dicetak === 0 && !saKosong.langsungDiBody],
-    ['sebelum diklik tidak ada lembar sertifikat di halaman', !saLayak.sebelumKlik],
-    ['layak: tombol hidup dan klik mencetak sekali', !saLayak.mati && saLayak.dicetak === 1],
-    ['layak: saat print() dipanggil lembarnya sudah langsung di <body>', saLayak.langsungDiBody],
-    ['layak: lembarnya sama persis dengan yang dicetak mahasiswa', saLayak.isiLembar === srLayak.isiLembar],
-    ['layak: lembar bertahan sampai afterprint, lalu dilepas', saLayak.bertahanSampaiAfterprint && saLayak.dilepasSesudahAfterprint],
+    ['sebelum diklik tidak ada lembar sertifikat di halaman', saLayak.sebelumKlik === false],
+    ['siap dicetak: tombol hidup dan klik mencetak sekali', saLayak.adaTombol && !saLayak.mati && saLayak.dicetak === 1],
+    ['siap dicetak: saat print() dipanggil lembarnya sudah langsung di <body>', saLayak.langsungDiBody],
+    ['siap dicetak: lembarnya sama persis dengan yang dicetak mahasiswa', Boolean(saLayak.isiLembar) && saLayak.isiLembar === srLayak.isiLembar],
+    ['siap dicetak: lembar bertahan sampai afterprint, lalu dilepas', saLayak.bertahanSampaiAfterprint && saLayak.dilepasSesudahAfterprint],
   ]
   const rusakSa = cekSa.filter(([, ok]) => !ok)
   gagal += rusakSa.length
@@ -1165,8 +1207,9 @@ const RUTE = [
     ['pencarian NIP menyisakan dosen itu', ps.cariAkun],
     ['akun super admin (milik sendiri) tidak bisa dicabut', ps.superTidakBisaDicabut],
     ['tab Mahasiswa: NIM, prodi, dan angkatan tampil, pencarian NIM jalan, akses bisa dicabut', ps.aksesMahasiswa],
-    ['izin data master: hanya di baris admin biasa, butuh alasan, lalu lencananya muncul', ps.beriIzinMaster],
-    ['Data Master: admin tanpa izin hanya melihat penjelasan, tanpa menu', ps.dataMasterTanpaIzin],
+    ['izin lihat data master: hanya di baris admin biasa, butuh alasan, lalu lencananya muncul', ps.beriIzinMaster],
+    ['Data Master: admin tanpa izin melihat kartu minta akses baca (tombolnya mati tanpa alasan), menunya ada', ps.dataMasterTanpaIzin],
+    ['Data Master: admin berizin hanya melihat, tanpa tombol tambah dan ubah', ps.dataMasterBacaSaja],
     ['Data Master: super admin melihat menu, tiga tab, pratinjau angkatan, dan catatan NIM', ps.dataMasterSuper],
     ['pintu API yang belum dibuat (404) dikenali', ps.apiBelumAdaDikenali],
   ]
@@ -1305,7 +1348,7 @@ const RUTE = [
     ['ada tautan surel', ly.adaSurel],
     ['nomor tel: tanpa spasi', ly.telSah],
     ['tautan keluar memakai rel noopener', ly.tautanKeluarAman],
-    ['jam layanan dicantumkan', ly.adaJamLayanan],
+    ['tiap saluran menyebut nomor atau keterangannya', ly.tiapSaluranBerketerangan],
     ['panelnya memakai bahan kaca', ly.berkaca],
     ['barisnya muncul berurutan', ly.berurutanMasuk],
     ['Escape menutup panelnya', ly.escMenutup],
@@ -1339,28 +1382,65 @@ const RUTE = [
   console.log((rusakSeret.length ? 'GAGAL  ' : 'OK     ') + 'Pemilih bahasa: klik, seret, papan ketik')
   for (const [ket, ok] of cekSeret) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
-  /* ---------------- Alur dosen: usul, setujui, tolak, tahan ---------------- */
+  /* ------------- Unggahan nilai dosen: baca, tolak, simpan, batalkan ------------- */
   console.log('')
   const ad = await ujiAlurDosen()
   const cekDosen = [
-    ['ada pengumpulan yang bisa dinilai', ad.adaAntrean],
-    ['usulan tercatat sebagai menunggu', ad.usulanTercatat],
-    ['nilainya BELUM masuk transkrip', ad.belumMasukTranskrip],
-    ['status pengumpulan jadi menunggu', ad.statusJadiMenunggu],
-    ['masuk antrean persetujuan admin', ad.masukAntreanAdmin],
-    ['admin bisa menyetujui', ad.disetujui],
-    ['barulah nilainya masuk transkrip', ad.masukTranskrip],
-    ['status pengumpulan jadi tercatat', ad.statusJadiDinilai],
-    ['tercatat sebagai batch yang bisa dibatalkan', ad.punyaBatch],
-    ['tidak bisa diputuskan dua kali', ad.tidakBisaDiputusDuaKali],
-    ['penolakan tidak menulis nilai apa pun', ad.tolakTidakMenulis],
-    ['status pengumpulan jadi ditolak', ad.statusJadiDitolak],
-    ['sistem menahan usulan yang melanggar', ad.sistemMenahan],
-    ['usulan yang ditahan tetap menunggu', ad.tetapMenunggu],
+    ['kelas dosen hanya mahasiswa prodi dan semesternya', ad.kelasTersaring],
+    ['kelas punya lebih dari satu tugas', ad.adaDuaTugas],
+    ['templat dikenali dari kode tugasnya', ad.templatDikenali],
+    ['templat yang diunggah kembali tidak mengubah apa pun', ad.templatTanpaPerubahan],
+    ['rekap dosen terbaca (kolom No diabaikan, nama tugas lengkap)', ad.rekapTerbaca],
+    ['NIM yang kehilangan nol depannya tetap cocok', ad.nimTanpaNolCocok],
+    ['koma desimal terbaca', ad.komaDesimal],
+    ['membaca berkas belum menyimpan apa pun', ad.belumTersimpanSaatDibaca],
+    ['disimpan: nilainya langsung masuk transkrip', ad.langsungTersimpan],
+    ['tercatat sebagai satu unggahan di riwayat dosen', ad.tercatatSebagaiUnggahan],
+    ['berkas yang sama diunggah lagi: tidak ada perubahan', ad.unggahUlangTanpaPerubahan],
+    ['simpan ulang tanpa perubahan tidak membuat unggahan baru', ad.simpanUlangTidakMenulis],
+    ['menolak NIM yang tidak terdaftar', ad.tolakNimAsing],
+    ['menolak nilai di luar 0 sampai 100', ad.tolakDiLuarRentang],
+    ['menolak nilai yang bukan angka', ad.tolakBukanAngka],
+    ['menolak NIM ganda', ad.tolakNimGanda],
+    ['menolak kolom berisi angka yang tidak dikenali', ad.tolakKolomAsing],
+    ['menolak berkas tanpa kolom NIM', ad.tolakTanpaKolomNim],
+    ['menolak dua kolom untuk satu tugas', ad.tolakKolomGanda],
+    ['menolak angka di kolom yang judulnya kosong (tempelan bergeser)', ad.tolakAngkaTanpaJudul],
+    ['menolak angka di luar baris judul (csv)', ad.tolakAngkaLewatJudul],
+    ['kolom tanpa judul disebut dengan huruf Excel-nya', ad.kolomTanpaJudulDisebut],
+    ['catatan teks di kolom tanpa judul tidak menghalangi', ad.teksTanpaJudulDibiarkan],
+    ['aspek yang belum dibuka disebut sekali per baris', ad.aspekBelumDibukaSekali],
+    ['pesan galatnya ada di kamus (ikut diterjemahkan)', ad.pesanGalatDiKamus],
+    ['aspek final tidak ditolak: ditandai untuk diajukan ke Super Admin', ad.aspekFinalDiajukan],
+    ['sebab persetujuan: angkatan disahkan, aspek final, atau langsung', ad.sebabPersetujuan],
+    ['angkatan yang diampu: kelasnya hanya angkatan itu, termasuk yang disahkan', ad.kelasDiampu],
+    ['unggahan campuran: pratinjau memisahkan yang diajukan', ad.pratinjauCampur],
+    ['perbaikan angkatan disahkan tanpa alasan cukup ditahan, tidak ada yang tersimpan', ad.perbaikanTanpaAlasanDitahan],
+    ['unggahan campuran: angkatan berjalan tersimpan, yang disahkan diajukan dan nilainya belum berubah', ad.campuran],
+    ['rekap berskala 0-10 diperingatkan, tidak ditolak', ad.peringatkanSkala10],
+    ['ringkasan Beranda dihitung dari nilai tersimpan', ad.ringkasanKelas],
+    ['dibatalkan: nilainya kembali seperti semula', ad.dibatalkanKembali],
+    ['riwayat dosen menandai unggahan yang dibatalkan', ad.riwayatMenandaiBatal],
   ]
+  w.localStorage.setItem('sk5c.session', SESI.dosen)
+  const lu = await ujiLayarUnggah()
+  cekDosen.push(
+    ['layar: kotak berkas menerima .xlsx dan .csv', lu.menerimaXlsxDanCsv],
+    ['layar: galat berkas tampil', lu.galatTampil],
+    ['layar: tombol simpan terkunci selama ada galat', lu.simpanTerkunciSaatGalat],
+    ['layar: berkas .xls lama ditolak dengan arahan', lu.xlsLamaDitolak],
+    ['layar: pratinjau berkas yang benar', lu.pratinjauTampil],
+    ['layar: belum tersimpan sebelum tombol ditekan', lu.belumTersimpanSebelumKlik],
+    ['layar: tersimpan setelah tombol ditekan', lu.tersimpanSetelahKlik],
+    ['layar: pesan berhasil tampil', lu.pesanBerhasil],
+    ['layar: pratinjau ditutup sesudah simpan', lu.pratinjauDitutup],
+    ['layar: riwayat unggahan bertambah', lu.riwayatBertambah],
+    ['layar: kelas otomatis yang kosong dijelaskan, tanpa templat dan kotak unggah', lu.kelasKosongOtomatis],
+    ['layar: angkatan pilihan yang kosong dijelaskan, tanpa templat dan kotak unggah', lu.kelasKosongPilihan],
+  )
   const rusakDosen = cekDosen.filter(([, ok]) => !ok)
   gagal += rusakDosen.length
-  console.log((rusakDosen.length ? 'GAGAL  ' : 'OK     ') + 'Alur nilai dosen -> persetujuan')
+  console.log((rusakDosen.length ? 'GAGAL  ' : 'OK     ') + 'Unggahan nilai dosen')
   for (const [ket, ok] of cekDosen) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
   console.log(gagal ? '\n' + gagal + ' rute bermasalah' : '\nSeluruh rute merender tanpa galat')

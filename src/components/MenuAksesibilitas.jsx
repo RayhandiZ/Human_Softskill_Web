@@ -59,7 +59,7 @@ export function useAkarAksesibilitas() {
   const kelas = kelasAksesibilitas(setelan)
   return {
     kelasAkar: 'akar-a11y ' + hurufDisleksia.variable + (kelas ? ' ' + kelas : ''),
-    gayaIsi: skala !== 1 ? { zoom: skala, '--skala': skala } : undefined,
+    gayaIsi: skala !== 1 ? { zoom: skala } : undefined,
     pemandu: setelan.pemandu,
   }
 }

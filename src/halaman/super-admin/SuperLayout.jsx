@@ -20,7 +20,8 @@ import {
   IconMenu,
   IconUsers,
 } from '../../components/Icons'
-import { permintaanMenunggu, useStore } from '../../lib/store'
+import { PERMINTAAN_SERTIFIKAT, permintaanMenunggu, useStore } from '../../lib/store'
+import { PENGAJUAN_KOREKSI } from '../../lib/data'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 import { kunciSesi, useProfil } from '../../lib/profil'
@@ -64,7 +65,11 @@ export default function SuperLayout({ children }) {
   const jalur = usePathname()
   const [laci, setLaci] = useState(false)
   const { foto } = useProfil(kunciSesi(user))
-  const menunggu = permintaanMenunggu().length
+  // Lencana Persetujuan: permintaan admin ditambah lapis kedua pengajuan ubah nilai dan akses cetak sertifikat.
+  const menunggu =
+    permintaanMenunggu().length +
+    PENGAJUAN_KOREKSI.filter((k) => k.status === 'menunggu_superadmin').length +
+    PERMINTAAN_SERTIFIKAT.filter((p) => p.status === 'menunggu_superadmin').length
   const menu = menuSuper(menunggu)
   const a11y = useAkarAksesibilitas()
 

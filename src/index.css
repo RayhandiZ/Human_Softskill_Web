@@ -1291,8 +1291,8 @@ body {
 }
 
 /* ------------------------------- panel dosen -------------------------------- */
-/* Tinggi bilah bawah HP, supaya isi halaman, footer, bilah aksi yang menempel, dan tombol bantuan mengambang tidak
-   saling menutupi. Lihat README.md › Panel Dosen. */
+/* Tinggi bilah bawah HP, supaya isi halaman, footer, dan tombol bantuan mengambang tidak saling menutupi. Lihat
+   README.md › Panel Dosen. */
 .panel-dosen {
   /* 68px tautan + 1px garis atas bilah bawah. */
   --tinggi-bilah-bawah: calc(69px + env(safe-area-inset-bottom, 0px));
@@ -1314,18 +1314,9 @@ body {
     padding-bottom: 0;
   }
 }
-/* --naik-bantuan: diisi Nilai.jsx (useBantuanDiAtasBilah) selama bilah aksi menempel atau baru lepas, supaya tombol
-   bantuan melayang di atas bilah itu; selebihnya 0. */
+/* Tombol bantuan melayang di atas bilah bawah HP. */
 .bantuan-dosen {
-  bottom: calc(var(--tinggi-bilah-bawah) + var(--naik-bantuan, 0px) + 20px);
-}
-/* Bilah aksi menempel di dasar layar (di atas bilah bawah HP), latarnya pekat supaya terbaca di atas tabel. Ia
-   berada di dalam .isi-zoom, sedangkan bilah bawah tidak; jarak menempelnya dibagi --skala supaya tetap tepat di
-   atas bilah bawah saat "Ukuran tulisan" diubah. */
-.bilah-aksi-dosen {
-  position: sticky;
-  bottom: calc(var(--tinggi-bilah-bawah) / var(--skala, 1));
-  z-index: 20;
+  bottom: calc(var(--tinggi-bilah-bawah) + 20px);
 }
 
 /* ---------------------------- menu aksesibilitas ----------------------------- */

@@ -126,12 +126,52 @@ const DARI_DATA = [
   'Rata-rata', 'Ambil tertinggi', 'Pakai kolom terakhir', '— Abaikan kolom ini —',
   /* Jenis penilaian MK (LABEL_JENIS di Kurikulum dan EditorPenilaian). */
   'Tugas', 'Sikap', 'UTS', 'UAS',
-  /* Panel dosen: label menu (DosenLayout, diterjemahkan MenuSamping dan BilahBawah) dan pesan salah isi nilai
-     (bacaNilai di dosen/Nilai.jsx, diterjemahkan lewat t(h.salah)). */
-  'Beranda', 'Penilaian', 'Riwayat Pengiriman', 'Riwayat', 'Profil',
-  'Tulis angka saja, misalnya 85 atau 85,5.', 'Nilai paling tinggi 100.',
-  /* Label langkah penilaian (larik di komponen Langkah, diterjemahkan lewat t(l.label)). */
-  'Pilih tugas', 'Isi nilai', 'Periksa & kirim',
+  /* Cara masuknya nilai satu batch (CARA_BATCH di admin/Nilai.jsx, lewat t(CARA_BATCH[b.cara])). */
+  'input manual', 'unggahan dosen', 'pengajuan koreksi',
+  /* Persetujuan dua lapis (src/lib/duaLapis.js): label status koreksi dan sertifikat, kalimat keadaan sertifikat
+     (KALIMAT_KEADAAN di student/Sertifikat.jsx), dan ubin Sertifikat di Dashboard (UBIN_SERTIFIKAT). */
+  'Menunggu Admin', 'Menunggu Super Admin', 'Disetujui', 'Ditolak', 'Siap dicetak',
+  'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.',
+  'Permintaan akses cetak sedang ditinjau admin Kemahasiswaan.',
+  'Admin Kemahasiswaan sudah menyetujui. Menunggu persetujuan Super Admin.',
+  'Akses cetak sudah disetujui. Sertifikat siap dicetak.',
+  'Permintaan akses cetak ditolak. Periksa alasannya, lalu ajukan lagi bila sudah sesuai.',
+  'Belum tersedia', 'Bisa diminta', 'Minta akses cetak di halaman ini', 'Menunggu persetujuan',
+  'Sedang ditinjau admin Kemahasiswaan', 'Menunggu persetujuan Super Admin', 'Buka untuk mencetak',
+  'Permintaan ditolak', 'Buka untuk melihat alasannya',
+  /* Akses cetak yang dicabut: label status, kalimat keadaan, dan ubin Dashboard. */
+  'Dicabut', 'Akses dicabut',
+  /* Unggahan dosen yang diajukan ke Super Admin (SEBAB_PERSETUJUAN dan STATUS_PERMINTAAN di dosen/Unggah.jsx), dan
+     label tindakannya di Persetujuan dan Log Aktivitas (LABEL_AKSI, LABEL_LOG). */
+  'angkatan sudah disahkan', 'program sudah selesai', 'aspek sudah final',
+  'Menunggu persetujuan Super Admin', 'Disetujui Super Admin', 'Ditolak Super Admin', 'Gagal dijalankan', 'Ditarik',
+  'Perbaikan nilai dari dosen', 'Ubah kelas dosen',
+  'Akses cetak sertifikatmu dicabut. Baca alasannya, lalu minta lagi bila masalahnya sudah selesai.',
+  /* Label menu panel dosen (DosenLayout, diterjemahkan MenuSamping dan BilahBawah); 'Riwayat' juga menu mahasiswa. */
+  'Beranda', 'Unggah Nilai', 'Unggah', 'Riwayat', 'Profil',
+  /* Unggahan nilai dosen: galat dan peringatan bacaRekap (src/lib/unggahDosen.js) dan galat bacaBerkas
+     (dosen/Unggah.jsx), diterjemahkan lewat t(g.teks, g.isi) dan t(e.message); lalu isi lembar templat Excel
+     (lembarTemplat di src/lib/unggahDosen.js, yang tidak dipindai). */
+  'Cara mengisi templat ini', 'Kelas: {kelas}.', 'Nilai mahasiswa', 'Petunjuk',
+  'Satu baris untuk satu mahasiswa. Jangan ubah baris judul, kolom NIM, dan urutan kolomnya.',
+  'Nilai yang sudah tersimpan ikut terisi. Cukup ubah atau tambah yang perlu.',
+  'Simpan sebagai .xlsx, lalu unggah di halaman Unggah Nilai.',
+  'Berkasnya kosong: tidak ada baris judul maupun nilai.',
+  'Kolom NIM tidak ditemukan di baris pertama. Pakai templat dan jangan ubah baris judulnya.',
+  'Kolom "{kolom}" tidak dikenali sebagai tugas kelas Anda. Pakai judul kolom dari templat.',
+  'Kolom "{kolom}" dan "{lain}" sama-sama untuk {kode}. Hapus salah satunya.',
+  'Tidak ada kolom tugas yang dikenali. Pakai templat dari halaman ini.',
+  'Ada angka di kolom tanpa judul: {kolom}. Pastikan setiap nilai berada di bawah judul tugasnya, lalu hapus angka di kolom tersebut.',
+  'Baris {baris}: NIM kosong.',
+  'Baris {baris}: NIM {nim} tidak terdaftar di kelas Anda.',
+  'Baris {baris}: NIM {nim} sudah ada di baris {lain}.',
+  'Baris {baris} (NIM {nim}), kolom {kode}: "{sel}" bukan angka 0 sampai 100.',
+  'Baris {baris} (NIM {nim}): aspek {aspek} baru dibuka pada Semester {n}.',
+  'Kolom {kode}: semua nilai barunya {maks} atau kurang. Templat memakai skala 0 sampai 100; bila rekap Anda berskala 0 sampai 10 atau 0 sampai 4, ubah dulu ke 0 sampai 100.',
+  'Berkasnya lebih dari 5 MB. Pastikan ini rekap nilai kelas Anda.',
+  'Berkas .xls (Excel lama) belum bisa dibaca. Buka di Excel, simpan sebagai .xlsx, lalu unggah lagi.',
+  'Pilih berkas .xlsx atau .csv.',
+  'Berkas ini tidak terbaca sebagai Excel. Simpan ulang sebagai .xlsx lalu unggah lagi.',
   /* Alat di menu aksesibilitas semua panel (larik KONTEN, WARNA, ALAT di MenuAksesibilitas.jsx). */
   'Sorot judul', 'Sorot tautan', 'Huruf ramah disleksia', 'Jarak huruf', 'Jarak baris', 'Huruf tebal',
   'Kontras gelap', 'Kontras terang', 'Kontras tinggi', 'Saturasi tinggi', 'Saturasi rendah', 'Monokrom',
@@ -194,7 +234,9 @@ function semuaSumber(dir) {
 }
 
 const SELURUH_SUMBER = semuaSumber('src')
-  .filter((f) => f !== BERKAS_KAMUS)
+  /* Dibandingkan dengan garis miring biasa: di Windows join() menghasilkan src\lib\teks.js, sehingga kamus dulu ikut
+     terbaca sebagai sumber dan tidak satu kunci pun pernah dilaporkan menganggur. */
+  .filter((f) => f.replace(/\\/g, '/') !== BERKAS_KAMUS)
   .map((f) => readFileSync(f, 'utf8'))
   .join('\n')
 

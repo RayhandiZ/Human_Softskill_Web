@@ -5,6 +5,7 @@ import { IconCheck, IconChevronRight, IconClock, IconX } from '../../components/
 import { SUMBER, getAspek } from '../../lib/curriculum'
 import { transkripOf } from '../../lib/data'
 import { koreksiMilik, useStore } from '../../lib/store'
+import { LABEL_KOREKSI } from '../../lib/duaLapis'
 import { useStudent } from './StudentLayout'
 import { useTeks } from '../../lib/bahasa'
 
@@ -69,15 +70,17 @@ function Catatan({ e }) {
 
 /* --------------------------- pengajuan koreksi ---------------------------- */
 
+// Dua lapis sejak rapat 24 Okt 2026: admin Kemahasiswaan meneruskan, Super Admin memutuskan dan menerapkan nilai.
 const LENCANA_KOREKSI = {
-  disetujui: { tone: 'good', icon: IconCheck, teks: 'Disetujui' },
-  ditolak: { tone: 'critical', icon: IconX, teks: 'Ditolak' },
-  menunggu: { tone: 'neutral', icon: IconClock, teks: 'Menunggu keputusan' },
+  disetujui: { tone: 'good', icon: IconCheck },
+  ditolak: { tone: 'critical', icon: IconX },
+  menunggu_admin: { tone: 'neutral', icon: IconClock },
+  menunggu_superadmin: { tone: 'neutral', icon: IconClock },
 }
 
 function Koreksi({ k }) {
   const t = useTeks()
-  const lencana = LENCANA_KOREKSI[k.status] ?? LENCANA_KOREKSI.menunggu
+  const lencana = LENCANA_KOREKSI[k.status] ?? LENCANA_KOREKSI.menunggu_admin
   const aspek = getAspek(k.aspekId)
 
   return (
@@ -90,7 +93,7 @@ function Koreksi({ k }) {
           <p className="mt-0.5 text-[15px] font-bold leading-snug text-ink">{k.komponenLabel}</p>
         </div>
         <Badge tone={lencana.tone} icon={lencana.icon}>
-          {t(lencana.teks)}
+          {t(LABEL_KOREKSI[k.status] ?? k.status)}
         </Badge>
       </div>
 
@@ -103,10 +106,15 @@ function Koreksi({ k }) {
           {t('Diputuskan')} <span className="font-semibold text-ink">{k.keputusan.oleh}</span>{' '}
           {t('pada')} {tanggalPanjang(t, k.keputusan.tanggal)}
           {k.keputusan.catatan ? '. ' + k.keputusan.catatan : ''}
+          {k.status === 'disetujui' && k.nilaiUsulan != null
+            ? ' ' + t('Nilai baru {nilai} sudah masuk transkrip.', { nilai: k.nilaiUsulan })
+            : ''}
         </p>
       ) : (
         <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-2">
-          {t('Belum ada keputusan dari Biro Kemahasiswaan.')}
+          {k.status === 'menunggu_superadmin'
+            ? t('Admin Kemahasiswaan sudah meneruskannya. Menunggu keputusan Super Admin.')
+            : t('Belum ada keputusan dari Biro Kemahasiswaan.')}
         </p>
       )}
     </li>
@@ -185,7 +193,7 @@ export default function Riwayat() {
               aria-selected={x.id === tab}
               onClick={() => setTab(x.id)}
               className={
-                '-mb-px whitespace-nowrap border-b-2 px-3 py-2.5 text-[14px] font-bold transition ' +
+                '-mb-px whitespace-nowrap border-b-2 px-3 py-2.5 text-[14px] font-bold transition focus-visible:outline-offset-[-3px] ' +
                 (x.id === tab
                   ? 'border-brand-ink text-brand-ink'
                   : 'border-transparent text-ink-2 hover:text-ink')
@@ -218,7 +226,7 @@ export default function Riwayat() {
 
         <Link
           href="/mahasiswa/transkrip"
-          className="flex items-center justify-center gap-1.5 border-t border-line px-5 py-3.5 text-[14px] font-bold text-brand-ink transition hover:bg-surface-2"
+          className="flex items-center justify-center gap-1.5 border-t border-line px-5 py-3.5 text-[14px] font-bold text-brand-ink transition hover:bg-surface-2 focus-visible:outline-offset-[-3px]"
         >
           {t('Lihat bobot tiap komponen di transkrip')}
           <IconChevronRight size={16} />

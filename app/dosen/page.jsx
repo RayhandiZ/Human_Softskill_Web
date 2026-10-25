@@ -1,3 +1,3 @@
 'use client'
 
-export { default } from '../../src/halaman/dosen/Masuk'
+export { default } from '../../src/halaman/dosen/Pantau'

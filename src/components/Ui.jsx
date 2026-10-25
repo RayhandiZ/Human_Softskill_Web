@@ -446,8 +446,18 @@ export function ScoreRing({ value, size = 132, stroke = 12, color = 'var(--brand
  * daftarnya terbuka (properti rotate), dan rotate yang digabung dengan translate memindahkan panah ke bawah.
  * Gerak dan rupa daftarnya ada di index.css › pilihan (select) panel Kemahasiswaan.
  */
-export function Select({ label, value, onChange, options, className = '', tampilkan, ringkas = false }) {
+/**
+ * `kosong`: teks pilihan kosong ("Pilih …") yang tampil selama value ''. Dipakai isian wajib yang tidak boleh punya
+ * nilai bawaan diam-diam: formulir tambah akun dulu mengisi prodi pertama (Informatika) dan mahasiswa tersimpan di prodi
+ * yang tidak dipilih. Pilihan itu nonaktif, jadi tidak bisa dipilih kembali setelah ada pilihan lain.
+ */
+export function Select({ label, value, onChange, options, className = '', tampilkan, ringkas = false, kosong = null }) {
   const tampil = tampilkan ?? ((x) => x)
+  const pilihanKosong = kosong ? (
+    <option value="" disabled>
+      {kosong}
+    </option>
+  ) : null
   // Ringkas: label di dalam kotak, di kiri pilihannya, untuk baris alat di atas tabel.
   if (ringkas) {
     return (
@@ -468,6 +478,7 @@ export function Select({ label, value, onChange, options, className = '', tampil
             onChange={(e) => onChange(e.target.value)}
             className="w-full min-w-0 appearance-none truncate bg-transparent py-2.5 pl-2 pr-8 text-sm font-semibold text-ink focus-visible:outline-none"
           >
+            {pilihanKosong}
             {options.map((o) => (
               <option key={o} value={o}>
                 {tampil(o)}
@@ -488,6 +499,7 @@ export function Select({ label, value, onChange, options, className = '', tampil
           onChange={(e) => onChange(e.target.value)}
           className="w-full appearance-none rounded-xl border border-line bg-surface px-3.5 py-2.5 pr-9 text-sm font-semibold text-ink transition hover:border-line-strong"
         >
+          {pilihanKosong}
           {options.map((o) => (
             <option key={o} value={o}>
               {tampil(o)}

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Avatar, Badge, Card, CatatanKaki, EmptyState, SearchInput, Select, Tabs } from '../../components/Ui'
-import { IconAlert, IconCheck, IconCheckShield, IconHapus, IconLock, IconPlus, IconRefresh, IconUndo } from '../../components/Icons'
-import { ALASAN_AKSES_MIN, SANDI_AWAL_MIN, aturIzinMaster, hapusAkun, muatAkses, tambahAkun, ubahAkses } from '../../lib/store'
+import { IconAlert, IconCheck, IconCheckShield, IconHapus, IconLock, IconPlus, IconRefresh, IconUndo, IconUsers } from '../../components/Icons'
+import { ALASAN_AKSES_MIN, SANDI_AWAL_MIN, aturIzinMaster, hapusAkun, muatAkses, tambahAkun, ubahAkses, ubahKelasDosen } from '../../lib/store'
 import { COHORTS, PROGRAMS, getAngkatan } from '../../lib/data'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
@@ -9,7 +9,8 @@ import { useTeks } from '../../lib/bahasa'
 /* Mahasiswa, dosen, dan admin Kemahasiswaan yang boleh masuk (Pengguna.aktif). Daftar dari /api/akses, perubahan
    lewat /api/akses/ubah (src/server/akses.js); lihat README.md › Panel Super Admin › Akses Pengguna.
    Akun yang dicabut sudah ditolak server: penggunaDari() di src/server/api.js membaca `aktif` setiap permintaan.
-   Baris admin juga memberi atau mencabut izin kelola data master lewat /api/akses/izin; lihat README.md › Data master. */
+   Baris admin juga memberi atau mencabut izin lihat data master lewat /api/akses/izin (sejak rapat 24 Okt 2026 hanya
+   untuk melihat; menambah dan mengubahnya hanya super admin); lihat README.md › Data master. */
 
 const KELOMPOK = {
   dosen: { label: 'Dosen', peran: ['dosen'], kosong: 'Belum ada akun dosen.', cari: 'Cari nama, email, atau NIP', tambah: 'Tambah dosen' },
@@ -117,6 +118,7 @@ export default function Akses() {
                   value={cari}
                   onChange={setCari}
                   placeholder={t(KELOMPOK[kelompok].cari)}
+                  label={t(KELOMPOK[kelompok].cari)}
                   className="min-w-[220px] flex-1"
                 />
                 <Select
@@ -193,7 +195,7 @@ export default function Akses() {
 
 function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus }) {
   const t = useTeks()
-  // Panel baris ini berisi ubah akses ('akses'), hapus akun ('hapus'), atau izin kelola data master ('izin').
+  // Panel baris ini berisi ubah akses ('akses'), hapus akun ('hapus'), atau izin lihat data master ('izin').
   const [mode, setMode] = useState('akses')
   const [alasan, setAlasan] = useState('')
   const [sibuk, setSibuk] = useState(false)
@@ -203,22 +205,30 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
   // Hanya akun yang aksesnya sudah dicabut; server juga menolak akun yang masih punya data.
   const bisaDihapus = bisaDiubah && !a.aktif
   const hapus = mode === 'hapus'
-  // Izin kelola data master hanya untuk admin biasa (aturIzinMaster di src/server/akses.js). Memberi izin butuh akun
+  // Izin lihat data master hanya untuk admin biasa (aturIzinMaster di src/server/akses.js). Memberi izin butuh akun
   // yang masih punya akses; mencabut tetap bisa walau aksesnya sudah dicabut.
   const izin = mode === 'izin'
   const punyaIzin = a.kelolaMaster === true
   const bisaIzin = bisaDiubah && a.peran === 'admin' && (a.aktif || punyaIzin)
-  const panel = terbuka && bisaDiubah && (hapus ? bisaDihapus : izin ? bisaIzin : true)
+  // Kelas dosen (prodi, sumber, semester, angkatan yang diampu) punya panelnya sendiri, tanpa isian alasan.
+  const kelas = mode === 'kelas'
+  const bisaKelas = bisaDiubah && a.peran === 'dosen'
+  const panel = terbuka && bisaDiubah && (hapus ? bisaDihapus : izin ? bisaIzin : kelas ? bisaKelas : true)
+  // Tombol yang membuka panel: panel yang ditutup dilepas dari DOM, jadi fokus papan ketik dikembalikan ke sini, bukan
+  // jatuh ke <body> di awal halaman.
+  const pemicu = useRef(null)
 
   function tutup() {
     setAlasan('')
     setGalat('')
     onTutup()
+    requestAnimationFrame(() => pemicu.current?.isConnected && pemicu.current.focus())
   }
 
   /* Tombol yang sama menutup panelnya; tombol lain mengganti isi panel. */
-  function buka(baru) {
+  function buka(baru, e) {
     if (terbuka && mode === baru) return tutup()
+    pemicu.current = e?.currentTarget ?? null
     setMode(baru)
     setAlasan('')
     setGalat('')
@@ -254,6 +264,16 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
     a.nim ? 'NIM ' + a.nim : null,
     a.prodi,
     a.angkatan ? t('Angkatan {label}', { label: a.angkatan }) : null,
+    // Kelas dosen: tanpa angkatan terpilih, kelasnya angkatan yang sedang di semester itu.
+    ...(a.peran === 'dosen'
+      ? [
+          SUMBER_DOSEN[a.sumber] ?? a.sumber,
+          t('Semester {n}', { n: a.semester }),
+          a.angkatanDiampu?.length
+            ? t('Angkatan {label}', { label: a.angkatanDiampu.map((x) => x.label).join(', ') })
+            : t('angkatan otomatis'),
+        ]
+      : []),
   ]
     .filter(Boolean)
     .join(' · ')
@@ -272,7 +292,7 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
           {a.peran === 'superadmin' ? <Badge tone="brand">{t('Super Admin')}</Badge> : null}
           {punyaIzin ? (
             <Badge tone="brand" icon={IconCheckShield}>
-              {t('Izin data master')}
+              {t('Izin lihat data master')}
             </Badge>
           ) : null}
           <Badge
@@ -284,22 +304,33 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
           </Badge>
           {bisaDiubah ? (
             <>
+              {bisaKelas ? (
+                <button
+                  type="button"
+                  className="btn-ghost !px-3 !py-2 text-[13px]"
+                  aria-expanded={panel && kelas}
+                  onClick={(e) => buka('kelas', e)}
+                >
+                  <IconUsers size={15} />
+                  {t('Ubah kelas')}
+                </button>
+              ) : null}
               {bisaIzin ? (
                 <button
                   type="button"
                   className="btn-ghost !px-3 !py-2 text-[13px]"
                   aria-expanded={panel && izin}
-                  onClick={() => buka('izin')}
+                  onClick={(e) => buka('izin', e)}
                 >
                   <IconCheckShield size={15} />
-                  {t(punyaIzin ? 'Cabut izin data master' : 'Beri izin data master')}
+                  {t(punyaIzin ? 'Cabut izin lihat data master' : 'Beri izin lihat data master')}
                 </button>
               ) : null}
               <button
                 type="button"
                 className="btn-ghost !px-3 !py-2 text-[13px]"
                 aria-expanded={panel && mode === 'akses'}
-                onClick={() => buka('akses')}
+                onClick={(e) => buka('akses', e)}
               >
                 {cabut ? <IconLock size={15} /> : <IconUndo size={15} />}
                 {t(cabut ? 'Cabut akses' : 'Pulihkan akses')}
@@ -309,7 +340,7 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
                   type="button"
                   className="btn-ghost teks-kritis !px-3 !py-2 text-[13px]"
                   aria-expanded={panel && hapus}
-                  onClick={() => buka('hapus')}
+                  onClick={(e) => buka('hapus', e)}
                 >
                   <IconHapus size={15} />
                   {t('Hapus akun')}
@@ -322,7 +353,16 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
         </div>
       </div>
 
-      {panel ? (
+      {panel && kelas ? (
+        <PanelKelas
+          a={a}
+          onBatal={tutup}
+          onSelesai={(akun) => {
+            onGanti(akun)
+            tutup()
+          }}
+        />
+      ) : panel ? (
         <form key={mode} onSubmit={simpan} className="mt-3 space-y-3 rounded-xl border border-line bg-surface-2/60 p-4">
           <p className="text-[13px] leading-relaxed text-ink">
             {t(
@@ -330,8 +370,8 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
                 ? 'Akun ini dihapus permanen dari basis data beserta profilnya, dan tidak bisa dikembalikan. Akun yang masih punya nilai, pengumpulan, atau riwayat tindakan tidak bisa dihapus; biarkan aksesnya tetap dicabut.'
                 : izin
                   ? punyaIzin
-                    ? 'Admin ini tidak bisa lagi menambah atau mengubah data master. Data yang sudah ditambahkannya tetap tersimpan.'
-                    : 'Admin ini bisa menambah dan mengubah angkatan, fakultas, program studi, dan data mahasiswa dari halaman Data Master sampai izinnya dicabut. Menghapus data tetap tidak bisa.'
+                    ? 'Admin ini tidak bisa lagi membuka halaman Data Master. Halaman lain yang menampilkan mahasiswa dan angkatan tetap terbaca seperti biasa.'
+                    : 'Admin ini bisa melihat angkatan, fakultas, program studi, dan data mahasiswa di halaman Data Master untuk mencocokkan ulang, tanpa bisa mengubahnya. Menambah dan mengubah data master tetap hanya oleh Super Admin.'
                   : cabut
                   ? 'Akun ini tidak bisa masuk lagi, dan sesi yang sedang terbuka langsung berakhir. Datanya tetap tersimpan.'
                   : 'Akun ini bisa masuk lagi seperti semula.',
@@ -353,8 +393,8 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
                   ? 'Hapus permanen'
                   : izin
                     ? punyaIzin
-                      ? 'Cabut izin data master'
-                      : 'Beri izin data master'
+                      ? 'Cabut izin lihat data master'
+                      : 'Beri izin lihat data master'
                     : cabut
                       ? 'Cabut akses'
                       : 'Pulihkan akses',
@@ -380,6 +420,109 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
 }
 const SUMBER_DOSEN = { PDP: 'PDP', MK: 'MK Humaniora' }
 
+/**
+ * Angkatan yang diampu dosen, kotak centang per angkatan. Kosong berarti otomatis: angkatan yang sedang di semester yang
+ * diampu dan programnya belum selesai. Angkatan yang sudah selesai atau disahkan boleh dipilih; perbaikan nilainya oleh
+ * dosen lalu diajukan ke Super Admin (unggahNilaiDosen di src/server/pengajuan.js).
+ */
+function PilihAngkatan({ terpilih, onUbah }) {
+  const t = useTeks()
+  const ganti = (id) => onUbah(terpilih.includes(id) ? terpilih.filter((x) => x !== id) : [...terpilih, id].sort())
+  return (
+    <fieldset className="sm:col-span-2">
+      <legend className="mb-1.5 block label">{t('Angkatan yang diampu')}</legend>
+      <div className="flex flex-wrap gap-2">
+        {COHORTS.map((c) => (
+          <label
+            key={c.id}
+            className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl border border-line bg-surface px-3 text-[13.5px] font-semibold text-ink has-[:checked]:border-brand-ink has-[:checked]:bg-brand-soft"
+          >
+            <input type="checkbox" className="h-4 w-4 accent-[var(--brand-ink)]" checked={terpilih.includes(c.id)} onChange={() => ganti(c.id)} />
+            {c.label}
+            {c.status === 'terkunci' ? <span className="font-medium text-ink-2">{t('(disahkan)')}</span> : null}
+          </label>
+        ))}
+      </div>
+      <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-2">
+        {t('Kosongkan untuk otomatis: angkatan yang sedang di semester yang diampu. Untuk angkatan yang sudah disahkan atau selesai, perbaikan nilai dari dosen diajukan ke Super Admin dulu.')}
+      </p>
+    </fieldset>
+  )
+}
+
+/** Mengubah kelas satu dosen (ubahKelasDosen di src/server/akses.js); nilai yang sudah tersimpan tidak berubah. */
+function PanelKelas({ a, onBatal, onSelesai }) {
+  const t = useTeks()
+  const [isian, setIsian] = useState({
+    prodi: a.prodi ?? '',
+    sumber: a.sumber ?? '',
+    semester: a.semester ? String(a.semester) : '',
+    angkatan: (a.angkatanDiampu ?? []).map((x) => x.id),
+  })
+  const [sibuk, setSibuk] = useState(false)
+  const [galat, setGalat] = useState('')
+  const pasang = (kunci) => (nilai) => setIsian((x) => ({ ...x, [kunci]: nilai }))
+
+  async function simpan(e) {
+    e.preventDefault()
+    if (sibuk) return
+    setSibuk(true)
+    setGalat('')
+    try {
+      const { akun } = await ubahKelasDosen({ id: a.id, ...isian })
+      onSelesai(akun)
+    } catch (err) {
+      setGalat(err.message)
+    } finally {
+      setSibuk(false)
+    }
+  }
+
+  return (
+    <form onSubmit={simpan} className="mt-3 space-y-3 rounded-xl border border-line bg-surface-2/60 p-4">
+      <p className="text-[13px] leading-relaxed text-ink">
+        {t('Kelas menentukan mahasiswa yang terlihat dan bisa diunggah nilainya oleh dosen ini. Nilai yang sudah tersimpan tidak berubah.')}
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Select label={t('Program studi')} value={isian.prodi} onChange={pasang('prodi')} options={PROGRAMS.map((p) => p.program)} />
+        <Select
+          label={t('Sumber penilaian')}
+          value={isian.sumber}
+          onChange={pasang('sumber')}
+          options={Object.keys(SUMBER_DOSEN)}
+          tampilkan={(s) => SUMBER_DOSEN[s]}
+        />
+        <Select
+          label={t('Semester yang diampu')}
+          value={isian.semester}
+          onChange={pasang('semester')}
+          options={['1', '2', '3']}
+          tampilkan={(s) => t('Semester {n}', { n: s })}
+        />
+        <PilihAngkatan terpilih={isian.angkatan} onUbah={pasang('angkatan')} />
+      </div>
+      <div className="flex flex-wrap gap-2.5">
+        <button type="submit" className="btn-primary" disabled={sibuk}>
+          <IconCheck size={16} />
+          {t('Simpan kelas')}
+        </button>
+        <button type="button" className="btn-ghost" disabled={sibuk} onClick={onBatal}>
+          {t('Batal')}
+        </button>
+      </div>
+      {galat ? (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--critical)_10%,transparent)] px-3.5 py-3 text-[13px] font-semibold text-[var(--critical)]"
+        >
+          <IconAlert size={16} className="mt-px shrink-0" />
+          {galat}
+        </p>
+      ) : null}
+    </form>
+  )
+}
+
 function FormTambah({ kelompok, onBatal, onTambah }) {
   const t = useTeks()
   const [isian, setIsian] = useState({
@@ -389,19 +532,39 @@ function FormTambah({ kelompok, onBatal, onTambah }) {
     nim: '',
     nip: '',
     jabatan: '',
-    prodi: PROGRAMS[0]?.program ?? '',
-    angkatanId: COHORTS[0]?.id ?? '',
-    sumber: 'MK',
-    semester: '1',
+    // Pilihan yang menentukan kelas dan prodi sengaja dimulai kosong: dulu prodi pertama (Informatika) dan semester 1
+    // terisi diam-diam, dan akun tersimpan dengan pilihan yang tidak pernah dipilih.
+    prodi: '',
+    angkatanId: '',
+    sumber: '',
+    semester: '',
+    // Angkatan yang diampu dosen; kosong = otomatis (PilihAngkatan).
+    angkatan: [],
   })
   const [sibuk, setSibuk] = useState(false)
   const [galat, setGalat] = useState('')
   const pasang = (kunci) => (nilai) => setIsian((x) => ({ ...x, [kunci]: nilai }))
   const prodi = PROGRAMS.map((p) => p.program)
+  const wajibDipilih = {
+    mahasiswa: [
+      ['prodi', t('Pilih program studi lebih dulu.')],
+      ['angkatanId', t('Pilih angkatan lebih dulu.')],
+    ],
+    dosen: [
+      ['prodi', t('Pilih program studi lebih dulu.')],
+      ['sumber', t('Pilih sumber penilaian lebih dulu.')],
+      ['semester', t('Pilih semester yang diampu lebih dulu.')],
+    ],
+  }
 
   async function simpan(e) {
     e.preventDefault()
     if (sibuk) return
+    const belum = (wajibDipilih[kelompok] ?? []).find(([kunci]) => !isian[kunci])
+    if (belum) {
+      setGalat(belum[1])
+      return
+    }
     setSibuk(true)
     setGalat('')
     try {
@@ -429,13 +592,20 @@ function FormTambah({ kelompok, onBatal, onTambah }) {
         {kelompok === 'mahasiswa' ? (
           <>
             <Isian label="NIM" inputMode="numeric" value={isian.nim} onChange={pasang('nim')} />
-            <Select label={t('Program studi')} value={isian.prodi} onChange={pasang('prodi')} options={prodi} />
+            <Select
+              label={t('Program studi')}
+              value={isian.prodi}
+              onChange={pasang('prodi')}
+              options={prodi}
+              kosong={t('Pilih program studi')}
+            />
             <Select
               label={t('Angkatan')}
               value={isian.angkatanId}
               onChange={pasang('angkatanId')}
               options={COHORTS.map((c) => c.id)}
               tampilkan={(id) => getAngkatan(id)?.label ?? id}
+              kosong={t('Pilih angkatan')}
             />
           </>
         ) : null}
@@ -443,13 +613,20 @@ function FormTambah({ kelompok, onBatal, onTambah }) {
           <>
             <Isian label="NIP" value={isian.nip} onChange={pasang('nip')} />
             <Isian label={t('Jabatan')} value={isian.jabatan} onChange={pasang('jabatan')} />
-            <Select label={t('Program studi')} value={isian.prodi} onChange={pasang('prodi')} options={prodi} />
+            <Select
+              label={t('Program studi')}
+              value={isian.prodi}
+              onChange={pasang('prodi')}
+              options={prodi}
+              kosong={t('Pilih program studi')}
+            />
             <Select
               label={t('Sumber penilaian')}
               value={isian.sumber}
               onChange={pasang('sumber')}
               options={Object.keys(SUMBER_DOSEN)}
               tampilkan={(s) => SUMBER_DOSEN[s]}
+              kosong={t('Pilih sumber penilaian')}
             />
             <Select
               label={t('Semester yang diampu')}
@@ -457,7 +634,9 @@ function FormTambah({ kelompok, onBatal, onTambah }) {
               onChange={pasang('semester')}
               options={['1', '2', '3']}
               tampilkan={(s) => t('Semester {n}', { n: s })}
+              kosong={t('Pilih semester')}
             />
+            <PilihAngkatan terpilih={isian.angkatan} onUbah={pasang('angkatan')} />
           </>
         ) : null}
       </div>

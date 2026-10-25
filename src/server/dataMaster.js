@@ -5,9 +5,10 @@ import { ambilAngkatanProdi } from './master.js'
 import { ALASAN_MIN, cariProdi, tambahAkun, wajib } from './akses.js'
 import { PERIODE_AKTIF } from '../lib/data.js'
 
-// Menambah dan mengubah data master: angkatan, fakultas, prodi, dan mahasiswa. Hanya untuk super admin dan admin
-// yang diberi izin kelola data master (penjaga ['master'] di src/server/api.js; izinnya diatur aturIzinMaster di
-// src/server/akses.js). Tidak ada hapus: menghapus akun tetap hanya lewat super admin (hapusAkun di akses.js).
+// Menambah dan mengubah data master: angkatan, fakultas, prodi, dan mahasiswa. Hanya untuk super admin (penjaga
+// ['superadmin'] di app/api/master/*): sejak rapat 24 Okt 2026 data master dipegang penuh super admin, dan admin yang
+// diberi izin (aturIzinMaster di src/server/akses.js) hanya melihatnya. Tidak ada hapus: menghapus akun tetap hanya
+// lewat hapusAkun di akses.js.
 // Setiap perubahan dan catatan lognya ada dalam satu transaksi. Jawaban angkatan dan prodi membawa `master`
 // terbaru supaya layar langsung memasangnya lewat isiMaster(); lihat README.md › Data master.
 
@@ -262,6 +263,7 @@ async function dataPenilaian(m) {
     ['nilai', db.nilai.count({ where: { mahasiswaId: m.id } })],
     ['pengumpulan', db.pengumpulan.count({ where: { mahasiswaId: m.id } })],
     ['pengajuan koreksi', db.pengajuanKoreksi.count({ where: { mahasiswaId: m.id } })],
+    ['permintaan sertifikat', db.permintaanSertifikat.count({ where: { mahasiswaId: m.id } })],
     ['penguncian aspek', db.penguncian.count({ where: { mahasiswaId: m.id } })],
     ['usulan nilai dosen', db.usulanEntri.count({ where: { nim: m.nim } })],
   ]

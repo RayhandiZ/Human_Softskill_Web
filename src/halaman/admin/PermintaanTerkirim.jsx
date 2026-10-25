@@ -13,13 +13,17 @@ export function usePerluPersetujuan(intake) {
   return Boolean(intake && user?.role === 'admin' && !user.superAdmin && programSelesai(intake))
 }
 
-/** Pemberitahuan sebelum menyimpan, supaya admin tahu perubahannya akan diantre. */
-export function CatatanPersetujuan() {
+/**
+ * Pemberitahuan sebelum menyimpan, supaya admin tahu perubahannya akan diantre. `pesan` untuk tindakan yang SELALU
+ * diajukan admin biasa (tanda final, bobot), bukan karena angkatannya sudah lewat Semester 3.
+ */
+export function CatatanPersetujuan({ pesan = null }) {
   const t = useTeks()
   return (
     <p className="flex items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--warning)_14%,transparent)] px-3.5 py-3 text-[13px] leading-relaxed text-ink">
       <IconClock size={16} className="mt-px shrink-0" />
-      {t('Angkatan ini sudah lewat Semester 3. Perubahan yang Anda simpan dikirim ke Super Admin sebagai permintaan dan baru berlaku setelah disetujui. Alasan wajib diisi.')}
+      {pesan ??
+        t('Angkatan ini sudah lewat Semester 3. Perubahan yang Anda simpan dikirim ke Super Admin sebagai permintaan dan baru berlaku setelah disetujui. Alasan wajib diisi.')}
     </p>
   )
 }

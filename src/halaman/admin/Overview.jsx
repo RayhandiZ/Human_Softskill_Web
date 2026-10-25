@@ -3,7 +3,16 @@ import Link from 'next/link'
 import { JudulHalaman, KartuAngka } from '../../components/Ui'
 import MutuDonut from '../../components/charts/MutuDonut'
 import PerkembanganAngkatan from '../../components/charts/PerkembanganAngkatan'
-import { IconCheck, IconCheckShield, IconChevronDown, IconChevronRight, IconPencil, IconUndo } from '../../components/Icons'
+import {
+  IconCertificate,
+  IconCheck,
+  IconCheckShield,
+  IconChevronDown,
+  IconChevronRight,
+  IconEye,
+  IconPencil,
+  IconUndo,
+} from '../../components/Icons'
 import { CONFIG } from '../../lib/config'
 import { SUMBER } from '../../lib/curriculum'
 import { useTeks } from '../../lib/bahasa'
@@ -52,9 +61,19 @@ function namaRingkas(t, nama) {
    dengan lonceng di bilah atas (usePekerjaanKemahasiswaan); bila tidak ada apa-apa, satu baris tenang saja. */
 function PerluDikerjakan() {
   const t = useTeks()
-  const { usulan, koreksi, pekerjaan, tinjauan } = usePekerjaanKemahasiswaan()
+  const { usulan, koreksi, sertifikat, pekerjaan, tinjauan, bacaSaja } = usePekerjaanKemahasiswaan()
 
   const baris = [
+    sertifikat.length
+      ? {
+          id: 'sertifikat',
+          ikon: IconCertificate,
+          ke: '/admin/sertifikat?tab=permintaan',
+          judul: t('{n} permintaan akses cetak sertifikat menunggu keputusan Anda', { n: sertifikat.length }),
+          rinci: namaRingkas(t, sertifikat.map((p) => p.nama)),
+          aksi: t('Tinjau permintaan'),
+        }
+      : null,
     usulan.length
       ? {
           id: 'usulan',
@@ -83,9 +102,10 @@ function PerluDikerjakan() {
       rinci: x.rinci,
       aksi: t(x.id === 'kunci' ? 'Buka Angkatan' : 'Lihat mahasiswa'),
     })),
+    // Admin biasa hanya membaca nilai: baris ini untuk menagih dosen, bukan untuk diisi.
     ...pekerjaan.slice(0, PEKERJAAN_TAMPIL).map((p) => ({
       id: p.id,
-      ikon: IconPencil,
+      ikon: bacaSaja ? IconEye : IconPencil,
       ke: tautanInput({
         semester: p.semester,
         sumber: p.sumber,
@@ -104,7 +124,7 @@ function PerluDikerjakan() {
         t('{n} mahasiswa', { n: p.mahasiswa }) +
         ' · ' +
         daftarKode(p.aspek),
-      aksi: t('Masukkan nilai'),
+      aksi: t(bacaSaja ? 'Lihat nilai' : 'Masukkan nilai'),
     })),
   ].filter(Boolean)
   const sisa = Math.max(0, pekerjaan.length - PEKERJAAN_TAMPIL)
@@ -120,7 +140,7 @@ function PerluDikerjakan() {
             {t('Tidak ada pekerjaan yang menunggu')}
           </h2>
           <p className="mt-0.5 text-[14.5px] text-ink-2">
-            {t('Usulan dosen, koreksi mahasiswa, dan nilai yang wajib diisi sudah tertangani.')}
+            {t('Koreksi mahasiswa dan nilai yang wajib diisi sudah tertangani.')}
           </p>
         </div>
       </section>
@@ -147,7 +167,7 @@ function PerluDikerjakan() {
           <li key={b.id}>
             <Link
               href={b.ke}
-              className="group flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 transition hover:bg-surface-2 sm:flex-nowrap sm:px-6"
+              className="group flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 transition hover:bg-surface-2 focus-visible:outline-offset-[-3px] sm:flex-nowrap sm:px-6"
             >
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-ink">
                 <b.ikon size={19} />

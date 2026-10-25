@@ -4,11 +4,23 @@ import { createRoot } from 'react-dom/client'
 import { act } from 'react'
 import Penyedia from '../app/penyedia'
 import { RequireRole, panelPengguna } from '../src/lib/auth'
-import { AUDIT_LOG, COHORTS, MASTER_AWAL, STUDENTS, getStudent, getStudentByNim, isiData, isiMaster, pengumpulanDosen, resetTranskripCache } from '../src/lib/data'
+import { AUDIT_LOG, COHORTS, MASTER_AWAL, PENGAJUAN_KOREKSI, STUDENTS, getStudent, getStudentByNim, isiData, isiMaster, komponenDosen, mahasiswaKelas, resetTranskripCache } from '../src/lib/data'
 import { getAspekList, getKomponen, getKomponenById, isiKurikulum } from '../src/lib/curriculum'
 import { bobotKomponen } from '../src/lib/scoring'
 import { DATA_CONTOH, DOSEN, PERSONA_SEMESTER, getDosenByEmail, getStudentByEmail } from './dataContoh'
-import { AKUN_LOKAL, PERMINTAAN, bersihkanPerubahan, muatAkses, permintaanMenunggu } from '../src/lib/store'
+import {
+  AKUN_LOKAL,
+  BATCH_SESI,
+  PERMINTAAN,
+  PERMINTAAN_SERTIFIKAT,
+  bersihkanPerubahan,
+  catatCetakSertifikat,
+  mintaSertifikat,
+  muatAkses,
+  permintaanMenunggu,
+  putuskanKoreksi,
+  putuskanSertifikat,
+} from '../src/lib/store'
 import { aturJalur, rekamNavigasi } from './palsu-next-navigation'
 import { jalurMulus } from '../src/lib/kurva'
 
@@ -40,9 +52,8 @@ import Aturan from '../src/halaman/super-admin/Aturan'
 import PenilaianSuper from '../src/halaman/super-admin/Penilaian'
 import Akses from '../src/halaman/super-admin/Akses'
 import DosenLayout from '../src/halaman/dosen/DosenLayout'
-import Masuk from '../src/halaman/dosen/Masuk'
-import NilaiDosen from '../src/halaman/dosen/Nilai'
-import UsulanDosen from '../src/halaman/dosen/Usulan'
+import Pantau from '../src/halaman/dosen/Pantau'
+import UnggahDosen from '../src/halaman/dosen/Unggah'
 
 /* Dibuka untuk uji sinkronisasi foto profil. */
 export { kunciSesi, simpanProfil } from '../src/lib/profil'
@@ -174,9 +185,8 @@ const RUTE = {
   '/super/wewenang': { pohon: () => superAdmin(<Wewenang />) },
   '/super/aturan': { pohon: () => superAdmin(<Aturan />) },
   '/super/profil': { pohon: () => superAdmin(<Profil />) },
-  '/dosen': { pohon: () => dosen(<Masuk />) },
-  '/dosen/nilai': { pohon: () => dosen(<NilaiDosen />) },
-  '/dosen/usulan': { pohon: () => dosen(<UsulanDosen />) },
+  '/dosen': { pohon: () => dosen(<Pantau />) },
+  '/dosen/nilai': { pohon: () => dosen(<UnggahDosen />) },
   '/dosen/profil': { pohon: () => dosen(<Profil />) },
 }
 
@@ -495,14 +505,16 @@ export async function ujiSasaranInput(alamat) {
  * pada Promise, sehingga sekali ditekan halaman melempar TypeError. Tidak ada
  * uji yang menangkapnya karena tidak ada yang pernah menekan tombolnya.
  */
+/* Pengajuan koreksi dua lapis (rapat 24 Okt 2026): admin Kemahasiswaan meneruskan dengan nilai usulan dan nilainya
+   belum berubah; Super Admin lalu menyetujui dari halaman Persetujuan dan nilai itu langsung masuk sebagai batch
+   bercara 'koreksi'. */
 export async function ujiKeputusanKoreksi(alamat) {
-  /* Alamat lengkap, bukan sekadar ?tab=koreksi: area kerja halaman ini memang
-     tertutup sampai semester dipilih — persis seperti tautan yang disusun
-     lonceng. */
-  const { el, lepas } = await pasang(alamat)
-
-  const tombol = [...el.querySelectorAll('button')].filter((b) => b.textContent.trim() === 'Setujui')
-  const hasil = { adaTombol: tombol.length > 0, galat: null }
+  const lama = window.localStorage.getItem('sk5c.session')
+  const sesi = (isi) => window.localStorage.setItem('sk5c.session', JSON.stringify(isi))
+  const tombol = (akar, teks) => [...(akar?.querySelectorAll('button') ?? [])].filter((b) => b.textContent.trim() === teks)
+  const pesanGalat = (akar) => akar?.querySelector('[role="alert"]')?.textContent ?? ''
+  const nilaiKini = (k) => getStudentByNim(k.nim)?.nilai?.[k.aspekId]?.komponen?.[k.komponenId]?.nilai ?? null
+  const hasil = { galat: null }
 
   /* Galat saat menekan tidak boleh ditelan diam-diam — itu justru yang diuji. */
   const asalOnError = window.onerror
@@ -510,19 +522,82 @@ export async function ujiKeputusanKoreksi(alamat) {
     hasil.galat = String(pesan)
     return true
   }
+
+  const SUPER = { role: 'admin', superAdmin: true, email: 'super.admin@umn.ac.id', name: 'Super Admin', initials: 'SA' }
+  let superTerbuka = null
+
   try {
-    await klik(tombol[0])
+    /* Super Admin sudah membuka tab yang sama sebelum admin meneruskan; kartunya dipantau sampai lapis kedua. */
+    sesi(SUPER)
+    superTerbuka = await pasang(alamat)
+
+    /* Lapis pertama. Alamat lengkap dari lonceng, bukan sekadar ?tab=koreksi: area kerja halaman ini memang
+       tertutup sampai semester dipilih. */
+    sesi({ role: 'admin', email: 'a@umn.ac.id', name: 'Y', initials: 'KH' })
+    let { el, lepas } = await pasang(alamat)
+    const teruskan = tombol(el, 'Teruskan ke Super Admin')
+    hasil.adaTombolTeruskan = teruskan.length > 0
+    hasil.adminTanpaTombolTerapkan = tombol(el, 'Setujui dan terapkan nilai').length === 0
+
+    const kartuAdmin = teruskan[0]?.closest('li')
+    const isian = kartuAdmin?.querySelector('input[id^="nilai-"]')
+    const k = PENGAJUAN_KOREKSI.find((x) => 'nilai-' + x.id === isian?.id)
+    if (!k) {
+      lepas()
+      return hasil
+    }
+    const nilaiAwal = nilaiKini(k)
+    const usulan = nilaiAwal === 88 ? 87 : 88
+
+    await ketik(isian, '')
+    await klik(teruskan[0])
+    hasil.tanpaNilaiDitahan = /0 sampai 100/.test(pesanGalat(kartuAdmin)) && k.status === 'menunggu_admin'
+
+    await ketik(isian, String(usulan))
+    await klik(teruskan[0])
+    hasil.diteruskan = k.status === 'menunggu_superadmin'
+    hasil.lapis1Tercatat = k.nilaiUsulan === usulan && k.lapis1?.oleh === 'Biro Kemahasiswaan'
+    hasil.nilaiBelumBerubah = nilaiKini(k) === nilaiAwal
+    const kartuSesudah = [...el.querySelectorAll('li')].find((li) => li.textContent.includes(k.alasan))
+    hasil.tombolAdminHilang =
+      tombol(kartuSesudah, 'Teruskan ke Super Admin').length === 0 &&
+      /Menunggu keputusan Super Admin/.test(kartuSesudah?.textContent ?? '')
+    hasil.adminTakBisaLapisDua =
+      (await putuskanKoreksi(k.id, 'disetujui', { aktor: 'X', nilaiBaru: usulan, superAdmin: false })) === false
+    lepas()
+
+    const kartuTerbuka = [...superTerbuka.el.querySelectorAll('li')].find((li) => li.textContent.includes(k.alasan))
+    hasil.kartuTerbukaIkutTerisi = kartuTerbuka?.querySelector('#nilai-' + k.id)?.value === String(usulan)
+    superTerbuka.lepas()
+    superTerbuka = null
+
+    // Lapis kedua, dari halaman Persetujuan super admin.
+    sesi(SUPER)
+    ;({ el, lepas } = await pasang('/super/persetujuan'))
+    const kartuSuper = () => [...el.querySelectorAll('li')].find((li) => li.textContent.includes(k.alasan))
+    hasil.usulanTerisi = kartuSuper()?.querySelector('#nilai-' + k.id)?.value === String(usulan)
+
+    await klik(tombol(kartuSuper(), 'Tolak')[0])
+    hasil.tolakPendekDitahan = /minimal 10 karakter/.test(pesanGalat(kartuSuper())) && k.status === 'menunggu_superadmin'
+
+    await klik(tombol(kartuSuper(), 'Setujui dan terapkan nilai')[0])
+    hasil.disetujui = k.status === 'disetujui' && k.keputusan?.oleh === 'Super Admin'
+    hasil.batchKoreksi = BATCH_SESI.find((b) => b.id === k.batchId)?.cara === 'koreksi'
+    hasil.nilaiBerubah = nilaiKini(k) === usulan
+    hasil.hilangDariDaftar = !kartuSuper()
+    lepas()
+
+    ;({ el, lepas } = await pasang(alamat))
+    const barisBatch = [...el.querySelectorAll('li')].find((li) => li.querySelector('.font-mono')?.textContent === k.batchId)
+    hasil.riwayatBatchMenyebutKoreksi = /pengajuan koreksi/.test(barisBatch?.textContent ?? '')
+    lepas()
   } catch (e) {
     hasil.galat = e.message
+  } finally {
+    superTerbuka?.lepas()
+    window.onerror = asalOnError
+    if (lama) window.localStorage.setItem('sk5c.session', lama)
   }
-  window.onerror = asalOnError
-
-  hasil.adaLencanaDisetujui = /Disetujui/.test(el.textContent)
-  hasil.tombolnyaHilang =
-    [...el.querySelectorAll('button')].filter((b) => b.textContent.trim() === 'Setujui').length <
-    tombol.length
-
-  lepas()
   return hasil
 }
 
@@ -1509,6 +1584,164 @@ export async function ujiSertifikatAdmin(studentId) {
   return hasil
 }
 
+/* --------------------------------------------------------------------------
+   Akses cetak sertifikat dua lapis (rapat 24 Okt 2026). Mahasiswa yang layak
+   meminta, admin Kemahasiswaan menolak atau meneruskan, Super Admin membuka
+   aksesnya. Sebelum Siap dicetak tidak boleh ada lembar sertifikat di layar.
+   Uji cetak mahasiswa dan admin dijalankan di dalamnya, selagi aksesnya
+   terbuka; sesudahnya permintaan dan simpanan lokal dikembalikan.
+   -------------------------------------------------------------------------- */
+export async function ujiAlurSertifikat() {
+  const lama = window.localStorage.getItem('sk5c.session')
+  const simpananLama = window.localStorage.getItem('sk5c.perubahan')
+  const permintaanLama = PERMINTAAN_SERTIFIKAT.slice()
+  const sesi = (isi) => window.localStorage.setItem('sk5c.session', JSON.stringify(isi))
+  const MAHASISWA = { role: 'student', email: 'x@student.umn.ac.id', name: 'X', initials: 'X', studentId: 'DEMO-LAYAK' }
+  const ADMIN = { role: 'admin', email: 'a@umn.ac.id', name: 'Y', initials: 'KH' }
+  const SUPER = { role: 'admin', superAdmin: true, email: 'super.admin@umn.ac.id', name: 'Super Admin', initials: 'SA' }
+  const tombol = (akar, teks) => [...(akar?.querySelectorAll('button') ?? [])].find((b) => b.textContent.trim() === teks)
+  const m = getStudent('DEMO-LAYAK')
+  const milik = () => PERMINTAAN_SERTIFIKAT.find((p) => p.nim === m.nim) ?? null
+  const jumlahMilik = () => PERMINTAAN_SERTIFIKAT.filter((p) => p.nim === m.nim).length
+  const hasil = {}
+
+  try {
+    // 1. Layak, belum meminta: hanya tombol minta, belum ada lembar.
+    sesi(MAHASISWA)
+    let { el, lepas } = await pasang('/mahasiswa/sertifikat')
+    hasil.awalBisaMinta = Boolean(tombol(el, 'Minta akses cetak')) && !tombol(el, 'Cetak sertifikat')
+    hasil.awalTanpaLembar = !document.querySelector('.lembar-sertifikat')
+    await klik(tombol(el, 'Minta akses cetak'))
+    hasil.mintaTercatat = milik()?.status === 'menunggu_admin'
+    hasil.menungguMati = Boolean(tombol(el, 'Menunggu persetujuan')?.disabled)
+    const langkahAktif = el.querySelector('ol[aria-label="Langkah akses cetak"] [aria-current="step"]')
+    hasil.langkahPertamaAktif = /Menunggu Admin/.test(langkahAktif?.textContent ?? '')
+    hasil.masihTanpaLembar = !document.querySelector('.lembar-sertifikat')
+    lepas()
+    try {
+      await mintaSertifikat({ student: m })
+      hasil.gandaDitahan = false
+    } catch {
+      hasil.gandaDitahan = jumlahMilik() === 1
+    }
+
+    // 2. Lapis pertama menolak: tanpa alasan ditahan, dengan alasan tercatat.
+    sesi(ADMIN)
+    ;({ el, lepas } = await pasang('/admin/sertifikat?tab=permintaan&cari=' + m.nim))
+    const tinjau = tombol(el, 'Tinjau')
+    hasil.adminAdaTinjau = tinjau?.getAttribute('aria-expanded') === 'false' && el.querySelectorAll('tbody tr').length === 1
+    await klik(tinjau)
+    hasil.tinjauTerbuka = tinjau?.getAttribute('aria-expanded') === 'true' && Boolean(el.querySelector('#' + tinjau?.getAttribute('aria-controls')))
+    await klik(tombol(el, 'Tolak'))
+    hasil.tolakTanpaAlasanDitahan =
+      /minimal 10 karakter/.test(el.querySelector('[role="alert"]')?.textContent ?? '') && milik()?.status === 'menunggu_admin'
+    await ketik(el.querySelector('input[id^="catatan-S-"]'), 'Nilai akhir belum dicek prodi.')
+    await klik(tombol(el, 'Tolak'))
+    hasil.ditolak = milik()?.status === 'ditolak' && milik()?.ditolak?.catatan === 'Nilai akhir belum dicek prodi.'
+    lepas()
+
+    // 3. Mahasiswa membaca alasannya, lalu meminta lagi.
+    sesi(MAHASISWA)
+    ;({ el, lepas } = await pasang('/mahasiswa/sertifikat'))
+    hasil.alasanTampil = el.textContent.includes('Nilai akhir belum dicek prodi.')
+    await klik(tombol(el, 'Minta akses cetak lagi'))
+    hasil.mintaLagi = milik()?.status === 'menunggu_admin' && jumlahMilik() === 2
+    lepas()
+
+    /* 4. Lapis pertama meneruskan; lapis kedua bukan haknya. Jendela lain di tab Semua sudah membuka Tinjau untuk
+       permintaan yang sama: barisnya tetap ada di sana, jadi panel keputusannya harus ikut hilang. */
+    sesi(ADMIN)
+    const jendelaLain = await pasang('/admin/sertifikat?cari=' + m.nim)
+    await klik(tombol(jendelaLain.el, 'Tinjau'))
+    ;({ el, lepas } = await pasang('/admin/sertifikat?tab=permintaan&cari=' + m.nim))
+    await klik(tombol(el, 'Tinjau'))
+    await klik(tombol(el, 'Teruskan ke Super Admin'))
+    hasil.diteruskan = milik()?.status === 'menunggu_superadmin' && milik()?.lapis1?.oleh === 'Biro Kemahasiswaan'
+    hasil.adminTakBisaLapisDua =
+      (await putuskanSertifikat(milik().id, 'disetujui', { aktor: 'X', superAdmin: false })) === false
+    hasil.panelJendelaLainHilang =
+      !tombol(jendelaLain.el, 'Teruskan ke Super Admin') && !jendelaLain.el.querySelector('[id^="tinjau-"]')
+    jendelaLain.lepas()
+    lepas()
+
+    sesi(MAHASISWA)
+    ;({ el, lepas } = await pasang('/mahasiswa/sertifikat'))
+    hasil.belumBisaCetak = Boolean(tombol(el, 'Menunggu persetujuan')?.disabled) && !document.querySelector('.lembar-sertifikat')
+    lepas()
+
+    // 5. Lapis kedua dari halaman Persetujuan super admin.
+    sesi(SUPER)
+    ;({ el, lepas } = await pasang('/super/persetujuan'))
+    const kartu = () => [...el.querySelectorAll('li')].find((li) => li.textContent.includes(m.nim) && tombol(li, 'Setujui akses cetak'))
+    hasil.superMelihat = Boolean(kartu())
+    await klik(tombol(kartu(), 'Setujui akses cetak'))
+    hasil.siap = milik()?.status === 'siap_dicetak' && milik()?.lapis2?.oleh === 'Super Admin'
+    hasil.hilangDariDaftar = !kartu()
+    lepas()
+
+    // 6. Langkahnya selesai, lalu uji cetak selagi aksesnya terbuka.
+    sesi(MAHASISWA)
+    ;({ el, lepas } = await pasang('/mahasiswa/sertifikat'))
+    const langkah = el.querySelector('ol[aria-label="Langkah akses cetak"]')
+    hasil.langkahSelesai = langkah?.querySelectorAll('li').length === 3 && !langkah.querySelector('[aria-current]')
+    // Lembar baru dipasang sesudah tombol Cetak ditekan dan tercatat, jadi Ctrl+P biasa tidak mencetak sertifikat.
+    hasil.lembarBelumDipasang = !document.querySelector('.lembar-sertifikat')
+    lepas()
+    hasil.cetakMahasiswa = await ujiSertifikat('DEMO-LAYAK')
+    hasil.cetakAdmin = await ujiSertifikatAdmin('DEMO-LAYAK')
+    hasil.jumlahCetak = milik()?.cetak?.jumlah ?? 0
+
+    // 7. Admin mencabut akses yang sudah Siap dicetak: tanpa alasan ditahan, dengan alasan tercatat atas namanya.
+    sesi(ADMIN)
+    ;({ el, lepas } = await pasang('/admin/sertifikat?cari=' + m.nim))
+    const tombolCabut = el.querySelector('button[aria-label="Cabut akses cetak ' + m.name + '"]')
+    hasil.adaTombolCabut = Boolean(tombolCabut)
+    await klik(tombolCabut)
+    const panelCabut = el.querySelector('#' + tombolCabut?.getAttribute('aria-controls'))
+    hasil.panelCabutTerbuka = tombolCabut?.getAttribute('aria-expanded') === 'true' && Boolean(panelCabut)
+    hasil.jumlahCetakDisebut = /Sudah dibuka untuk dicetak 2 kali/.test(panelCabut?.textContent ?? '')
+    await klik(tombol(panelCabut, 'Cabut akses cetak'))
+    hasil.cabutTanpaAlasanDitahan =
+      /minimal 10 karakter/.test(panelCabut?.querySelector('[role="alert"]')?.textContent ?? '') && milik()?.status === 'siap_dicetak'
+    await ketik(panelCabut?.querySelector('input'), 'Ada laporan sikap dari dosen wali.')
+    await klik(tombol(panelCabut, 'Cabut akses cetak'))
+    hasil.dicabut =
+      milik()?.status === 'dicabut' &&
+      milik()?.dicabut?.alasan === 'Ada laporan sikap dari dosen wali.' &&
+      milik()?.dicabut?.oleh === 'Biro Kemahasiswaan'
+    hasil.barisMenyebutDicabut =
+      /Dicabut/.test(el.querySelector('tbody')?.textContent ?? '') &&
+      Boolean(el.querySelector('button[aria-label="Cetak sertifikat ' + m.name + '"]')?.disabled) &&
+      !el.querySelector('button[aria-label="Cabut akses cetak ' + m.name + '"]')
+    lepas()
+
+    // 8. Mahasiswa membaca alasannya, tidak bisa mencetak, lalu boleh meminta lagi lewat dua lapis.
+    sesi(MAHASISWA)
+    ;({ el, lepas } = await pasang('/mahasiswa/sertifikat'))
+    hasil.mahasiswaMelihatPencabutan =
+      el.textContent.includes('Ada laporan sikap dari dosen wali.') && Boolean(tombol(el, 'Minta akses cetak lagi'))
+    hasil.tanpaLembarSesudahDicabut = !document.querySelector('.lembar-sertifikat')
+    try {
+      await catatCetakSertifikat(milik().id)
+      hasil.cetakSesudahDicabutDitolak = false
+    } catch {
+      hasil.cetakSesudahDicabutDitolak = milik()?.cetak?.jumlah === 2
+    }
+    await klik(tombol(el, 'Minta akses cetak lagi'))
+    hasil.mintaLagiSesudahDicabut = milik()?.status === 'menunggu_admin' && jumlahMilik() === 3
+    lepas()
+  } catch (e) {
+    hasil.galat = e.message
+  } finally {
+    PERMINTAAN_SERTIFIKAT.splice(0, PERMINTAAN_SERTIFIKAT.length, ...permintaanLama)
+    if (simpananLama == null) window.localStorage.removeItem('sk5c.perubahan')
+    else window.localStorage.setItem('sk5c.perubahan', simpananLama)
+    if (lama) window.localStorage.setItem('sk5c.session', lama)
+    else window.localStorage.removeItem('sk5c.session')
+  }
+  return hasil
+}
+
 // Halaman Angkatan: kartu per angkatan, rincian yang perlu ditindaklanjuti, dan alur penguncian.
 export async function ujiAngkatan() {
   const lama = window.localStorage.getItem('sk5c.session')
@@ -1886,7 +2119,7 @@ export async function ujiPanelSuper() {
     barisAkun().length === 2 && Boolean(barisSuper) && !barisSuper.querySelector('button') && /Akun Anda/.test(barisSuper.textContent)
   // Izin kelola data master: tombolnya hanya di baris admin biasa, butuh alasan, lalu lencananya muncul.
   const barisAdmin = () => barisAkun().find((li) => li.textContent.includes('admin@umn.ac.id') && !li.textContent.includes('super.admin'))
-  await klik([...barisAdmin().querySelectorAll('button')].find((b) => /Beri izin data master/.test(b.textContent)))
+  await klik([...barisAdmin().querySelectorAll('button')].find((b) => /Beri izin lihat data master/.test(b.textContent)))
   const formIzin = barisAdmin().querySelector('form')
   const izinMatiTanpaAlasan = formIzin?.querySelector('button[type="submit"]')?.disabled === true
   await ketik(formIzin.querySelector('input'), 'Membantu menyiapkan angkatan 2027')
@@ -1897,9 +2130,9 @@ export async function ujiPanelSuper() {
   hasil.beriIzinMaster =
     izinMatiTanpaAlasan &&
     AKUN_LOKAL.find((a) => a.id === 21)?.kelolaMaster === true &&
-    /Izin data master/.test(barisAdmin()?.textContent ?? '') &&
-    /Cabut izin data master/.test(barisAdmin()?.textContent ?? '') &&
-    !/izin data master/i.test(barisSuper.textContent)
+    /Izin lihat data master/.test(barisAdmin()?.textContent ?? '') &&
+    /Cabut izin lihat data master/.test(barisAdmin()?.textContent ?? '') &&
+    !/izin lihat data master/i.test(barisSuper.textContent)
   await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /Mahasiswa/.test(b.textContent)))
   const semuaMhs = barisAkun().length
   const rincianMhs = /NIM 00000100001[\s\S]*Sistem Informasi[\s\S]*Angkatan 2025/.test(
@@ -1924,12 +2157,26 @@ export async function ujiPanelSuper() {
   lepas()
   AKUN_LOKAL.length = 0
 
-  // Data Master: admin tanpa izin hanya melihat penjelasan dan tidak punya menunya; super admin melihat ketiga bagian.
+  // Data Master (rapat 24 Okt 2026): admin tanpa izin melihat kartu minta akses baca, dan menunya tetap ada supaya
+  // kartu itu bisa dicapai; admin berizin hanya melihat; super admin melihat ketiga bagian beserta tombolnya.
   const menuDataMaster = () => [...el.querySelectorAll('a')].some((a) => a.getAttribute('href') === '/admin/data-master')
   sesi(false)
   ;({ el, lepas } = await pasang('/admin/data-master'))
   hasil.dataMasterTanpaIzin =
-    /butuh izin dari Super Admin/.test(el.textContent) && !/Tambah angkatan/.test(el.textContent) && !menuDataMaster()
+    /Minta akses baca data master/.test(el.textContent) &&
+    Boolean([...el.querySelectorAll('button')].find((b) => /Minta akses baca/.test(b.textContent))?.disabled) &&
+    !/Tambah angkatan/.test(el.textContent) &&
+    menuDataMaster()
+  lepas()
+  window.localStorage.setItem(
+    'sk5c.session',
+    JSON.stringify({ role: 'admin', kelolaMaster: true, email: 'admin@umn.ac.id', name: 'Biro Kemahasiswaan & Humaniora', initials: 'KH' }),
+  )
+  ;({ el, lepas } = await pasang('/admin/data-master'))
+  hasil.dataMasterBacaSaja =
+    [...el.querySelectorAll('[role="tab"]')].length === 3 &&
+    !/Tambah angkatan|Ubah label/.test(el.textContent) &&
+    /Anda hanya bisa melihat data master/.test(el.textContent)
   lepas()
   sesi(true)
   ;({ el, lepas } = await pasang('/admin/data-master'))
@@ -2291,7 +2538,10 @@ export async function ujiLayanan(rute = '/mahasiswa') {
   hasil.tautanKeluarAman =
     keluar.length > 0 && keluar.every((a) => (a.getAttribute('rel') ?? '').includes('noopener'))
 
-  hasil.adaJamLayanan = /08\.00/.test(panel()?.textContent ?? '')
+  /* Jam layanan dihapus dari panel ini dan dari footer pada 12 Okt 2026 (commit 1d3976b); uji lamanya masih mencari
+     "08.00". Yang dijaga sekarang: tiap saluran menyebut nomor, alamat surel, atau keterangannya. */
+  hasil.tiapSaluranBerketerangan =
+    tautan.length > 0 && tautan.every((a) => ([...a.querySelectorAll('span.block')][1]?.textContent ?? '').trim().length > 0)
   hasil.berkaca = Boolean(panel() && panel().className.split(' ').includes('kaca'))
   hasil.berurutanMasuk = [...(panel()?.querySelectorAll('.layanan-item') ?? [])].some(
     (li) => li.style.animationDelay && li.style.animationDelay !== '0ms',
@@ -2445,72 +2695,250 @@ export async function ujiBahasa() {
 }
 
 /* --------------------------------------------------------------------------
-   Alur lengkap dosen → Kemahasiswaan.
+   Unggahan nilai dosen (rapat 24 Okt 2026).
 
-   Yang diuji bukan tampilannya, melainkan JANJI yang dibuat panel dosen:
-   nilai yang dikirim TIDAK boleh menyentuh transkrip sebelum disetujui.
-   Karena itu tiap langkah diperiksa terhadap data mahasiswa yang sebenarnya,
-   bukan terhadap tulisan di layar.
+   Yang dijaga: rekap dibaca dengan benar (kolom dikenali dari kode tugas, NIM
+   yang kehilangan nol depannya di Excel tetap cocok), berkas yang salah ditolak
+   SEBELUM ada yang tersimpan, nilai yang disimpan langsung masuk transkrip
+   sebagai satu unggahan yang bisa dibatalkan, dan unggahan ulang tanpa
+   perubahan tidak menulis apa pun. Diperiksa terhadap data mahasiswa yang
+   sebenarnya, bukan tulisan di layar. Hak aksesnya diuji npm run test:db.
    -------------------------------------------------------------------------- */
+const nilaiDi = (nim, k) => getStudentByNim(nim)?.nilai?.[k.aspekId]?.komponen?.[k.id]?.nilai ?? null
+const bukanFinal = (k) => (s) => s.penguncian?.[k.aspekId]?.status !== 'final'
+
 export async function ujiAlurDosen() {
-  const { statusPengumpulan, usulkanNilai, putuskanUsulan, usulanMenunggu } = await import(
-    '../src/lib/store'
-  )
+  const { rollbackBatch, unggahNilaiDosen, unggahanDosen } = await import('../src/lib/store')
+  const { bacaRekap, isiTemplat, ringkasKelas, sebabPersetujuan } = await import('../src/lib/unggahDosen')
+  const { EN } = await import('../src/lib/teks')
 
   const d = DOSEN[0]
-  const nilaiTersimpan = (p) =>
-    getStudentByNim(p.nim)?.nilai?.[p.aspekId]?.komponen?.[p.komponenId]?.nilai ?? null
-
-  const antre = pengumpulanDosen(d.nip)
-    .filter((p) => statusPengumpulan(p).id === 'masuk')
-    .slice(0, 3)
-
-  const hasil = { adaAntrean: antre.length === 3 }
-
-  /* 1. Dosen mengusulkan. */
-  const u = await usulkanNilai({
-    dosen: d,
-    cara: 'manual',
-    catatan: 'uji alur',
-    entri: antre.map((p) => ({ nim: p.nim, komponenId: p.komponenId, nilai: 88 })),
-  })
-  hasil.usulanTercatat = u.status === 'menunggu' && u.entri.length === 3
-  hasil.belumMasukTranskrip = antre.every((p) => nilaiTersimpan(p) === null)
-  hasil.statusJadiMenunggu = antre.every((p) => statusPengumpulan(p).id === 'menunggu')
-  hasil.masukAntreanAdmin = usulanMenunggu().some((x) => x.id === u.id)
-
-  /* 2. Kemahasiswaan menyetujui. */
-  hasil.disetujui = (await putuskanUsulan(u.id, 'disetujui', { aktor: 'Uji' })) === true
-  hasil.masukTranskrip = antre.every((p) => nilaiTersimpan(p) === 88)
-  hasil.statusJadiDinilai = antre.every((p) => statusPengumpulan(p).id === 'dinilai')
-  hasil.punyaBatch = Boolean(u.batchId)
-  hasil.tidakBisaDiputusDuaKali = (await putuskanUsulan(u.id, 'ditolak', { aktor: 'Uji' })) === false
-
-  /* 3. Penolakan tidak mengubah apa pun. */
-  const lagi = pengumpulanDosen(d.nip)
-    .filter((p) => statusPengumpulan(p).id === 'masuk')
-    .slice(0, 2)
-  const u2 = await usulkanNilai({
-    dosen: d,
-    entri: lagi.map((p) => ({ nim: p.nim, komponenId: p.komponenId, nilai: 70 })),
-  })
-  await putuskanUsulan(u2.id, 'ditolak', { aktor: 'Uji', catatan: 'perlu diperbaiki' })
-  hasil.tolakTidakMenulis = lagi.every((p) => nilaiTersimpan(p) === null)
-  hasil.statusJadiDitolak = lagi.every((p) => statusPengumpulan(p).id === 'ditolak')
-
-  /* 4. Sistem menahan baris yang melanggar aturan. */
-  const u3 = await usulkanNilai({
-    dosen: d,
-    entri: [{ nim: '999999999', komponenId: antre[0].komponenId, nilai: 90 }],
-  })
-  try {
-    await putuskanUsulan(u3.id, 'disetujui', { aktor: 'Uji' })
-    hasil.sistemMenahan = false
-  } catch {
-    hasil.sistemMenahan = true
+  const komponen = komponenDosen(d)
+  const kelas = mahasiswaKelas(d)
+  const opsi = { mahasiswa: kelas, komponenKelas: komponen }
+  const [k1, k2] = komponen
+  const hasil = {
+    kelasTersaring:
+      kelas.length > 0 && kelas.length < STUDENTS.length && kelas.every((s) => s.program === d.prodi && s.semesterAktif >= d.semester),
+    adaDuaTugas: komponen.length >= 2,
   }
-  hasil.tetapMenunggu = u3.status === 'menunggu'
 
+  /* 1. Templat yang diunggah kembali apa adanya tidak mengubah apa pun. */
+  const { judul, isi } = isiTemplat(opsi)
+  const utuh = bacaRekap([judul, ...isi], opsi)
+  hasil.templatDikenali = utuh.kolom.length === komponen.length && utuh.kolom.every((c) => c.cara === 'kode')
+  hasil.templatTanpaPerubahan = !utuh.galat.length && utuh.perubahan.length === 0 && utuh.sama > 0
+
+  /* 2. Rekap dosen sendiri: kolom No diabaikan, NIM berupa angka, nama tugas lengkap, koma desimal. */
+  const [a, b] = kelas.filter((s) => bukanFinal(k1)(s) && bukanFinal(k2)(s))
+  const lamaA = nilaiDi(a.nim, k1)
+  const lamaB = nilaiDi(b.nim, k2)
+  const baruA = lamaA === 91 ? 92 : 91
+  const baruB = lamaB === 77.5 ? 78.5 : 77.5
+  const baris = [
+    ['No', 'NIM', 'Nama Mahasiswa', k1.id + ' · ' + k1.label, k2.id],
+    [1, Number(a.nim), a.name, baruA, null],
+    [2, b.nim, b.name, '', String(baruB).replace('.', ',')],
+  ]
+  const rekap = bacaRekap(baris, opsi)
+  hasil.rekapTerbaca = !rekap.galat.length && rekap.perubahan.length === 2 && rekap.mahasiswa === 2
+  hasil.nimTanpaNolCocok = rekap.perubahan.some((p) => p.nim === a.nim && p.komponen.id === k1.id && p.baru === baruA)
+  hasil.komaDesimal = rekap.perubahan.some((p) => p.nim === b.nim && p.komponen.id === k2.id && p.baru === baruB)
+  hasil.belumTersimpanSaatDibaca = nilaiDi(a.nim, k1) === lamaA && nilaiDi(b.nim, k2) === lamaB
+
+  /* 3. Disimpan: langsung masuk transkrip sebagai satu unggahan. */
+  const entri = rekap.perubahan.map((p) => ({ nim: p.nim, komponenId: p.komponen.id, nilai: p.baru }))
+  const sebelum = unggahanDosen().length
+  const simpan = await unggahNilaiDosen({ dosen: d, entri })
+  hasil.langsungTersimpan = nilaiDi(a.nim, k1) === baruA && nilaiDi(b.nim, k2) === baruB
+  const riwayat = unggahanDosen()
+  hasil.tercatatSebagaiUnggahan =
+    riwayat.length === sebelum + 1 && riwayat[0].id === simpan.id && riwayat[0].jumlah === 2 && riwayat[0].status === 'tersimpan'
+
+  /* 4. Berkas yang sama diunggah lagi: tidak ada yang berubah, tidak ada unggahan baru. */
+  const ulang = bacaRekap(baris, opsi)
+  hasil.unggahUlangTanpaPerubahan = !ulang.galat.length && ulang.perubahan.length === 0 && ulang.sama === 2
+  const lagi = await unggahNilaiDosen({ dosen: d, entri })
+  hasil.simpanUlangTidakMenulis = lagi.id === null && unggahanDosen().length === sebelum + 1
+
+  /* 5. Berkas yang salah ditolak seluruhnya, dengan pesan yang ada di kamus. */
+  const tolak = (isiBaris, judulBaris = ['NIM', 'Nama', k1.id], o = opsi) => bacaRekap([judulBaris, ...isiBaris], o)
+  const kasus = {
+    tolakNimAsing: tolak([['999999999', 'X', 80]]),
+    tolakDiLuarRentang: tolak([[a.nim, a.name, 120]]),
+    tolakBukanAngka: tolak([[a.nim, a.name, 'delapan puluh']]),
+    tolakNimGanda: tolak([[a.nim, a.name, 80], [a.nim, a.name, 81]]),
+    tolakKolomAsing: tolak([[a.nim, 80]], ['NIM', 'Tugas Rahasia']),
+    tolakTanpaKolomNim: tolak([[a.name, 80]], ['Nama', k1.id]),
+    tolakKolomGanda: tolak([[a.nim, 80, 81]], ['NIM', k1.id, k1.id + ' · ' + k1.label]),
+    // Tempelan yang bergeser (temuan 25 Oktober): angka di kolom tanpa judul, dari sel judul yang kosong (xlsx)
+    // atau baris judul yang lebih pendek (csv).
+    tolakAngkaTanpaJudul: tolak([[a.nim, a.name, 80, 90, 70]], ['NIM', 'Nama', k1.id, null, '']),
+    tolakAngkaLewatJudul: tolak([[a.nim, a.name, 80, 90]]),
+  }
+  // Selama ada galat, layar mengunci tombol simpan (diuji ujiLayarUnggah) dan server memeriksa ulang.
+  for (const [nama, r] of Object.entries(kasus)) hasil[nama] = r.galat.length >= 1
+  hasil.pesanGalatDiKamus = Object.values(kasus).every((r) => r.galat.every((g) => Boolean(EN[g.teks])))
+  hasil.kolomTanpaJudulDisebut =
+    kasus.tolakAngkaTanpaJudul.galat.some((g) => g.isi?.kolom === 'D, E') &&
+    kasus.tolakAngkaLewatJudul.galat.some((g) => g.isi?.kolom === 'D')
+  hasil.teksTanpaJudulDibiarkan = !tolak([[a.nim, a.name, 80, 'sudah dicek']]).galat.length
+
+  /* 5a. Aspek yang belum dibuka disebut sekali per baris, bukan sekali untuk tiap tugasnya. */
+  const aspek3 = getAspekList().find((x) => x.semester === 3 && getKomponen(x.id).filter((k) => k.sumber === d.sumber).length >= 2)
+  const muda = STUDENTS.find((s) => s.program === d.prodi && s.semesterAktif < 3)
+  if (aspek3 && muda) {
+    const [t1, t2] = getKomponen(aspek3.id).filter((k) => k.sumber === d.sumber)
+    const belum = bacaRekap([['NIM', t1.id, t2.id], [muda.nim, 80, 81]], {
+      mahasiswa: [muda],
+      komponenKelas: komponenDosen({ ...d, semester: 3 }),
+    })
+    hasil.aspekBelumDibukaSekali = belum.galat.length === 1 && /baru dibuka/.test(belum.galat[0].teks)
+  }
+
+  /* 5b. Aspek final, angkatan yang disahkan, dan program yang selesai tidak ditolak (keputusan pengguna 25 Oktober):
+     nilainya diajukan ke Super Admin. */
+  const finalA = { ...a, penguncian: { ...a.penguncian, [k1.aspekId]: { status: 'final' } } }
+  const diajukan = tolak([[a.nim, a.name, baruA === 50 ? 51 : 50]], undefined, { mahasiswa: [finalA], komponenKelas: komponen })
+  hasil.aspekFinalDiajukan = !diajukan.galat.length && diajukan.perluPersetujuan === 1 && diajukan.perubahan[0]?.persetujuan === 'final'
+  hasil.sebabPersetujuan =
+    sebabPersetujuan({ statusAngkatan: 'terkunci' }, k1.aspekId) === 'disahkan' &&
+    sebabPersetujuan(finalA, k1.aspekId) === 'final' &&
+    sebabPersetujuan(a, k1.aspekId) === null
+
+  /* 5c. Angkatan yang diampu dipilih Super Admin: kelasnya angkatan itu saja, termasuk 2024 yang sudah disahkan.
+     Unggahan campuran: angkatan berjalan langsung tersimpan, yang disahkan diajukan dengan alasan wajib. */
+  const dCampur = { ...d, angkatan: [a.angkatanId, '2024'].sort() }
+  const kelasCampur = mahasiswaKelas(dCampur)
+  const disahkan = kelasCampur.find((s) => s.angkatanId === '2024' && bukanFinal(k1)(s))
+  hasil.kelasDiampu =
+    Boolean(disahkan) &&
+    kelasCampur.every((s) => s.program === d.prodi && dCampur.angkatan.includes(s.angkatanId)) &&
+    kelasCampur.some((s) => s.angkatanId === a.angkatanId)
+  if (disahkan) {
+    const lamaDisahkan = nilaiDi(disahkan.nim, k1)
+    const baruDisahkan = lamaDisahkan === 64 ? 65 : 64
+    const lamaA2 = nilaiDi(a.nim, k1)
+    const baruA2 = lamaA2 === 63 ? 62 : 63
+    const campur = bacaRekap(
+      [['NIM', 'Nama', k1.id], [a.nim, a.name, baruA2], [disahkan.nim, disahkan.name, baruDisahkan]],
+      { mahasiswa: kelasCampur, komponenKelas: komponen },
+    )
+    const entriCampur = campur.perubahan.map((p) => ({ nim: p.nim, komponenId: p.komponen.id, nilai: p.baru }))
+    hasil.pratinjauCampur = !campur.galat.length && campur.perubahan.length === 2 && campur.perluPersetujuan === 1
+    try {
+      await unggahNilaiDosen({ dosen: dCampur, entri: entriCampur, alasan: 'pendek' })
+      hasil.perbaikanTanpaAlasanDitahan = false
+    } catch {
+      hasil.perbaikanTanpaAlasanDitahan = nilaiDi(a.nim, k1) === lamaA2 && nilaiDi(disahkan.nim, k1) === lamaDisahkan
+    }
+    const sebelumPermintaan = PERMINTAAN.length
+    const hasilCampur = await unggahNilaiDosen({ dosen: dCampur, entri: entriCampur, alasan: 'Nilai tugas dikoreksi sesudah banding.' })
+    const diajukanLokal = PERMINTAAN.find((p) => p.id === hasilCampur.permintaan?.id)
+    hasil.campuran =
+      hasilCampur.jumlah === 1 &&
+      nilaiDi(a.nim, k1) === baruA2 &&
+      nilaiDi(disahkan.nim, k1) === lamaDisahkan &&
+      PERMINTAAN.length === sebelumPermintaan + 1 &&
+      diajukanLokal?.aksi === 'PERBAIKAN_NILAI_DOSEN' &&
+      diajukanLokal.status === 'menunggu' &&
+      diajukanLokal.ringkasan.baris.some((x) => x.includes(disahkan.nim) && x.includes('→ ' + baruDisahkan))
+    // Permintaan lokal tidak ikut dibersihkan pakaiDataContoh(); dilepas di sini supaya uji lain tidak menghitungnya.
+    PERMINTAAN.splice(PERMINTAAN.indexOf(diajukanLokal), 1)
+    await rollbackBatch(hasilCampur.id)
+  }
+
+  /* 6. Rekap berskala 0-10 diperingatkan, tidak ditolak. */
+  const skala = tolak([[a.nim, a.name, 8.5], [b.nim, b.name, 9]])
+  hasil.peringatkanSkala10 = !skala.galat.length && skala.peringatan.length === 1 && Boolean(EN[skala.peringatan[0].teks])
+
+  /* 7. Ringkasan Beranda dosen dihitung dari nilai yang tersimpan. */
+  const ringkas = ringkasKelas(opsi)
+  hasil.ringkasanKelas =
+    ringkas.total === kelas.length * komponen.length &&
+    ringkas.terisi === ringkas.perTugas.reduce((n, x) => n + x.terisi, 0) &&
+    ringkas.perMahasiswa.find((m) => m.mahasiswa.nim === a.nim)?.isi.find((x) => x.komponen.id === k1.id)?.nilai === baruA
+
+  /* 8. Super Admin membatalkan unggahannya: nilai kembali, riwayat dosen menandainya. */
+  await rollbackBatch(simpan.id)
+  hasil.dibatalkanKembali = nilaiDi(a.nim, k1) === lamaA && nilaiDi(b.nim, k2) === lamaB
+  hasil.riwayatMenandaiBatal = unggahanDosen().find((u) => u.id === simpan.id)?.status === 'dibatalkan'
+
+  pakaiDataContoh()
+  return hasil
+}
+
+/* Layar Unggah Nilai: berkas CSV dipilih lewat kotak berkas, galatnya tampil dan tombol simpan terkunci, pratinjau
+   berkas yang benar tidak menyimpan apa pun sampai tombolnya ditekan. */
+export async function ujiLayarUnggah() {
+  /* Uji pemilih bahasa sebelumnya meninggalkan pilihan EN; tulisan yang dicari di sini berbahasa Indonesia. */
+  try {
+    localStorage.removeItem('sk5c.bahasa.pilihan')
+  } catch {
+    /* diabaikan */
+  }
+  const d = DOSEN[0]
+  const [k1] = komponenDosen(d)
+  const s = mahasiswaKelas(d).find(bukanFinal(k1))
+  const lama = nilaiDi(s.nim, k1)
+  const baru = lama === 66 ? 67 : 66
+
+  const { el, lepas } = await pasang('/dosen/nilai')
+  const masukan = el.querySelector('input[type="file"]')
+  const hasil = { menerimaXlsxDanCsv: /\.xlsx/.test(masukan?.accept ?? '') && /\.csv/.test(masukan?.accept ?? '') }
+  const tombolSimpan = () => [...el.querySelectorAll('button')].find((b) => /^Simpan \d+ nilai$/.test(b.textContent.trim()))
+  const pilih = async (nama, isi) => {
+    Object.defineProperty(masukan, 'files', { value: [new window.File([isi], nama, { type: 'text/csv' })], configurable: true })
+    await act(async () => {
+      masukan.dispatchEvent(new window.Event('change', { bubbles: true }))
+    })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30))
+    })
+  }
+
+  await pilih('salah.csv', 'NIM,Nama,' + k1.id + '\n999999999,X,80\n')
+  hasil.galatTampil = /Belum bisa disimpan/.test(el.textContent) && /tidak terdaftar di kelas Anda/.test(el.textContent)
+  hasil.simpanTerkunciSaatGalat = tombolSimpan()?.disabled === true
+
+  await pilih('xls-lama.xls', 'bukan excel')
+  hasil.xlsLamaDitolak = /Excel lama/.test(el.textContent)
+
+  await pilih('benar.csv', 'NIM,Nama,' + k1.id + '\n' + s.nim + ',"' + s.name + '",' + baru + '\n')
+  hasil.pratinjauTampil = /Periksa sebelum menyimpan/.test(el.textContent) && tombolSimpan()?.textContent.trim() === 'Simpan 1 nilai'
+  hasil.belumTersimpanSebelumKlik = nilaiDi(s.nim, k1) === lama
+
+  await klik(tombolSimpan())
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 30))
+  })
+  hasil.tersimpanSetelahKlik = nilaiDi(s.nim, k1) === baru
+  hasil.pesanBerhasil = /1 nilai tersimpan dan sudah tampil di transkrip mahasiswa/.test(el.textContent)
+  hasil.pratinjauDitutup = !/Periksa sebelum menyimpan/.test(el.textContent)
+  hasil.riwayatBertambah = !/Belum ada unggahan/.test(el.textContent)
+  lepas()
+
+  /* Kelas kosong (temuan 25 Oktober): halaman menjelaskan sebabnya dan tidak menawarkan templat berisi 0 mahasiswa
+     maupun kotak unggah. Kelas otomatis yang kosong, lalu angkatan pilihan yang belum berisi mahasiswa. */
+  const sesiAsli = window.localStorage.getItem('sk5c.session')
+  const layarKosong = async (ubah) => {
+    window.localStorage.setItem('sk5c.session', JSON.stringify({ ...JSON.parse(sesiAsli), ...ubah }))
+    const h = await pasang('/dosen/nilai')
+    const teks = h.el.textContent
+    const tanpaUnggah =
+      !h.el.querySelector('input[type="file"]') && ![...h.el.querySelectorAll('button')].some((b) => /Unduh templat/.test(b.textContent))
+    h.lepas()
+    return { teks, tanpaUnggah }
+  }
+  const otomatis = await layarKosong({ prodi: 'Prodi Tanpa Mahasiswa' })
+  hasil.kelasKosongOtomatis =
+    /Belum ada mahasiswa di kelas Anda/.test(otomatis.teks) && /minta Super Admin memilihnya/.test(otomatis.teks) && otomatis.tanpaUnggah
+  const pilihan = await layarKosong({ angkatan: ['1999'] })
+  hasil.kelasKosongPilihan =
+    /Belum ada mahasiswa di kelas Anda/.test(pilihan.teks) && /Angkatan yang Anda ampu \(1999\)/.test(pilihan.teks) && pilihan.tanpaUnggah
+  window.localStorage.setItem('sk5c.session', sesiAsli)
+
+  pakaiDataContoh()
   return hasil
 }
 

@@ -1,6 +1,7 @@
-export function uraiCSV(teks) {
+/** Baris mentah, termasuk baris judul: larik sel per baris, urutan kolomnya seperti di berkas. */
+export function barisCSV(teks) {
   const bersih = String(teks ?? '').replace(/^﻿/, '').replace(/\r\n?/g, '\n').trim()
-  if (!bersih) return { kepala: [], baris: [] }
+  if (!bersih) return []
 
   const pemisah = (bersih.split('\n')[0].match(/;/g) ?? []).length > (bersih.split('\n')[0].match(/,/g) ?? []).length ? ';' : ','
 
@@ -31,6 +32,12 @@ export function uraiCSV(teks) {
   }
   baris.push(sel)
   semua.push(baris)
+  return semua
+}
+
+export function uraiCSV(teks) {
+  const semua = barisCSV(teks)
+  if (!semua.length) return { kepala: [], baris: [] }
 
   const kepala = (semua.shift() ?? []).map((h) => h.trim())
   const kepalaNormal = kepala.map((h) => h.toLowerCase())

@@ -230,14 +230,26 @@ export const getStudentByNim = (nim) => STUDENTS.find((s) => s.nim === String(ni
 
 export const auditUntuk = (nim) => AUDIT_LOG.filter((l) => l.nim === nim)
 
-export const pengumpulanDosen = (nip) => PENGUMPULAN.filter((p) => p.dosenNip === nip)
-
 export function komponenDosen(dosen) {
   if (!dosen) return []
   return getAspekList()
     .filter((a) => a.semester === dosen.semester)
     .flatMap((a) => getKomponen(a.id))
     .filter((k) => k.sumber === dosen.sumber)
+}
+
+/**
+ * Mahasiswa kelas dosen: prodinya sama, lalu angkatan yang diampu bila Super Admin sudah memilihnya (termasuk angkatan
+ * yang programnya sudah selesai), atau tanpa pilihan, yang sudah sampai semester kelas itu dan programnya belum lewat
+ * Semester 3. Data dari server sudah tersaring dengan aturan yang sama (diKelasDosen di src/server/muat.js); mode lokal
+ * memuat semua mahasiswa, jadi disaring di sini.
+ */
+export function mahasiswaKelas(dosen) {
+  if (!dosen) return []
+  if (dosen.angkatan?.length) return STUDENTS.filter((s) => s.program === dosen.prodi && dosen.angkatan.includes(s.angkatanId))
+  return STUDENTS.filter(
+    (s) => s.program === dosen.prodi && s.semesterAktif >= dosen.semester && !(s.periode?.[0] && programSelesai(s.periode[0])),
+  )
 }
 
 /* --------------------------- akun yang sedang masuk ----------------------- */
@@ -289,6 +301,7 @@ export function dosenSesi(user) {
     semester: user.semester,
     prodi: user.prodi,
     fakultas: user.fakultas ?? FAKULTAS_OF[user.prodi] ?? '',
+    angkatan: user.angkatan ?? [],
   }
 }
 

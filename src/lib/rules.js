@@ -298,7 +298,7 @@ export function buatPengajuanKoreksi({ student, komponenId, alasan, nilaiDiharap
     aspekId: komponen?.aspekId ?? null,
     alasan,
     nilaiDiharapkan,
-    status: 'menunggu',
+    status: 'menunggu_admin',
     diajukan: new Date().toISOString().slice(0, 10),
     keputusan: null,
   }

@@ -8,6 +8,7 @@ import {
   IconCertificate,
   IconCheckShield,
   IconChevronRight,
+  IconEye,
   IconInfo,
   IconPencil,
   IconUndo,
@@ -21,7 +22,9 @@ import {
   semesterKalender,
 } from '../../lib/data'
 import { CONFIG } from '../../lib/config'
-import { useStore, usulanMenunggu } from '../../lib/store'
+import { PERMINTAAN_SERTIFIKAT, useStore, usulanMenunggu } from '../../lib/store'
+import { giliranSaya } from '../../lib/duaLapis'
+import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 
 /* Tiap baris membuka Input Nilai dengan sasaran terisi; lihat README.md › Input nilai. */
@@ -91,13 +94,21 @@ function Baris({ href, onPilih, ikon: Ikon, judul, rinci, jumlah }) {
   )
 }
 
-/** Pekerjaan Kemahasiswaan yang menunggu; dipakai lonceng ini dan blok Perlu dikerjakan di Overview. */
+/**
+ * Pekerjaan Kemahasiswaan yang menunggu; dipakai lonceng ini dan blok Perlu dikerjakan di Overview. Sejak rapat
+ * 24 Okt 2026 admin hanya membaca nilai: `bacaSaja` true untuk admin biasa (nilai kosong tampil untuk ditagih ke dosen,
+ * bukan untuk diisi), dan usulan dosen lama hanya masuk daftar super admin.
+ */
 export function usePekerjaanKemahasiswaan() {
   const t = useTeks()
   const versi = useStore()
+  const { user } = useAuth()
+  const bacaSaja = !user?.superAdmin
 
-  const koreksi = PENGAJUAN_KOREKSI.filter((k) => k.status === 'menunggu')
-  const usulan = usulanMenunggu()
+  // Koreksi dan akses cetak sertifikat: hanya yang menunggu lapis akun ini (admin lapis 1, super admin lapis 2).
+  const koreksi = giliranSaya(PENGAJUAN_KOREKSI, user)
+  const sertifikat = giliranSaya(PERMINTAAN_SERTIFIKAT, user)
+  const usulan = bacaSaja ? [] : usulanMenunggu()
   const pekerjaan = useMemo(() => pekerjaanPenilaian(), [versi])
 
   const tinjau = useMemo(() => perluDitinjau(), [versi])
@@ -121,7 +132,15 @@ export function usePekerjaanKemahasiswaan() {
     },
   ].filter(Boolean)
 
-  return { koreksi, usulan, pekerjaan, tinjauan, jumlah: usulan.length + koreksi.length + pekerjaan.length + tinjauan.length }
+  return {
+    koreksi,
+    sertifikat,
+    usulan,
+    pekerjaan,
+    tinjauan,
+    bacaSaja,
+    jumlah: usulan.length + koreksi.length + sertifikat.length + pekerjaan.length + tinjauan.length,
+  }
 }
 
 /* nada 'onbrand' untuk bilah biru, 'terang' untuk bilah atas terang panel Kemahasiswaan. */
@@ -130,7 +149,7 @@ export default function LoncengKemahasiswaan({ nada = 'onbrand' }) {
   const [buka, setBuka] = useState(false)
   const ref = useRef(null)
   const tombol = useRef(null)
-  const { koreksi, usulan, pekerjaan, tinjauan, jumlah } = usePekerjaanKemahasiswaan()
+  const { koreksi, sertifikat, usulan, pekerjaan, tinjauan, bacaSaja, jumlah } = usePekerjaanKemahasiswaan()
 
   useEffect(() => {
     if (!buka) return
@@ -235,6 +254,26 @@ export default function LoncengKemahasiswaan({ nada = 'onbrand' }) {
               </section>
             ) : null}
 
+            {sertifikat.length ? (
+              <section className="border-b border-line pb-2">
+                <h3 className="px-2 pb-1 pt-2 text-[11.5px] font-bold uppercase tracking-[.06em] text-ink-3">
+                  {t('Akses cetak sertifikat')}
+                </h3>
+                <ul>
+                  {sertifikat.map((p) => (
+                    <Baris
+                      key={p.id}
+                      href={'/admin/sertifikat?tab=permintaan&cari=' + encodeURIComponent(p.nim)}
+                      onPilih={tutup}
+                      ikon={IconCertificate}
+                      judul={p.nama + ' · ' + p.nim}
+                      rinci={t('diajukan {tanggal}', { tanggal: p.diajukan })}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
             {tinjauan.length ? (
               <section className="border-b border-line pb-2">
                 <h3 className="px-2 pb-1 pt-2 text-[11.5px] font-bold uppercase tracking-[.06em] text-ink-3">
@@ -273,7 +312,7 @@ export default function LoncengKemahasiswaan({ nada = 'onbrand' }) {
                       nim: p.nimTunggal,
                     })}
                     onPilih={tutup}
-                    ikon={IconPencil}
+                    ikon={bacaSaja ? IconEye : IconPencil}
                     judul={
                       t('Semester {n}', { n: p.semester }) +
                       ' · ' +

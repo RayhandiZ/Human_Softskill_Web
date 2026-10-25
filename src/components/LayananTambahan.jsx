@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { IconChat, IconChevronRight, IconClock, IconInfo, IconX } from './Icons'
-import { KONTAK_UMN, LAYANAN } from '../lib/layanan'
+import { IconChat, IconChevronRight, IconX } from './Icons'
+import { LAYANAN } from '../lib/layanan'
 import { useTeks } from '../lib/bahasa'
 
 /* Tetap di bawah laci navigasi (z-40 < z-50) dan tidak ikut tercetak. `posisi`: kelas letaknya; panel dosen
