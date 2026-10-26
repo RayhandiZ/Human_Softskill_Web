@@ -474,10 +474,26 @@ ubah juga `MATRIKS` di sana.
 
 **Log Aktivitas** (`src/halaman/admin/Log.jsx`, dipakai `/super/log` dan `/admin/log`) membaca satu
 halaman (25 baris) dari `POST /api/log` lewat `bacaLog()` di `src/lib/store.js`, tanpa memuat ulang
-data. Tab *Tindakan admin* (`LogAktivitas`) bisa disaring per pelaku dan jenis tindakan, tab
-*Perubahan nilai* (`AuditLog`) per pelaku dan NIM; keduanya per rentang tanggal WIB, dengan pilihan
-cepat Hari ini dan 7 hari terakhir. Rincian tiap tindakan dibuka per baris. Tanpa basis data (uji),
-perubahan nilai dibaca dari `AUDIT_LOG` yang termuat dan tindakan admin dinyatakan tidak tersedia.
+data. Tab *Aktivitas* (`LogAktivitas`, semua tindakan dari peran apa pun) bisa disaring per pelaku dan
+jenis tindakan, tab *Perubahan nilai* (`AuditLog`) per pelaku dan NIM; keduanya per rentang tanggal WIB,
+dengan pilihan cepat Hari ini dan 7 hari terakhir. Setiap baris menjawab siapa, apa, dan kapan:
+
+- **Siapa**: nama pelaku, lalu peran dan email akunnya. Semua akun admin bernama "Biro Kemahasiswaan",
+  jadi emailnya yang membedakan; pilihan Pelaku juga menambahkan email pada nama yang dipakai lebih dari
+  satu akun.
+- **Apa**: jenis tindakan, sasaran, dan sampai tiga baris ringkasan di bawah sasaran (`ringkasan()`):
+  isian yang berubah (`Label: 2027 → Angkatan 2027`), jumlah nilai beserta sumber, semester, dan cara
+  masuknya, isian profil yang berubah, dan alasannya. **Rincian** dibuka per baris (`Rincian`): sebelum/
+  sesudah menjadi tabel per isian (yang berubah ditebalkan), larik seperti contoh nilai atau bobot per
+  aspek menjadi tabel (paling banyak 20 baris), nama isian dan nilainya diterjemahkan (sumber, cara masuk,
+  peran, keputusan, status sertifikat, ya/tidak menjadi Aktif/Dicabut pada ubah akses), dan ID komponen
+  ditulis bersama namanya. Bukan JSON mentah lagi.
+- **Perubahan nilai**: nama komponen, kode dan nama aspek, sumber, semester, cara masuk (input manual,
+  import CSV, unggahan dosen, pengajuan koreksi), ID batch, alasan bila menyentuh data terkunci, dan bila
+  batch-nya dibatalkan: siapa, kapan, dan alasannya.
+
+Tanpa basis data (uji), perubahan nilai dibaca dari `AUDIT_LOG` yang termuat (label komponen dan aspek
+dicari dari kurikulum yang terpasang) dan aktivitas dinyatakan tidak tersedia.
 
 **Penilaian & Bobot** memakai ulang dua editor panel Kemahasiswaan: `EditorPenilaian` (teks aspek,
 komponen asesmen, bobotnya; komponen bisa ditambah dan diarsipkan) dan `Kurikulum` (bobot semua
@@ -713,9 +729,9 @@ besar.
   - *Angkatan*: kartu per angkatan, dengan tiga angkanya sejajar di semua kartu. Angkatan yang semester
     pertamanya belum tiba ditulis "Belum mulai" dan tidak dipilih sebagai bawaan. Di bawahnya daftar tindak
     lanjut bertab (Semua, Nilai belum lengkap, Di bawah rata-rata minimal, Masih sementara) dan berhalaman.
-  - *Log Aktivitas*: tab jenis catatan, pilihan pelaku dan jenis tindakan, cari NIM (tekan Enter), tanggal
-    Dari dan Sampai yang tidak bisa saling melewati, pintasan Hari ini, 7 hari terakhir, dan Semua waktu,
-    lalu Atur ulang filter.
+  - *Log Aktivitas*: tab jenis catatan (Aktivitas, Perubahan nilai), pilihan pelaku dan jenis tindakan, cari
+    NIM (tekan Enter), tanggal Dari dan Sampai yang tidak bisa saling melewati, pintasan Hari ini, 7 hari
+    terakhir, dan Semua waktu, lalu Atur ulang filter.
   - *Kurikulum CPMK*: kepala halaman dan judul kolom yang sama; isi kartu aspek rata atas.
 - **Papan ketik**: `Tabs` mengikuti pola tab APG (hanya tab terpilih yang masuk urutan Tab; panah, Home,
   dan End memindah pilihan beserta fokusnya). Laci menu (di bawah 1024px) mengurung Tab selama terbuka,
@@ -1553,15 +1569,25 @@ dikosongkan; server baru menuntutnya bila penyimpanan atau rollback menyentuh da
 
 ### Log aktivitas
 
-Perubahan nilai sudah tercatat per sel di `AuditLog`. Tindakan Kemahasiswaan lainnya dicatat di
-tabel `LogAktivitas` lewat `catatLog()` (`src/server/log.js`), **di dalam transaksi yang sama**
-dengan perubahannya: tidak ada perubahan tanpa jejak, dan tidak ada jejak tanpa perubahan.
+Perubahan nilai tercatat per sel di `AuditLog`. **Setiap tindakan yang mengubah sesuatu**, oleh peran apa
+pun, dicatat di tabel `LogAktivitas` lewat `catatLog()` (`src/server/log.js`), **di dalam transaksi yang
+sama** dengan perubahannya: tidak ada perubahan tanpa jejak, dan tidak ada jejak tanpa perubahan. Setiap
+catatan menyimpan siapa (`aktorId`), kapan (`waktu`), apa (`aksi`, `target`), dan rinciannya (`rincian`);
+yang hanya membaca (membuka halaman, pratinjau, membaca log) dan masuk/keluar tidak dicatat. Sejak 26 Okt
+2026 setiap batch nilai ikut tercatat (bukan hanya yang menyentuh data terkunci), begitu juga pembatalannya,
+karena `AuditLog` tidak mendapat baris baru saat batch dibatalkan.
 
 | `aksi` | Kapan dicatat | Isi `rincian` |
 |---|---|---|
+| `SIMPAN_NILAI` | batch nilai tersimpan tanpa menyentuh data terkunci: Input & Import Nilai, unggahan dosen (pelakunya dosen), dan perbaikan dosen yang disetujui (`catatBatch()` di `nilai.js`) | sumber, semester, angkatan, cara, jumlah nilai dan mahasiswa, sampai 20 contoh (NIM, nama, komponen, lama, baru); unggahan dosen juga jumlah yang dilewati (nilai sama) dan permintaan yang diajukan |
+| `BATALKAN_BATCH` | batch yang tidak menyentuh data terkunci dibatalkan | sumber, semester, angkatan, cara, jumlah nilai dan mahasiswa, pembuat dan waktu batch, alasan bila diisi |
 | `KUNCI_ANGKATAN` | angkatan dikunci | ringkasan pratinjau saat dikunci |
-| `UBAH_DATA_TERKUNCI` | simpan nilai atau persetujuan usulan menyentuh data terkunci | alasan, jumlah mahasiswa dan nilai |
-| `ROLLBACK_DATA_TERKUNCI` | batch yang menyentuh data terkunci dibatalkan | alasan dan jumlah mahasiswa |
+| `UBAH_DATA_TERKUNCI` | simpan nilai, persetujuan koreksi, atau persetujuan usulan menyentuh data terkunci | alasan, jumlah mahasiswa dan nilai; dari simpan nilai juga isian `SIMPAN_NILAI` di atas |
+| `ROLLBACK_DATA_TERKUNCI` | batch yang menyentuh data terkunci dibatalkan | alasan, jumlah mahasiswa, dan isian `BATALKAN_BATCH` di atas |
+| `AJUKAN_KOREKSI` | mahasiswa mengajukan koreksi nilai (pelakunya mahasiswa) | id pengajuan, komponen, nilai saat diajukan, nilai yang diharapkan, alasan |
+| `MINTA_SERTIFIKAT` | mahasiswa meminta akses cetak sertifikat | id permintaan, nama, nilai akhir saat meminta |
+| `SETUJUI_USULAN`, `TOLAK_USULAN` | super admin memutuskan usulan nilai dosen yang lama | id usulan, dosen, jumlah nilai; disetujui: batch, jumlah yang ditolak sistem, catatan, contoh; ditolak: alasan |
+| `UBAH_PROFIL` | pemilik akun mengubah profilnya | **hanya nama isian** yang berubah (nomor telepon, nomor ponsel, alamat, foto profil) dan apakah fotonya ditambahkan, diganti, atau dihapus; isinya tidak dicatat karena data pribadi dan log tidak bisa dihapus. Menyimpan tanpa perubahan tidak dicatat |
 | `UBAH_PENGUNCIAN` | tanda final/sementara aspek berubah | jumlah perubahan, berapa yang dicabut dari final, sampai 20 contoh |
 | `UBAH_BOBOT` | bobot disimpan dari halaman Kurikulum | alasan, bobot tiap aspek dan pengaturan sebelum/sesudah, ringkasan dampak, sampai 20 contoh |
 | `AJUKAN_PERSETUJUAN` | admin biasa mengajukan permintaan kepada super admin | aksi, judul, alasan, jumlah mahasiswa yang tersentuh |
@@ -1585,7 +1611,12 @@ Kedua log dibaca lewat `POST /api/log` (`bacaLog()`, hanya Kemahasiswaan), satu 
 - penyaring, semuanya opsional: `aktorId`, `dari`/`sampai` (tanggal `TTTT-BB-HH` menurut WIB;
   `sampai` dihitung sampai akhir harinya), `nim` untuk jenis nilai, dan `aksi` untuk jenis aktivitas;
 - `halaman` dan `ukuran` (bawaan 25 baris, paling banyak 100). Jawabannya menyertakan `total`,
-  `jumlahHalaman`, dan daftar pelaku (serta daftar aksi) untuk pilihan penyaring di layar;
+  `jumlahHalaman`, dan daftar pelaku (`{ id, nama, peran, email }`, serta daftar aksi) untuk pilihan penyaring
+  di layar;
+- setiap baris membawa `aktor` (nama), `aktorPeran` (nilai basis data, mis. `ADMIN`), dan `aktorEmail`
+  (`petaAkun()` di `muat.js`). Baris nilai juga membawa `komponenLabel`, `aspekKode`, `aspekNama`, `semester`,
+  `cara` (dari `Batch`), `alasan` (dari `UBAH_DATA_TERKUNCI` batch itu), dan `pembatalan` (`{ oleh, waktu,
+  alasan }` dari `BATALKAN_BATCH`/`ROLLBACK_DATA_TERKUNCI`; `null` untuk pembatalan dari sebelum ikut dicatat);
 - jejak batch yang sudah dibatalkan tetap tampil dengan tanda `dibatalkan`, karena log yang
   menghapus jejaknya sendiri tidak berguna sebagai bukti.
 
@@ -1813,8 +1844,8 @@ diputuskan, dengan aturan berikut:
   memperingatkannya di konsol pengembangan dan memintanya ke penerjemah peramban. Nilai kosong berarti
   belum diterjemahkan; `npm run bahasa:sync` menulis kunci baru dengan nilai kosong.
 - **Sasaran log dari server** ditulis sebagai kalimat Indonesia jadi (`akun x@umn.ac.id`, `angkatan 2024`,
-  `penguncian (2 mahasiswa)`). `labelSasaran` di `admin/Log.jsx` menerjemahkannya menurut sebelas pola
-  awalannya, di halaman Log dan di Tindakan admin terbaru Pusat Kendali; yang tidak dikenali tampil apa adanya.
+  `penguncian (2 mahasiswa)`). `labelSasaran` di `admin/Log.jsx` menerjemahkannya menurut dua belas pola
+  awalannya, di halaman Log dan di Aktivitas terbaru Pusat Kendali; yang tidak dikenali tampil apa adanya.
 - Penanda `{dalamKurungKurawal}` wajib ada juga di sisi Inggris. Nama penanda tidak boleh memakai
   tanda hubung: `{ rata-rata: … }` dibaca sebagai pengurangan dan menggagalkan kompilasi.
 - Kunci yang dioper sebagai prop (judul dan kepala tabel `ChartFrame`, kepala tabel lembar cetak)

@@ -236,6 +236,8 @@ async function bersihkanMahasiswa(email) {
       .map((a) => a.batchId)
       .filter(Boolean)
     const usulanId = (await db.usulanEntri.findMany({ where: { nim: m.nim }, select: { usulanId: true } })).map((e) => e.usulanId)
+    // Setiap batch kini punya catatan Log Aktivitas (SIMPAN_NILAI, BATALKAN_BATCH, dan yang data terkunci).
+    await db.logAktivitas.deleteMany({ where: { target: { in: [...new Set(batch)].map((id) => 'batch ' + id) } } })
     await db.nilai.deleteMany({ where: { mahasiswaId: m.id } })
     await db.auditLog.deleteMany({ where: { mahasiswaId: m.id } })
     await db.batch.deleteMany({ where: { id: { in: [...new Set(batch)] } } })
@@ -468,6 +470,28 @@ try {
   cek('rollback batch terakhir mengosongkan sel', (await sel()) === null)
   const dBatch = (await admin('/api/data')).isi.batch
   cek('admin tetap membaca riwayat batch: keduanya dibatalkan', [b1.isi.id, b2.isi.id].every((id) => dBatch.find((b) => b.id === id)?.status === 'dibatalkan'))
+  // Setiap batch tercatat di Log Aktivitas walau tidak menyentuh data terkunci, begitu juga pembatalannya: AuditLog
+  // tidak mendapat baris baru saat batch dibatalkan, jadi tanpa catatan ini tidak ada jejak siapa yang membatalkan.
+  const logSimpanB1 = await db.logAktivitas.findFirst({ where: { aksi: 'SIMPAN_NILAI', target: 'batch ' + b1.isi.id } })
+  cek(
+    'simpan nilai tercatat SIMPAN_NILAI beserta sumber, cara, jumlah, dan contohnya',
+    logSimpanB1?.rincian?.sumber === 'MK' &&
+      logSimpanB1.rincian.cara === 'manual' &&
+      logSimpanB1.rincian.jumlahNilai === 1 &&
+      logSimpanB1.rincian.contoh?.[0]?.nim === NIM &&
+      logSimpanB1.rincian.contoh[0].nilaiBaru === 80,
+    JSON.stringify(logSimpanB1?.rincian ?? null),
+  )
+  const logBatalB1 = await db.logAktivitas.findFirst({ where: { aksi: 'BATALKAN_BATCH', target: 'batch ' + b1.isi.id } })
+  cek(
+    'pembatalan batch tercatat BATALKAN_BATCH beserta pembuat dan waktu batch-nya',
+    logBatalB1?.rincian?.jumlahNilai === 1 && logBatalB1.rincian.dibuatOleh === 'Super Admin' && Boolean(logBatalB1.rincian.dibuatPada),
+    JSON.stringify(logBatalB1?.rincian ?? null),
+  )
+  cek(
+    'pembatalan yang ditolak (batch sudah dibatalkan) tidak tercatat lagi',
+    (await db.logAktivitas.count({ where: { aksi: 'BATALKAN_BATCH', target: 'batch ' + b1.isi.id } })) === 1,
+  )
 
   /* ------------------------------ penguncian ------------------------------ */
   garis('4. PENGUNCIAN ASPEK')
@@ -508,6 +532,17 @@ try {
   cek('mahasiswa mengajukan koreksi', k.status === 200 && /^K-\d+$/.test(k.isi.id), JSON.stringify(k.isi))
   cek('alasan kosong ditolak', (await ajukanKoreksi(' ')).status === 400)
   cek('pengajuan kedua untuk komponen yang sama selagi berjalan ditolak (409)', (await ajukanKoreksi('Uji: pengajuan ganda.')).status === 409)
+  const logAjukan = await db.logAktivitas.findMany({ where: { aksi: 'AJUKAN_KOREKSI', target: 'mahasiswa ' + NIM } })
+  cek(
+    'pengajuan tercatat atas nama mahasiswa beserta nilai saat diajukan dan harapannya; yang ditolak tidak tercatat',
+    logAjukan.length === 1 &&
+      logAjukan[0].aktorId === akunUji.id &&
+      logAjukan[0].rincian?.pengajuan === k.isi.id &&
+      logAjukan[0].rincian.nilaiSaatIni === 85 &&
+      logAjukan[0].rincian.nilaiDiharapkan === 92 &&
+      logAjukan[0].rincian.alasan === 'Uji: nilai tugas belum lengkap.',
+    JSON.stringify(logAjukan.map((l) => l.rincian)),
+  )
   const koreksiUji = async (p, id = k.isi.id) => (await p('/api/data')).isi.koreksi.find((x) => x.id === id)
   const putuskanK = (p, isi) => p('/api/koreksi/keputusan', { metode: 'POST', isi: { id: k.isi.id, ...isi } })
   cek('admin melihat pengajuannya menunggu lapis pertama', (await koreksiUji(admin))?.status === 'menunggu_admin')
@@ -591,11 +626,33 @@ try {
   const uLama = await db.usulan.create({
     data: { dosenId: dosenRow.id, cara: 'manual', entri: { create: [{ nim: NIM, komponenId: 'A2-MK-UTS', nilai: 75 }] } },
   })
+  targetLog.push('usulan U-' + uLama.id)
   const putusLama = (pelaku, isi) => pelaku('/api/usulan/keputusan', { metode: 'POST', isi: { id: 'U-' + uLama.id, ...isi } })
   cek('admin tidak memutuskan usulan lama (403)', (await putusLama(admin, { keputusan: 'ditolak', catatan: 'Uji.' })).status === 403)
   cek('tolak tanpa alasan tidak diterima', (await putusLama(sa, { keputusan: 'ditolak' })).status === 400)
   cek('super admin menolak usulan lama dengan alasan', (await putusLama(sa, { keputusan: 'ditolak', catatan: 'Uji ditolak.' })).isi.ok === true)
   cek('penolakan tidak menulis nilai', (await db.nilai.count({ where: { mahasiswaId, komponenId: 'A2-MK-UTS' } })) === 0)
+  const logTolakUsulan = await db.logAktivitas.findFirst({ where: { aksi: 'TOLAK_USULAN', target: 'usulan U-' + uLama.id } })
+  cek(
+    'penolakan usulan tercatat beserta dosen, jumlah nilai, dan alasannya',
+    logTolakUsulan?.aktorId === idSuper &&
+      logTolakUsulan.rincian?.dosen === dosenRow.nama &&
+      logTolakUsulan.rincian.jumlahNilai === 1 &&
+      logTolakUsulan.rincian.alasan === 'Uji ditolak.',
+    JSON.stringify(logTolakUsulan?.rincian ?? null),
+  )
+  const logUnggah = await db.logAktivitas.findFirst({ where: { aksi: 'SIMPAN_NILAI', target: 'batch ' + u1.isi.id } })
+  cek(
+    'unggahan dosen tercatat SIMPAN_NILAI atas nama dosen, bercara unggah-dosen',
+    logUnggah?.aktorId === dosenId && logUnggah.rincian?.cara === 'unggah-dosen' && logUnggah.rincian.jumlahNilai === 1,
+    JSON.stringify(logUnggah?.rincian ?? null),
+  )
+  const logBatalUnggah = await db.logAktivitas.findFirst({ where: { aksi: 'BATALKAN_BATCH', target: 'batch ' + u1.isi.id } })
+  cek(
+    'pembatalan unggahan tercatat atas nama super admin, dengan dosen sebagai pembuat batch',
+    logBatalUnggah?.aktorId === idSuper && logBatalUnggah.rincian?.dibuatOleh === dosenRow.nama,
+    JSON.stringify(logBatalUnggah?.rincian ?? null),
+  )
 
   /* ------------------------------ profil ------------------------------ */
   garis('7. PROFIL')
@@ -603,6 +660,19 @@ try {
   await mhs('/api/profil', { metode: 'PUT', isi: { telepon: '021 5422 0808', ponsel: '', alamat: 'Gading Serpong', foto: null, fotoSumber: null } })
   const pr = (await mhs('/api/data')).isi.profil
   cek('profil tersimpan di basis data', pr?.telepon === '021 5422 0808' && pr.alamat === 'Gading Serpong', JSON.stringify(pr))
+  // Yang dicatat hanya nama isian yang berubah; nomor dan alamat (data pribadi) tidak masuk log.
+  const logProfil = () => db.logAktivitas.findMany({ where: { aksi: 'UBAH_PROFIL', target: 'akun ' + EMAIL }, orderBy: { id: 'asc' } })
+  const lp = await logProfil()
+  cek(
+    'perubahan profil tercatat dengan nama isiannya saja, tanpa isi data pribadi',
+    lp.length === 1 &&
+      lp[0].aktorId === akunUji.id &&
+      JSON.stringify(lp[0].rincian?.diubah) === JSON.stringify(['nomor telepon', 'alamat']) &&
+      !/5422|Gading/.test(JSON.stringify(lp[0].rincian)),
+    JSON.stringify(lp.map((l) => l.rincian)),
+  )
+  await mhs('/api/profil', { metode: 'PUT', isi: { telepon: '021 5422 0808', ponsel: '', alamat: 'Gading Serpong', foto: null, fotoSumber: null } })
+  cek('menyimpan profil tanpa perubahan apa pun tidak dicatat', (await logProfil()).length === 1)
   const panjang = 'a'.repeat(400)
   const simpanPanjang = await mhs('/api/profil', { metode: 'PUT', isi: { alamat: panjang } })
   cek('alamat 400 karakter tersimpan', simpanPanjang.status === 200, JSON.stringify(simpanPanjang.isi))
@@ -766,6 +836,26 @@ try {
   const jejakB1 = semua.isi.baris.find((b) => b.batchId === b1.isi.id)
   cek('jejak batch yang dibatalkan tetap tampil dan bertanda dibatalkan', jejakB1?.dibatalkan === true, JSON.stringify(jejakB1))
   cek('jejak batch yang masih berlaku tidak bertanda dibatalkan', semua.isi.baris.some((b) => b.dibatalkan === false))
+  cek(
+    'baris nilai menyebut nama komponen, kode aspek, cara masuk, dan siapa serta kapan batch-nya dibatalkan',
+    Boolean(jejakB1?.komponenLabel) &&
+      Boolean(jejakB1.aspekKode) &&
+      jejakB1.cara === 'manual' &&
+      jejakB1.pembatalan?.oleh === 'Super Admin' &&
+      Boolean(jejakB1.pembatalan.waktu),
+    JSON.stringify(jejakB1),
+  )
+  cek(
+    'baris nilai membawa peran dan email pelakunya',
+    semua.isi.baris.every((b) => b.aktorPeran && b.aktorEmail) && jejakB1?.aktorEmail === 'super.admin@umn.ac.id',
+  )
+  const jejakTerkunci = (await bacaLog({ jenis: 'nilai', nim: NIM2, ukuran: 100 })).isi.baris.find((b) => b.batchId === denganAlasan.isi.id)
+  cek(
+    'baris nilai data terkunci membawa alasannya dan alasan pembatalannya',
+    jejakTerkunci?.alasan === 'Melengkapi nilai susulan sesudah semester 3.' &&
+      jejakTerkunci.pembatalan?.alasan === 'Salah memasukkan nilai, dibatalkan.',
+    JSON.stringify(jejakTerkunci),
+  )
 
   // --- paginasi ---
   const hal1 = await bacaLog({ jenis: 'nilai', nim: NIM, ukuran: 2, halaman: 1 })
@@ -785,12 +875,31 @@ try {
   cek('filter tanggal besok kosong', (await bacaLog({ jenis: 'nilai', nim: NIM, dari: besok })).isi.total === 0)
   cek('filter tanggal lampau kosong', (await bacaLog({ jenis: 'nilai', nim: NIM, dari: '2000-01-01', sampai: '2000-01-02' })).isi.total === 0)
 
-  // --- tindakan admin (LogAktivitas) ---
-  const akt = await bacaLog({ jenis: 'aktivitas', dari: hariIni, ukuran: 100 })
+  // --- semua tindakan (LogAktivitas) ---
+  // Disaring per aksi: sejak setiap batch nilai ikut tercatat, catatan hari ini bisa melewati satu halaman 100 baris.
+  const akt = await bacaLog({ jenis: 'aktivitas', aksi: 'KUNCI_ANGKATAN', dari: hariIni, ukuran: 100 })
   const barisKunci = akt.isi.baris.find((b) => b.aksi === 'KUNCI_ANGKATAN' && b.target === 'angkatan ' + ANG_A)
   cek('aktivitas: penguncian angkatan terbaca beserta pelakunya', akt.status === 200 && barisKunci?.aktor === 'Super Admin' && barisKunci.rincian?.label === 'Uji A ' + SUF, JSON.stringify(barisKunci))
-  const barisUbah = akt.isi.baris.find((b) => b.aksi === 'UBAH_DATA_TERKUNCI' && b.target === 'batch ' + denganAlasan.isi.id)
+  cek(
+    'aktivitas: pelaku membawa peran dan email akunnya',
+    barisKunci?.aktorPeran === 'SUPER_ADMIN' && barisKunci.aktorEmail === 'super.admin@umn.ac.id',
+    JSON.stringify(barisKunci),
+  )
+  cek(
+    'pilihan pelaku membedakan admin lewat email (nama semua admin sama)',
+    akt.isi.pilihanAktor.some((a) => a.email === EMAIL_ADMIN && a.nama === 'Biro Kemahasiswaan' && a.peran === 'ADMIN'),
+    JSON.stringify(akt.isi.pilihanAktor),
+  )
+  const aktUbah = await bacaLog({ jenis: 'aktivitas', aksi: 'UBAH_DATA_TERKUNCI', dari: hariIni, ukuran: 100 })
+  const barisUbah = aktUbah.isi.baris.find((b) => b.aksi === 'UBAH_DATA_TERKUNCI' && b.target === 'batch ' + denganAlasan.isi.id)
   cek('aktivitas: alasan perubahan data terkunci terbaca', barisUbah?.rincian?.alasan === 'Melengkapi nilai susulan sesudah semester 3.', JSON.stringify(barisUbah))
+  const aktSimpan = await bacaLog({ jenis: 'aktivitas', aksi: 'SIMPAN_NILAI', dari: hariIni, ukuran: 100 })
+  cek(
+    'aktivitas: simpan nilai bisa disaring dan memuat batch uji',
+    aktSimpan.isi.baris.length > 0 &&
+      aktSimpan.isi.baris.every((b) => b.aksi === 'SIMPAN_NILAI') &&
+      aktSimpan.isi.baris.some((b) => b.target === 'batch ' + b2.isi.id),
+  )
   const hanyaKunci = await bacaLog({ jenis: 'aktivitas', aksi: 'KUNCI_ANGKATAN', ukuran: 100 })
   cek('filter aksi hanya mengembalikan aksi itu', hanyaKunci.isi.baris.length > 0 && hanyaKunci.isi.baris.every((b) => b.aksi === 'KUNCI_ANGKATAN'))
   cek('daftar pilihan aksi tersedia untuk layar', akt.isi.pilihanAksi?.includes('UBAH_PENGUNCIAN'))
@@ -881,6 +990,16 @@ try {
   const s1 = await minta(mhs3)
   cek('mahasiswa yang layak meminta akses cetak', s1.status === 200 && /^S-\d+$/.test(s1.isi.id ?? ''), JSON.stringify(s1.isi))
   cek('permintaan kedua selagi berjalan ditolak (409)', (await minta(mhs3)).status === 409)
+  const logMinta = await db.logAktivitas.findMany({ where: { aksi: 'MINTA_SERTIFIKAT', target: { in: ['mahasiswa ' + NIM3, 'mahasiswa ' + NIM] } } })
+  cek(
+    'permintaan akses cetak tercatat atas nama mahasiswa beserta nilai akhirnya; yang ditolak tidak tercatat',
+    logMinta.length === 1 &&
+      logMinta[0].aktorId === akunUji3.id &&
+      logMinta[0].target === 'mahasiswa ' + NIM3 &&
+      logMinta[0].rincian?.permintaan === s1.isi.id &&
+      typeof logMinta[0].rincian.nilaiAkhir === 'number',
+    JSON.stringify(logMinta.map((l) => [l.target, l.rincian])),
+  )
   cek('admin melihat permintaannya menunggu lapis pertama', (await permintaanNim3(admin))?.status === 'menunggu_admin')
   cek('mahasiswa lain tidak menerima permintaan ini', (await mhs('/api/data')).isi.sertifikat.length === 0)
   cek('dosen tidak menerima data sertifikat', (await dosen('/api/data')).isi.sertifikat.length === 0)

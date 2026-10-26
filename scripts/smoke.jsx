@@ -43,7 +43,7 @@ import CetakSertifikat from '../src/halaman/admin/CetakSertifikat'
 import Angkatan from '../src/halaman/admin/Angkatan'
 import Kurikulum from '../src/halaman/admin/Kurikulum'
 import PersetujuanAdmin from '../src/halaman/admin/PersetujuanAdmin'
-import Log from '../src/halaman/admin/Log'
+import Log, { Rincian, ringkasan } from '../src/halaman/admin/Log'
 import DataMaster from '../src/halaman/admin/DataMaster'
 import SuperLayout from '../src/halaman/super-admin/SuperLayout'
 import Kendali from '../src/halaman/super-admin/Kendali'
@@ -2941,6 +2941,89 @@ export async function ujiLayarUnggah() {
   window.localStorage.setItem('sk5c.session', sesiAsli)
 
   pakaiDataContoh()
+  return hasil
+}
+
+/* Log Aktivitas (admin/Log.jsx): rincian satu tindakan dibaca sebagai tabel sebelum/sesudah dengan nama isiannya, bukan
+   JSON mentah, dan ringkasan barisnya menyebut apa yang berubah beserta alasannya. Rincian dipasang langsung dengan
+   isi rincian seperti tulisan server, karena tanpa basis data tab aktivitas memang kosong. */
+export async function ujiRincianLog() {
+  const hasil = {}
+  const pasangRincian = async (props) => {
+    const el = document.createElement('div')
+    document.body.appendChild(el)
+    const root = createRoot(el)
+    await act(async () => {
+      root.render(
+        <Penyedia>
+          <Rincian {...props} />
+        </Penyedia>,
+      )
+    })
+    await act(async () => { await new Promise((r) => setTimeout(r, 30)) })
+    return {
+      el,
+      teks: el.textContent,
+      lepas: () => {
+        root.unmount()
+        el.remove()
+      },
+    }
+  }
+
+  let r = await pasangRincian({
+    aksi: 'UBAH_ANGKATAN',
+    rincian: { id: '2027', sebelum: { label: '2027' }, sesudah: { label: 'Angkatan 2027' }, alasan: 'Menyamakan dengan SK rektor.' },
+  })
+  hasil.tabelPerubahan =
+    /Perubahan/.test(r.teks) &&
+    /Isian/.test(r.teks) &&
+    /Sebelum/.test(r.teks) &&
+    /Sesudah/.test(r.teks) &&
+    /Label/.test(r.teks) &&
+    /Angkatan 2027/.test(r.teks) &&
+    /AlasanMenyamakan dengan SK rektor\./.test(r.teks) &&
+    !/[{}"]/.test(r.teks)
+  r.lepas()
+
+  r = await pasangRincian({
+    aksi: 'UBAH_AKSES',
+    rincian: { email: 'uji@student.umn.ac.id', peran: 'mahasiswa', sebelum: true, sesudah: false, alasan: 'Cuti akademik satu semester' },
+  })
+  hasil.aksesTerbaca = /Aktif/.test(r.teks) && /Dicabut/.test(r.teks) && !/true|false/.test(r.teks) && /PeranMahasiswa/.test(r.teks)
+  r.lepas()
+
+  const k = getKomponen(getAspekList()[0].id)[0]
+  r = await pasangRincian({
+    aksi: 'SIMPAN_NILAI',
+    rincian: {
+      sumber: 'MK',
+      semester: 1,
+      angkatan: '2025',
+      cara: 'manual',
+      jumlahNilai: 1,
+      jumlahMahasiswa: 1,
+      contoh: [{ nim: '00000100001', nama: 'Mahasiswa Satu', komponen: k.id, nilaiLama: null, nilaiBaru: 88 }],
+    },
+  })
+  hasil.contohNilai =
+    /MK Humaniora/.test(r.teks) &&
+    /input manual/.test(r.teks) &&
+    r.el.querySelectorAll('table').length === 1 &&
+    r.teks.includes(k.label + ' (' + k.id + ')') &&
+    /Mahasiswa Satu/.test(r.teks) &&
+    /88/.test(r.teks)
+  r.lepas()
+
+  // t tiruan: kalimat apa adanya dengan isiannya, seperti useTeks() berbahasa Indonesia.
+  const t = (s, isi) => Object.entries(isi ?? {}).reduce((a, [kunci, v]) => a.replaceAll('{' + kunci + '}', String(v)), s)
+  const rk = ringkasan(
+    { aksi: 'UBAH_ANGKATAN', rincian: { sebelum: { label: 'A' }, sesudah: { label: 'B' }, alasan: 'Menyamakan dengan SK rektor.' } },
+    t,
+  )
+  hasil.ringkasanBaris = rk[0] === 'Label: A → B' && rk.includes('Alasan: Menyamakan dengan SK rektor.')
+  const rkNilai = ringkasan({ aksi: 'SIMPAN_NILAI', rincian: { jumlahNilai: 3, sumber: 'PDP', semester: 2, cara: 'import' } }, t)
+  hasil.ringkasanNilai = rkNilai[0] === '3 nilai · PDP · Semester 2 · import CSV'
   return hasil
 }
 

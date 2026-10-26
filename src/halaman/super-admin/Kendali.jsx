@@ -69,6 +69,13 @@ const IKON_LOG = {
   UBAH_ASPEK: IconDocument,
   ARSIPKAN_ASPEK: IconHapus,
   PULIHKAN_ASPEK: IconUndo,
+  SIMPAN_NILAI: IconPencil,
+  BATALKAN_BATCH: IconUndo,
+  SETUJUI_USULAN: IconCheckShield,
+  TOLAK_USULAN: IconCheckShield,
+  AJUKAN_KOREKSI: IconInbox,
+  MINTA_SERTIFIKAT: IconCertificate,
+  UBAH_PROFIL: IconUsers,
 }
 
 const LABEL_KEPUTUSAN = { disetujui: 'Disetujui', ditolak: 'Ditolak', gagal: 'Gagal dijalankan' }
@@ -666,14 +673,15 @@ function GrafikPerubahan({ periode, t, bahasa }) {
   )
 }
 
-/* -------------------------- 4. tindakan admin terbaru ----------------------- */
+/* ----------------------------- 4. aktivitas terbaru ---------------------------- */
 
+// Enam catatan Log Aktivitas terakhir dari peran apa pun: sejak semua tindakan tercatat, isinya bukan hanya admin.
 function Aktivitas({ aktivitas, label, t, bahasa }) {
   return (
     <Card className="flex flex-col overflow-hidden xl:col-span-7">
       <KepalaKartu
         icon={IconList}
-        title={t('Tindakan admin terbaru')}
+        title={t('Aktivitas terbaru')}
         subtitle={t('Enam catatan terakhir di {periode}.', { periode: label })}
         action={<TautanKepala href="/super/log">{t('Lihat seluruh log')}</TautanKepala>}
       />
@@ -686,7 +694,7 @@ function Aktivitas({ aktivitas, label, t, bahasa }) {
       ) : aktivitas.lokal ? (
         <p className="flex flex-1 items-start gap-2 px-5 py-6 text-[13.5px] text-ink-2 sm:px-6">
           <IconInfo size={15} className="mt-0.5 shrink-0" />
-          {t('Tindakan admin hanya tercatat saat website terhubung ke basis data.')}
+          {t('Aktivitas hanya tercatat saat website terhubung ke basis data.')}
         </p>
       ) : aktivitas.baris.length ? (
         // Saat periode diganti, daftar lama tetap terlihat redup sampai yang baru tiba (tanpa lompatan tata letak).
@@ -725,7 +733,7 @@ function Aktivitas({ aktivitas, label, t, bahasa }) {
         </ol>
       ) : (
         <div className="flex-1">
-          <EmptyState title={t('Belum ada tindakan admin yang tercatat')}>
+          <EmptyState title={t('Belum ada aktivitas yang tercatat')}>
             {t('Pengesahan angkatan, perubahan bobot, dan keputusan persetujuan akan tercatat di sini.')}
           </EmptyState>
         </div>

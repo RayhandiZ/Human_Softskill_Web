@@ -1,7 +1,7 @@
 import { db } from './db.js'
 import { GalatApi } from './api.js'
 import { angkaId, diKelasDosen, selesaiProgram, semesterDari } from './muat.js'
-import { ALASAN_MIN, cariTerkunci, petaMahasiswa, tulisBatch, wajibkanAlasan } from './nilai.js'
+import { ALASAN_MIN, catatBatch, cariTerkunci, contohBatch, petaMahasiswa, tulisBatch, wajibkanAlasan } from './nilai.js'
 import { catatLog } from './log.js'
 import { ajukanDalam } from './persetujuan.js'
 import { getAspek, getKomponenById } from '../lib/curriculum.js'
@@ -40,8 +40,21 @@ export async function ajukanKoreksi(pengguna, { komponenId, alasan, nilaiDiharap
   })
   if (berjalan) throw new GalatApi('Pengajuan untuk komponen ini masih diproses. Tunggu keputusannya dulu.', 409)
 
-  const baru = await db.pengajuanKoreksi.create({
-    data: { mahasiswaId: pengguna.mahasiswa.id, komponenId: komponen.id, alasan: teks, nilaiDiharapkan: harapan },
+  // Nilai saat diajukan ikut dicatat, supaya log menunjukkan apa yang dipersoalkan walau nilainya berubah kemudian.
+  const sekarang = await db.nilai.findUnique({
+    where: { mahasiswaId_komponenId: { mahasiswaId: pengguna.mahasiswa.id, komponenId: komponen.id } },
+  })
+  const baru = await db.$transaction(async (tx) => {
+    const k = await tx.pengajuanKoreksi.create({
+      data: { mahasiswaId: pengguna.mahasiswa.id, komponenId: komponen.id, alasan: teks, nilaiDiharapkan: harapan },
+    })
+    await catatLog(tx, {
+      aktorId: pengguna.id,
+      aksi: 'AJUKAN_KOREKSI',
+      target: 'mahasiswa ' + pengguna.mahasiswa.nim,
+      rincian: { pengajuan: 'K-' + k.id, komponen: komponen.id, nilaiSaatIni: sekarang?.nilai ?? null, nilaiDiharapkan: harapan, alasan: teks },
+    })
+    return k
   })
   return { id: 'K-' + baru.id }
 }
@@ -278,6 +291,12 @@ export async function unggahNilaiDosen(pengguna, { entri, alasan }) {
       }
 
       const batch = langsung.length ? await batchDosen(tx, dosen, langsung, pengguna.id, peta) : null
+      if (batch) {
+        await catatBatch(tx, pengguna.id, batch, null, {
+          dilewati: sama,
+          ...(permintaan ? { diajukan: permintaan.id, jumlahDiajukan: permintaan.jumlah } : {}),
+        })
+      }
       return { id: batch?.id ?? null, jumlah: batch?.jumlah ?? 0, sama, permintaan }
     },
     { timeout: 30000, maxWait: 10000 },
@@ -302,14 +321,7 @@ export async function terapkanPerbaikanDosen(pengaju, { entri, alasan }) {
       const pasangan = berubah.map((x) => ({ mahasiswaId: peta.get(x.nim).id, aspekId: x.komponen.aspekId }))
       const terkunci = await wajibkanAlasan(tx, pasangan, alasan, 'alasan')
       const batch = await batchDosen(tx, dosen, berubah, pengaju.id, peta)
-      if (terkunci) {
-        await catatLog(tx, {
-          aktorId: pengaju.id,
-          aksi: 'UBAH_DATA_TERKUNCI',
-          target: 'batch ' + batch.id,
-          rincian: { ...terkunci, cara: 'perbaikan dosen', jumlahNilai: batch.jumlah },
-        })
-      }
+      await catatBatch(tx, pengaju.id, batch, terkunci, { cara: 'perbaikan dosen' })
       return { id: batch.id, jumlah: batch.jumlah }
     },
     { timeout: 30000, maxWait: 10000 },
@@ -331,14 +343,21 @@ export async function putuskanUsulan(pengguna, { id, keputusan, catatan }) {
       const u = await tx.usulan.findUnique({ where: { id: angkaId(id) }, include: { entri: true } })
       if (!u || u.status !== 'MENUNGGU') return { ok: false }
       const putusan = { diputuskanOleh: pengguna.id, diputuskanPada: new Date(), catatanKeputusan: teks || null }
+      const dosen = await tx.dosen.findUnique({ where: { id: u.dosenId } })
+      const sasaran = 'usulan U-' + u.id
 
       if (keputusan === 'ditolak') {
         if (!teks) throw new GalatApi('Alasan penolakan wajib diisi. Dosen perlu tahu apa yang harus diperbaiki.')
         await tx.usulan.update({ where: { id: u.id }, data: { status: 'DITOLAK', ...putusan } })
+        await catatLog(tx, {
+          aktorId: pengguna.id,
+          aksi: 'TOLAK_USULAN',
+          target: sasaran,
+          rincian: { usulan: 'U-' + u.id, dosen: dosen?.nama ?? null, jumlahNilai: u.entri.length, alasan: teks },
+        })
         return { ok: true }
       }
 
-      const dosen = await tx.dosen.findUnique({ where: { id: u.dosenId } })
       if (!dosen) throw new GalatApi('Dosen pengusul tidak ditemukan.')
       const peta = await petaMahasiswa(u.entri.map((e) => e.nim), tx)
       const periksa = periksaUsulan(
@@ -387,6 +406,21 @@ export async function putuskanUsulan(pengguna, { id, keputusan, catatan }) {
           batchId: batch.id,
           ditolakSistem: periksa.ditolak.map((x) => ({ nim: x.nim, komponenId: x.komponenId, alasan: x.alasan })),
           ...putusan,
+        },
+      })
+      // Pelaku nilainya tetap dosen (AuditLog), jadi penyetujunya dicatat di sini.
+      await catatLog(tx, {
+        aktorId: pengguna.id,
+        aksi: 'SETUJUI_USULAN',
+        target: sasaran,
+        rincian: {
+          usulan: 'U-' + u.id,
+          dosen: dosen.nama,
+          batch: batch.id,
+          jumlahNilai: batch.jumlah,
+          ditolakSistem: periksa.ditolak.length,
+          catatan: teks || null,
+          contoh: contohBatch(batch),
         },
       })
       return { ok: true }

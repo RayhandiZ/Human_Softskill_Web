@@ -29,7 +29,16 @@ export async function mintaSertifikat(pengguna) {
   if (!k.layak) throw new GalatApi('Sertifikat belum bisa diminta: ' + sebabTidakLayak(k) + '.', 409)
   const ada = await db.permintaanSertifikat.findFirst({ where: { mahasiswaId: m.id, status: { in: BERJALAN } } })
   if (ada) throw new GalatApi('Permintaan akses cetak Anda sudah ada.', 409)
-  const baru = await db.permintaanSertifikat.create({ data: { mahasiswaId: m.id } })
+  const baru = await db.$transaction(async (tx) => {
+    const p = await tx.permintaanSertifikat.create({ data: { mahasiswaId: m.id } })
+    await catatLog(tx, {
+      aktorId: pengguna.id,
+      aksi: 'MINTA_SERTIFIKAT',
+      target: 'mahasiswa ' + m.nim,
+      rincian: { permintaan: 'S-' + p.id, nama: m.nama, nilaiAkhir: k.transkrip.akhir.nilai },
+    })
+    return p
+  })
   return { id: 'S-' + baru.id }
 }
 

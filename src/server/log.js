@@ -1,12 +1,13 @@
 import { db } from './db.js'
 import { GalatApi } from './api.js'
-import { petaNama, waktuWib } from './muat.js'
-import { getKomponenById } from '../lib/curriculum.js'
+import { petaAkun, waktuWib } from './muat.js'
+import { KOMPONEN_ARSIP, getAspek, getKomponenById } from '../lib/curriculum.js'
 
-// Catatan tindakan admin selain perubahan nilai (yang sudah punya AuditLog): kunci angkatan, perubahan
-// data terkunci beserta alasannya, perubahan tanda penguncian aspek, perubahan bobot kurikulum,
-// permintaan admin kepada super admin (diajukan, diputuskan, ditarik), akses dan izin akun, serta
-// perubahan data master (angkatan, fakultas, prodi, mahasiswa).
+// Catatan setiap tindakan yang mengubah sesuatu, oleh peran apa pun: penyimpanan dan pembatalan batch nilai
+// (rincian per nilainya tetap di AuditLog), kunci angkatan, perubahan data terkunci beserta alasannya, tanda
+// penguncian aspek, bobot dan penilaian kurikulum, permintaan admin kepada super admin (diajukan, diputuskan,
+// ditarik), akses dan izin akun, data master (angkatan, fakultas, prodi, mahasiswa), persetujuan dua lapis, serta
+// tindakan mahasiswa dan pemilik akun (mengajukan koreksi, meminta akses cetak, mengubah profil).
 //
 // Dipanggil DI DALAM transaksi `tx` yang sama dengan perubahan datanya, supaya catatan dan perubahan
 // selalu berhasil atau gagal bersama: tidak ada perubahan tanpa jejak, tidak ada jejak tanpa perubahan.
@@ -21,7 +22,7 @@ export async function catatLog(tx, { aktorId, aksi, target, rincian }) {
 
 // Halaman Log Aktivitas membaca dua tabel dengan bentuk pencarian yang sama, jadi satu fungsi melayani
 // keduanya lewat `jenis`: 'nilai' (AuditLog, setiap perubahan satu nilai) dan 'aktivitas' (LogAktivitas,
-// tindakan admin). Yang dikembalikan satu halaman saja, bukan seluruh tabel. Tabel ini hanya dibaca.
+// setiap tindakan). Yang dikembalikan satu halaman saja, bukan seluruh tabel. Tabel ini hanya dibaca.
 
 export const AKSI_LOG = [
   'KUNCI_ANGKATAN',
@@ -62,7 +63,26 @@ export const AKSI_LOG = [
   // Sesudah disetujui: pencabutan oleh admin atau super admin, dan setiap kali sertifikat dibuka untuk dicetak.
   'CABUT_SERTIFIKAT',
   'CETAK_SERTIFIKAT',
+  // Batch nilai yang tidak menyentuh data terkunci (yang menyentuh tercatat UBAH_DATA_TERKUNCI dan
+  // ROLLBACK_DATA_TERKUNCI di atas): disimpan dari Input & Import Nilai atau unggahan dosen, atau dibatalkan.
+  'SIMPAN_NILAI',
+  'BATALKAN_BATCH',
+  // Usulan nilai dosen yang lama, diputuskan super admin (putuskanUsulan di pengajuan.js).
+  'SETUJUI_USULAN',
+  'TOLAK_USULAN',
+  // Tindakan mahasiswa dan pemilik akun sendiri.
+  'AJUKAN_KOREKSI',
+  'MINTA_SERTIFIKAT',
+  'UBAH_PROFIL',
 ]
+
+// Log yang bertarget 'batch <id>' dan menerangkan batch itu di tab Perubahan nilai: alasan perubahan data terkunci,
+// dan siapa serta kapan batch-nya dibatalkan.
+const LOG_ALASAN_BATCH = ['UBAH_DATA_TERKUNCI']
+const LOG_BATAL_BATCH = ['BATALKAN_BATCH', 'ROLLBACK_DATA_TERKUNCI']
+
+/** Komponen aktif atau yang sudah diarsipkan; jejak nilainya tetap ada walau komponennya diarsipkan. */
+const cariKomponen = (id) => getKomponenById(id) ?? KOMPONEN_ARSIP.find((k) => k.id === id) ?? null
 
 const UKURAN_BAWAAN = 25
 const UKURAN_MAKS = 100
@@ -100,11 +120,22 @@ const bulat = (nilai, bawaan, min, maks) => {
   return Math.min(maks, Math.max(min, n))
 }
 
-/** Pelaku yang pernah tercatat di tabel itu, bahan pilihan penyaring di layar. */
+/** Pelaku yang pernah tercatat di tabel itu, bahan pilihan penyaring di layar; email membedakan admin yang bernama sama. */
 async function daftarAktor(tabel) {
   const baris = await tabel.groupBy({ by: ['aktorId'] })
-  const nama = await petaNama(baris.map((b) => b.aktorId))
-  return baris.map((b) => ({ id: b.aktorId, nama: nama.get(b.aktorId) ?? 'Pengguna #' + b.aktorId })).sort((a, b) => a.nama.localeCompare(b.nama))
+  const akun = await petaAkun(baris.map((b) => b.aktorId))
+  return baris
+    .map((b) => {
+      const a = akun.get(b.aktorId)
+      return { id: b.aktorId, nama: a?.nama ?? 'Pengguna #' + b.aktorId, peran: a?.peran ?? null, email: a?.email ?? null }
+    })
+    .sort((a, b) => a.nama.localeCompare(b.nama) || String(a.email).localeCompare(String(b.email)))
+}
+
+/** Siapa pelakunya, dalam bentuk yang sama di kedua jenis log: nama, peran (nilai basis data), dan email akunnya. */
+const pelaku = (akun, id) => {
+  const a = akun.get(id)
+  return { aktor: a?.nama ?? null, aktorPeran: a?.peran ?? null, aktorEmail: a?.email ?? null }
 }
 
 /**
@@ -138,7 +169,7 @@ export async function bacaLog(pengguna, { jenis = 'nilai', halaman, ukuran, akto
       db.logAktivitas.count({ where }),
       daftarAktor(db.logAktivitas),
     ])
-    const nama = await petaNama(baris.map((b) => b.aktorId))
+    const akun = await petaAkun(baris.map((b) => b.aktorId))
     return {
       jenis,
       halaman: noHalaman,
@@ -150,7 +181,7 @@ export async function bacaLog(pengguna, { jenis = 'nilai', halaman, ukuran, akto
       baris: baris.map((b) => ({
         id: 'A-' + b.id,
         waktu: waktuWib(b.waktu),
-        aktor: nama.get(b.aktorId) ?? null,
+        ...pelaku(akun, b.aktorId),
         aksi: b.aksi,
         target: b.target,
         rincian: b.rincian ?? null,
@@ -164,16 +195,41 @@ export async function bacaLog(pengguna, { jenis = 'nilai', halaman, ukuran, akto
     where.mahasiswaId = m ? m.id : -1 // NIM tidak dikenal: hasilnya kosong, bukan semua
   }
   const [baris, total, aktor] = await Promise.all([
-    db.auditLog.findMany({ where, include: { batch: { select: { status: true } } }, orderBy: URUT, ...halamanKe }),
+    db.auditLog.findMany({
+      where,
+      include: { batch: { select: { status: true, cara: true, semester: true } } },
+      orderBy: URUT,
+      ...halamanKe,
+    }),
     db.auditLog.count({ where }),
     daftarAktor(db.auditLog),
   ])
-  const mhs = await db.mahasiswa.findMany({
-    where: { id: { in: [...new Set(baris.map((b) => b.mahasiswaId))] } },
-    select: { id: true, nim: true, nama: true },
-  })
+  // Keterangan batch dari Log Aktivitas: alasan bila menyentuh data terkunci, dan siapa serta kapan membatalkannya.
+  const targetBatch = [...new Set(baris.map((b) => b.batchId).filter(Boolean))].map((id) => 'batch ' + id)
+  const [mhs, logBatch] = await Promise.all([
+    db.mahasiswa.findMany({
+      where: { id: { in: [...new Set(baris.map((b) => b.mahasiswaId))] } },
+      select: { id: true, nim: true, nama: true },
+    }),
+    targetBatch.length
+      ? db.logAktivitas.findMany({
+          where: { target: { in: targetBatch }, aksi: { in: [...LOG_ALASAN_BATCH, ...LOG_BATAL_BATCH] } },
+          orderBy: URUT,
+        })
+      : [],
+  ])
   const mhsDariId = new Map(mhs.map((m) => [m.id, m]))
-  const nama = await petaNama(baris.map((b) => b.aktorId))
+  const akun = await petaAkun([...baris.map((b) => b.aktorId), ...logBatch.map((l) => l.aktorId)])
+  const alasanBatch = new Map()
+  const batalBatch = new Map()
+  for (const l of logBatch) {
+    const id = l.target.slice('batch '.length)
+    // Urutannya terbaru dulu, jadi yang pertama ditemui adalah catatan terakhir untuk batch itu.
+    if (LOG_ALASAN_BATCH.includes(l.aksi) && !alasanBatch.has(id)) alasanBatch.set(id, l.rincian?.alasan ?? null)
+    if (LOG_BATAL_BATCH.includes(l.aksi) && !batalBatch.has(id)) {
+      batalBatch.set(id, { oleh: akun.get(l.aktorId)?.nama ?? null, waktu: waktuWib(l.waktu), alasan: l.rincian?.alasan ?? null })
+    }
+  }
   return {
     jenis,
     halaman: noHalaman,
@@ -183,20 +239,31 @@ export async function bacaLog(pengguna, { jenis = 'nilai', halaman, ukuran, akto
     pilihanAktor: aktor,
     baris: baris.map((b) => {
       const m = mhsDariId.get(b.mahasiswaId)
-      const komponen = getKomponenById(b.komponenId)
+      const komponen = cariKomponen(b.komponenId)
+      const aspek = komponen ? getAspek(komponen.aspekId) : null
+      const dibatalkan = b.batch?.status === 'DIBATALKAN'
       return {
         id: 'L-' + b.id,
         waktu: waktuWib(b.waktu),
-        aktor: nama.get(b.aktorId) ?? null,
+        ...pelaku(akun, b.aktorId),
         nim: m?.nim ?? '',
         nama: m?.nama ?? '',
         aspek: komponen?.aspekId ?? null,
+        aspekKode: aspek?.kode ?? null,
+        aspekNama: aspek?.nama ?? null,
         komponen: b.komponenId,
+        komponenLabel: komponen?.label ?? null,
         nilaiLama: b.nilaiLama,
         nilaiBaru: b.nilaiBaru,
         sumber: komponen?.sumber ?? null,
+        semester: b.batch?.semester ?? aspek?.semester ?? null,
+        // manual | import | import-mentah | koreksi | unggah-dosen: dari mana nilainya masuk.
+        cara: b.batch?.cara ?? null,
         batchId: b.batchId,
-        dibatalkan: b.batch?.status === 'DIBATALKAN',
+        alasan: b.batchId ? (alasanBatch.get(b.batchId) ?? null) : null,
+        dibatalkan,
+        // { oleh, waktu, alasan }; null bila batalnya terjadi sebelum pembatalan ikut dicatat.
+        pembatalan: dibatalkan ? (batalBatch.get(b.batchId) ?? null) : null,
       }
     }),
   }

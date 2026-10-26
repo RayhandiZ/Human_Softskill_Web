@@ -1,8 +1,13 @@
 import { db } from './db.js'
 import { GalatApi } from './api.js'
+import { catatLog } from './log.js'
 
 // Isian profil milik pengguna sendiri: telepon, ponsel, alamat, dan foto. Bukan data asesmen,
-// jadi tidak lewat batch atau audit.
+// jadi tidak lewat batch atau audit. Perubahannya tercatat di Log Aktivitas (UBAH_PROFIL), tetapi hanya
+// NAMA isian yang berubah, bukan isinya: nomor dan alamat adalah data pribadi, dan log tidak bisa dihapus.
+
+// Kolom Profil → sebutan di log. Foto dan sumbernya (fotoSumber, foto sebelum dipotong) dihitung satu isian.
+const SEBUTAN = { telepon: 'nomor telepon', ponsel: 'nomor ponsel', alamat: 'alamat' }
 
 const TELEPON_SAH = /^[0-9+().\- ]{6,25}$/
 const BATAS_FOTO = 8 * 1024 * 1024 // panjang data URL; foto sudah diperkecil di peramban
@@ -36,10 +41,29 @@ export async function simpanProfil(pengguna, isi) {
     foto: foto(isi.foto),
     fotoSumber: foto(isi.fotoSumber),
   }
-  await db.profil.upsert({
-    where: { penggunaId: pengguna.id },
-    update: data,
-    create: { penggunaId: pengguna.id, ...data },
+  const lama = await db.profil.findUnique({ where: { penggunaId: pengguna.id } })
+  const diubah = Object.keys(SEBUTAN).filter((k) => (lama?.[k] ?? null) !== data[k]).map((k) => SEBUTAN[k])
+  const fotoBerubah = (lama?.foto ?? null) !== data.foto || (lama?.fotoSumber ?? null) !== data.fotoSumber
+  if (fotoBerubah) diubah.push('foto profil')
+
+  await db.$transaction(async (tx) => {
+    await tx.profil.upsert({
+      where: { penggunaId: pengguna.id },
+      update: data,
+      create: { penggunaId: pengguna.id, ...data },
+    })
+    // Menyimpan tanpa perubahan apa pun tidak dicatat.
+    if (diubah.length) {
+      await catatLog(tx, {
+        aktorId: pengguna.id,
+        aksi: 'UBAH_PROFIL',
+        target: 'akun ' + pengguna.email,
+        rincian: {
+          diubah,
+          ...(fotoBerubah ? { foto: data.foto ? (lama?.foto ? 'diganti' : 'ditambahkan') : 'dihapus' } : {}),
+        },
+      })
+    }
   })
   return { ok: true }
 }

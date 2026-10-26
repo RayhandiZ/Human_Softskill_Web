@@ -1,6 +1,6 @@
 import { db } from './db.js'
 import { GalatApi } from './api.js'
-import { SERTA_MAHASISWA, semesterDari, susunMahasiswa, waktuWib } from './muat.js'
+import { SERTA_MAHASISWA, petaNama, semesterDari, susunMahasiswa, waktuWib } from './muat.js'
 import { getAspek, getKomponenById } from '../lib/curriculum.js'
 import { bolehTandaiFinal, validasiBatchImport } from '../lib/rules.js'
 import { CONFIG } from '../lib/config.js'
@@ -103,7 +103,38 @@ export async function tulisBatch(tx, { sumber, semester, angkatanId, cara, entri
       nilaiBaru: e.nilai,
     })
   }
-  return { id, jumlah: jejak.length, jejak }
+  return { id, jumlah: jejak.length, jejak, sumber, semester, angkatanId, cara }
+}
+
+const BATAS_CONTOH = 20 // sama dengan contoh UBAH_PENGUNCIAN dan UBAH_BOBOT
+
+/** Sampai 20 perubahan dari batch `hasil` (jawaban tulisBatch) untuk rincian log: NIM, nama, komponen, lama, baru. */
+export const contohBatch = (hasil) =>
+  hasil.jejak.slice(0, BATAS_CONTOH).map(({ nim, nama, komponen, nilaiLama, nilaiBaru }) => ({ nim, nama, komponen, nilaiLama, nilaiBaru }))
+
+/**
+ * Catatan Log Aktivitas untuk batch `hasil` (jawaban tulisBatch) yang baru ditulis: asal nilainya, jumlahnya, dan sampai
+ * 20 contoh perubahan, supaya tindakannya terbaca tanpa membuka tab Perubahan nilai. `terkunci` (jawaban
+ * wajibkanAlasan) menjadikannya UBAH_DATA_TERKUNCI beserta alasannya; tanpa itu SIMPAN_NILAI. `tambahan` ikut dicatat
+ * dan boleh menimpa isian di atasnya (misalnya `cara`).
+ */
+export async function catatBatch(tx, aktorId, hasil, terkunci = null, tambahan = {}) {
+  await catatLog(tx, {
+    aktorId,
+    aksi: terkunci ? 'UBAH_DATA_TERKUNCI' : 'SIMPAN_NILAI',
+    target: 'batch ' + hasil.id,
+    rincian: {
+      ...(terkunci ?? {}),
+      sumber: hasil.sumber,
+      semester: hasil.semester,
+      angkatan: hasil.angkatanId,
+      cara: hasil.cara,
+      jumlahNilai: hasil.jumlah,
+      jumlahMahasiswa: new Set(hasil.jejak.map((j) => j.nim)).size,
+      ...tambahan,
+      contoh: contohBatch(hasil),
+    },
+  })
 }
 
 export async function simpanBatch(pengguna, { sumber, semester, angkatanId, cara, entri, alasan }) {
@@ -145,14 +176,8 @@ export async function simpanBatch(pengguna, { sumber, semester, angkatanId, cara
       peta,
     )
 
-    if (terkunci) {
-      await catatLog(tx, {
-        aktorId: pengguna.id,
-        aksi: 'UBAH_DATA_TERKUNCI',
-        target: 'batch ' + hasil.id,
-        rincian: { ...terkunci, cara: String(cara ?? 'manual'), jumlahNilai: hasil.jumlah },
-      })
-    }
+    // Selalu tercatat: SIMPAN_NILAI, atau UBAH_DATA_TERKUNCI beserta alasannya bila menyentuh data terkunci.
+    await catatBatch(tx, pengguna.id, hasil, terkunci)
     return hasil
   }, TRANSAKSI)
 }
@@ -203,14 +228,25 @@ export async function rollbackBatch(pengguna, { id, alasan }) {
     await tx.batch.update({ where: { id: batch.id }, data: { status: 'DIBATALKAN' } })
     for (const s of unik) await hitungUlangSel(tx, s.mahasiswaId, s.komponenId)
 
-    if (terkunci) {
-      await catatLog(tx, {
-        aktorId: pengguna.id,
-        aksi: 'ROLLBACK_DATA_TERKUNCI',
-        target: 'batch ' + batch.id,
-        rincian: terkunci,
-      })
-    }
+    // Selalu tercatat, karena AuditLog tidak mendapat baris baru saat batch dibatalkan: tanpa catatan ini tidak ada
+    // jejak siapa yang membatalkan dan kapan. Data terkunci tetap ROLLBACK_DATA_TERKUNCI beserta alasan wajibnya.
+    const teks = String(alasan ?? '').trim()
+    await catatLog(tx, {
+      aktorId: pengguna.id,
+      aksi: terkunci ? 'ROLLBACK_DATA_TERKUNCI' : 'BATALKAN_BATCH',
+      target: 'batch ' + batch.id,
+      rincian: {
+        ...(terkunci ?? (teks ? { alasan: teks } : {})),
+        sumber: batch.sumber,
+        semester: batch.semester,
+        angkatan: batch.angkatanId,
+        cara: batch.cara,
+        jumlahNilai: unik.length,
+        jumlahMahasiswa: new Set(unik.map((s) => s.mahasiswaId)).size,
+        dibuatOleh: (await petaNama([batch.aktorId])).get(batch.aktorId) ?? null,
+        dibuatPada: waktuWib(batch.waktu),
+      },
+    })
     return { ok: true }
   }, TRANSAKSI)
 }

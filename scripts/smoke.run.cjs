@@ -184,7 +184,7 @@ const ISI = {
   '/admin/log': [
     [/Log Aktivitas/, 'judul Log Aktivitas'],
     [/Fase \d/, 'bukan lagi halaman segera hadir', false],
-    [/Tindakan admin[\s\S]{0,40}Perubahan nilai/, 'tab tindakan admin dan perubahan nilai'],
+    [/Aktivitas[\s\S]{0,40}Perubahan nilai/, 'tab aktivitas dan perubahan nilai'],
   ],
   '/super': [
     [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
@@ -283,7 +283,7 @@ const RUTE = [
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiBilahBawah, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiLayarUnggah, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAlurSertifikat,ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiBilahBawah, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiLayarUnggah, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAlurSertifikat,ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiRincianLog, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -1194,7 +1194,7 @@ const RUTE = [
     ['Pusat Kendali tersorot sebagai menu aktif', ps.kendaliAktif],
     ['ada tautan kembali ke panel Kemahasiswaan', ps.keKemahasiswaan],
     ['Pusat Kendali memuat antrean dan rantai pengawasan', ps.isiKendali],
-    ['tanpa basis data, log tindakan admin dinyatakan tidak tersedia', ps.tanpaServerJujur],
+    ['tanpa basis data, log aktivitas dinyatakan tidak tersedia', ps.tanpaServerJujur],
     ['menu samping dikelompokkan: Utama (4) dan Pengawasan (3)', ps.menuBerkelompok],
     ['tanpa permintaan menunggu, lonceng tidak muncul', ps.tanpaLonceng],
     ['ada permintaan menunggu: lonceng muncul dengan jumlahnya', ps.loncengMenunggu],
@@ -1225,6 +1225,19 @@ const RUTE = [
   gagal += rusakPs.length
   console.log((rusakPs.length ? 'GAGAL  ' : 'OK     ') + 'Panel Super Admin')
   for (const [ket, ok] of cekPs) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
+
+  const rl = await ujiRincianLog()
+  const cekRl = [
+    ['rincian log: sebelum/sesudah menjadi tabel bernama isian, alasan terbaca, tanpa JSON', rl.tabelPerubahan],
+    ['rincian log: ubah akses terbaca Aktif dan Dicabut (bukan true/false), peran bernama', rl.aksesTerbaca],
+    ['rincian log: contoh nilai menjadi tabel dengan nama komponen, sumber, dan cara masuk nilai', rl.contohNilai],
+    ['ringkasan baris: isian yang berubah beserta alasannya', rl.ringkasanBaris],
+    ['ringkasan baris: jumlah nilai, sumber, semester, dan cara masuk nilai', rl.ringkasanNilai],
+  ]
+  const rusakRl = cekRl.filter(([, ok]) => !ok)
+  gagal += rusakRl.length
+  console.log((rusakRl.length ? 'GAGAL  ' : 'OK     ') + 'Rincian Log Aktivitas')
+  for (const [ket, ok] of cekRl) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
   const ms = await ujiMataSandi()
   const cekMs = [

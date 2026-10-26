@@ -52,13 +52,25 @@ const JUDUL_BERKAS = {
 // Nama yang tampil untuk seorang pengguna. Akun Kemahasiswaan tidak punya nama orang; super admin
 // ditulis "Super Admin" supaya jejak tindakannya terbedakan dari admin biasa.
 export async function petaNama(ids) {
+  return new Map([...(await petaAkun(ids))].map(([id, a]) => [id, a.nama]))
+}
+
+/**
+ * Seperti petaNama, ditambah peran (nilai basis data, mis. 'ADMIN') dan email. Dipakai Log Aktivitas: semua akun
+ * admin bernama "Biro Kemahasiswaan", jadi tanpa email dua admin yang berbeda tidak bisa dibedakan.
+ */
+export async function petaAkun(ids) {
   const unik = [...new Set(ids.filter((x) => x != null))]
   if (!unik.length) return new Map()
   const daftar = await db.pengguna.findMany({ where: { id: { in: unik } }, include: { dosen: true, mahasiswa: true } })
   return new Map(
     daftar.map((p) => [
       p.id,
-      p.dosen?.nama ?? p.mahasiswa?.nama ?? (p.peran === 'SUPER_ADMIN' ? 'Super Admin' : 'Biro Kemahasiswaan'),
+      {
+        nama: p.dosen?.nama ?? p.mahasiswa?.nama ?? (p.peran === 'SUPER_ADMIN' ? 'Super Admin' : 'Biro Kemahasiswaan'),
+        peran: p.peran,
+        email: p.email,
+      },
     ]),
   )
 }
