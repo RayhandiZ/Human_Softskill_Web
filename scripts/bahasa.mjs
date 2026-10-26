@@ -113,7 +113,7 @@ const DARI_DATA = [
   'Nilai tersimpan per bulan', 'Nilai tersimpan', 'Bulan',
   'Banyaknya nilai tugas yang tersimpan tiap bulan (input baru maupun perubahan), menurut tanggal WIB. Ini bukan jumlah pengajuan koreksi.',
   /* Seri grafik perkembangan nilai mahasiswa (larik SERI di student/Dashboard.jsx, diterjemahkan lewat t(r.label)). */
-  'Nilai tiap semester', 'Rata-rata gabungan',
+  'Nilai tiap semester', 'Rata-rata',
   /* Ringkasan pilihan tanda status di Input Manual (TANDA_BARIS di admin/Nilai.jsx, lewat t(ringkas)). */
   'tahan walau sudah lengkap', 'nilai berhenti berubah',
   /* Status aspek di transkrip (STATUS_LABEL, lewat t(st.teks)) dan tab Dashboard mahasiswa (lewat t(label)). */

@@ -20,7 +20,14 @@ const ISI = {
   '/mahasiswa': [
     [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
     [/Nilai akhir/, 'ubin nilai akhir ada'],
-    [/(Sementara|Final)[\s\S]{0,40}berdasarkan \d+ dari \d+ aspek/, 'nilai akhir disertai status dan dasar hitungnya (R3)'],
+    /* Ubin nilai akhir hanya angka dan grade-nya, dan ubin Aspek final dihapus (permintaan 26 Okt 2026); status dan
+       dasar hitungnya tetap di Transkrip (R3, diperiksa npm run assert). */
+    [/Nilai akhir\s*[\d.,]+\s*(?:Grade [A-E][+-]?|Belum Memenuhi)/, 'nilai akhir disertai grade di bawah angkanya'],
+    [/Nilai akhir\s*[\d.,-]+\s*(?:Grade [A-E][+-]?|Belum Memenuhi)?\s*(?:Sementara|Final)\b/, 'nilai akhir tanpa status', false],
+    [/berdasarkan \d+ dari \d+ aspek/, 'nilai akhir tanpa keterangan dasar hitung', false],
+    [/Aspek final/, 'ubin Aspek final sudah tidak ada', false],
+    [/dinilai, \d+ final/, 'ringkasan lipatan HP tanpa jumlah aspek final', false],
+    [/Capaian per area/, 'kartu Capaian per area sudah tidak ada (rinciannya di Transkrip)', false],
     [/Aspek dinilai[\s\S]{0,80}\/ \d+/, 'ubin jumlah aspek dinilai'],
     [/Semua \d+[\s\S]{0,60}Final \d+[\s\S]{0,60}Berjalan \d+[\s\S]{0,60}Belum dibuka \d+/, 'tab aspek lengkap dengan jumlahnya'],
     [/Perjalanan semester/, 'perjalanan semester ada'],
@@ -291,7 +298,7 @@ const RUTE = [
     super: JSON.parse(SESI.super),
   }
   const ISI_KOSONG = {
-    '/mahasiswa': [[/berdasarkan 0 dari 10 aspek/, 'nilai akhir dihitung dari 0 aspek'], [/Belum dinilai/, 'aspek tertulis belum dinilai']],
+    '/mahasiswa': [[/Nilai akhir\s*-/, 'nilai akhir kosong tampil sebagai tanda strip'], [/berdasarkan \d+ dari \d+ aspek/, 'nilai akhir tanpa keterangan dasar hitung', false], [/Belum dinilai/, 'aspek tertulis belum dinilai']],
     '/mahasiswa/transkrip': [[/Belum ada nilai yang masuk dari penilai/, 'transkrip menyebut nilai belum masuk']],
     '/mahasiswa/riwayat': [[/0 komponen sudah dinilai/, 'riwayat menyebut 0 komponen dinilai']],
     '/mahasiswa/sertifikat': [[/5 dari 5 syarat belum terpenuhi/, 'sertifikat belum memenuhi syarat']],
@@ -517,8 +524,8 @@ const RUTE = [
   const cekRingkas = [
     ['ubin ringkasan terlipat saat dibuka', hr.ubinTerlipatAwal],
     ['ubin membentang setelah Rincian ditekan', hr.ubinTerbuka],
-    ['nilai akhir tetap di luar lipatan (R3)', hr.nilaiAkhirTetapDiLuar],
-    ['di layar lebar keempat ubin tetap utuh', hr.tetapUtuhDiLayarLebar],
+    ['nilai akhir tetap di luar lipatan', hr.nilaiAkhirTetapDiLuar],
+    ['di layar lebar ubin rincian tetap utuh', hr.tetapUtuhDiLayarLebar],
     ['lonceng Belum dinilai ada', hr.adaLonceng],
     ['panel lonceng tertutup sebelum ditekan', hr.panelTertutupAwal],
     ['panel lonceng terbuka setelah ditekan', hr.panelTerbuka],
@@ -952,7 +959,8 @@ const RUTE = [
     ['tiga semester: tren yang tampil', tr3.adaTren && !tr3.adaSebaran],
     ['legenda menyebut kedua garis', tr3.legenda],
     ['nilai tiap semester bertitik isi, rata-rata gabungan bercincin', tr3.bentukBeda],
-    ['arti rata-rata gabungan dijelaskan di bawah grafik', tr3.catatanGabungan],
+    ['arti garis Rata-rata dijelaskan di bawah grafik', tr3.catatanGabungan],
+    ['catatan dan legenda sama-sama menyebut "Rata-rata"', tr3.tanpaSebutanLama],
     ['satu titik per semester, di tiap garis', tr3.jumlahTitikSemester === 3 && tr3.jumlahTitikKumulatif === 3],
     ['satu jalur utuh per garis, tanpa putus', tr3.jumlahJalur === 2],
     ['dua ruas antar semester berurutan, di tiap garis', tr3.jumlahRuas === 4],
@@ -967,13 +975,13 @@ const RUTE = [
     ['nama semester ditulis lengkap, termasuk yang terkunci', tr3.labelSemuaSemester],
     ['label tidak diredupkan (kontras tetap terbaca)', tr3.tanpaRedup && tr2.tanpaRedup],
     ['belum ada kotak info sebelum titik dipilih', tr3.tanpaTipAwal],
-    ['fokus semester 3: kotak info seperti contoh', tr3.isiTip === 'Semester:3Nilai tiap semester:84Rata-rata gabungan:82'],
+    ['fokus semester 3: kotak info seperti contoh', tr3.isiTip === 'Semester:3Nilai tiap semester:84Rata-rata:82'],
     ['garis tegak penanda semester muncul', tr3.garisTegak === 1],
     ['titik terpilih membesar, di kedua garis', tr3.titikTerpilihBesar === 2],
     ['nama semester terpilih ditebalkan', tr3.labelTerpilihTebal],
     ['rata-rata gabungan terakhir sama dengan angka besar di kartu', tr3.kumulatifSamaAngkaBesar],
     ['kotak info tidak dibaca dua kali oleh pembaca layar', tr3.tipTersembunyiDariSR],
-    ['pembaca layar mendapat kalimat lengkap per semester', tr3.kalimatKolom === 'Semester 3: Nilai tiap semester 84, Rata-rata gabungan 82'],
+    ['pembaca layar mendapat kalimat lengkap per semester', tr3.kalimatKolom === 'Semester 3: Nilai tiap semester 84, Rata-rata 82'],
     ['Escape menyembunyikan kotak info, fokus tetap', tr3.escapeMenyembunyikan],
     ['tunjuk dengan tetikus menampilkan, pergi menyembunyikan', tr3.tunjukMenampilkan && tr3.lepasMenyembunyikan],
 
@@ -984,7 +992,7 @@ const RUTE = [
     ['semester terkunci tidak bisa dipilih', tr2.jumlahKolom === 2],
     ['semester terkunci bergembok', tr2.gembokTerkunci === 1],
     ['nama semester ditulis lengkap', tr2.labelSemuaSemester],
-    ['kotak info semester 2: 85 dan rata-rata gabungan 79', tr2.isiTip === 'Semester:2Nilai tiap semester:85Rata-rata gabungan:79'],
+    ['kotak info semester 2: 85 dan rata-rata gabungan 79', tr2.isiTip === 'Semester:2Nilai tiap semester:85Rata-rata:79'],
     ['rata-rata gabungan terakhir sama dengan angka besar (79)', tr2.kumulatifSamaAngkaBesar],
 
     /* DEMO-1: satu semester saja. Tren belum punya arti di sana. */

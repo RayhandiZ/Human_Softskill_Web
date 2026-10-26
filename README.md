@@ -1667,7 +1667,11 @@ Aturan tampilan dashboard mahasiswa:
   saja beserta statusnya, lalu apa yang masih ditunggu;
 - **satu angka besar saja** (nilai akhir); angka lain lebih kecil supaya mata tahu harus mulai
   dari mana;
-- nilai akhir selalu disertai status dan dasar hitungnya (R3);
+- sejak 26 Okt 2026 ubin nilai akhir hanya memuat angkanya, "Grade C" di bawahnya (atau *Belum Memenuhi* di bawah
+  ambang huruf mutu terendah), dan grafik perkembangan, dan ubin *Aspek final* dihapus, atas permintaan pengguna;
+  status (sementara atau final) dan dasar hitungnya tetap ada di Transkrip (R3, diperiksa `npm run assert`);
+- kartu *Capaian per area* juga dihapus pada hari yang sama, karena rata-rata dan jumlah aspek dinilai per area
+  sudah ada di Transkrip; kolom kanan tinggal *Perjalanan semester*;
 - aspek yang belum dibuka tampil dengan gembok dan semester pembukaannya, tidak pernah sebagai 0 (R2);
 - grafik di kartu nilai akhir mengikuti data yang ada, lihat *Grafik* di bagian Catatan kode.
 
@@ -1855,20 +1859,23 @@ panah kiri/kanan). Bagian yang mudah rusak:
 
 ### Grafik
 
-- **Kartu nilai akhir mahasiswa**: tren dua garis (*Nilai tiap semester* dan *Rata-rata gabungan*) baru
+- **Kartu nilai akhir mahasiswa**: tren dua garis (*Nilai tiap semester* dan *Rata-rata*) baru
   tampil bila ada minimal dua semester bernilai; selain itu tampil sebaran aspek.
-- **Rata-rata gabungan, bukan "kumulatif"** (rapat 24 Okt 2026): angkanya `nilaiKumulatif`, yaitu nilai akhir
+- **Rata-rata, bukan "kumulatif"** (rapat 24 Okt 2026; sebutan "Rata-rata gabungan" dipersingkat menjadi
+  "Rata-rata" di legenda, kotak info, dan catatan pada 26 Okt 2026): angkanya `nilaiKumulatif`, yaitu nilai akhir
   bila hanya aspek sampai semester itu yang dihitung, jadi titik terakhirnya selalu sama dengan nilai akhir.
   Kedua rumus `MODE_AGREGASI` yang masih menunggu konfirmasi sama-sama rata-rata, bukan jumlah, jadi labelnya
   tetap benar apa pun yang dipilih. Catatan satu baris di bawah grafik menjelaskannya. Di bahasa Inggris
-  keduanya "Combined average", karena kunci `'Rata-rata gabungan'` juga dipakai kartu Program Studi.
-- **Dua garis dibedakan warna dan bentuk**: biru bertitik isi untuk nilai tiap semester, abu-abu bercincin
-  untuk rata-rata gabungan. Cincinnya lebih besar dan digambar lebih dulu, jadi saat keduanya sama (selalu di
-  semester pertama) titik biru duduk di tengahnya. Legenda memakai kunci yang meniru tanda itu. Warnanya
-  `--tren-semester` dan `--tren-gabungan` di `index.css`, dengan nilai sendiri untuk tema gelap dan kedua mode
-  kontras; setiap pasangan lolos `validate_palette.js` skill dataviz (beda warna normal ≥ 15, buta warna ≥ 8,
-  kontras ≥ 3:1). Mode gelap tidak memakai `--brand-ink` (`#9ec5f4`), karena biru sepucat itu terbaca abu-abu.
-  Titik terpilih membesar tanpa berganti bentuk.
+  "Average". Kartu Program Studi (admin) tetap memakai "Rata-rata gabungan" ("Combined average").
+- **Dua garis dibedakan warna dan bentuk**: navy bertitik isi untuk nilai tiap semester, toska bercincin untuk
+  garis Rata-rata, dua warna merek VIBE (sejak 26 Okt 2026; sebelumnya biru muda dan abu-abu). Cincinnya lebih
+  besar dan digambar lebih dulu, jadi saat keduanya sama (selalu di semester pertama) titik navy duduk di
+  tengahnya. Legenda memakai kunci yang meniru tanda itu. Warnanya `--tren-semester` dan `--tren-gabungan` di
+  `index.css`, dengan nilai sendiri untuk tema gelap dan kedua mode kontras; pasangan terang dan gelap lolos
+  `validate_palette.js` skill dataviz (beda warna normal ≥ 15, buta warna ≥ 8, kontras ≥ 3:1), dan pasangan mode
+  kontras lolos uji buta warna dan kontras. Di mode gelap birunya hampir sama dengan titik Area A dan toskanya
+  dengan Area C; pilihan lain yang juga lolos dan lebih jauh dari warna area adalah toska dan merah bata. Titik
+  terpilih membesar tanpa berganti bentuk.
 - **Sumbu Y tren boleh dipotong, asal dilabeli**: lebar jendelanya minimal 20 angka
   (`src/lib/kurva.js`) dan angka di ujung sumbu selalu ditulis. Grafik batang selalu mulai dari
   nol.

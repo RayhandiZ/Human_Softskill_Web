@@ -105,15 +105,14 @@ export const EN = {
 
   /* ------------------------------- dashboard ----------------------------- */
   'Nilai akhir': 'Final score',
+  'Grade {huruf}': 'Grade {huruf}',
   'Aspek dinilai': 'Aspects graded',
   'Aspek final': 'Final aspects',
   'Semester {n} dari {total}': 'Semester {n} of {total}',
   '{n} dari {total}': '{n} of {total}',
   'Periode {periode}': 'Period {periode}',
   'Buka Transkrip': 'Open Transcript',
-  'berdasarkan {n} dari {total} aspek': 'based on {n} of {total} aspects',
-  '{n}/{total} dinilai, {final} final · sertifikat {keadaan}':
-    '{n}/{total} graded, {final} final · certificate {keadaan}',
+  '{n}/{total} dinilai · sertifikat {keadaan}': '{n}/{total} graded · certificate {keadaan}',
   siap: 'ready',
   belum: 'not ready',
   Rincian: 'Details',
@@ -128,8 +127,6 @@ export const EN = {
     'Spread of {n} aspect scores on a 0 to 100 scale, lowest {rendah}, highest {tinggi}',
   '{n} aspek belum dibuka': '{n} aspects not open yet',
   'Semua aspek sudah dibuka': 'All aspects are open',
-  'Sudah final dan tidak akan berubah lagi': 'Final and will not change again',
-  'Belum ada aspek yang final': 'No aspect is final yet',
   'Belum tersedia': 'Not available yet',
   '{n} syarat belum terpenuhi': '{n} requirements not met',
 
@@ -141,8 +138,6 @@ export const EN = {
   'Lihat Selengkapnya': 'See more',
   'Lihat transkrip lengkap': 'See the full transcript',
 
-  'Capaian per area': 'Achievement by area',
-  'Rata-rata aspek yang sudah dinilai di tiap area': 'Average of graded aspects in each area',
   '{n} dari {total} aspek dinilai': '{n} of {total} aspects graded',
 
   'Perjalanan semester': 'Semester journey',
@@ -835,9 +830,9 @@ export const EN = {
   'Naik {d} sejak Semester {n}': 'Up {d} since Semester {n}',
   'Perkembangan nilai': 'Score progress',
   'Nilai tiap semester': 'Score each semester',
-  // 'Rata-rata gabungan' sudah ada di bagian Program Studi ('Combined average'); grafik ini memakai kunci yang sama.
-  'Rata-rata gabungan: rata-rata semua aspek dari Semester 1 sampai semester itu, sehingga titik terakhirnya sama dengan nilai akhir.':
-    'Combined average: the average of all aspects from Semester 1 up to that semester, so its last point equals the final score.',
+  // Label garisnya 'Rata-rata' ('Average'), kunci yang sudah ada di bagian lain kamus.
+  'Rata-rata: dihitung dari semua aspek sejak Semester 1 sampai semester itu, sehingga titik terakhirnya sama dengan nilai akhir.':
+    'Average: calculated from every aspect from Semester 1 up to that semester, so its last point equals the final score.',
   'Tetap sejak Semester {n}': 'Unchanged since Semester {n}',
   'Turun {d} sejak Semester {n}': 'Down {d} since Semester {n}',
 

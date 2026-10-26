@@ -1372,12 +1372,14 @@ export async function ujiTrenSemester(sem) {
   const hasil = {
     adaTren: /Perkembangan nilai/.test(judul) && Boolean(daftarKolom),
     adaSebaran: /Sebaran nilai aspek/.test(judul),
-    legenda: /Nilai tiap semester/.test(wadah?.textContent ?? '') && /Rata-rata gabungan/.test(wadah?.textContent ?? ''),
+    legenda: /Nilai tiap semester/.test(wadah?.textContent ?? '') && /Rata-rata/.test(wadah?.textContent ?? ''),
     bentukBeda:
       titikKumulatif.length > 0 &&
       titikKumulatif.every((n) => n.className.includes('bg-surface')) &&
       titikSemester.every((n) => !n.className.includes('bg-surface')),
-    catatanGabungan: /Rata-rata gabungan: rata-rata semua aspek dari Semester 1 sampai semester itu/.test(wadah?.textContent ?? ''),
+    catatanGabungan: /Rata-rata: dihitung dari semua aspek sejak Semester 1 sampai semester itu/.test(wadah?.textContent ?? ''),
+    // Catatan dan legenda memakai sebutan yang sama (permintaan 26 Okt 2026).
+    tanpaSebutanLama: !/Rata-rata gabungan/.test(wadah?.textContent ?? ''),
     jumlahTitikSemester: titikSemester.length,
     jumlahTitikKumulatif: titikKumulatif.length,
     jumlahJalur: jalur.length,
@@ -1416,7 +1418,7 @@ export async function ujiTrenSemester(sem) {
     hasil.titikTerpilihBesar = semuaTitik.filter((n) => /h-\[11px\]|h-5/.test(n.className)).length
     hasil.labelTerpilihTebal = labelSemester.some((n) => n.className.includes('font-bold'))
     // Rata-rata gabungan di semester terakhir harus sama persis dengan angka besar.
-    const m = isi.match(/Rata-rata gabungan:(\d+)/)
+    const m = isi.match(/Rata-rata:(\d+)/)
     hasil.kumulatifSamaAngkaBesar = m ? Number(m[1]) === angkaBesar : false
     hasil.tipTersembunyiDariSR = tip()?.getAttribute('aria-hidden') === 'true'
 

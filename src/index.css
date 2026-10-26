@@ -59,12 +59,13 @@
   --semester-2: #256abf;
   --semester-3: #104281;
 
-  /* Grafik perkembangan nilai mahasiswa: biru = nilai tiap semester, abu-abu = rata-rata gabungan. Setiap pasangan di
-     bawah lolos scripts/validate_palette.js milik skill dataviz (beda warna normal >= 15, buta warna >= 8, kontras
-     >= 3:1). Mode gelap tidak memakai --brand-ink (#9ec5f4): biru sepucat itu terbaca abu-abu di samping garis
-     gabungan. */
-  --tren-semester: #104281;
-  --tren-gabungan: #8a8ea9;
+  /* Grafik perkembangan nilai mahasiswa (26 Okt 2026, menggantikan biru muda dan abu-abu): navy = nilai tiap
+     semester, toska = rata-rata, dua warna merek VIBE. Setiap pasangan lolos scripts/validate_palette.js milik skill
+     dataviz (beda warna normal >= 15, buta warna >= 8, kontras >= 3:1). Terang: buta warna 20,6, kontras 7,80:1 dan
+     3,74:1. Navy merek #104281 terlalu gelap untuk rentang terang validator (L 0,385), jadi dipakai satu tingkat di
+     atasnya. Pilihan sebelumnya, toska dan merah bata (#0d9488, #9a3412), juga lolos dan lebih jauh dari warna area. */
+  --tren-semester: #1a5296;
+  --tren-gabungan: #0d9488;
 
   --grid: #eceef6;
 
@@ -117,8 +118,11 @@
   --semester-2: #5598e7;
   --semester-3: #9ec5f4;
 
-  --tren-semester: #7db3f7;
-  --tren-gabungan: #68738c;
+  /* Gelap: buta warna 15,6, kontras 4,03:1 dan 5,39:1. Rentang terang mode gelap (L 0,48 sampai 0,67) membuat
+     birunya hampir sama dengan --c1 gelap (Area A) dan toskanya dengan --c3 gelap (Area C); garisnya tetap dibedakan
+     titik isi dan cincin serta legenda. */
+  --tren-semester: #3f7bd0;
+  --tren-gabungan: #1aa291;
 
   --grid: #212c44;
 }
@@ -1412,8 +1416,9 @@ body {
     --teks-baik: #6ee77a;
     --teks-kritis: #ff8a8a;
     --teks-tunggu: #ffd166;
-    --tren-semester: #9cd0ff;
-    --tren-gabungan: #8c8c8c;
+    /* Kontras 9,62:1 dan 13,38:1, buta warna 14,2 (biru #9cd0ff hanya 11,9 dari toska ini). */
+    --tren-semester: #7fb8ff;
+    --tren-gabungan: #5eead4;
   }
   .akar-a11y.a11y-kontras-terang {
     color-scheme: light;
@@ -1436,8 +1441,9 @@ body {
     --teks-baik: #0a5c0a;
     --teks-kritis: #a10e0e;
     --teks-tunggu: #5e3d00;
+    /* Kontras 11,20:1 dan 5,81:1, buta warna 18,2. Toska tua tidak bisa sejenuh toska terang tanpa kehilangan kontras. */
     --tren-semester: #0a3a75;
-    --tren-gabungan: #767676;
+    --tren-gabungan: #00726a;
   }
   .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) :is(.bilah-kaca, .kaca, .layanan-panel, .pil-kaca) {
     background: var(--surface);
