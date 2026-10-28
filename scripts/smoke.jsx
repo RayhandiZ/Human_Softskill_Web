@@ -11,6 +11,7 @@ import { DATA_CONTOH, DOSEN, PERSONA_SEMESTER, getDosenByEmail, getStudentByEmai
 import {
   AKUN_LOKAL,
   BATCH_SESI,
+  NOTIFIKASI_LOKAL,
   PERMINTAAN,
   PERMINTAAN_SERTIFIKAT,
   bersihkanPerubahan,
@@ -20,6 +21,7 @@ import {
   permintaanMenunggu,
   putuskanKoreksi,
   putuskanSertifikat,
+  segarkanData,
 } from '../src/lib/store'
 import { aturJalur, rekamNavigasi } from './palsu-next-navigation'
 import { jalurMulus } from '../src/lib/kurva'
@@ -445,7 +447,8 @@ export async function ujiLoncengAdmin() {
   const lonceng = el.querySelector('button[aria-label$="hal menunggu ditangani"]')
   hasil.adaLonceng = !!lonceng
   hasil.angka = lonceng ? Number(lonceng.getAttribute('aria-label').match(/^\d+/)[0]) : 0
-  const panel = () => el.querySelector('[role="dialog"][aria-label="Pekerjaan yang menunggu"]')
+  /* Admin biasa: panel Pemberitahuan bertab, terbuka di tab Perlu dikerjakan selama tidak ada pembaruan baru. */
+  const panel = () => el.querySelector('[role="dialog"][aria-label="Pemberitahuan"]')
   hasil.panelTertutupAwal = !panel()
 
   await klik(lonceng)
@@ -474,6 +477,94 @@ export async function ujiLoncengAdmin() {
   hasil.tautanKelompok = keInput.find((h) => h.includes('semester=') && !h.includes('cari=') && !h.includes('tab=koreksi')) ?? null
 
   lepas()
+  return hasil
+}
+
+/**
+ * Tab Pembaruan di lonceng admin biasa (fase 4 rapat 24 Okt 2026): tindakan Super Admin dari Log Aktivitas dengan
+ * penanda baca per akun. Tanpa server, barisnya dari NOTIFIKASI_LOKAL dan penandanya di memori; yang diuji di sini
+ * layarnya: angka lencana, tab yang terbuka, isi baris, tandai semua, pembaruan yang masuk sesudahnya, dan super
+ * admin yang tidak menerimanya.
+ */
+export async function ujiPembaruanAdmin() {
+  const hasil = {}
+  const dari = { aktor: 'Super Admin', aktorPeran: 'SUPER_ADMIN', aktorEmail: 'super.admin@umn.ac.id' }
+  NOTIFIKASI_LOKAL.splice(
+    0,
+    NOTIFIKASI_LOKAL.length,
+    { ...dari, nomor: 9101, id: 'A-9101', waktu: '2026-10-28 08:15', aksi: 'UBAH_PERIODE', target: 'periode Ganjil 2026/2027', rincian: { alasan: 'Semester ganjil dimulai sesuai kalender akademik.' } },
+    { ...dari, nomor: 9102, id: 'A-9102', waktu: '2026-10-28 09:00', aksi: 'KUNCI_ANGKATAN', target: 'angkatan 2023', rincian: null },
+    { ...dari, nomor: 9103, id: 'A-9103', waktu: '2026-10-28 09:30', aksi: 'SETUJUI_SERTIFIKAT', target: 'mahasiswa 00000012345', rincian: { catatan: 'Semua syarat terpenuhi.' } },
+  )
+  const tunggu = () => act(async () => { await new Promise((r) => setTimeout(r, 10)) })
+  // Klik yang memicu permintaan: jawabannya ditunggu di dalam act yang sama, supaya React tidak memperingatkan.
+  const klikTunggu = (node) =>
+    act(async () => {
+      node?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }))
+      await new Promise((r) => setTimeout(r, 10))
+    })
+  const POLA_LONCENG = /hal menunggu ditangani|pembaruan belum dibaca|Pemberitahuan, tidak ada yang baru/
+
+  const { el, lepas } = await pasang('/admin')
+  await tunggu()
+  const lonceng = () => [...el.querySelectorAll('button')].find((b) => POLA_LONCENG.test(b.getAttribute('aria-label') ?? ''))
+  const label = () => lonceng()?.getAttribute('aria-label') ?? ''
+  hasil.labelAwal = label()
+  const kerja = Number(label().match(/(\d+) hal menunggu/)?.[1] ?? 0)
+  const harap = kerja + 3
+  hasil.lencana = lonceng()?.textContent.trim() ?? ''
+  hasil.lencanaBenar = hasil.lencana === (harap > 99 ? '99+' : String(harap))
+
+  await klik(lonceng())
+  const panel = () => el.querySelector('[role="dialog"][aria-label="Pemberitahuan"]')
+  const teks = () => panel()?.textContent ?? ''
+  const belumDibaca = () => (teks().match(/belum dibaca/g) ?? []).length
+  hasil.bukaDiPembaruan = /^Pembaruan/.test(panel()?.querySelector('[role="tab"][aria-selected="true"]')?.textContent ?? '')
+  hasil.jumlahBaris = panel()?.querySelectorAll('li').length ?? 0
+  hasil.terbaruDiAtas = /Setujui akses cetak sertifikat/.test(panel()?.querySelector('li')?.textContent ?? '')
+  hasil.adaLabel = ['Setujui akses cetak sertifikat', 'Sahkan nilai angkatan', 'Ubah periode akademik'].every((x) => teks().includes(x))
+  hasil.adaSasaran = teks().includes('angkatan 2023') && teks().includes('periode Ganjil 2026/2027')
+  hasil.adaAlasan = teks().includes('Alasan: Semester ganjil dimulai') && teks().includes('Catatan: Semua syarat terpenuhi.')
+  hasil.adaPelakuWaktu = teks().includes('Super Admin · 2026-10-28 09:30 WIB')
+  hasil.belumDibacaAwal = belumDibaca()
+  hasil.adaTautanLog = Boolean(panel()?.querySelector('a[href="/admin/log"]'))
+
+  const tombolTandai = () => [...(panel()?.querySelectorAll('button') ?? [])].find((b) => /Tandai semua sudah dibaca/.test(b.textContent))
+  hasil.adaTombolTandai = Boolean(tombolTandai())
+  await klikTunggu(tombolTandai())
+  hasil.belumDibacaSesudah = belumDibaca()
+  hasil.tombolTandaiHilang = !tombolTandai()
+  hasil.labelSesudah = label()
+  hasil.barisTetapAda = (panel()?.querySelectorAll('li').length ?? 0) === 3
+
+  // Pembaruan yang masuk sesudah ditandai; dibaca ulang lewat Segarkan, jalur yang sama dengan tombolnya.
+  NOTIFIKASI_LOKAL.push({ ...dari, nomor: 9104, id: 'A-9104', waktu: '2026-10-28 10:00', aksi: 'UBAH_BOBOT', target: 'kurikulum versi 7', rincian: { alasan: 'Bobot resmi dari unit pengelola.' } })
+  await act(async () => {
+    await segarkanData()
+    await new Promise((r) => setTimeout(r, 10))
+  })
+  hasil.satuBaru = belumDibaca() === 1 && /Ubah bobot/.test(panel()?.querySelector('li')?.textContent ?? '')
+  hasil.labelBaru = label()
+
+  const tabKerja = [...(panel()?.querySelectorAll('[role="tab"]') ?? [])].find((b) => /Perlu dikerjakan/.test(b.textContent))
+  await klik(tabKerja)
+  hasil.tabKerjaBerisi = /Belum dinilai|Pengajuan koreksi|Perlu ditinjau/.test(teks()) && !teks().includes('Dari Super Admin')
+  lepas()
+
+  // Super admin: lonceng lama tanpa tab, dan pembaruan tidak dibaca sama sekali.
+  const lama = window.localStorage.getItem('sk5c.session')
+  window.localStorage.setItem('sk5c.session', JSON.stringify({ role: 'admin', superAdmin: true, email: 'super.admin@umn.ac.id', name: 'Super Admin', initials: 'SA' }))
+  const s = await pasang('/admin')
+  await tunggu()
+  const loncengSuper = [...s.el.querySelectorAll('button')].find((b) => POLA_LONCENG.test(b.getAttribute('aria-label') ?? ''))
+  hasil.labelSuper = loncengSuper?.getAttribute('aria-label') ?? null
+  await klik(loncengSuper)
+  hasil.superTanpaTab =
+    Boolean(s.el.querySelector('[role="dialog"][aria-label="Pekerjaan yang menunggu"]')) && !s.el.querySelector('[role="dialog"] [role="tablist"]')
+  s.lepas()
+  if (lama) window.localStorage.setItem('sk5c.session', lama)
+  else window.localStorage.removeItem('sk5c.session')
+  NOTIFIKASI_LOKAL.length = 0
   return hasil
 }
 

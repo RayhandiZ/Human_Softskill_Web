@@ -283,7 +283,7 @@ const RUTE = [
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiBilahBawah, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiLayarUnggah, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAlurSertifikat,ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiRincianLog, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiBilahBawah, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiPembaruanAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiLayarUnggah, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAlurSertifikat,ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiRincianLog, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -329,6 +329,10 @@ const RUTE = [
         ['tidak ada nama penilai contoh', !NAMA_CONTOH.test(teks), (teks.match(NAMA_CONTOH) || [])[0]],
         // Seperti ISI: unsur ketiga false berarti polanya tidak boleh ada.
         ...(ISI_KOSONG[rute] || []).map(([pola, ket, harusAda = true]) => [ket, pola.test(teks) === harusAda]),
+        // Atribut tidak ada di `teks` (tag sudah dibuang), jadi yang ini dicocokkan ke html.
+        ...(rute === '/admin'
+          ? [['lonceng admin biasa tetap ada walau tidak ada yang baru', html.includes('aria-label="Pemberitahuan, tidak ada yang baru"')]]
+          : []),
       ]
       const rusak = cek.filter(([, ok]) => !ok)
       gagal += rusak.length
@@ -673,6 +677,37 @@ const RUTE = [
   gagal += rusakLonceng.length
   console.log((rusakLonceng.length ? 'GAGAL  ' : 'OK     ') + 'lonceng Kemahasiswaan')
   for (const [ket, ok, rinci] of cekLonceng) {
+    console.log('       ' + (ok ? 'v ' : 'x ') + ket + (ok || rinci === undefined ? '' : '  → ' + rinci))
+  }
+
+  /* Tab Pembaruan: tindakan Super Admin untuk admin biasa, dengan penanda baca per akun (fase 4). */
+  console.log('')
+  w.localStorage.setItem('sk5c.session', SESI.admin)
+  const hpa = await ujiPembaruanAdmin()
+  const cekPembaruan = [
+    ['label lonceng menyebut 3 pembaruan belum dibaca', /3 pembaruan belum dibaca/.test(hpa.labelAwal), hpa.labelAwal],
+    ['angka lencana = pekerjaan + pembaruan belum dibaca', hpa.lencanaBenar, hpa.lencana],
+    ['panel terbuka di tab Pembaruan bila ada yang belum dibaca', hpa.bukaDiPembaruan],
+    ['tiga baris pembaruan, terbaru di atas', hpa.jumlahBaris === 3 && hpa.terbaruDiAtas, hpa.jumlahBaris + ' baris'],
+    ['jenis tindakan memakai label Log Aktivitas', hpa.adaLabel],
+    ['sasaran diterjemahkan seperti di Log Aktivitas', hpa.adaSasaran],
+    ['alasan atau catatan super admin ikut tampil', hpa.adaAlasan],
+    ['pelaku dan waktu WIB tampil', hpa.adaPelakuWaktu],
+    ['ketiganya terbaca "belum dibaca" oleh pembaca layar', hpa.belumDibacaAwal === 3, String(hpa.belumDibacaAwal)],
+    ['ada tautan ke Log Aktivitas', hpa.adaTautanLog],
+    ['tombol Tandai semua sudah dibaca ada', hpa.adaTombolTandai],
+    ['sesudah ditandai: tidak ada yang belum dibaca', hpa.belumDibacaSesudah === 0, String(hpa.belumDibacaSesudah)],
+    ['sesudah ditandai: tombolnya hilang, barisnya tetap', hpa.tombolTandaiHilang && hpa.barisTetapAda],
+    ['sesudah ditandai: label lonceng tidak lagi menyebut pembaruan', !/pembaruan/.test(hpa.labelSesudah), hpa.labelSesudah],
+    ['pembaruan yang masuk sesudahnya terhitung satu yang baru', hpa.satuBaru && /1 pembaruan belum dibaca/.test(hpa.labelBaru), hpa.labelBaru],
+    ['tab Perlu dikerjakan tetap berisi pekerjaan', hpa.tabKerjaBerisi],
+    ['super admin tidak menerima pembaruan', !!hpa.labelSuper && !/pembaruan/.test(hpa.labelSuper), hpa.labelSuper],
+    ['super admin: panel lama tanpa tab', hpa.superTanpaTab],
+  ]
+  const rusakPembaruan = cekPembaruan.filter(([, ok]) => !ok)
+  gagal += rusakPembaruan.length
+  console.log((rusakPembaruan.length ? 'GAGAL  ' : 'OK     ') + 'pembaruan dari Super Admin di lonceng admin')
+  for (const [ket, ok, rinci] of cekPembaruan) {
     console.log('       ' + (ok ? 'v ' : 'x ') + ket + (ok || rinci === undefined ? '' : '  → ' + rinci))
   }
 

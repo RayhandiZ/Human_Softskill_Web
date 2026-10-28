@@ -208,6 +208,8 @@ src/lib/
   rules.js        R1–R9 sebagai fungsi murni + validasi import
   duaLapis.js     label status dan giliran persetujuan dua lapis (koreksi, akses cetak sertifikat);
                   keadaanSertifikat() untuk layar mahasiswa dan admin (lihat Persetujuan dua lapis)
+  labelLog.js     label jenis tindakan (LABEL_LOG) dan sasaran log (labelSasaran) untuk Log Aktivitas,
+                  Pusat Kendali, dan lonceng admin
   data.js         sumber data halaman: periode akademik (semesterAktif dibatasi 3,
                   semesterKalender tidak); angkatan, fakultas, prodi (diisi dari basis data
                   lewat isiMaster); data isian (mahasiswa, nilai, usulan lama) yang dimulai
@@ -250,6 +252,8 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   angkatan.js     ringkasan, pratinjau, dan penguncian angkatan
   log.js          catatLog(): catatan tindakan Kemahasiswaan ke tabel LogAktivitas; bacaLog():
                   membaca log nilai dan log aktivitas (POST /api/log)
+  notifikasi.js   pembaruan dari Super Admin untuk lonceng admin biasa dan penanda bacanya per akun
+                  (GET /api/notifikasi, POST /api/notifikasi/dibaca)
   profil.js       isian profil milik pemilik sesi
   kurikulum.js    kurikulum dan timpaan CONFIG dari basis data; siapkanKurikulum() untuk pintu API;
                   ambilPeriode() dan siapkanPeriode() untuk periode akademik
@@ -272,7 +276,7 @@ app/api/          masuk, keluar, sesi, data, nilai, nilai/dosen, nilai/rollback,
                   angkatan/kunci, log, kurikulum/bobot, kurikulum/penilaian, persetujuan/keputusan,
                   persetujuan/batal, periode, akses, akses/ubah, akses/tambah, akses/hapus, akses/izin,
                   akses/kelas, master/akses, master/angkatan, master/prodi, master/mahasiswa,
-                  kurikulum/aspek (36 pintu)
+                  kurikulum/aspek, notifikasi, notifikasi/dibaca (38 pintu)
 src/components/PemuatData.jsx  memuat /api/data begitu ada yang masuk dan menahan panel
                   sampai datanya tiba
 prisma/           skema, migrasi, seed.js (isi dasar), seed-contoh.js (data contoh),
@@ -640,7 +644,8 @@ Seluruh panel memakai satu bahasa yang sama, mengikuti gaya E-Learning UMN:
   supaya halaman yang sedang dibuka terbaca sekali lihat;
 - **setiap kendali harus menuju ke suatu tempat.** Tombol pesan di navbar dibuang
   karena fiturnya belum ada, lonceng hanya muncul bila memang ada yang menunggu
-  dan menjadi tautan ke halaman yang menanganinya, blok "Akses Cepat" di footer
+  (kecuali lonceng admin biasa, yang juga menyimpan pembaruan dari Super Admin; lihat Panel
+  Kemahasiswaan › Lonceng) dan menjadi tautan ke halaman yang menanganinya, blok "Akses Cepat" di footer
   dibuang karena keempat tombolnya mati, dan sakelar tema tidak lagi muncul dua
   kali. Footer kemudian dibangun ulang mengikuti susunan E-Learning UMN —
   pintasan berikon, helpdesk, kontak, identitas unit — tetapi **setiap pintasan
@@ -773,6 +778,40 @@ besar.
     diberi `flex flex-col` supaya isinya rata atas dan angka di kakinya sejajar antarkartu.
   - Garis antarbaris tabel dipasang di sel (`border-separate`), bukan di `<tr>`. Pada `border-collapse`,
     garis sel yang `sticky` ikut tergulir pergi.
+
+### Lonceng
+
+Lonceng di bilah atas (`LoncengKemahasiswaan.jsx`) berisi dua hal:
+
+- **Perlu dikerjakan**: pekerjaan yang menunggu akun ini (usulan dosen lama bagi super admin, pengajuan koreksi
+  dan akses cetak sertifikat pada lapisnya, hal yang perlu ditinjau, dan nilai yang belum masuk). Isinya dihitung
+  dari data yang sudah termuat, sama dengan blok Perlu dikerjakan di Overview.
+- **Pembaruan**, hanya untuk admin biasa (rapat 24 Okt 2026: notifikasi untuk admin saat super admin
+  memperbarui data): tindakan Super Admin dari Log Aktivitas lewat `GET /api/notifikasi`
+  (`src/server/notifikasi.js`). Membuka sertifikat untuk dicetak dan mengubah profil sendiri tidak dihitung,
+  karena tidak mengubah data bersama. Yang tampil 20 terbaru. Tiap baris menyebut jenis tindakan dan sasarannya
+  dengan label yang sama dengan Log Aktivitas (`src/lib/labelLog.js`), alasan atau catatannya, pelaku, dan
+  waktu WIB. Rincian lengkapnya tetap di Log Aktivitas, yang ditautkan di kaki panel.
+
+Status dibaca disimpan per akun di basis data, bukan di peramban, karena komputer kampus dipakai bergantian dan
+data peramban bisa dibersihkan. Penandanya satu kolom, `Pengguna.notifDibacaId` (migrasi `notifikasi_dibaca`):
+id log terakhir yang sudah ditandai dibaca. Akun yang belum pernah menandai menghitung sejak akunnya dibuat, jadi
+admin baru tidak menerima seluruh riwayat sebagai pembaruan.
+
+- **Tandai semua sudah dibaca** mengirim `POST /api/notifikasi/dibaca` dengan `terbaru` dari daftar yang sedang
+  tampil, bukan waktu sekarang, sehingga pembaruan yang masuk sesudah daftar itu dimuat tetap terhitung baru.
+  Penandanya hanya bisa maju, dan setiap akun hanya menandai miliknya sendiri. Menandai dibaca tidak dicatat di
+  Log Aktivitas, sama seperti membaca log.
+- Daftarnya dibaca ulang setiap data panel dimuat (termasuk tombol Segarkan), saat tab peramban kembali terlihat,
+  dan tiap menit selama terlihat.
+- Angka lencana adalah pekerjaan yang menunggu ditambah pembaruan yang belum dibaca. Panel dibuka di tab Pembaruan
+  bila ada yang belum dibaca, selain itu di tab Perlu dikerjakan. Baris yang belum dibaca diberi titik toska dan
+  dibacakan "belum dibaca" oleh pembaca layar.
+- Admin biasa selalu melihat lonceng, supaya pembaruan yang sudah dibaca tetap bisa dibuka lagi. Bagi super admin
+  lonceng tetap hanya muncul bila ada yang menunggu dan tanpa tab Pembaruan, karena yang dilaporkan justru
+  tindakannya sendiri (pintunya menjawab 403).
+- Pelaku dihitung dari peran akunnya saat ini: tindakan akun yang kemudian tidak lagi berperan Super Admin ikut
+  hilang dari Pembaruan, tetapi tetap ada di Log Aktivitas.
 
 ### Gerak
 
@@ -1632,7 +1671,8 @@ Kedua log dibaca lewat `POST /api/log` (`bacaLog()`, hanya Kemahasiswaan), satu 
 Pintunya memakai POST karena kerangka API (`tangani`) hanya membaca isi permintaan pada POST; log
 tidak diubah olehnya. Supaya pengurutan dan penyaringan tetap cepat, `AuditLog` diberi indeks pada
 `waktu` dan `aktorId` (migrasi `indeks_audit`). Halaman Log Aktivitas (`Log.jsx`, di `/admin/log` dan
-`/super/log`) membaca pintu ini; susunannya ada di Panel Kemahasiswaan › Tampilan.
+`/super/log`) membaca pintu ini; susunannya ada di Panel Kemahasiswaan › Tampilan. Tindakan Super Admin di
+`LogAktivitas` juga menjadi Pembaruan di lonceng admin biasa (lihat Panel Kemahasiswaan › Lonceng).
 
 ## Sertifikat
 
@@ -2108,7 +2148,8 @@ panah kiri/kanan). Bagian yang mudah rusak:
 | — | Panel dosen: Beranda (pantau) dan Unggah Nilai (rekap Excel, langsung tersimpan) | selesai, sesuai rapat 24 Okt 2026; Penilaian tiga langkah dan Riwayat Pengiriman dihapus (lihat Panel Dosen) |
 | — | Hak peran rapat 24 Okt 2026: admin hanya melihat nilai, tanda final dan bobot dari admin diajukan, data master hanya super admin | selesai (lihat Hak peran) |
 | — | Persetujuan dua lapis rapat 24 Okt 2026: pengajuan ubah nilai dan akses cetak sertifikat, beserta pencabutan akses cetak dan catatan cetak | selesai (lihat Persetujuan dua lapis) |
-| — | Basis data MySQL: 23 tabel, 15 migrasi, 36 pintu API, sesi cookie | selesai |
+| — | Basis data MySQL: 23 tabel, 16 migrasi, 38 pintu API, sesi cookie | selesai |
+| — | Pembaruan dari Super Admin di lonceng admin biasa, status dibaca per akun (rapat 24 Okt 2026) | selesai (lihat Panel Kemahasiswaan › Lonceng) |
 | — | Kelas dosen per angkatan yang diampu, dan perbaikan nilai angkatan yang sudah disahkan lewat Super Admin | selesai (lihat Kelas dosen) |
 | — | Mengelola aspek CPMK: tambah, ubah kode/semester/cluster, arsip, pulihkan | selesai; super admin langsung, admin biasa lewat persetujuan, angkatan terkunci tetap memakai aspek saat dikunci |
 | — | Data master (angkatan, fakultas, prodi, mahasiswa) oleh super admin; admin berizin hanya melihat | selesai; tanpa hapus, NIM tetap (lihat Data master) |
@@ -2120,7 +2161,7 @@ Yang belum dikerjakan:
 - mengubah indikator perilaku dan pengaturan selain bobot (ambang sertifikat, mode penguncian,
   mode agregasi, dan lain-lain) dari layar; menambah cluster, area, atau fase baru. Aspek (tambah,
   kode, semester, cluster, arsip), teks aspek, komponen, dan bobot sudah bisa diubah;
-- sisa keputusan rapat 24 Okt 2026: notifikasi per akun dan kolom bahasa Inggris untuk nama tugas dan aspek;
+- sisa keputusan rapat 24 Okt 2026: kolom bahasa Inggris untuk nama tugas dan aspek;
 - penerbitan sertifikat yang membekukan nomor, tanggal, dan nilai — kini kelayakan dihitung
   langsung, jadi sertifikat ikut berubah bila nilai diubah sesudah angkatan dikunci;
 - ganti dan lupa kata sandi di aplikasi ini, masuk lewat SSO kampus, serta pembatasan percobaan

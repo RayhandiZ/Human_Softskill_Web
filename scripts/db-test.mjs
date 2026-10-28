@@ -26,7 +26,9 @@
    mahasiswa lengkapnya sandi supaya bisa masuk; permintaan sertifikat (termasuk yang dicabut) dan catatan log-nya
    (keputusan, pencabutan, pembukaan cetak) terhapus bersama mahasiswa dan angkatan sementara itu.
    Bagian kelas dosen membuat akun dosen sementara (uji.kelas.dosen.*) yang mengampu ANG_A, mengajukan perbaikan nilai
-   NIM2 yang lalu disetujui dan dibatalkan lagi; permintaan, log, dan akunnya dihapus di akhir. */
+   NIM2 yang lalu disetujui dan dibatalkan lagi; permintaan, log, dan akunnya dihapus di akhir.
+   Bagian pembaruan dari super admin membuat beberapa baris log bertarget mahasiswa uji (terhapus bersama log mahasiswa
+   itu) dan mengembalikan penanda baca akun admin uji (Pengguna.notifDibacaId) persis seperti semula. */
 
 import 'dotenv/config'
 import bcrypt from 'bcryptjs'
@@ -67,6 +69,8 @@ import * as masterProdi from '../app/api/master/prodi/route.js'
 import * as masterMahasiswa from '../app/api/master/mahasiswa/route.js'
 import * as masterAkses from '../app/api/master/akses/route.js'
 import * as aspekRoute from '../app/api/kurikulum/aspek/route.js'
+import * as notifikasi from '../app/api/notifikasi/route.js'
+import * as notifikasiDibaca from '../app/api/notifikasi/dibaca/route.js'
 import { idAspekBaru } from '../src/lib/aspek.js'
 import { hitungTranskrip } from '../src/lib/scoring.js'
 import {
@@ -127,6 +131,8 @@ const PINTU = {
   '/api/master/mahasiswa': masterMahasiswa,
   '/api/master/akses': masterAkses,
   '/api/kurikulum/aspek': aspekRoute,
+  '/api/notifikasi': notifikasi,
+  '/api/notifikasi/dibaca': notifikasiDibaca,
 }
 
 /* Akun Kemahasiswaan untuk uji. Bawaannya akun dari npm run db:seed; basis data yang akunnya sudah diganti
@@ -212,6 +218,9 @@ let izinAdminAsli
 let aspekAsliUji
 const aspekUji = []
 const logAspekUji = []
+/* Bagian "pembaruan dari super admin": penanda baca akun admin uji sebelum disentuh (undefined = belum disentuh).
+   Baris log yang dibuat bagian itu bertarget 'mahasiswa ' + NIM, jadi ikut terhapus lewat targetLog. */
+let notifAdminAsli
 /** Target baris LogAktivitas yang dibuat uji ini; ditambah id batch begitu diketahui. */
 const targetLog = [
   'fakultas ' + FAK_UJI,
@@ -353,7 +362,13 @@ async function pulihkanAspekUji() {
   if (logAspekUji.length) await db.logAktivitas.deleteMany({ where: { id: { in: logAspekUji } } })
 }
 
+async function pulihkanNotifikasi() {
+  if (notifAdminAsli === undefined) return
+  await db.pengguna.update({ where: { email: EMAIL_ADMIN }, data: { notifDibacaId: notifAdminAsli } })
+}
+
 async function bersihkan() {
+  await pulihkanNotifikasi()
   await pulihkanAspekUji()
   await pulihkanDataMaster()
   await pulihkanPeriode()
@@ -2088,8 +2103,63 @@ try {
   }
   cek('nilai uji kembali kosong sesudah dibatalkan', (await selUasA()) === null)
 
+  /* ------------------------------ pembaruan dari super admin ------------------------------ */
+  garis('22. PEMBARUAN DARI SUPER ADMIN (LONCENG ADMIN)')
+  // Tiga baris log dibuat langsung (bertarget mahasiswa uji): satu tindakan super admin yang menjadi pembaruan, satu
+  // pembukaan cetak oleh super admin (bukan pembaruan), dan satu tindakan admin (bukan pembaruan).
+  const adminNotif = await db.pengguna.findUnique({ where: { email: EMAIL_ADMIN } })
+  const akunSA = await db.pengguna.findUnique({ where: { email: 'super.admin@umn.ac.id' } })
+  notifAdminAsli = adminNotif.notifDibacaId
+  const bacaPembaruan = (pelaku) => pelaku('/api/notifikasi')
+  const tandaiPembaruan = (pelaku, sampai) => pelaku('/api/notifikasi/dibaca', { metode: 'POST', isi: { sampai } })
+  const nomor = (b) => Number(String(b.id).slice(2))
+  const buatLog = (aktorId, aksi, rincian) =>
+    db.logAktivitas.create({ data: { aktorId, aksi, target: 'mahasiswa ' + NIM, rincian } })
+
+  cek('tanpa sesi ditolak 401', (await bacaPembaruan(tamu)).status === 401)
+  cek('mahasiswa ditolak 403', (await bacaPembaruan(mhs)).status === 403)
+  cek('dosen ditolak 403', (await bacaPembaruan(dosen)).status === 403)
+  cek('super admin ditolak 403 (yang dilaporkan tindakannya sendiri)', (await bacaPembaruan(sa)).status === 403)
+  const awalP = await bacaPembaruan(admin)
+  cek(
+    'admin membaca { belum, terbaru, baris } paling banyak 20 baris',
+    awalP.status === 200 && Number.isInteger(awalP.isi.belum) && Array.isArray(awalP.isi.baris) && awalP.isi.baris.length <= 20,
+    JSON.stringify(awalP.isi).slice(0, 200),
+  )
+
+  const logSA = await buatLog(akunSA.id, 'UBAH_AKUN', { alasan: 'Uji pembaruan dari super admin', contoh: [{ nim: NIM }] })
+  const logCetak = await buatLog(akunSA.id, 'CETAK_SERTIFIKAT', { kali: 1 })
+  const logAdmin = await buatLog(adminNotif.id, 'TARIK_PERMINTAAN', null)
+  const pb1 = (await bacaPembaruan(admin)).isi
+  const atas = pb1.baris?.[0]
+  cek('tindakan super admin terbaru ada di baris teratas', atas && nomor(atas) === logSA.id, JSON.stringify(atas ?? null).slice(0, 200))
+  cek('baris membawa pelaku, waktu WIB, aksi, sasaran', atas?.aktorPeran === 'SUPER_ADMIN' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(atas?.waktu ?? '') && atas?.aksi === 'UBAH_AKUN' && atas?.target === 'mahasiswa ' + NIM)
+  cek('baris baru bertanda baru', atas?.baru === true)
+  cek('contoh dibuang dari rincian, alasan tetap', atas?.rincian?.alasan === 'Uji pembaruan dari super admin' && !('contoh' in (atas?.rincian ?? {})))
+  cek('pembukaan cetak dan tindakan admin bukan pembaruan', !pb1.baris.some((b) => [logCetak.id, logAdmin.id].includes(nomor(b))))
+  cek('terbaru = id log pembaruan paling baru', pb1.terbaru === logSA.id, String(pb1.terbaru))
+  cek('belum dibaca sedikitnya 1', pb1.belum >= 1, String(pb1.belum))
+
+  const jumlahLog = await db.logAktivitas.count()
+  cek('penanda bukan angka ditolak 400', (await tandaiPembaruan(admin, 'abc')).status === 400)
+  cek('penanda yang bukan pembaruan ditolak 404', (await tandaiPembaruan(admin, logCetak.id)).status === 404)
+  cek('super admin tidak bisa menandai 403', (await tandaiPembaruan(sa, logSA.id)).status === 403)
+  const tandaR = await tandaiPembaruan(admin, pb1.terbaru)
+  cek('admin menandai semua sudah dibaca', tandaR.status === 200 && tandaR.isi.belum === 0 && tandaR.isi.baris?.[0]?.baru === false, JSON.stringify(tandaR.isi).slice(0, 200))
+  cek('penanda tersimpan di akun admin', (await db.pengguna.findUnique({ where: { id: adminNotif.id } })).notifDibacaId === logSA.id)
+  cek('menandai dibaca tidak menulis log', (await db.logAktivitas.count()) === jumlahLog)
+  const lebihLama = pb1.baris.find((b) => nomor(b) < logSA.id)
+  if (lebihLama) {
+    await tandaiPembaruan(admin, nomor(lebihLama))
+    cek('penanda tidak mundur ke pembaruan yang lebih lama', (await db.pengguna.findUnique({ where: { id: adminNotif.id } })).notifDibacaId === logSA.id)
+  }
+
+  const logSA2 = await buatLog(akunSA.id, 'UBAH_AKUN', { catatan: 'Uji pembaruan kedua' })
+  const pb2 = (await bacaPembaruan(admin)).isi
+  cek('pembaruan sesudah ditandai terhitung satu yang baru', pb2.belum === 1 && nomor(pb2.baris[0]) === logSA2.id && pb2.baris[0].baru === true && pb2.baris[1]?.baru === false, JSON.stringify(pb2).slice(0, 200))
+
   /* ------------------------------ keluar ------------------------------ */
-  garis('22. KELUAR')
+  garis('23. KELUAR')
   await sa('/api/keluar', { metode: 'POST' })
   await mhs('/api/keluar', { metode: 'POST' })
   cek('setelah keluar, sesi tidak berlaku', (await mhs('/api/sesi')).status === 401)

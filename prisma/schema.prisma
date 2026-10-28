@@ -79,6 +79,7 @@ model Pengguna {
   peran        Peran
   aktif        Boolean    @default(true)
   kelolaMaster Boolean    @default(false) // izin dari super admin untuk menambah/mengubah data master (src/server/akses.js)
+  notifDibacaId Int?      // id LogAktivitas terakhir yang ditandai dibaca di lonceng admin (src/server/notifikasi.js)
   dibuat       DateTime   @default(now())
   mahasiswa    Mahasiswa?
   dosen        Dosen?

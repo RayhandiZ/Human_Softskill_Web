@@ -768,6 +768,33 @@ function bacaLogLokal({ jenis = 'nilai', halaman = 1, ukuran = 25, aktorId, dari
   }
 }
 
+/* ------------------------ pembaruan dari super admin ------------------------ */
+
+/* Lonceng admin biasa: tindakan Super Admin dari Log Aktivitas, dengan penanda baca per akun di basis data
+   (src/server/notifikasi.js). Tidak ikut /api/data, supaya bisa disegarkan sendiri tanpa memuat ulang semua data.
+   Tanpa server, daftarnya diisi skrip uji lewat NOTIFIKASI_LOKAL (baris aktivitas ditambah `nomor`, id lognya) dan
+   penandanya hanya di memori. */
+export const NOTIFIKASI_LOKAL = []
+let dibacaLokal = 0
+
+/** { belum, terbaru, baris }; lihat bacaNotifikasi di src/server/notifikasi.js. */
+export async function bacaNotifikasi() {
+  if (!modeLokal()) return kirim('/api/notifikasi', { metode: 'GET' })
+  const urutBaru = [...NOTIFIKASI_LOKAL].sort((a, b) => b.nomor - a.nomor)
+  return {
+    belum: urutBaru.filter((b) => b.nomor > dibacaLokal).length,
+    terbaru: urutBaru[0]?.nomor ?? null,
+    baris: urutBaru.slice(0, 20).map((b) => ({ ...b, baru: b.nomor > dibacaLokal })),
+  }
+}
+
+/** Menandai dibaca sampai `terbaru` dari daftar yang sedang tampil; jawabannya daftar yang baru. */
+export async function tandaiNotifikasiDibaca(sampai) {
+  if (!modeLokal()) return kirim('/api/notifikasi/dibaca', { isi: { sampai } })
+  dibacaLokal = Math.max(dibacaLokal, sampai)
+  return bacaNotifikasi()
+}
+
 /* --------------------- permintaan admin kepada super admin ------------------ */
 
 /* Admin biasa yang mengubah data mahasiswa yang sudah lewat Semester 3 tidak langsung menyimpan: server

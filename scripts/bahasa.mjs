@@ -44,7 +44,9 @@ const BERKAS = [
   ...readdirSync('src/components/charts').map((f) => join('src/components/charts', f)),
   'src/halaman/Login.jsx',
   'src/halaman/Profil.jsx',
-].filter((f) => f.endsWith('.jsx'))
+  // Sasaran log yang diterjemahkan menurut polanya (labelSasaran), dipakai Log Aktivitas, Pusat Kendali, dan lonceng.
+  'src/lib/labelLog.js',
+].filter((f) => /\.jsx?$/.test(f))
 
 /* Harus sama persis dengan rapikan() di src/lib/bahasa.jsx. */
 const rapikan = (teks) => String(teks ?? '').trim().replace(/\s+/g, ' ')

@@ -464,7 +464,7 @@ export const EN = {
   'Angkatan {label}': 'Cohort {label}',
   'angkatan {id}': 'cohort {id}',
   'beberapa angkatan': 'several cohorts',
-  // Jenis tindakan baru di Log Aktivitas (LABEL_LOG di admin/Log.jsx, diterjemahkan lewat t(label)).
+  // Jenis tindakan baru di Log Aktivitas (LABEL_LOG di src/lib/labelLog.js, diterjemahkan lewat t(label)).
   'Teruskan pengajuan ubah nilai': 'Forward score change request',
   'Setujui dan terapkan ubah nilai': 'Approve and apply score change',
   'Tolak pengajuan ubah nilai': 'Reject score change request',
@@ -755,6 +755,20 @@ export const EN = {
   'Sudah sampai Semester {semester}, nilainya masih di bawah {ambang}':
     'Already in Semester {semester}, still scoring below {ambang}',
   '{n} angkatan siap disahkan': '{n} cohorts ready to ratify',
+  // Pembaruan dari Super Admin untuk admin biasa (fase 4 rapat 24 Okt 2026; src/server/notifikasi.js).
+  '{n} pembaruan belum dibaca': '{n} unread updates',
+  'Pemberitahuan, tidak ada yang baru': 'Notifications, nothing new',
+  Pemberitahuan: 'Notifications',
+  'Jenis pemberitahuan': 'Notification type',
+  Pembaruan: 'Updates',
+  'Tidak ada pekerjaan yang menunggu.': 'No work is waiting.',
+  'Dari Super Admin': 'From the Super Admin',
+  'Tandai semua sudah dibaca': 'Mark all as read',
+  'Menandai…': 'Marking…',
+  'belum dibaca': 'unread',
+  'Belum ada pembaruan dari Super Admin.': 'No updates from the Super Admin yet.',
+  'Rincian lengkap dan pembaruan yang lebih lama ada di Log Aktivitas':
+    'Full details and older updates are in the Activity Log',
   'Tiga semester sudah tuntas, sertifikatnya bisa diterbitkan':
     'Three semesters are complete, the certificates can be issued',
 
@@ -978,7 +992,7 @@ export const EN = {
   'Tarik permintaan': 'Withdraw request',
   'Batalkan batch nilai': 'Roll back a score batch',
   'Ubah tanda final/sementara': 'Change final/provisional flag',
-  /* Sasaran log dari server, diterjemahkan menurut polanya (labelSasaran di admin/Log.jsx). */
+  /* Sasaran log dari server, diterjemahkan menurut polanya (labelSasaran di src/lib/labelLog.js). */
   'tanda final ({n} mahasiswa)': 'final marks ({n} students)',
   'aspek {kode} (kurikulum versi {v})': 'aspect {kode} (curriculum version {v})',
   'kurikulum versi {v}': 'curriculum version {v}',

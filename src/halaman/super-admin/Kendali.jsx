@@ -27,7 +27,8 @@ import { PERMINTAAN, PERMINTAAN_SERTIFIKAT, bacaLog, permintaanMenunggu, useStor
 import { useAuth } from '../../lib/auth'
 import { useBahasa } from '../../lib/bahasa'
 import { LABEL_AKSI } from '../admin/PersetujuanAdmin'
-import { LABEL_LOG, labelSasaran, tanggalWib } from '../admin/Log'
+import { tanggalWib } from '../admin/Log'
+import { LABEL_LOG, labelSasaran } from '../../lib/labelLog'
 
 /* Pusat Kendali Super Admin, disusun mengikuti satu keputusan yang diambil di sini: permintaan admin yang
    menunggu. Kartu navy itu titik fokusnya; keadaan sistem, nilai tersimpan per bulan, dan tindakan admin

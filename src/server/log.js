@@ -133,7 +133,7 @@ async function daftarAktor(tabel) {
 }
 
 /** Siapa pelakunya, dalam bentuk yang sama di kedua jenis log: nama, peran (nilai basis data), dan email akunnya. */
-const pelaku = (akun, id) => {
+export const pelaku = (akun, id) => {
   const a = akun.get(id)
   return { aktor: a?.nama ?? null, aktorPeran: a?.peran ?? null, aktorEmail: a?.email ?? null }
 }
