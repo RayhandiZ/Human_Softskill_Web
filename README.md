@@ -67,6 +67,15 @@ kecuali `require(esm)` dinyalakan lewat flag: `NODE_OPTIONS=--experimental-requi
 smoke` (Git Bash) atau `$env:NODE_OPTIONS='--experimental-require-module'; npm run smoke`
 (PowerShell).
 
+**Versi aman (dicek 27 Okt 2026).** Pakai Node.js **22.23.4** atau lebih baru di jalur 22 (atau 24.22.1 LTS): rilis
+keamanan Node 21 Okt 2026 menambal empat celah tingkat tinggi, termasuk dekompresi Brotli yang bisa berujung RCE.
+Next.js minimal **16.4.3**: 16.4.0 ke bawah punya celah eksekusi kode jarak jauh tanpa login (Image Optimization
+dengan SVG, `use cache`). Prisma tetap **6.19.3**; jangan ikuti kotak "Update available" (`prisma@latest` kini
+rilis kandidat 8.x dan `@prisma/client@latest` versi 7, keduanya butuh migrasi dan merusak semua kueri). Blok
+`overrides` di `package.json` memaksa `deepmerge-ts` 8.0.2 di dalam `@prisma/config`, karena 6.19.3 mengunci 7.1.5
+yang rawan stack exhaustion; CLI Prisma (validate, generate, migrate) dan `test:db` sudah diuji dengan versi itu.
+`npm audit` harus menjawab 0 celah.
+
 ## Kerangka: Next.js App Router
 
 Aplikasi berjalan di **Next.js 16 (App Router)** dengan **React 19** dan **Tailwind 3**.
