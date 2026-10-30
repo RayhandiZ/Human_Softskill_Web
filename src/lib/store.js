@@ -9,6 +9,7 @@ import {
   PENGAJUAN_KOREKSI,
   STUDENTS,
   USULAN_AWAL,
+  batasiAngkatan,
   getStudentByNim,
   isiData,
   komponenDosen,
@@ -692,6 +693,8 @@ export async function muatDariServer() {
   try {
     const isi = await kirim('/api/data', { metode: 'GET' })
     if (ke !== urutMuat) return // sudah ada pemuatan yang lebih baru
+    // Lebih dulu dari isiData: angkatan yang tersembunyi bagi admin biasa ikut hilang dari COHORTS (src/lib/data.js).
+    batasiAngkatan(isi.angkatanTersembunyi)
     isiData({
       mahasiswa: isi.mahasiswa,
       audit: isi.audit,
@@ -718,6 +721,7 @@ export async function muatDariServer() {
 /** Dikosongkan saat keluar supaya akun berikutnya tidak melihat sisa akun sebelumnya. */
 export function kosongkanDataServer() {
   urutMuat++
+  batasiAngkatan([])
   isiData()
   USULAN_NILAI.length = 0
   BATCH_SESI.length = 0
@@ -902,6 +906,16 @@ export async function aturIzinMaster({ id, aktif, alasan }) {
   if (String(alasan ?? '').trim().length < ALASAN_AKSES_MIN) throw new Error('Alasan wajib diisi, minimal 10 karakter.')
   a.kelolaMaster = Boolean(aktif)
   return { akun: { ...a } }
+}
+
+/**
+ * Mengganti seluruh akses angkatan satu akun admin: `dibuka` = [id angkatan yang sudah lewat Semester 3 dan terlihat],
+ * `ditutup` = [id angkatan Semester 1–3 yang dinonaktifkan]; yang tidak disebut kembali ke bawaan. Jawabannya { akun }
+ * baru. Hanya super admin; lihat aturAksesAngkatan() di src/server/akses.js.
+ */
+export async function aturAksesAngkatan({ id, dibuka, ditutup, alasan }) {
+  if (modeLokal()) throw new Error('Akses angkatan hanya bisa diatur saat terhubung ke basis data.')
+  return kirim('/api/akses/angkatan', { isi: { id, dibuka, ditutup, alasan } })
 }
 
 /* -------------------------------- data master ------------------------------- */

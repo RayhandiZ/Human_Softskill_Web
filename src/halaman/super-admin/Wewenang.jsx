@@ -32,7 +32,17 @@ const RINGKAS_PERAN = {
 
 // ya: boleh langsung · syarat: boleh, kecuali yang ditulis di catatan · minta: selalu lewat persetujuan Super Admin.
 const MATRIKS = [
-  { tindakan: 'Melihat capaian mahasiswa', izin: [['syarat', 'hanya miliknya'], ['syarat', 'mahasiswa di kelasnya'], ['ya'], ['ya']] },
+  // Admin biasa: angkatan Semester 1–3 kecuali dinonaktifkan, dan angkatan lewat Semester 3 yang dibuka Super Admin
+  // (angkatanTersembunyi di src/server/muat.js).
+  {
+    tindakan: 'Melihat capaian mahasiswa',
+    izin: [
+      ['syarat', 'hanya miliknya'],
+      ['syarat', 'mahasiswa di kelasnya'],
+      ['syarat', 'angkatan Semester 1–3 kecuali dinonaktifkan Super Admin; angkatan yang sudah lewat bila dibuka Super Admin'],
+      ['ya'],
+    ],
+  },
   { tindakan: 'Mengajukan koreksi nilai', izin: [['ya'], ['tidak'], ['tidak'], ['tidak']] },
   // Dua lapis sejak rapat 24 Okt 2026 (putuskanKoreksi di src/server/pengajuan.js).
   {
@@ -72,7 +82,12 @@ const MATRIKS = [
   { tindakan: 'Mengesahkan nilai angkatan', izin: [['tidak'], ['tidak'], ['minta'], ['ya']] },
   { tindakan: 'Memutuskan permintaan admin', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
   { tindakan: 'Menarik permintaan yang belum diputuskan', izin: [['tidak'], ['tidak'], ['syarat', 'hanya miliknya'], ['tidak']] },
-  { tindakan: 'Membaca Log Aktivitas', izin: [['tidak'], ['tidak'], ['ya'], ['ya']] },
+  // /api/log (bacaLog di src/server/log.js): admin biasa tanpa tindakan Super Admin; yang berkaitan dengan akunnya
+  // sampai lewat lonceng (src/server/notifikasi.js).
+  {
+    tindakan: 'Membaca Log Aktivitas',
+    izin: [['tidak'], ['tidak'], ['syarat', 'tanpa tindakan Super Admin'], ['ya']],
+  },
   // /api/periode, hanya super admin (src/server/periode.js).
   { tindakan: 'Memindahkan periode akademik', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
   // /api/akses/ubah, hanya super admin; akun Super Admin dan akun sendiri ditolak (src/server/akses.js).
@@ -86,6 +101,8 @@ const MATRIKS = [
   },
   // /api/akses/izin, hanya super admin, dan hanya untuk akun admin (aturIzinMaster di src/server/akses.js).
   { tindakan: 'Memberi dan mencabut izin lihat data master', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
+  // /api/akses/angkatan, hanya super admin, dan hanya untuk akun admin (aturAksesAngkatan di src/server/akses.js).
+  { tindakan: 'Mengatur angkatan yang terlihat oleh admin (membuka atau menonaktifkan)', izin: [['tidak'], ['tidak'], ['tidak'], ['ya']] },
   // Peran SUPER_ADMIN hanya dipasang langsung di basis data; tidak ada tombolnya di website.
   { tindakan: 'Mengangkat Super Admin dari website', izin: [['tidak'], ['tidak'], ['tidak'], ['tidak']] },
 ]

@@ -16,7 +16,15 @@ import {
 import { IconAlert, IconLock, IconPencil, IconPrint } from '../../components/Icons'
 import { CONFIG } from '../../lib/config'
 import { SUMBER } from '../../lib/curriculum'
-import { COHORTS, STUDENTS, labelPeriode, pekerjaanPenilaian, semesterKalender, transkripOf } from '../../lib/data'
+import {
+  ANGKATAN_TERSEMBUNYI,
+  COHORTS,
+  STUDENTS,
+  labelPeriode,
+  pekerjaanPenilaian,
+  semesterKalender,
+  transkripOf,
+} from '../../lib/data'
 import { pratinjauPenguncian } from '../../lib/rules'
 import { kunciAngkatan, menungguPersetujuan, useStore } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
@@ -88,7 +96,16 @@ export default function Angkatan() {
       <JudulHalaman
         judul={t('Angkatan')}
         keterangan={t('Pantau kelengkapan nilai tiap angkatan, temukan mahasiswa yang perlu ditindaklanjuti, lalu sahkan nilai angkatan yang programnya sudah selesai.')}
-      />
+      >
+        {/* Admin biasa: angkatan yang belum dibuka atau dinonaktifkan Super Admin tidak dikirim server (src/server/muat.js). */}
+        {ANGKATAN_TERSEMBUNYI.length ? (
+          <CatatanKaki>
+            {t('{n} angkatan tidak ditampilkan karena aksesnya belum dibuka atau dinonaktifkan Super Admin untuk akun ini. Minta Super Admin mengaturnya di Akses Pengguna bila perlu.', {
+              n: ANGKATAN_TERSEMBUNYI.length,
+            })}
+          </CatatanKaki>
+        ) : null}
+      </JudulHalaman>
 
       {!daftar.length ? (
         <Card>

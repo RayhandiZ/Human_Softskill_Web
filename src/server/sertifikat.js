@@ -1,6 +1,6 @@
 import { db } from './db.js'
 import { GalatApi } from './api.js'
-import { SERTA_MAHASISWA, angkaId, susunMahasiswa, waktuWib } from './muat.js'
+import { SERTA_MAHASISWA, angkaId, susunMahasiswa, waktuWib, wajibAksesAngkatan } from './muat.js'
 import { ALASAN_MIN } from './nilai.js'
 import { catatLog } from './log.js'
 import { kelayakanSertifikat } from '../lib/rules.js'
@@ -51,6 +51,7 @@ export async function putuskanSertifikat(pengguna, { id, keputusan, catatan }) {
   if (!['disetujui', 'ditolak'].includes(keputusan)) throw new GalatApi('Keputusan harus "disetujui" atau "ditolak".')
   const p = await db.permintaanSertifikat.findUnique({ where: { id: angkaId(id) }, include: { mahasiswa: true } })
   if (!p) throw new GalatApi('Permintaan tidak ditemukan.', 404)
+  await wajibAksesAngkatan(pengguna, [p.mahasiswa.angkatanId])
   const lapis = pengguna.superAdmin ? 'MENUNGGU_SUPERADMIN' : 'MENUNGGU_ADMIN'
   if (p.status !== lapis) return { ok: false }
 
@@ -103,6 +104,7 @@ export async function putuskanSertifikat(pengguna, { id, keputusan, catatan }) {
 export async function cabutSertifikat(pengguna, { id, alasan }) {
   const p = await db.permintaanSertifikat.findUnique({ where: { id: angkaId(id) }, include: { mahasiswa: true } })
   if (!p) throw new GalatApi('Permintaan tidak ditemukan.', 404)
+  await wajibAksesAngkatan(pengguna, [p.mahasiswa.angkatanId])
   if (p.status !== 'SIAP_DICETAK') return { ok: false }
   const teks = String(alasan ?? '').trim()
   if (teks.length < ALASAN_MIN) {
@@ -137,6 +139,7 @@ export async function catatCetak(pengguna, { id }) {
   if (!p || (pengguna.peran === 'student' && p.mahasiswaId !== pengguna.mahasiswa?.id)) {
     throw new GalatApi('Permintaan tidak ditemukan.', 404)
   }
+  await wajibAksesAngkatan(pengguna, [p.mahasiswa.angkatanId])
   if (p.status === 'DICABUT') throw new GalatApi('Akses cetak sertifikat ini sudah dicabut.', 409)
   if (p.status !== 'SIAP_DICETAK') throw new GalatApi('Akses cetak sertifikat ini belum disetujui.', 409)
   const { k } = await kelayakan(p.mahasiswaId)

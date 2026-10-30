@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { act } from 'react'
 import Penyedia from '../app/penyedia'
 import { RequireRole, panelPengguna } from '../src/lib/auth'
-import { AUDIT_LOG, COHORTS, MASTER_AWAL, PENGAJUAN_KOREKSI, STUDENTS, getStudent, getStudentByNim, isiData, isiMaster, komponenDosen, mahasiswaKelas, resetTranskripCache } from '../src/lib/data'
+import { AUDIT_LOG, COHORTS, MASTER_AWAL, PENGAJUAN_KOREKSI, STUDENTS, batasiAngkatan, getStudent, getStudentByNim, isiData, isiMaster, komponenDosen, mahasiswaKelas, programSelesai, resetTranskripCache } from '../src/lib/data'
 import { getAspekList, getKomponen, getKomponenById, isiKurikulum } from '../src/lib/curriculum'
 import { bobotKomponen } from '../src/lib/scoring'
 import { DATA_CONTOH, DOSEN, PERSONA_SEMESTER, getDosenByEmail, getStudentByEmail } from './dataContoh'
@@ -527,7 +527,8 @@ export async function ujiPembaruanAdmin() {
   hasil.adaAlasan = teks().includes('Alasan: Semester ganjil dimulai') && teks().includes('Catatan: Semua syarat terpenuhi.')
   hasil.adaPelakuWaktu = teks().includes('Super Admin · 2026-10-28 09:30 WIB')
   hasil.belumDibacaAwal = belumDibaca()
-  hasil.adaTautanLog = Boolean(panel()?.querySelector('a[href="/admin/log"]'))
+  // Sejak 31 Okt 2026 tindakan Super Admin tidak ada di Log Aktivitas admin, jadi panel ini tidak menautkan ke sana.
+  hasil.tanpaTautanLog = !panel()?.querySelector('a[href="/admin/log"]')
 
   const tombolTandai = () => [...(panel()?.querySelectorAll('button') ?? [])].find((b) => /Tandai semua sudah dibaca/.test(b.textContent))
   hasil.adaTombolTandai = Boolean(tombolTandai())
@@ -1894,6 +1895,22 @@ export async function ujiAngkatan() {
   hasil.sertifikatTersaring = el.querySelector('select')?.value === '2024'
   lepas()
 
+  // Admin biasa: angkatan yang disembunyikan server (angkatanTersembunyi di /api/data), di sini satu yang sudah lewat
+  // (2024) dan satu Semester 1–3 yang dinonaktifkan (2026), hilang dari kartu, dan halaman menyebut jumlahnya.
+  batasiAngkatan(['2024', '2026'])
+  ;({ el, lepas } = await pasang('/admin/angkatan'))
+  hasil.angkatanTersembunyiHilang =
+    !kartu(el).some((b) => ['2024', '2026'].includes(labelKartu(b))) &&
+    kartu(el).length === COHORTS.length &&
+    /2 angkatan tidak ditampilkan karena aksesnya belum dibuka atau dinonaktifkan/.test(el.textContent)
+  lepas()
+  batasiAngkatan([])
+  ;({ el, lepas } = await pasang('/admin/angkatan'))
+  hasil.angkatanKembaliSemua =
+    ['2024', '2026'].every((l) => kartu(el).some((b) => labelKartu(b) === l)) &&
+    !/tidak ditampilkan karena aksesnya/.test(el.textContent)
+  lepas()
+
   if (lama) window.localStorage.setItem('sk5c.session', lama)
   else window.localStorage.removeItem('sk5c.session')
   return hasil
@@ -2226,6 +2243,34 @@ export async function ujiPanelSuper() {
     /Izin lihat data master/.test(barisAdmin()?.textContent ?? '') &&
     /Cabut izin lihat data master/.test(barisAdmin()?.textContent ?? '') &&
     !/izin lihat data master/i.test(barisSuper.textContent)
+  // Akses angkatan: tombolnya hanya di baris admin biasa. Panelnya memuat semua angkatan, centang = terlihat: angkatan
+  // Semester 1–3 tercentang (bisa dinonaktifkan) dan yang sudah lewat kosong (bisa dibuka). Simpan mati sampai ada
+  // perubahan dan alasan. Menyimpannya butuh basis data, jadi tidak dicoba di sini (diuji test:db).
+  const tombolAngkatan = () => [...(barisAdmin()?.querySelectorAll('button') ?? [])].find((b) => /Akses angkatan/.test(b.textContent))
+  const angkatanAdminAwal = /angkatan Semester 1–3 saja/.test(barisAdmin()?.textContent ?? '')
+  await klik(tombolAngkatan())
+  const formAngkatan = barisAdmin().querySelector('form')
+  const centangAngkatan = [...(formAngkatan?.querySelectorAll('input[type="checkbox"]') ?? [])]
+  const tercentangAwal = centangAngkatan.filter((c) => c.checked).length
+  const simpanAngkatan = () =>
+    [...(formAngkatan?.querySelectorAll('button[type="submit"]') ?? [])].find((b) => /Simpan akses angkatan/.test(b.textContent))
+  const angkatanMatiAwal = simpanAngkatan()?.disabled === true
+  // Kotak pertama = angkatan Semester 1–3 terbaru: menghilangkan centangnya berarti menonaktifkan.
+  await klik(centangAngkatan[0])
+  const angkatanMatiTanpaAlasan = simpanAngkatan()?.disabled === true
+  await ketik(formAngkatan.querySelector('input:not([type="checkbox"])'), 'Admin ini tidak menangani angkatan baru')
+  hasil.panelAksesAngkatan =
+    angkatanAdminAwal &&
+    !/Akses angkatan/.test(barisSuper.textContent) &&
+    centangAngkatan.length === COHORTS.length &&
+    tercentangAwal === COHORTS.filter((c) => !programSelesai(c.intake)).length &&
+    /Hilangkan centang untuk menonaktifkan/.test(formAngkatan.textContent) &&
+    /Centang untuk membuka/.test(formAngkatan.textContent) &&
+    centangAngkatan[0].checked === false &&
+    angkatanMatiAwal &&
+    angkatanMatiTanpaAlasan &&
+    simpanAngkatan()?.disabled === false
+  await klik(tombolAngkatan())
   await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /Mahasiswa/.test(b.textContent)))
   const semuaMhs = barisAkun().length
   const rincianMhs = /NIM 00000100001[\s\S]*Sistem Informasi[\s\S]*Angkatan 2025/.test(

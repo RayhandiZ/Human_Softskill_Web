@@ -1,9 +1,11 @@
 import { db } from './db.js'
+import { GalatApi } from './api.js'
 import { getKomponenById } from '../lib/curriculum.js'
 import { komponenDosen, labelPeriode, periodeAngkatan, programSelesai, turunkanSemesterAktif } from '../lib/data.js'
 
 // Menyusun data halaman dari basis data, dalam bentuk yang dibaca isiData() di src/lib/data.js.
-// Isinya disaring per peran: admin melihat semuanya, dosen hanya kelasnya, mahasiswa hanya dirinya.
+// Isinya disaring per peran: super admin melihat semuanya, admin biasa angkatan yang terlihat olehnya
+// (angkatanTersembunyi di bawah), dosen hanya kelasnya, mahasiswa hanya dirinya.
 
 const WIB = new Intl.DateTimeFormat('sv-SE', {
   timeZone: 'Asia/Jakarta',
@@ -35,6 +37,43 @@ export function diKelasDosen(dosen, m) {
   const diampu = (dosen.angkatan ?? []).map((a) => a.angkatanId)
   if (diampu.length) return diampu.includes(m.angkatanId)
   return semesterDari(m.angkatan) >= dosen.semester && !selesaiProgram(m.angkatan)
+}
+
+/**
+ * Angkatan yang TIDAK terlihat oleh `pengguna`, sebagai Map id → label, atau null bila semuanya terlihat. Hanya admin
+ * biasa yang dibatasi (permintaan 30–31 Okt 2026). Bawaannya: angkatan yang masih di Semester 1–3 atau belum mulai
+ * terlihat, angkatan yang programnya sudah lewat Semester 3 tersembunyi. Super Admin bisa menimpanya per admin dan per
+ * angkatan (tabel AdminAngkatan, aturAksesAngkatan di akses.js): membuka angkatan yang sudah lewat (terlihat true) atau
+ * menonaktifkan angkatan Semester 1–3 (terlihat false). Super admin melihat semuanya; dosen dan mahasiswa punya
+ * saringannya sendiri. PERIODE_AKTIF dibaca ulang tangani() di setiap permintaan, jadi begitu periode dipindah,
+ * angkatan yang baru lewat Semester 3 langsung tersembunyi dari admin yang belum dibukakan.
+ */
+export async function angkatanTersembunyi(pengguna) {
+  if (!pengguna || pengguna.superAdmin || pengguna.peran !== 'admin') return null
+  const [angkatan, diatur] = await Promise.all([
+    db.angkatan.findMany({ select: { id: true, label: true, periodeTahun: true, periodeSemester: true } }),
+    db.adminAngkatan.findMany({ where: { penggunaId: pengguna.id }, select: { angkatanId: true, terlihat: true } }),
+  ])
+  const atur = new Map(diatur.map((d) => [d.angkatanId, d.terlihat]))
+  const tutup = new Map(angkatan.filter((a) => !(atur.get(a.id) ?? !selesaiProgram(a))).map((a) => [a.id, a.label]))
+  return tutup.size ? tutup : null
+}
+
+/**
+ * Menolak (403) bila salah satu `angkatanIds` tersembunyi dari `pengguna`. Dipasang di pintu yang bisa dipakai admin
+ * biasa untuk mahasiswa atau angkatan tertentu, supaya data yang tidak dikirim ke layarnya juga tidak bisa disentuh
+ * lewat API. Id yang tidak dikenal dibiarkan lewat: fungsi aslinya yang menjawab "tidak ditemukan".
+ */
+export async function wajibAksesAngkatan(pengguna, angkatanIds) {
+  const tutup = await angkatanTersembunyi(pengguna)
+  const kena = tutup ? [...new Set(angkatanIds)].filter((id) => tutup.has(id)) : []
+  if (kena.length) {
+    throw new GalatApi(
+      'Angkatan ' + kena.map((id) => tutup.get(id)).join(', ') + ' tidak bisa diakses akun ini: belum dibuka atau ' +
+        'dinonaktifkan Super Admin. Minta Super Admin mengatur akses angkatannya di Akses Pengguna.',
+      403,
+    )
+  }
 }
 
 /** Angka di balik id tampilan seperti 'K-12' atau 'U-3'. */
@@ -239,8 +278,24 @@ function susunUsulan(u, dosen, mhsDariNim, nama) {
   }
 }
 
-async function muatUsulan(where) {
-  const daftar = await db.usulan.findMany({ where, include: { entri: true }, orderBy: [{ waktu: 'desc' }, { id: 'desc' }] })
+/** `tutup`: angkatan yang tersembunyi dari pembaca (angkatanTersembunyi); nilai usulan untuk mahasiswanya tidak ikut. */
+async function muatUsulan(where, tutup = null) {
+  const semua = await db.usulan.findMany({ where, include: { entri: true }, orderBy: [{ waktu: 'desc' }, { id: 'desc' }] })
+  const angkatanNim = tutup
+    ? new Map(
+        (
+          await db.mahasiswa.findMany({
+            where: { nim: { in: [...new Set(semua.flatMap((u) => u.entri.map((e) => e.nim)))] } },
+            select: { nim: true, angkatanId: true },
+          })
+        ).map((m) => [m.nim, m.angkatanId]),
+      )
+    : null
+  const daftar = tutup
+    ? semua
+        .map((u) => ({ ...u, entri: u.entri.filter((e) => !tutup.has(angkatanNim.get(e.nim))) }))
+        .filter((u) => u.entri.length)
+    : semua
   const dosen = await db.dosen.findMany({
     where: { id: { in: [...new Set(daftar.map((u) => u.dosenId))] } },
     include: { prodi: true },
@@ -365,14 +420,33 @@ export async function muatData(pengguna) {
     return hasil
   }
 
-  // Kemahasiswaan.
+  // Kemahasiswaan. Angkatan yang tersembunyi dari admin biasa (angkatanTersembunyi) tidak dikirim sama sekali:
+  // mahasiswanya, jejak nilainya, koreksi, sertifikat, batch, pengumpulan, dan nilai usulannya. Layar memakai
+  // `angkatanTersembunyi` untuk menyembunyikan angkatannya dari daftar (batasiAngkatan di src/lib/data.js).
+  const tutup = await angkatanTersembunyi(pengguna)
+  const idTutup = tutup ? [...tutup.keys()] : []
+  hasil.angkatanTersembunyi = idTutup
+  const diLuarTutup = tutup ? { angkatanId: { notIn: idTutup } } : {}
+  const mahasiswaDiLuarTutup = tutup ? { mahasiswa: diLuarTutup } : {}
+  // AuditLog tidak punya relasi ke mahasiswa, jadi disaring dengan id mahasiswa angkatan yang tersembunyi.
+  const idMahasiswaTutup = tutup
+    ? (await db.mahasiswa.findMany({ where: { angkatanId: { in: idTutup } }, select: { id: true } })).map((m) => m.id)
+    : []
   const [mhs, audit, koreksi, batch, angkatan, sertifikat] = await Promise.all([
-    db.mahasiswa.findMany({ include: SERTA_MAHASISWA, orderBy: { nim: 'asc' } }),
-    db.auditLog.findMany({ include: { batch: { select: { status: true } } }, orderBy: [{ waktu: 'desc' }, { id: 'desc' }] }),
-    db.pengajuanKoreksi.findMany({ include: { mahasiswa: true }, orderBy: [{ diajukan: 'desc' }, { id: 'desc' }] }),
-    db.batch.findMany({ include: { _count: { select: { audit: true } } }, orderBy: [{ waktu: 'desc' }, { id: 'desc' }] }),
+    db.mahasiswa.findMany({ where: diLuarTutup, include: SERTA_MAHASISWA, orderBy: { nim: 'asc' } }),
+    db.auditLog.findMany({
+      where: idMahasiswaTutup.length ? { mahasiswaId: { notIn: idMahasiswaTutup } } : {},
+      include: { batch: { select: { status: true } } },
+      orderBy: [{ waktu: 'desc' }, { id: 'desc' }],
+    }),
+    db.pengajuanKoreksi.findMany({
+      where: mahasiswaDiLuarTutup,
+      include: { mahasiswa: true },
+      orderBy: [{ diajukan: 'desc' }, { id: 'desc' }],
+    }),
+    db.batch.findMany({ where: diLuarTutup, include: { _count: { select: { audit: true } } }, orderBy: [{ waktu: 'desc' }, { id: 'desc' }] }),
     db.angkatan.findMany(),
-    db.permintaanSertifikat.findMany({ include: { mahasiswa: true }, orderBy: URUT_SERTIFIKAT }),
+    db.permintaanSertifikat.findMany({ where: mahasiswaDiLuarTutup, include: { mahasiswa: true }, orderBy: URUT_SERTIFIKAT }),
   ])
   const nama = await petaNama([
     ...idPengguna(mhs),
@@ -409,8 +483,8 @@ export async function muatData(pengguna) {
 
   hasil.koreksi = koreksi.map((k) => susunKoreksi(k, nama))
   hasil.sertifikat = sertifikat.map((p) => susunSertifikat(p, nama))
-  hasil.pengumpulan = await muatPengumpulan({})
-  hasil.usulan = await muatUsulan({})
+  hasil.pengumpulan = await muatPengumpulan(mahasiswaDiLuarTutup)
+  hasil.usulan = await muatUsulan({}, tutup)
   hasil.permintaan = await muatPermintaan(pengguna)
 
   for (const b of batch) {

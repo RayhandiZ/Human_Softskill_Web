@@ -767,8 +767,6 @@ export const EN = {
   'Menandai…': 'Marking…',
   'belum dibaca': 'unread',
   'Belum ada pembaruan dari Super Admin.': 'No updates from the Super Admin yet.',
-  'Rincian lengkap dan pembaruan yang lebih lama ada di Log Aktivitas':
-    'Full details and older updates are in the Activity Log',
   'Tiga semester sudah tuntas, sertifikatnya bisa diterbitkan':
     'Three semesters are complete, the certificates can be issued',
 
@@ -2052,4 +2050,28 @@ export const EN = {
   /* Ringkasan pilihan tanda status di Input Manual (TANDA_BARIS di admin/Nilai.jsx, lewat t(ringkas)). */
   'tahan walau sudah lengkap': 'hold even when complete',
   'nilai berhenti berubah': 'score stops changing',
+  /* Akses angkatan untuk admin biasa (super-admin/Akses.jsx, admin/Angkatan.jsx, Wewenang, Log Aktivitas). */
+  'Akses angkatan': 'Cohort access',
+  'angkatan Semester 1–3 saja': 'Semester 1–3 cohorts only',
+  'Angkatan dibuka: {label}': 'Cohorts opened: {label}',
+  'Angkatan dinonaktifkan: {label}': 'Cohorts disabled: {label}',
+  'Centang angkatan yang boleh dilihat admin ini. Bawaannya, angkatan Semester 1–3 terlihat dan angkatan yang sudah lewat Semester 3 tersembunyi; pengaturan di sini berlaku sampai diubah lagi.':
+    'Check the cohorts this admin may see. By default, Semester 1–3 cohorts are visible and cohorts past Semester 3 are hidden; the settings here apply until changed again.',
+  'Angkatan Semester 1–3 atau belum mulai': 'Semester 1–3 cohorts or not started yet',
+  'Belum ada angkatan yang sedang berjalan.': 'No cohort is running yet.',
+  'Hilangkan centang untuk menonaktifkan aksesnya.': 'Uncheck to disable access.',
+  'Angkatan yang sudah lewat Semester 3': 'Cohorts past Semester 3',
+  'Belum ada angkatan yang lewat Semester 3.': 'No cohort is past Semester 3 yet.',
+  'Centang untuk membuka aksesnya.': 'Check to open access.',
+  'Simpan akses angkatan': 'Save cohort access',
+  '{n} angkatan tidak ditampilkan karena aksesnya belum dibuka atau dinonaktifkan Super Admin untuk akun ini. Minta Super Admin mengaturnya di Akses Pengguna bila perlu.':
+    '{n} cohort(s) are not shown because the Super Admin has not opened them or has disabled them for this account. Ask the Super Admin to adjust this in User Access if needed.',
+  'angkatan Semester 1–3 kecuali dinonaktifkan Super Admin; angkatan yang sudah lewat bila dibuka Super Admin':
+    'Semester 1–3 cohorts unless disabled by the Super Admin; past cohorts once opened by the Super Admin',
+  'Mengatur angkatan yang terlihat oleh admin (membuka atau menonaktifkan)': 'Set the cohorts admins can see (open or disable)',
+  'Ubah akses angkatan admin': 'Change admin cohort access',
+  /* Log Aktivitas admin tanpa tindakan Super Admin (Wewenang). */
+  'tanpa tindakan Super Admin': 'without Super Admin actions',
+  'Angkatan dibuka': 'Cohorts opened',
+  'Angkatan dinonaktifkan': 'Cohorts disabled',
 }

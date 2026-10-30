@@ -1,8 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { Avatar, Badge, Card, CatatanKaki, EmptyState, SearchInput, Select, Tabs } from '../../components/Ui'
-import { IconAlert, IconCheck, IconCheckShield, IconHapus, IconLock, IconPlus, IconRefresh, IconUndo, IconUsers } from '../../components/Icons'
-import { ALASAN_AKSES_MIN, SANDI_AWAL_MIN, aturIzinMaster, hapusAkun, muatAkses, tambahAkun, ubahAkses, ubahKelasDosen } from '../../lib/store'
-import { COHORTS, PROGRAMS, getAngkatan } from '../../lib/data'
+import { IconAlert, IconCalendar, IconCheck, IconCheckShield, IconHapus, IconLock, IconPlus, IconRefresh, IconUndo, IconUsers } from '../../components/Icons'
+import {
+  ALASAN_AKSES_MIN,
+  SANDI_AWAL_MIN,
+  aturAksesAngkatan,
+  aturIzinMaster,
+  hapusAkun,
+  muatAkses,
+  tambahAkun,
+  ubahAkses,
+  ubahKelasDosen,
+} from '../../lib/store'
+import { COHORTS, PROGRAMS, getAngkatan, programSelesai } from '../../lib/data'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 
@@ -10,7 +20,9 @@ import { useTeks } from '../../lib/bahasa'
    lewat /api/akses/ubah (src/server/akses.js); lihat README.md › Panel Super Admin › Akses Pengguna.
    Akun yang dicabut sudah ditolak server: penggunaDari() di src/server/api.js membaca `aktif` setiap permintaan.
    Baris admin juga memberi atau mencabut izin lihat data master lewat /api/akses/izin (sejak rapat 24 Okt 2026 hanya
-   untuk melihat; menambah dan mengubahnya hanya super admin); lihat README.md › Data master. */
+   untuk melihat; menambah dan mengubahnya hanya super admin); lihat README.md › Data master. Baris admin juga mengatur
+   angkatan yang terlihat oleh admin itu (membuka angkatan yang sudah lewat Semester 3, menonaktifkan angkatan
+   Semester 1–3) lewat /api/akses/angkatan; lihat README.md › Akses angkatan. */
 
 const KELOMPOK = {
   dosen: { label: 'Dosen', peran: ['dosen'], kosong: 'Belum ada akun dosen.', cari: 'Cari nama, email, atau NIP', tambah: 'Tambah dosen' },
@@ -213,7 +225,13 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
   // Kelas dosen (prodi, sumber, semester, angkatan yang diampu) punya panelnya sendiri, tanpa isian alasan.
   const kelas = mode === 'kelas'
   const bisaKelas = bisaDiubah && a.peran === 'dosen'
-  const panel = terbuka && bisaDiubah && (hapus ? bisaDihapus : izin ? bisaIzin : kelas ? bisaKelas : true)
+  // Angkatan yang terlihat oleh admin biasa (aturAksesAngkatan di src/server/akses.js), panelnya sendiri.
+  const aksesAngkatan = mode === 'angkatan'
+  const bisaAngkatan = bisaDiubah && a.peran === 'admin'
+  const panel =
+    terbuka &&
+    bisaDiubah &&
+    (hapus ? bisaDihapus : izin ? bisaIzin : kelas ? bisaKelas : aksesAngkatan ? bisaAngkatan : true)
   // Tombol yang membuka panel: panel yang ditutup dilepas dari DOM, jadi fokus papan ketik dikembalikan ke sini, bukan
   // jatuh ke <body> di awal halaman.
   const pemicu = useRef(null)
@@ -274,6 +292,8 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
             : t('angkatan otomatis'),
         ]
       : []),
+    // Admin biasa: angkatan yang aksesnya diatur super admin; tanpa pengaturan, bawaannya angkatan Semester 1–3.
+    ...(a.peran === 'admin' ? ringkasAksesAngkatan(a.aksesAngkatan, t) : []),
   ]
     .filter(Boolean)
     .join(' · ')
@@ -313,6 +333,17 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
                 >
                   <IconUsers size={15} />
                   {t('Ubah kelas')}
+                </button>
+              ) : null}
+              {bisaAngkatan ? (
+                <button
+                  type="button"
+                  className="btn-ghost !px-3 !py-2 text-[13px]"
+                  aria-expanded={panel && aksesAngkatan}
+                  onClick={(e) => buka('angkatan', e)}
+                >
+                  <IconCalendar size={15} />
+                  {t('Akses angkatan')}
                 </button>
               ) : null}
               {bisaIzin ? (
@@ -355,6 +386,15 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
 
       {panel && kelas ? (
         <PanelKelas
+          a={a}
+          onBatal={tutup}
+          onSelesai={(akun) => {
+            onGanti(akun)
+            tutup()
+          }}
+        />
+      ) : panel && aksesAngkatan ? (
+        <PanelAksesAngkatan
           a={a}
           onBatal={tutup}
           onSelesai={(akun) => {
@@ -505,6 +545,133 @@ function PanelKelas({ a, onBatal, onSelesai }) {
         <button type="submit" className="btn-primary" disabled={sibuk}>
           <IconCheck size={16} />
           {t('Simpan kelas')}
+        </button>
+        <button type="button" className="btn-ghost" disabled={sibuk} onClick={onBatal}>
+          {t('Batal')}
+        </button>
+      </div>
+      {galat ? (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--critical)_10%,transparent)] px-3.5 py-3 text-[13px] font-semibold text-[var(--critical)]"
+        >
+          <IconAlert size={16} className="mt-px shrink-0" />
+          {galat}
+        </p>
+      ) : null}
+    </form>
+  )
+}
+
+/** Baris rincian akses angkatan seorang admin di daftar akun: yang dibuka dan yang dinonaktifkan, atau bawaannya. */
+function ringkasAksesAngkatan(akses = [], t) {
+  const dibuka = akses.filter((x) => x.terlihat).map((x) => x.label)
+  const ditutup = akses.filter((x) => !x.terlihat).map((x) => x.label)
+  if (!dibuka.length && !ditutup.length) return [t('angkatan Semester 1–3 saja')]
+  return [
+    dibuka.length ? t('Angkatan dibuka: {label}', { label: dibuka.join(', ') }) : null,
+    ditutup.length ? t('Angkatan dinonaktifkan: {label}', { label: ditutup.join(', ') }) : null,
+  ].filter(Boolean)
+}
+
+/**
+ * Angkatan yang terlihat oleh satu admin biasa (aturAksesAngkatan di src/server/akses.js); kotak tercentang = terlihat.
+ * Bawaannya angkatan Semester 1–3 (dan yang belum mulai) tercentang dan yang sudah lewat Semester 3 kosong: super admin
+ * bisa menonaktifkan yang pertama dan membuka yang kedua. Yang tidak terlihat tidak dikirim ke admin itu di halaman mana
+ * pun, dan pintu API-nya menolak (lihat README.md › Akses angkatan).
+ */
+function PanelAksesAngkatan({ a, onBatal, onSelesai }) {
+  const t = useTeks()
+  const berjalan = COHORTS.filter((c) => !programSelesai(c.intake))
+  const lewat = COHORTS.filter((c) => programSelesai(c.intake))
+  // Terlihat menurut pengaturan sekarang; angkatan tanpa pengaturan mengikuti bawaan semesternya.
+  const atur = new Map((a.aksesAngkatan ?? []).map((x) => [x.id, x.terlihat]))
+  const awal = COHORTS.filter((c) => atur.get(c.id) ?? !programSelesai(c.intake)).map((c) => c.id)
+  const [terlihat, setTerlihat] = useState(awal)
+  const [alasan, setAlasan] = useState('')
+  const [sibuk, setSibuk] = useState(false)
+  const [galat, setGalat] = useState('')
+  const berubah = [...terlihat].sort().join() !== [...awal].sort().join()
+  const ganti = (id) => setTerlihat((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]))
+
+  async function simpan(e) {
+    e.preventDefault()
+    if (sibuk) return
+    setSibuk(true)
+    setGalat('')
+    try {
+      // Yang dikirim hanya yang berbeda dari bawaan; selebihnya kembali ke bawaan.
+      const { akun } = await aturAksesAngkatan({
+        id: a.id,
+        dibuka: lewat.filter((c) => terlihat.includes(c.id)).map((c) => c.id),
+        ditutup: berjalan.filter((c) => !terlihat.includes(c.id)).map((c) => c.id),
+        alasan: alasan.trim(),
+      })
+      onSelesai(akun)
+    } catch (err) {
+      setGalat(err.message)
+    } finally {
+      setSibuk(false)
+    }
+  }
+
+  return (
+    <form onSubmit={simpan} className="mt-3 space-y-3 rounded-xl border border-line bg-surface-2/60 p-4">
+      <p className="text-[13px] leading-relaxed text-ink">
+        {t('Centang angkatan yang boleh dilihat admin ini. Bawaannya, angkatan Semester 1–3 terlihat dan angkatan yang sudah lewat Semester 3 tersembunyi; pengaturan di sini berlaku sampai diubah lagi.')}
+      </p>
+      {[
+        {
+          judul: t('Angkatan Semester 1–3 atau belum mulai'),
+          daftar: berjalan,
+          kosong: t('Belum ada angkatan yang sedang berjalan.'),
+          petunjuk: t('Hilangkan centang untuk menonaktifkan aksesnya.'),
+        },
+        {
+          judul: t('Angkatan yang sudah lewat Semester 3'),
+          daftar: lewat,
+          kosong: t('Belum ada angkatan yang lewat Semester 3.'),
+          petunjuk: t('Centang untuk membuka aksesnya.'),
+        },
+      ].map((k) => (
+        <fieldset key={k.judul}>
+          <legend className="mb-1.5 block label">{k.judul}</legend>
+          {k.daftar.length ? (
+            <div className="flex flex-wrap gap-2">
+              {k.daftar.map((c) => (
+                <label
+                  key={c.id}
+                  className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl border border-line bg-surface px-3 text-[13.5px] font-semibold text-ink has-[:checked]:border-brand-ink has-[:checked]:bg-brand-soft"
+                >
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-[var(--brand-ink)]"
+                    checked={terlihat.includes(c.id)}
+                    onChange={() => ganti(c.id)}
+                  />
+                  {c.label}
+                  {c.status === 'terkunci' ? <span className="font-medium text-ink-2">{t('(disahkan)')}</span> : null}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[13px] text-ink-2">{k.kosong}</p>
+          )}
+          {k.daftar.length ? <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-2">{k.petunjuk}</p> : null}
+        </fieldset>
+      ))}
+      <label className="block max-w-xl">
+        <span className="mb-1.5 block label">{t('Alasan (wajib, minimal {n} karakter)', { n: ALASAN_AKSES_MIN })}</span>
+        <input className="field !py-2.5" value={alasan} onChange={(e) => setAlasan(e.target.value)} />
+      </label>
+      <div className="flex flex-wrap gap-2.5">
+        <button
+          type="submit"
+          className="btn-primary"
+          disabled={sibuk || !berubah || alasan.trim().length < ALASAN_AKSES_MIN}
+        >
+          <IconCalendar size={16} />
+          {t('Simpan akses angkatan')}
         </button>
         <button type="button" className="btn-ghost" disabled={sibuk} onClick={onBatal}>
           {t('Batal')}

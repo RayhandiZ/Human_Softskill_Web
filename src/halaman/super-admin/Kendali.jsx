@@ -60,6 +60,7 @@ const IKON_LOG = {
   UBAH_AKUN: IconUsers,
   HAPUS_AKUN: IconHapus,
   UBAH_IZIN: IconCheckShield,
+  UBAH_AKSES_ANGKATAN: IconCalendar,
   TAMBAH_ANGKATAN: IconCalendar,
   UBAH_ANGKATAN: IconCalendar,
   TAMBAH_FAKULTAS: IconBuilding,

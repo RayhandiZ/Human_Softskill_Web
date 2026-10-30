@@ -108,8 +108,16 @@ const ANGKATAN_AWAL = [
 /* Larik di berkas ini diisi ulang di tempat, bukan diganti: halaman memegang rujukannya. */
 export const COHORTS = []
 
+/* Angkatan yang disembunyikan server dari akun yang sedang masuk: bagi admin biasa, angkatan lewat Semester 3 yang
+   belum dibuka dan angkatan Semester 1–3 yang dinonaktifkan Super Admin (angkatanTersembunyi di src/server/muat.js).
+   Disaring di sini, saat COHORTS diisi, jadi semua halaman yang membaca COHORTS ikut tanpa menyaring sendiri.
+   Mahasiswa dan nilainya sudah tidak dikirim server. */
+export const ANGKATAN_TERSEMBUNYI = []
+let angkatanSemua = []
+
 function pasangAngkatan(daftar) {
-  const urut = [...daftar].sort((a, b) => ordinal(b.intake) - ordinal(a.intake))
+  angkatanSemua = daftar
+  const urut = [...daftar].filter((a) => !ANGKATAN_TERSEMBUNYI.includes(a.id)).sort((a, b) => ordinal(b.intake) - ordinal(a.intake))
   isiUlang(
     COHORTS,
     urut.map((a) => ({
@@ -121,6 +129,14 @@ function pasangAngkatan(daftar) {
 }
 
 export const getAngkatan = (id) => COHORTS.find((c) => c.id === id) ?? null
+
+/** Dipanggil setiap /api/data tiba (dan saat keluar, dengan []): `ids` angkatan yang disembunyikan untuk akun ini. */
+export function batasiAngkatan(ids) {
+  const baru = Array.isArray(ids) ? ids : []
+  if (baru.join() === ANGKATAN_TERSEMBUNYI.join()) return
+  isiUlang(ANGKATAN_TERSEMBUNYI, baru)
+  pasangAngkatan(angkatanSemua)
+}
 
 /* ------------------------------ fakultas & prodi -------------------------- */
 

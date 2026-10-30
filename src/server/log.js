@@ -1,6 +1,6 @@
 import { db } from './db.js'
 import { GalatApi } from './api.js'
-import { petaAkun, waktuWib } from './muat.js'
+import { angkatanTersembunyi, petaAkun, waktuWib } from './muat.js'
 import { KOMPONEN_ARSIP, getAspek, getKomponenById } from '../lib/curriculum.js'
 
 // Catatan setiap tindakan yang mengubah sesuatu, oleh peran apa pun: penyimpanan dan pembatalan batch nilai
@@ -41,6 +41,8 @@ export const AKSI_LOG = [
   'HAPUS_AKUN',
   // Kelas dosen (prodi, sumber, semester, angkatan yang diampu) dari Akses Pengguna (ubahKelasDosen di akses.js).
   'UBAH_KELAS_DOSEN',
+  // Angkatan yang dibuka atau dinonaktifkan untuk seorang admin biasa (aturAksesAngkatan di akses.js).
+  'UBAH_AKSES_ANGKATAN',
   // Izin kelola data master (akses.js) dan perubahan data master oleh pemegangnya (dataMaster.js).
   'UBAH_IZIN',
   'TAMBAH_ANGKATAN',
@@ -120,9 +122,12 @@ const bulat = (nilai, bawaan, min, maks) => {
   return Math.min(maks, Math.max(min, n))
 }
 
-/** Pelaku yang pernah tercatat di tabel itu, bahan pilihan penyaring di layar; email membedakan admin yang bernama sama. */
-async function daftarAktor(tabel) {
-  const baris = await tabel.groupBy({ by: ['aktorId'] })
+/**
+ * Pelaku yang pernah tercatat di tabel itu (dalam saringan `where` bila ada), bahan pilihan penyaring di layar; email
+ * membedakan admin yang bernama sama.
+ */
+async function daftarAktor(tabel, where = {}) {
+  const baris = await tabel.groupBy({ by: ['aktorId'], where })
   const akun = await petaAkun(baris.map((b) => b.aktorId))
   return baris
     .map((b) => {
@@ -130,6 +135,11 @@ async function daftarAktor(tabel) {
       return { id: b.aktorId, nama: a?.nama ?? 'Pengguna #' + b.aktorId, peran: a?.peran ?? null, email: a?.email ?? null }
     })
     .sort((a, b) => a.nama.localeCompare(b.nama) || String(a.email).localeCompare(String(b.email)))
+}
+
+/** Id akun yang saat ini berperan Super Admin. Dipakai Log Aktivitas (di bawah) dan lonceng admin (notifikasi.js). */
+export async function idSuperAdmin() {
+  return (await db.pengguna.findMany({ where: { peran: 'SUPER_ADMIN' }, select: { id: true } })).map((p) => p.id)
 }
 
 /** Siapa pelakunya, dalam bentuk yang sama di kedua jenis log: nama, peran (nilai basis data), dan email akunnya. */
@@ -144,6 +154,10 @@ export const pelaku = (akun, id) => {
  *   jenis 'aktivitas' → `aksi` (salah satu AKSI_LOG)
  * Jejak dari batch yang DIBATALKAN tetap ditampilkan dan diberi tanda `dibatalkan`: log yang menghilangkan
  * jejaknya sendiri tidak berguna sebagai bukti.
+ *
+ * Admin biasa tidak membaca tindakan Super Admin di kedua jenis log (permintaan 31 Okt 2026), termasuk pelakunya di
+ * pilihan penyaring; Super Admin tetap membaca semuanya. Yang berkaitan dengan admin itu sampai lewat lonceng
+ * (notifikasi.js). Super Admin dikenali dari peran akunnya saat ini.
  */
 export async function bacaLog(pengguna, { jenis = 'nilai', halaman, ukuran, aktorId, dari, sampai, nim, aksi } = {}) {
   if (jenis !== 'nilai' && jenis !== 'aktivitas') throw new GalatApi('Jenis log harus "nilai" atau "aktivitas".')
@@ -158,16 +172,23 @@ export async function bacaLog(pengguna, { jenis = 'nilai', halaman, ukuran, akto
     where.aktorId = Number(aktorId)
   }
   const halamanKe = { skip: (noHalaman - 1) * isi, take: isi }
+  // Admin biasa: tanpa baris yang pelakunya Super Admin. Pelaku yang dipilih di penyaring tetap berlaku, jadi memilih
+  // akun Super Admin lewat API langsung hanya memberi hasil kosong.
+  const idSuper = new Set(pengguna.superAdmin ? [] : await idSuperAdmin())
+  const bukanSuper = idSuper.size ? { aktorId: { notIn: [...idSuper] } } : null
+  const saringan = []
+  if (bukanSuper) saringan.push(bukanSuper)
 
   if (jenis === 'aktivitas') {
     if (aksi) {
       if (!AKSI_LOG.includes(aksi)) throw new GalatApi('Jenis aksi tidak dikenal.')
       where.aksi = aksi
     }
+    if (saringan.length) where.AND = saringan
     const [baris, total, aktor] = await Promise.all([
       db.logAktivitas.findMany({ where, orderBy: URUT, ...halamanKe }),
       db.logAktivitas.count({ where }),
-      daftarAktor(db.logAktivitas),
+      daftarAktor(db.logAktivitas, bukanSuper ?? {}),
     ])
     const akun = await petaAkun(baris.map((b) => b.aktorId))
     return {
@@ -194,6 +215,14 @@ export async function bacaLog(pengguna, { jenis = 'nilai', halaman, ukuran, akto
     const m = await db.mahasiswa.findUnique({ where: { nim: String(nim).trim() }, select: { id: true } })
     where.mahasiswaId = m ? m.id : -1 // NIM tidak dikenal: hasilnya kosong, bukan semua
   }
+  // Admin biasa tidak membaca perubahan nilai mahasiswa di angkatan yang tersembunyi baginya (muat.js), termasuk
+  // pelakunya di pilihan penyaring.
+  const tutup = await angkatanTersembunyi(pengguna)
+  const idTutup = tutup
+    ? (await db.mahasiswa.findMany({ where: { angkatanId: { in: [...tutup.keys()] } }, select: { id: true } })).map((m) => m.id)
+    : []
+  if (idTutup.length) saringan.push({ mahasiswaId: { notIn: idTutup } })
+  if (saringan.length) where.AND = saringan
   const [baris, total, aktor] = await Promise.all([
     db.auditLog.findMany({
       where,
@@ -202,7 +231,7 @@ export async function bacaLog(pengguna, { jenis = 'nilai', halaman, ukuran, akto
       ...halamanKe,
     }),
     db.auditLog.count({ where }),
-    daftarAktor(db.auditLog),
+    daftarAktor(db.auditLog, saringan.length ? { AND: saringan } : {}),
   ])
   // Keterangan batch dari Log Aktivitas: alasan bila menyentuh data terkunci, dan siapa serta kapan membatalkannya.
   const targetBatch = [...new Set(baris.map((b) => b.batchId).filter(Boolean))].map((id) => 'batch ' + id)
@@ -224,10 +253,16 @@ export async function bacaLog(pengguna, { jenis = 'nilai', halaman, ukuran, akto
   const batalBatch = new Map()
   for (const l of logBatch) {
     const id = l.target.slice('batch '.length)
+    // Bagi admin biasa, keterangan yang ditulis Super Admin (misalnya ia membatalkan unggahan dosen) tidak ikut: barisnya
+    // tetap bertanda dibatalkan, tanpa siapa dan alasannya.
+    const dariSuper = idSuper.has(l.aktorId)
     // Urutannya terbaru dulu, jadi yang pertama ditemui adalah catatan terakhir untuk batch itu.
-    if (LOG_ALASAN_BATCH.includes(l.aksi) && !alasanBatch.has(id)) alasanBatch.set(id, l.rincian?.alasan ?? null)
+    if (LOG_ALASAN_BATCH.includes(l.aksi) && !alasanBatch.has(id)) alasanBatch.set(id, dariSuper ? null : (l.rincian?.alasan ?? null))
     if (LOG_BATAL_BATCH.includes(l.aksi) && !batalBatch.has(id)) {
-      batalBatch.set(id, { oleh: akun.get(l.aktorId)?.nama ?? null, waktu: waktuWib(l.waktu), alasan: l.rincian?.alasan ?? null })
+      batalBatch.set(
+        id,
+        dariSuper ? null : { oleh: akun.get(l.aktorId)?.nama ?? null, waktu: waktuWib(l.waktu), alasan: l.rincian?.alasan ?? null },
+      )
     }
   }
   return {

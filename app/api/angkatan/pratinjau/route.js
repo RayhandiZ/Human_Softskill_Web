@@ -1,5 +1,6 @@
 import { tangani } from '../../../../src/server/api'
-import { pratinjau } from '../../../../src/server/angkatan'
+import { pratinjauLayar } from '../../../../src/server/angkatan'
 
-/* Ringkasan sebelum mengunci angkatan: berapa yang berhak sertifikat. Hanya Kemahasiswaan. */
-export const POST = (request) => tangani(request, ['admin'], pratinjau)
+/* Ringkasan sebelum mengunci angkatan: berapa yang berhak sertifikat. Hanya Kemahasiswaan; admin biasa hanya untuk
+   angkatan yang terlihat olehnya (angkatanTersembunyi di src/server/muat.js). */
+export const POST = (request) => tangani(request, ['admin'], pratinjauLayar)

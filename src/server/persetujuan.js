@@ -1,7 +1,7 @@
 import { db } from './db.js'
 import { GalatApi, penggunaDariId } from './api.js'
 import { catatLog } from './log.js'
-import { SERTA_MAHASISWA, angkaId, selesaiProgram, susunMahasiswa, waktuWib } from './muat.js'
+import { SERTA_MAHASISWA, angkaId, selesaiProgram, susunMahasiswa, waktuWib, wajibAksesAngkatan } from './muat.js'
 import { ALASAN_MIN, petaMahasiswa, rollbackBatch, setPenguncian, simpanBatch } from './nilai.js'
 import { putuskanUsulan, terapkanPerbaikanDosen } from './pengajuan.js'
 import { kunci, pratinjau } from './angkatan.js'
@@ -41,12 +41,23 @@ async function selesaiDariNim(nims) {
   return mhs.filter((m) => selesaiProgram(m.angkatan))
 }
 
+/** Angkatan mahasiswa-mahasiswa dari daftar NIM, untuk penjaga akses angkatan admin biasa (lihat `angkatan` di AKSI). */
+async function angkatanDariNim(nims) {
+  const mhs = await db.mahasiswa.findMany({
+    where: { nim: { in: [...new Set(nims.map((n) => String(n ?? '').trim()))] } },
+    select: { angkatanId: true },
+  })
+  return mhs.map((m) => m.angkatanId)
+}
+
 /* ------------------------- tindakan yang bisa digerbang ------------------------- */
 
 // Setiap tindakan: `kerja` = fungsi aslinya; `telaah(isi)` = null bila tidak menyentuh mahasiswa yang programnya
 // sudah selesai (berjalan biasa), atau { mahasiswa, ringkasan } untuk dibaca super admin. `telaah` juga menolak
 // isi yang pasti gagal, supaya super admin tidak menerima permintaan yang tidak bisa dijalankan.
 // `alasan(isi)` = isian alasan dari layar; `bilaTidakOk` = arti jawaban { ok: false } dari `kerja`.
+// `angkatan(isi)` = id angkatan yang disentuh, untuk tindakan yang bisa dikirim admin biasa tentang mahasiswa atau
+// angkatan tertentu: admin itu tidak bisa mengajukannya untuk angkatan yang tersembunyi baginya (muat.js).
 const AKSI = {
   SIMPAN_NILAI: {
     kerja: simpanBatch,
@@ -113,6 +124,7 @@ const AKSI = {
   UBAH_PENGUNCIAN: {
     kerja: setPenguncian,
     alasan: (isi) => isi.alasan,
+    angkatan: ({ daftar }) => angkatanDariNim((Array.isArray(daftar) ? daftar : []).map((p) => p?.nim)),
     pesanAlasan:
       'Tanda final atau sementara dari admin perlu persetujuan Super Admin. Isi alasan minimal ' + ALASAN_MIN +
       ' karakter supaya Super Admin bisa menimbangnya.',
@@ -177,6 +189,7 @@ const AKSI = {
   KUNCI_ANGKATAN: {
     kerja: kunci,
     alasan: (isi) => isi.alasan,
+    angkatan: ({ angkatanId }) => [String(angkatanId ?? '')],
     bilaTidakOk: 'Angkatan ini sudah dikunci.',
     async telaah({ angkatanId, konfirmasi }) {
       const a = await db.angkatan.findUnique({ where: { id: String(angkatanId ?? '') } })
@@ -365,6 +378,9 @@ export function denganPersetujuan(aksi) {
   if (!def) throw new Error('Tindakan ' + aksi + ' tidak terdaftar di persetujuan.js')
   return async (pengguna, isi = {}) => {
     if (pengguna.superAdmin || pengguna.peran !== 'admin') return def.kerja(pengguna, isi)
+    // Sebelum ditelaah: admin biasa tidak mengajukan apa pun untuk angkatan yang tersembunyi baginya. Saat super admin
+    // menyetujui, kerja() dijalankan langsung oleh putuskanPermintaan, jadi penjaga ini tidak ikut menghalanginya.
+    if (def.angkatan) await wajibAksesAngkatan(pengguna, await def.angkatan(isi))
     const telaah = await def.telaah(isi)
     if (!telaah) return def.kerja(pengguna, isi)
     return ajukan(pengguna, aksi, isi, telaah)

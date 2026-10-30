@@ -105,6 +105,9 @@ const LABEL_RINCIAN = {
   aktif: 'Aktif',
   kelolaMaster: 'Izin lihat data master',
   ditambah: 'Ditambah',
+  // Akses angkatan admin (UBAH_AKSES_ANGKATAN): angkatan lewat yang dibuka, angkatan berjalan yang dinonaktifkan.
+  dibuka: 'Angkatan dibuka',
+  ditutup: 'Angkatan dinonaktifkan',
   diubah: 'Diubah',
   diarsipkan: 'Diarsipkan',
   dipulihkan: 'Dipulihkan',

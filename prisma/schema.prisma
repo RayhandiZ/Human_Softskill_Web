@@ -84,6 +84,7 @@ model Pengguna {
   mahasiswa    Mahasiswa?
   dosen        Dosen?
   profil       Profil?
+  aksesAngkatan AdminAngkatan[] // angkatan yang dibuka atau dinonaktifkan super admin untuk admin biasa ini
 }
 
 model Profil {                 // data milik pengguna sendiri (profil.js)
@@ -124,6 +125,7 @@ model Angkatan {
   aspekSaatKunci  Json?                       // ID aspek aktif saat dikunci; transkrip angkatan terkunci memakai daftar ini
   mahasiswa       Mahasiswa[]
   dosen           DosenAngkatan[]
+  aksesAdmin      AdminAngkatan[]
 }
 
 model Mahasiswa {
@@ -164,6 +166,19 @@ model DosenAngkatan {           // angkatan yang diampu seorang dosen; tanpa bar
   dosen      Dosen    @relation(fields: [dosenId], references: [id], onDelete: Cascade)
   angkatan   Angkatan @relation(fields: [angkatanId], references: [id], onDelete: Cascade)
   @@id([dosenId, angkatanId])
+  @@index([angkatanId])
+}
+
+model AdminAngkatan {           // akses angkatan seorang admin biasa yang diatur super admin, menimpa bawaannya: tanpa baris,
+                                // angkatan Semester 1–3 terlihat dan angkatan yang sudah lewat tersembunyi (lihat muat.js)
+  penggunaId Int
+  angkatanId String
+  terlihat   Boolean            // true = angkatan lewat Semester 3 yang dibuka; false = angkatan Semester 1–3 yang dinonaktifkan
+  olehId     Int                // super admin yang mengaturnya; alasannya di LogAktivitas (UBAH_AKSES_ANGKATAN)
+  waktu      DateTime @default(now())
+  pengguna   Pengguna @relation(fields: [penggunaId], references: [id], onDelete: Cascade)
+  angkatan   Angkatan @relation(fields: [angkatanId], references: [id], onDelete: Cascade)
+  @@id([penggunaId, angkatanId])
   @@index([angkatanId])
 }
 

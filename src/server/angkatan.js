@@ -1,7 +1,7 @@
 import { db } from './db.js'
 import { GalatApi } from './api.js'
 import { catatLog } from './log.js'
-import { SERTA_MAHASISWA, intakeDari, petaNama, susunMahasiswa, waktuWib } from './muat.js'
+import { SERTA_MAHASISWA, angkatanTersembunyi, intakeDari, petaNama, susunMahasiswa, waktuWib, wajibAksesAngkatan } from './muat.js'
 import { CONFIG } from '../lib/config.js'
 import { getAspekList } from '../lib/curriculum.js'
 import { semesterKalender } from '../lib/data.js'
@@ -72,11 +72,21 @@ function kelengkapan(daftar) {
  *
  * `siapKunciOtomatis` = boleh dikunci DAN nilai semua mahasiswa lengkap. Ini hanya tanda; belum ada yang
  * mengunci sendiri. Angkatan yang terkunci tetap bisa diubah admin dengan alasan, dan dosen lewat usulan.
+ * Angkatan yang tersembunyi dari admin biasa (angkatanTersembunyi di muat.js) tidak ikut.
  */
-export async function ringkasan() {
+export async function ringkasan(pengguna) {
+  const tutup = await angkatanTersembunyi(pengguna)
+  const idTutup = tutup ? [...tutup.keys()] : []
   const [daftarAngkatan, mhs] = await Promise.all([
-    db.angkatan.findMany({ orderBy: [{ periodeTahun: 'desc' }, { periodeSemester: 'desc' }] }),
-    db.mahasiswa.findMany({ include: SERTA_MAHASISWA, orderBy: { nim: 'asc' } }),
+    db.angkatan.findMany({
+      where: tutup ? { id: { notIn: idTutup } } : {},
+      orderBy: [{ periodeTahun: 'desc' }, { periodeSemester: 'desc' }],
+    }),
+    db.mahasiswa.findMany({
+      where: tutup ? { angkatanId: { notIn: idTutup } } : {},
+      include: SERTA_MAHASISWA,
+      orderBy: { nim: 'asc' },
+    }),
   ])
   const nama = await petaNama(daftarAngkatan.map((a) => a.dikunciOleh))
 
@@ -148,6 +158,16 @@ export async function pratinjau(pengguna, { angkatanId }) {
     })),
     sisaTidakBerhak: Math.max(0, hasil.tidakBerhak - BATAS_DAFTAR),
   }
+}
+
+/**
+ * Pintu /api/angkatan/pratinjau: pratinjau di atas, tetapi admin biasa hanya untuk angkatan yang terlihat olehnya.
+ * Penjaganya sengaja di sini, bukan di pratinjau(): kunci() memanggil pratinjau() saat super admin menyetujui
+ * permintaan kunci atas nama admin pengaju, dan persetujuan itu tidak boleh gagal karena akses admin tersebut.
+ */
+export async function pratinjauLayar(pengguna, isi = {}) {
+  await wajibAksesAngkatan(pengguna, [String(isi.angkatanId ?? '')])
+  return pratinjau(pengguna, isi)
 }
 
 /** Mengunci angkatan. `konfirmasi` harus sama persis dengan label angkatan. false bila sudah terkunci. */

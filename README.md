@@ -95,8 +95,9 @@ halaman (peramban) → app/api/... → src/server/... → Prisma (src/server/db.
   dari basis data.
 - **Data isian** (mahasiswa, nilai, penguncian, pengumpulan, usulan lama, koreksi, riwayat batch,
   riwayat unggahan dosen, profil): `components/PemuatData.jsx` memanggil `/api/data` begitu ada yang
-  masuk, lalu `isiData()`. Isinya disaring per peran di `src/server/muat.js`: admin melihat semuanya,
-  dosen hanya kelasnya, mahasiswa hanya dirinya.
+  masuk, lalu `isiData()`. Isinya disaring per peran di `src/server/muat.js`: super admin melihat semuanya,
+  admin biasa angkatan yang terlihat olehnya (lihat Hak peran › Akses angkatan), dosen hanya kelasnya, mahasiswa
+  hanya dirinya.
 - **Penulisan**: fungsi di `src/lib/store.js` (simpan nilai, rollback, penguncian, koreksi,
   unggahan dosen, keputusan usulan lama) dan `simpanProfil` mengirim ke API, lalu data dimuat ulang dari basis data. Aturan
   penilaian (R1, semester komponen, kunci final, data terkunci, wewenang tiap peran) diperiksa
@@ -241,7 +242,8 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   api.js          kerangka pintu API: baca pemilik cookie dari basis data, periksa peran, galat
   masuk.js        pemeriksaan email + kata sandi (bcrypt) terhadap tabel Pengguna
   master.js       angkatan, fakultas, prodi dari basis data — dibaca app/layout.jsx
-  muat.js         data halaman per peran (GET /api/data)
+  muat.js         data halaman per peran (GET /api/data); angkatanTersembunyi() dan
+                  wajibAksesAngkatan() untuk akses angkatan admin biasa
   nilai.js        simpan batch, rollback (diputar ulang dari AuditLog), penguncian aspek, dan
                   aturan data terkunci (cariTerkunci, wajibkanAlasan)
   pengajuan.js    koreksi mahasiswa beserta keputusan dua lapisnya (putuskanKoreksi), unggahan nilai
@@ -252,7 +254,8 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   angkatan.js     ringkasan, pratinjau, dan penguncian angkatan
   log.js          catatLog(): catatan tindakan Kemahasiswaan ke tabel LogAktivitas; bacaLog():
                   membaca log nilai dan log aktivitas (POST /api/log)
-  notifikasi.js   pembaruan dari Super Admin untuk lonceng admin biasa dan penanda bacanya per akun
+  notifikasi.js   pembaruan dari Super Admin yang berkaitan dengan admin itu (akunnya, permintaannya) untuk
+                  lonceng admin biasa, dan penanda bacanya per akun
                   (GET /api/notifikasi, POST /api/notifikasi/dibaca)
   profil.js       isian profil milik pemilik sesi
   kurikulum.js    kurikulum dan timpaan CONFIG dari basis data; siapkanKurikulum() untuk pintu API;
@@ -264,9 +267,10 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   aspek.js        tambah, ubah struktur, arsipkan, pulihkan aspek CPMK (POST /api/kurikulum/aspek)
   periode.js      memindahkan periode akademik, hanya super admin (POST /api/periode)
   akses.js        daftar akun, cabut/pulihkan akses, tambah akun, hapus akun, izin lihat data master,
-                  dan kelas dosen (angkatan yang diampu), hanya super admin (POST /api/akses,
-                  /api/akses/ubah, /api/akses/tambah, /api/akses/hapus, /api/akses/izin,
-                  /api/akses/kelas); bukaAksesMaster() menjalankan permintaan akses admin yang disetujui
+                  kelas dosen (angkatan yang diampu), dan akses angkatan admin, hanya super admin (POST
+                  /api/akses, /api/akses/ubah, /api/akses/tambah, /api/akses/hapus, /api/akses/izin,
+                  /api/akses/kelas, /api/akses/angkatan); bukaAksesMaster() menjalankan permintaan akses
+                  admin yang disetujui
   dataMaster.js   tambah/ubah angkatan, fakultas, prodi, dan mahasiswa, hanya super admin
                   (POST /api/master/angkatan, /api/master/prodi, /api/master/mahasiswa)
 
@@ -275,8 +279,8 @@ app/api/          masuk, keluar, sesi, data, nilai, nilai/dosen, nilai/rollback,
                   sertifikat/cetak, usulan/keputusan, profil, angkatan, angkatan/pratinjau,
                   angkatan/kunci, log, kurikulum/bobot, kurikulum/penilaian, persetujuan/keputusan,
                   persetujuan/batal, periode, akses, akses/ubah, akses/tambah, akses/hapus, akses/izin,
-                  akses/kelas, master/akses, master/angkatan, master/prodi, master/mahasiswa,
-                  kurikulum/aspek, notifikasi, notifikasi/dibaca (38 pintu)
+                  akses/kelas, akses/angkatan, master/akses, master/angkatan, master/prodi,
+                  master/mahasiswa, kurikulum/aspek, notifikasi, notifikasi/dibaca (39 pintu)
 src/components/PemuatData.jsx  memuat /api/data begitu ada yang masuk dan menahan panel
                   sampai datanya tiba
 prisma/           skema, migrasi, seed.js (isi dasar), seed-contoh.js (data contoh),
@@ -356,7 +360,7 @@ Matriks lengkapnya ada di halaman *Peran & Wewenang* (`super-admin/Wewenang.jsx`
 | Peran | Nilai | Data master |
 |---|---|---|
 | Dosen | mengunggah rekap Excel angkatan yang diampunya, langsung tersimpan; perbaikan untuk angkatan yang sudah selesai atau disahkan, atau aspek final, **diajukan** ke Super Admin (lihat Panel Dosen); selebihnya memantau | tidak |
-| Admin (Kemahasiswaan) | **hanya melihat** (menu *Nilai Mahasiswa*); lapis pertama pengajuan koreksi dan akses cetak sertifikat, dan mencabut akses cetak yang sudah disetujui; tanda final, bobot, penilaian aspek, aspek CPMK, dan pengesahan angkatan **diajukan** ke Super Admin | hanya melihat, setelah diberi izin Super Admin atau permintaan aksesnya disetujui |
+| Admin (Kemahasiswaan) | **hanya melihat** (menu *Nilai Mahasiswa*), untuk angkatan Semester 1–3 kecuali dinonaktifkan Super Admin, dan angkatan yang sudah lewat bila dibuka Super Admin (lihat Akses angkatan); lapis pertama pengajuan koreksi dan akses cetak sertifikat, dan mencabut akses cetak yang sudah disetujui; tanda final, bobot, penilaian aspek, aspek CPMK, dan pengesahan angkatan **diajukan** ke Super Admin | hanya melihat, setelah diberi izin Super Admin atau permintaan aksesnya disetujui |
 | Super Admin | menyimpan, mengimpor, dan membatalkan batch; menetapkan tanda final; lapis kedua pengajuan koreksi (menerapkan nilainya) dan akses cetak sertifikat, dan mencabut akses cetak; memutuskan usulan dosen lama dan semua permintaan admin | menambah dan mengubah |
 | Mahasiswa | mengajukan koreksi; meminta akses cetak sertifikat bila seluruh syarat terpenuhi | tidak |
 
@@ -364,6 +368,53 @@ Pintu API menegakkannya: `/api/nilai`, `/api/nilai/rollback`, `/api/usulan/keput
 `/api/master/angkatan`, `/api/master/prodi`, `/api/master/mahasiswa` hanya untuk `['superadmin']`, sedangkan
 `/api/nilai/dosen` hanya untuk `['dosen']` dan `/api/koreksi`, `/api/sertifikat` hanya untuk `['student']`.
 Pintu `POST /api/usulan` (dosen mengusulkan nilai) dihapus.
+
+#### Akses angkatan
+
+Permintaan 30–31 Okt 2026, per akun admin biasa dan per angkatan:
+
+| Angkatan | Bawaan | Super Admin bisa |
+|---|---|---|
+| Semester 1–3 atau belum mulai | terlihat | menonaktifkannya |
+| sudah lewat Semester 3 | tersembunyi | membukanya |
+
+Pengaturannya berlaku sampai diubah lagi. Angkatan yang dinonaktifkan tetap tersembunyi sesudah lewat Semester 3, dan
+angkatan baru mengikuti bawaannya. Super admin selalu melihat semuanya; dosen dan mahasiswa tidak terpengaruh, karena
+keduanya sudah punya saringan sendiri.
+
+- **Basis data**: tabel `AdminAngkatan` (`penggunaId`, `angkatanId`, `terlihat`, `olehId`, `waktu`; migrasi
+  `akses_angkatan_admin`). Yang disimpan hanya yang berbeda dari bawaan: `terlihat` true untuk angkatan yang sudah
+  lewat dan dibuka, false untuk angkatan Semester 1–3 yang dinonaktifkan. Tanpa baris, berlaku bawaan. Barisnya ikut
+  terhapus bila akun atau angkatannya dihapus.
+- **Penentunya** `angkatanTersembunyi(pengguna)` di `src/server/muat.js`: angkatan yang `terlihat`-nya false, atau
+  yang tanpa baris dan programnya sudah selesai (`programSelesai`). Dihitung dari `PERIODE_AKTIF` di setiap
+  permintaan, jadi begitu Super Admin memindah periode, angkatan yang baru lewat Semester 3 langsung tersembunyi dari
+  admin yang belum dibukakan, dan setiap perubahan pengaturan berlaku di permintaan berikutnya.
+- **Yang tidak dikirim** `GET /api/data` ke admin itu: mahasiswanya, jejak nilai (`AuditLog`), koreksi, permintaan
+  sertifikat, batch, pengumpulan, dan nilai usulannya. Jawabannya membawa `angkatanTersembunyi` (daftar id), dan
+  `batasiAngkatan()` di `src/lib/data.js` membuang angkatan itu dari `COHORTS`. Karena itu kartu di halaman Angkatan
+  dan pilihan angkatan di Data Mahasiswa, Nilai Mahasiswa, Cetak Sertifikat, serta Data Master ikut tersaring tanpa
+  diubah satu per satu. Halaman Angkatan menyebut berapa angkatan yang tidak ditampilkan.
+- **Pintu yang menolak (403)** tindakan pada angkatan tersembunyi (`wajibAksesAngkatan()`): `POST
+  /api/angkatan/pratinjau`, pengajuan `POST /api/angkatan/kunci` dan `POST /api/penguncian` (diperiksa di
+  `denganPersetujuan` sebelum ditelaah, jadi tidak ada permintaan yang terbuat), `POST /api/koreksi/keputusan`,
+  serta `POST /api/sertifikat/keputusan`, `/cabut`, dan `/cetak`. `GET /api/angkatan` tidak memuat angkatannya, dan
+  tab Perubahan nilai di Log Aktivitas (`POST /api/log`) tidak memuat mahasiswanya, termasuk pelakunya di pilihan
+  penyaring. Permintaan yang sudah terkirim tetap bisa disetujui Super Admin: penjaganya hanya di jalur admin, bukan
+  di fungsi yang dijalankan persetujuan (karena itu pratinjau untuk layar memakai `pratinjauLayar()`).
+- **Mengaturnya**: `POST /api/akses/angkatan` (lihat Panel Super Admin › Akses Pengguna).
+- **Di layar**: Akses Pengguna › Admin Kemahasiswaan, tombol *Akses angkatan* di baris admin biasa. Panelnya memuat
+  semua angkatan dalam dua kelompok, Semester 1–3 (bawaannya tercentang) dan yang sudah lewat (bawaannya kosong);
+  centang berarti terlihat. *Simpan akses angkatan* baru aktif bila ada perubahan dan alasan. Baris admin menulis
+  angkatan yang dibuka dan yang dinonaktifkan, atau "angkatan Semester 1–3 saja". Halaman Peran & Wewenang memuat
+  aturannya.
+
+Akibatnya bagi pekerjaan admin: angkatan baru boleh disahkan setelah lewat Semester 3, dan salah satu syarat
+sertifikat adalah angkatannya sudah disahkan. Jadi pengajuan pengesahan, akses cetak sertifikat, dan koreksi dari
+angkatan yang sudah lewat hanya bisa diurus admin yang dibukakan angkatan itu; tanpa itu, Super Admin yang
+mengurusnya. Begitu juga untuk angkatan Semester 1–3 yang dinonaktifkan. Yang belum: admin belum bisa meminta akses
+angkatan sendiri, dan tab Aktivitas di Log Aktivitas belum disaring per angkatan (tindakan Super Admin sudah tidak
+ada di sana, tetapi tindakan dosen, admin, dan mahasiswa dari angkatan yang tersembunyi masih tampil).
 
 ### Persetujuan dua lapis
 
@@ -570,6 +621,17 @@ di `src/server/akses.js`. Bila server menjawab 404, halaman menyatakan fiturnya 
   Jawaban: `{ akun }`, dan setiap akun admin di `POST /api/akses` membawa `kelolaMaster`. Di layar, baris
   admin biasa punya tombol "Beri izin lihat data master"/"Cabut izin lihat data master" dan lencana "Izin lihat
   data master".
+- `POST /api/akses/angkatan` dengan isi `{ id, dibuka: [id angkatan], ditutup: [id angkatan], alasan }`, hanya super
+  admin (`aturAksesAngkatan()`). Mengganti seluruh akses angkatan satu akun admin biasa: `dibuka` = angkatan yang
+  sudah lewat Semester 3 dan terlihat olehnya, `ditutup` = angkatan Semester 1–3 yang dinonaktifkan untuknya;
+  angkatan yang tidak disebut kembali ke bawaan (keduanya `[]` = semua bawaan). Lihat Hak peran › Akses angkatan.
+  Tolak (403) akun `SUPER_ADMIN` (selalu melihat semua angkatan) dan akun selain admin; tolak (400) alasan kurang
+  dari 10 karakter, daftar yang bukan larik, angkatan yang tidak ada, angkatan Semester 1–3 di `dibuka` (sudah
+  terlihat), dan angkatan yang sudah lewat di `ditutup` (sudah tersembunyi); tolak (409) membuka angkatan untuk akun
+  yang aksesnya dicabut (menonaktifkan tetap boleh). Dicatat `UBAH_AKSES_ANGKATAN` dengan label angkatan yang dibuka
+  dan yang dinonaktifkan, sebelum dan sesudah, serta alasannya; pengaturan yang sama tidak dicatat. Jawaban:
+  `{ akun }`, dan setiap akun admin di `POST /api/akses` membawa `aksesAngkatan` (`[{ id, label, terlihat }]`). Di
+  layar: tombol "Akses angkatan" di baris admin biasa.
 
 **Tampilan panel super admin** mengambil pola dasbor modern di Dribbble (sapaan bertanggal, satu kartu
 fokus, angka dengan meter, grafik batang dengan tooltip, linimasa berikon, kepingan periode) tanpa
@@ -786,12 +848,18 @@ Lonceng di bilah atas (`LoncengKemahasiswaan.jsx`) berisi dua hal:
 - **Perlu dikerjakan**: pekerjaan yang menunggu akun ini (usulan dosen lama bagi super admin, pengajuan koreksi
   dan akses cetak sertifikat pada lapisnya, hal yang perlu ditinjau, dan nilai yang belum masuk). Isinya dihitung
   dari data yang sudah termuat, sama dengan blok Perlu dikerjakan di Overview.
-- **Pembaruan**, hanya untuk admin biasa (rapat 24 Okt 2026: notifikasi untuk admin saat super admin
-  memperbarui data): tindakan Super Admin dari Log Aktivitas lewat `GET /api/notifikasi`
-  (`src/server/notifikasi.js`). Membuka sertifikat untuk dicetak dan mengubah profil sendiri tidak dihitung,
-  karena tidak mengubah data bersama. Yang tampil 20 terbaru. Tiap baris menyebut jenis tindakan dan sasarannya
-  dengan label yang sama dengan Log Aktivitas (`src/lib/labelLog.js`), alasan atau catatannya, pelaku, dan
-  waktu WIB. Rincian lengkapnya tetap di Log Aktivitas, yang ditautkan di kaki panel.
+- **Pembaruan**, hanya untuk admin biasa: tindakan Super Admin dari Log Aktivitas lewat `GET /api/notifikasi`
+  (`src/server/notifikasi.js`). Rapat 24 Okt 2026 memasukkan semua tindakan Super Admin; sejak 31 Okt 2026 hanya
+  yang **berkaitan dengan admin itu sendiri**:
+  - perubahan pada akunnya: akses akun (`UBAH_AKSES`), izin lihat data master (`UBAH_IZIN`), dan akses angkatan
+    (`UBAH_AKSES_ANGKATAN`), yaitu log bersasaran `akun <email admin itu>`;
+  - keputusan atas permintaan yang ia ajukan (`PUTUSKAN_PERSETUJUAN` bersasaran permintaan miliknya,
+    `PermintaanAdmin.diajukanOleh`), misalnya permintaan akses data master, pengesahan angkatan, atau tanda final.
+
+  Tindakan Super Admin yang lain tidak sampai ke admin, di sini maupun di Log Aktivitas (lihat Log aktivitas). Yang
+  tampil 20 terbaru. Tiap baris menyebut jenis tindakan dan sasarannya dengan label yang sama dengan Log Aktivitas
+  (`src/lib/labelLog.js`), alasan atau catatannya, pelaku, dan waktu WIB. Panelnya tidak lagi menautkan ke Log
+  Aktivitas, karena catatan Super Admin tidak ada di sana untuk admin biasa.
 
 Status dibaca disimpan per akun di basis data, bukan di peramban, karena komputer kampus dipakai bergantian dan
 data peramban bisa dibersihkan. Penandanya satu kolom, `Pengguna.notifDibacaId` (migrasi `notifikasi_dibaca`):
@@ -810,8 +878,9 @@ admin baru tidak menerima seluruh riwayat sebagai pembaruan.
 - Admin biasa selalu melihat lonceng, supaya pembaruan yang sudah dibaca tetap bisa dibuka lagi. Bagi super admin
   lonceng tetap hanya muncul bila ada yang menunggu dan tanpa tab Pembaruan, karena yang dilaporkan justru
   tindakannya sendiri (pintunya menjawab 403).
-- Pelaku dihitung dari peran akunnya saat ini: tindakan akun yang kemudian tidak lagi berperan Super Admin ikut
-  hilang dari Pembaruan, tetapi tetap ada di Log Aktivitas.
+- Pelaku dihitung dari peran akunnya saat ini (`idSuperAdmin()` di `src/server/log.js`, sama dengan Log
+  Aktivitas): tindakan akun yang kemudian tidak lagi berperan Super Admin ikut hilang dari Pembaruan, dan muncul di
+  Log Aktivitas admin.
 
 ### Gerak
 
@@ -1193,6 +1262,10 @@ perlu ditindaklanjuti. Satu angkatan dipilih lewat kartunya atau `?angkatan=<id>
 - **Penguncian angkatan**: baru bisa setelah Semester 3 berakhir, dengan pratinjau berapa yang
   akan berhak sertifikat dan konfirmasi berupa mengetik nama angkatan. Angkatan yang terkunci
   bertaut ke Cetak Sertifikat yang sudah tersaring ke angkatan itu.
+
+Admin biasa hanya melihat angkatan Semester 1–3 yang tidak dinonaktifkan dan angkatan yang sudah lewat yang dibuka
+Super Admin untuknya (lihat Hak peran › Akses angkatan). Bila ada yang disembunyikan, di bawah judul tertulis berapa
+angkatan yang tidak ditampilkan.
 
 API angkatan dari back-end **belum final**, jadi halaman ini sengaja dibuat sedikit bergantung
 padanya:
@@ -1649,6 +1722,7 @@ karena `AuditLog` tidak mendapat baris baru saat batch dibatalkan.
 | `TAMBAH_AKUN` | akun baru dibuat dari Akses Pengguna atau Data Master | email, peran, nama, NIM/NIP, prodi, angkatan (tanpa sandi) |
 | `UBAH_AKUN` | data mahasiswa diubah dari Data Master | NIM, nama/email/prodi/angkatan sebelum dan sesudah (hanya yang berubah), alasan |
 | `UBAH_IZIN` | super admin memberi atau mencabut izin lihat data master (lihat Data master) | email, izin, sebelum/sesudah, alasan |
+| `UBAH_AKSES_ANGKATAN` | super admin mengatur angkatan yang terlihat oleh admin biasa: membuka angkatan yang sudah lewat Semester 3 atau menonaktifkan angkatan Semester 1–3 (lihat Hak peran › Akses angkatan) | email, angkatan dibuka dan dinonaktifkan (label) sebelum/sesudah, alasan |
 | `TAMBAH_ANGKATAN`, `UBAH_ANGKATAN` | angkatan ditambah atau labelnya diubah | kode, label, periode; untuk ubah: label sebelum/sesudah dan alasan |
 | `TAMBAH_FAKULTAS`, `UBAH_FAKULTAS` | fakultas ditambah atau namanya diubah | nama; untuk ubah: sebelum/sesudah dan alasan |
 | `TAMBAH_PRODI`, `UBAH_PRODI` | program studi ditambah atau diubah | nama, jenjang, fakultas; untuk ubah: hanya yang berubah, sebelum/sesudah, dan alasan |
@@ -1666,13 +1740,20 @@ Kedua log dibaca lewat `POST /api/log` (`bacaLog()`, hanya Kemahasiswaan), satu 
   `cara` (dari `Batch`), `alasan` (dari `UBAH_DATA_TERKUNCI` batch itu), dan `pembatalan` (`{ oleh, waktu,
   alasan }` dari `BATALKAN_BATCH`/`ROLLBACK_DATA_TERKUNCI`; `null` untuk pembatalan dari sebelum ikut dicatat);
 - jejak batch yang sudah dibatalkan tetap tampil dengan tanda `dibatalkan`, karena log yang
-  menghapus jejaknya sendiri tidak berguna sebagai bukti.
+  menghapus jejaknya sendiri tidak berguna sebagai bukti;
+- **admin biasa tidak membaca tindakan Super Admin** (31 Okt 2026), di kedua jenis log: baris yang pelakunya akun
+  berperan `SUPER_ADMIN` tidak ikut, begitu juga akunnya di daftar pelaku, dan memilih akun itu sebagai `aktorId`
+  lewat API memberi hasil kosong. Pada baris lain (misalnya unggahan dosen yang dibatalkan Super Admin) tanda
+  `dibatalkan` tetap ada, tetapi `pembatalan` dan `alasan` yang ditulis Super Admin menjadi `null`. Super Admin tetap
+  membaca semuanya, termasuk tindakannya sendiri. Yang berkaitan dengan admin itu sampai lewat lonceng (lihat Panel
+  Kemahasiswaan › Lonceng).
 
 Pintunya memakai POST karena kerangka API (`tangani`) hanya membaca isi permintaan pada POST; log
 tidak diubah olehnya. Supaya pengurutan dan penyaringan tetap cepat, `AuditLog` diberi indeks pada
 `waktu` dan `aktorId` (migrasi `indeks_audit`). Halaman Log Aktivitas (`Log.jsx`, di `/admin/log` dan
 `/super/log`) membaca pintu ini; susunannya ada di Panel Kemahasiswaan › Tampilan. Tindakan Super Admin di
-`LogAktivitas` juga menjadi Pembaruan di lonceng admin biasa (lihat Panel Kemahasiswaan › Lonceng).
+`LogAktivitas` yang berkaitan dengan seorang admin biasa (akunnya dan permintaannya) menjadi Pembaruan di lonceng
+admin itu (lihat Panel Kemahasiswaan › Lonceng).
 
 ## Sertifikat
 
@@ -2148,8 +2229,10 @@ panah kiri/kanan). Bagian yang mudah rusak:
 | — | Panel dosen: Beranda (pantau) dan Unggah Nilai (rekap Excel, langsung tersimpan) | selesai, sesuai rapat 24 Okt 2026; Penilaian tiga langkah dan Riwayat Pengiriman dihapus (lihat Panel Dosen) |
 | — | Hak peran rapat 24 Okt 2026: admin hanya melihat nilai, tanda final dan bobot dari admin diajukan, data master hanya super admin | selesai (lihat Hak peran) |
 | — | Persetujuan dua lapis rapat 24 Okt 2026: pengajuan ubah nilai dan akses cetak sertifikat, beserta pencabutan akses cetak dan catatan cetak | selesai (lihat Persetujuan dua lapis) |
-| — | Basis data MySQL: 23 tabel, 16 migrasi, 38 pintu API, sesi cookie | selesai |
-| — | Pembaruan dari Super Admin di lonceng admin biasa, status dibaca per akun (rapat 24 Okt 2026) | selesai (lihat Panel Kemahasiswaan › Lonceng) |
+| — | Basis data MySQL: 24 tabel, 17 migrasi, 39 pintu API, sesi cookie | selesai |
+| — | Pembaruan dari Super Admin di lonceng admin biasa, status dibaca per akun (rapat 24 Okt 2026) | selesai; sejak 31 Okt 2026 hanya yang berkaitan dengan admin itu (lihat Panel Kemahasiswaan › Lonceng) |
+| — | Log Aktivitas admin biasa tanpa tindakan Super Admin, kedua tab (31 Okt 2026) | selesai (lihat Log aktivitas); Log Aktivitas super admin tetap memuat semuanya |
+| — | Akses angkatan admin biasa (30–31 Okt 2026): bawaannya angkatan Semester 1–3; Super Admin bisa menonaktifkannya atau membuka angkatan yang sudah lewat, per admin | selesai (lihat Hak peran › Akses angkatan); admin belum bisa meminta aksesnya sendiri |
 | — | Kelas dosen per angkatan yang diampu, dan perbaikan nilai angkatan yang sudah disahkan lewat Super Admin | selesai (lihat Kelas dosen) |
 | — | Mengelola aspek CPMK: tambah, ubah kode/semester/cluster, arsip, pulihkan | selesai; super admin langsung, admin biasa lewat persetujuan, angkatan terkunci tetap memakai aspek saat dikunci |
 | — | Data master (angkatan, fakultas, prodi, mahasiswa) oleh super admin; admin berizin hanya melihat | selesai; tanpa hapus, NIM tetap (lihat Data master) |

@@ -39,6 +39,7 @@ export const LABEL_LOG = {
   TOLAK_SERTIFIKAT: 'Tolak akses cetak sertifikat',
   CABUT_SERTIFIKAT: 'Cabut akses cetak sertifikat',
   UBAH_KELAS_DOSEN: 'Ubah kelas dosen',
+  UBAH_AKSES_ANGKATAN: 'Ubah akses angkatan admin',
   CETAK_SERTIFIKAT: 'Buka sertifikat untuk dicetak',
   // Batch nilai tanpa data terkunci (src/server/nilai.js), usulan dosen yang lama, dan tindakan mahasiswa atau
   // pemilik akun sendiri.

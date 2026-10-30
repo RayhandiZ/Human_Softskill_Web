@@ -27,8 +27,13 @@
    (keputusan, pencabutan, pembukaan cetak) terhapus bersama mahasiswa dan angkatan sementara itu.
    Bagian kelas dosen membuat akun dosen sementara (uji.kelas.dosen.*) yang mengampu ANG_A, mengajukan perbaikan nilai
    NIM2 yang lalu disetujui dan dibatalkan lagi; permintaan, log, dan akunnya dihapus di akhir.
-   Bagian pembaruan dari super admin membuat beberapa baris log bertarget mahasiswa uji (terhapus bersama log mahasiswa
-   itu) dan mengembalikan penanda baca akun admin uji (Pengguna.notifDibacaId) persis seperti semula. */
+   Bagian pembaruan dari super admin membuat beberapa baris log (yang berkaitan dengan admin uji dan yang tidak; semuanya
+   dihapus lewat id-nya) dan mengembalikan penanda baca akun admin uji (Pengguna.notifDibacaId) persis seperti semula.
+   Angkatan uji ANG_A dan ANG_C sudah lewat Semester 3, jadi dibuka untuk admin uji (tabel AdminAngkatan) begitu dibuat,
+   supaya bagian lama tetap menguji alurnya. Bagian akses angkatan admin lalu menutup dan membukanya lagi lewat
+   /api/akses/angkatan, menonaktifkan sebentar ANG_B dan angkatan mahasiswa uji utama (keduanya masih Semester 1–3),
+   dan memeriksa penyaringannya; baris AdminAngkatan admin uji dikembalikan persis seperti semula dan catatan log
+   UBAH_AKSES_ANGKATAN yang dibuatnya dihapus. */
 
 import 'dotenv/config'
 import bcrypt from 'bcryptjs'
@@ -64,6 +69,7 @@ import * as tambahAkses from '../app/api/akses/tambah/route.js'
 import * as hapusAkses from '../app/api/akses/hapus/route.js'
 import * as izinAkses from '../app/api/akses/izin/route.js'
 import * as kelasAkses from '../app/api/akses/kelas/route.js'
+import * as angkatanAkses from '../app/api/akses/angkatan/route.js'
 import * as masterAngkatan from '../app/api/master/angkatan/route.js'
 import * as masterProdi from '../app/api/master/prodi/route.js'
 import * as masterMahasiswa from '../app/api/master/mahasiswa/route.js'
@@ -88,7 +94,7 @@ import { susunanBobot } from '../src/lib/bobot.js'
 import { susunanPenilaian } from '../src/lib/penilaian.js'
 import { bobotKomponen } from '../src/lib/scoring.js'
 import { CONFIG } from '../src/lib/config.js'
-import { KUNCI_PERIODE, PERIODE_AKTIF, periodeSetelah, samaPeriode } from '../src/lib/data.js'
+import { KUNCI_PERIODE, PERIODE_AKTIF, periodeSetelah, programSelesai, samaPeriode } from '../src/lib/data.js'
 import { ambilKurikulum, ambilPeriode } from '../src/server/kurikulum.js'
 import { ambilMaster } from '../src/server/master.js'
 import { tangani } from '../src/server/api.js'
@@ -126,6 +132,7 @@ const PINTU = {
   '/api/akses/hapus': hapusAkses,
   '/api/akses/izin': izinAkses,
   '/api/akses/kelas': kelasAkses,
+  '/api/akses/angkatan': angkatanAkses,
   '/api/master/angkatan': masterAngkatan,
   '/api/master/prodi': masterProdi,
   '/api/master/mahasiswa': masterMahasiswa,
@@ -218,9 +225,15 @@ let izinAdminAsli
 let aspekAsliUji
 const aspekUji = []
 const logAspekUji = []
-/* Bagian "pembaruan dari super admin": penanda baca akun admin uji sebelum disentuh (undefined = belum disentuh).
-   Baris log yang dibuat bagian itu bertarget 'mahasiswa ' + NIM, jadi ikut terhapus lewat targetLog. */
+/* Bagian "pembaruan dari super admin": penanda baca akun admin uji sebelum disentuh (undefined = belum disentuh), dan
+   id baris log yang dibuat bagian itu. Sebagian bersasaran akun admin uji atau permintaan, yang juga dipakai log asli,
+   jadi dihapus lewat id-nya, bukan lewat targetLog. */
 let notifAdminAsli
+const logNotifUji = []
+/* Bagian "akses angkatan": baris AdminAngkatan akun admin uji sebelum disentuh (undefined = belum disentuh), dan id log
+   terakhir sebelum bagian itu; log UBAH_AKSES_ANGKATAN akun admin uji sesudahnya dibuat uji dan dihapus di akhir. */
+let aksesAngkatanAsli
+let logAksesAngkatanSejak
 /** Target baris LogAktivitas yang dibuat uji ini; ditambah id batch begitu diketahui. */
 const targetLog = [
   'fakultas ' + FAK_UJI,
@@ -363,11 +376,44 @@ async function pulihkanAspekUji() {
 }
 
 async function pulihkanNotifikasi() {
+  if (logNotifUji.length) await db.logAktivitas.deleteMany({ where: { id: { in: logNotifUji } } })
   if (notifAdminAsli === undefined) return
   await db.pengguna.update({ where: { email: EMAIL_ADMIN }, data: { notifDibacaId: notifAdminAsli } })
 }
 
+/**
+ * Membuka angkatan uji yang sudah lewat Semester 3 untuk admin uji, langsung di basis data, supaya bagian lama tetap
+ * menguji alurnya sebagai admin biasa; aturan aksesnya sendiri diuji di bagian AKSES ANGKATAN ADMIN. Baris aslinya
+ * disimpan dulu untuk dipulihkan.
+ */
+async function bukaAngkatanUji(ids) {
+  const akun = await db.pengguna.findUnique({ where: { email: EMAIL_ADMIN } })
+  const sa = await db.pengguna.findUnique({ where: { email: 'super.admin@umn.ac.id' } })
+  if (!akun) return
+  if (aksesAngkatanAsli === undefined) aksesAngkatanAsli = await db.adminAngkatan.findMany({ where: { penggunaId: akun.id } })
+  await db.adminAngkatan.createMany({
+    data: ids.map((angkatanId) => ({ penggunaId: akun.id, angkatanId, terlihat: true, olehId: sa?.id ?? akun.id })),
+    skipDuplicates: true,
+  })
+}
+
+async function pulihkanAksesAngkatan() {
+  if (aksesAngkatanAsli !== undefined) {
+    const akun = await db.pengguna.findUnique({ where: { email: EMAIL_ADMIN } })
+    if (akun) {
+      await db.adminAngkatan.deleteMany({ where: { penggunaId: akun.id } })
+      if (aksesAngkatanAsli.length) await db.adminAngkatan.createMany({ data: aksesAngkatanAsli })
+    }
+  }
+  if (logAksesAngkatanSejak !== undefined) {
+    await db.logAktivitas.deleteMany({
+      where: { aksi: 'UBAH_AKSES_ANGKATAN', target: 'akun ' + EMAIL_ADMIN, id: { gt: logAksesAngkatanSejak } },
+    })
+  }
+}
+
 async function bersihkan() {
+  await pulihkanAksesAngkatan()
   await pulihkanNotifikasi()
   await pulihkanAspekUji()
   await pulihkanDataMaster()
@@ -703,6 +749,8 @@ try {
       { id: ANG_B, tahun: 2025, label: 'Uji B ' + SUF, periodeTahun: '2025/2026', periodeSemester: 'GANJIL' },
     ],
   })
+  // A sudah lewat Semester 3, jadi tersembunyi dari admin biasa sampai dibuka (bagian 23 menguji aturan itu).
+  await bukaAngkatanUji([ANG_A])
   const akunUji2 = await db.pengguna.create({
     data: {
       email: EMAIL2,
@@ -822,7 +870,10 @@ try {
 
   /* ------------------------------ log aktivitas ------------------------------ */
   garis('9. LOG AKTIVITAS (BACA, FILTER, PAGINASI)')
-  const bacaLog = (isi) => admin('/api/log', { metode: 'POST', isi })
+  // Cara kerja log diuji sebagai super admin, yang membaca semuanya. Sejak 31 Okt 2026 admin biasa tidak membaca tindakan
+  // Super Admin, padahal sebagian besar data uji di atas dibuat super admin; tampilan admin diuji di akhir bagian ini.
+  const bacaLog = (isi) => sa('/api/log', { metode: 'POST', isi })
+  const bacaLogAdmin = (isi) => admin('/api/log', { metode: 'POST', isi })
   const tanggalWib = (d) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta' }).format(d)
   const hariIni = tanggalWib(new Date())
   const besok = tanggalWib(new Date(Date.now() + 24 * 60 * 60 * 1000))
@@ -885,7 +936,11 @@ try {
   const totalAdmin = await db.auditLog.count({ where: { mahasiswaId, aktorId: adminId } })
   const olehAdmin = await bacaLog({ jenis: 'nilai', nim: NIM, aktorId: adminId, ukuran: 100 })
   cek('filter pelaku: hanya perubahan oleh admin', olehAdmin.isi.total === totalAdmin && olehAdmin.isi.total < totalDb && olehAdmin.isi.baris.every((b) => b.aktor === 'Biro Kemahasiswaan'), JSON.stringify([totalAdmin, totalDb]))
-  cek('pilihan pelaku memuat admin', semua.isi.pilihanAktor.some((a) => a.id === adminId))
+  cek(
+    'pilihan pelaku super admin = semua pelaku perubahan nilai',
+    semua.isi.pilihanAktor.map((a) => a.id).sort((a, b) => a - b).join() ===
+      (await db.auditLog.groupBy({ by: ['aktorId'] })).map((g) => g.aktorId).sort((a, b) => a - b).join(),
+  )
   cek('filter tanggal hari ini (WIB) menemukan perubahan yang baru dibuat', (await bacaLog({ jenis: 'nilai', nim: NIM, dari: hariIni, sampai: hariIni })).isi.total === totalDb)
   cek('filter tanggal besok kosong', (await bacaLog({ jenis: 'nilai', nim: NIM, dari: besok })).isi.total === 0)
   cek('filter tanggal lampau kosong', (await bacaLog({ jenis: 'nilai', nim: NIM, dari: '2000-01-01', sampai: '2000-01-02' })).isi.total === 0)
@@ -918,6 +973,52 @@ try {
   const hanyaKunci = await bacaLog({ jenis: 'aktivitas', aksi: 'KUNCI_ANGKATAN', ukuran: 100 })
   cek('filter aksi hanya mengembalikan aksi itu', hanyaKunci.isi.baris.length > 0 && hanyaKunci.isi.baris.every((b) => b.aksi === 'KUNCI_ANGKATAN'))
   cek('daftar pilihan aksi tersedia untuk layar', akt.isi.pilihanAksi?.includes('UBAH_PENGUNCIAN'))
+
+  // --- yang dibaca admin biasa: tanpa tindakan Super Admin (31 Okt 2026) ---
+  const idAkunSuper = (await db.pengguna.findMany({ where: { peran: 'SUPER_ADMIN' }, select: { id: true } })).map((p) => p.id)
+  const nilaiAdmin = await bacaLogAdmin({ jenis: 'nilai', nim: NIM, ukuran: 100 })
+  const totalBukanSuper = await db.auditLog.count({ where: { mahasiswaId, aktorId: { notIn: idAkunSuper } } })
+  cek(
+    'admin: perubahan nilai tanpa yang dilakukan Super Admin',
+    nilaiAdmin.status === 200 &&
+      totalDb > totalBukanSuper &&
+      nilaiAdmin.isi.total === totalBukanSuper &&
+      nilaiAdmin.isi.baris.every((b) => b.aktorPeran !== 'SUPER_ADMIN'),
+    JSON.stringify([totalDb, totalBukanSuper, nilaiAdmin.isi.total]),
+  )
+  // Pilihan pelaku admin: siapa pun selain Super Admin yang pernah mengubah nilai mahasiswa yang terlihat olehnya
+  // (angkatan yang tersembunyi baginya tidak ikut, lihat bagian 23).
+  const tersembunyiLog = (await admin('/api/data')).isi.angkatanTersembunyi ?? []
+  const mhsTersembunyiLog = (await db.mahasiswa.findMany({ where: { angkatanId: { in: tersembunyiLog } }, select: { id: true } })).map((m) => m.id)
+  const pelakuTerlihat = (
+    await db.auditLog.groupBy({ by: ['aktorId'], where: { mahasiswaId: { notIn: mhsTersembunyiLog }, aktorId: { notIn: idAkunSuper } } })
+  )
+    .map((g) => g.aktorId)
+    .sort((a, b) => a - b)
+  cek(
+    'admin: pilihan pelaku perubahan nilai tanpa Super Admin dan tanpa angkatan yang tersembunyi',
+    nilaiAdmin.isi.pilihanAktor.map((a) => a.id).sort((a, b) => a - b).join() === pelakuTerlihat.join(),
+    JSON.stringify([nilaiAdmin.isi.pilihanAktor.map((a) => a.id), pelakuTerlihat]),
+  )
+  const aktAdmin = await bacaLogAdmin({ jenis: 'aktivitas', dari: hariIni, ukuran: 100 })
+  cek(
+    'admin: tab aktivitas tanpa tindakan Super Admin, termasuk di pilihan pelaku',
+    aktAdmin.status === 200 &&
+      aktAdmin.isi.baris.every((b) => b.aktorPeran !== 'SUPER_ADMIN') &&
+      !aktAdmin.isi.pilihanAktor.some((a) => idAkunSuper.includes(a.id)),
+  )
+  cek(
+    'admin: penguncian ANG_A oleh Super Admin tidak terbaca, padahal ada untuk Super Admin',
+    Boolean(barisKunci) &&
+      !(await bacaLogAdmin({ jenis: 'aktivitas', aksi: 'KUNCI_ANGKATAN', ukuran: 100 })).isi.baris.some(
+        (b) => b.target === 'angkatan ' + ANG_A,
+      ),
+  )
+  cek(
+    'admin: memilih akun Super Admin sebagai pelaku lewat API memberi hasil kosong',
+    (await bacaLogAdmin({ jenis: 'nilai', aktorId: idAkunSuper[0] })).isi.total === 0 &&
+      (await bacaLogAdmin({ jenis: 'aktivitas', aktorId: idAkunSuper[0] })).isi.total === 0,
+  )
   cek('membaca log tidak mengubah isi tabel', (await db.auditLog.count({ where: { mahasiswaId } })) === totalDb)
 
   /* ------------------------------ ringkasan angkatan ------------------------------ */
@@ -931,6 +1032,7 @@ try {
 
   // Angkatan C: lama (boleh dikunci) dan SELURUH komponennya terisi, jadi lengkap.
   await db.angkatan.create({ data: { id: ANG_C, tahun: 2024, label: 'Uji C ' + SUF, periodeTahun: '2024/2025', periodeSemester: 'GANJIL' } })
+  await bukaAngkatanUji([ANG_C])
   const akunUji3 = await db.pengguna.create({
     data: {
       email: EMAIL3,
@@ -1244,11 +1346,17 @@ try {
   await admin('/api/data')
   cek('pintu API berikutnya menghitung dengan bobot baru', Math.abs(bobotKomponen('A1')[idA1[0]] - 40) < 1e-9, JSON.stringify(bobotKomponen('A1')))
   cek('halaman lama (versi sebelum simpan) ditolak (409)', (await kirimBobot(null, { versi: versiAwal })).status === 409)
-  const aktBobot = await admin('/api/log', { metode: 'POST', isi: { jenis: 'aktivitas', aksi: 'UBAH_BOBOT' } })
+  // Bobot ini disimpan super admin: terbaca di Log Aktivitas super admin, tidak di Log Aktivitas admin biasa.
+  const aktBobot = await sa('/api/log', { metode: 'POST', isi: { jenis: 'aktivitas', aksi: 'UBAH_BOBOT' } })
   cek(
     'log bobot bisa disaring lewat /api/log',
     aktBobot.status === 200 && aktBobot.isi.baris?.some((b) => b.target === log1?.target),
     JSON.stringify(aktBobot.isi).slice(0, 200),
+  )
+  const aktBobotAdmin = await admin('/api/log', { metode: 'POST', isi: { jenis: 'aktivitas', aksi: 'UBAH_BOBOT' } })
+  cek(
+    'log bobot oleh super admin tidak terbaca admin biasa',
+    aktBobotAdmin.status === 200 && !aktBobotAdmin.isi.baris?.some((b) => b.target === log1?.target),
   )
 
   const simpan2 = await kirimBobot(susunanAwal.aspek.A1)
@@ -2102,19 +2210,53 @@ try {
     await sa('/api/nilai/rollback', { metode: 'POST', isi: { id: batchAjuan.id, alasan: 'Uji: mengembalikan nilai bagian kelas dosen.' } })
   }
   cek('nilai uji kembali kosong sesudah dibatalkan', (await selUasA()) === null)
+  // Log Aktivitas admin biasa: baris nilai dosen itu tetap ada dan bertanda dibatalkan, tetapi siapa dan alasan
+  // pembatalannya (Super Admin) tidak ikut. Super admin tetap membacanya utuh.
+  if (batchAjuan) {
+    const barisDosen = async (p) =>
+      (await p('/api/log', { metode: 'POST', isi: { jenis: 'nilai', nim: NIM2, ukuran: 100 } })).isi.baris?.find(
+        (b) => b.batchId === batchAjuan.id,
+      )
+    const diAdmin = await barisDosen(admin)
+    const diSuper = await barisDosen(sa)
+    cek(
+      'log admin: nilai dosen yang dibatalkan Super Admin tetap bertanda dibatalkan, tanpa siapa dan alasan pembatalannya',
+      diAdmin?.dibatalkan === true && diAdmin.pembatalan === null && diAdmin.aktorPeran === 'DOSEN',
+      JSON.stringify(diAdmin ?? null).slice(0, 300),
+    )
+    cek(
+      'log super admin: pembatalan nilai dosen itu terbaca utuh',
+      diSuper?.pembatalan?.oleh === 'Super Admin' && diSuper.pembatalan.alasan === 'Uji: mengembalikan nilai bagian kelas dosen.',
+      JSON.stringify(diSuper ?? null).slice(0, 300),
+    )
+  }
 
   /* ------------------------------ pembaruan dari super admin ------------------------------ */
   garis('22. PEMBARUAN DARI SUPER ADMIN (LONCENG ADMIN)')
-  // Tiga baris log dibuat langsung (bertarget mahasiswa uji): satu tindakan super admin yang menjadi pembaruan, satu
-  // pembukaan cetak oleh super admin (bukan pembaruan), dan satu tindakan admin (bukan pembaruan).
+  // Sejak 31 Okt 2026 lonceng hanya memuat tindakan super admin yang berkaitan dengan admin itu: perubahan pada akunnya
+  // dan keputusan atas permintaannya. Baris log dibuat langsung: yang berkaitan (sasaran akun admin uji, dan keputusan
+  // atas permintaan milik admin uji) dan yang tidak (sasaran mahasiswa uji, akun lain, permintaan lain, tindakan admin).
   const adminNotif = await db.pengguna.findUnique({ where: { email: EMAIL_ADMIN } })
   const akunSA = await db.pengguna.findUnique({ where: { email: 'super.admin@umn.ac.id' } })
   notifAdminAsli = adminNotif.notifDibacaId
   const bacaPembaruan = (pelaku) => pelaku('/api/notifikasi')
   const tandaiPembaruan = (pelaku, sampai) => pelaku('/api/notifikasi/dibaca', { metode: 'POST', isi: { sampai } })
   const nomor = (b) => Number(String(b.id).slice(2))
-  const buatLog = (aktorId, aksi, rincian) =>
-    db.logAktivitas.create({ data: { aktorId, aksi, target: 'mahasiswa ' + NIM, rincian } })
+  // Sasaran akun admin uji dan permintaan dipakai juga oleh log asli, jadi log uji dihapus lewat id-nya (logNotifUji).
+  const buatLog = async (aktorId, aksi, rincian, target = 'mahasiswa ' + NIM) => {
+    const l = await db.logAktivitas.create({ data: { aktorId, aksi, target, rincian } })
+    logNotifUji.push(l.id)
+    return l
+  }
+  const AKUN_ADMIN = 'akun ' + EMAIL_ADMIN
+  // Permintaan milik admin uji dari bagian sebelumnya; bila tidak ada, dibuat satu (terhapus bersama permintaanUji).
+  let milikAdmin = await db.permintaanAdmin.findFirst({ where: { id: { in: permintaanUji }, diajukanOleh: adminNotif.id } })
+  if (!milikAdmin) {
+    milikAdmin = await db.permintaanAdmin.create({
+      data: { aksi: 'UBAH_BOBOT', isi: {}, ringkasan: { judul: 'Uji lonceng' }, alasan: 'Uji lonceng admin', diajukanOleh: adminNotif.id },
+    })
+    permintaanUji.push(milikAdmin.id)
+  }
 
   cek('tanpa sesi ditolak 401', (await bacaPembaruan(tamu)).status === 401)
   cek('mahasiswa ditolak 403', (await bacaPembaruan(mhs)).status === 403)
@@ -2127,39 +2269,330 @@ try {
     JSON.stringify(awalP.isi).slice(0, 200),
   )
 
-  const logSA = await buatLog(akunSA.id, 'UBAH_AKUN', { alasan: 'Uji pembaruan dari super admin', contoh: [{ nim: NIM }] })
-  const logCetak = await buatLog(akunSA.id, 'CETAK_SERTIFIKAT', { kali: 1 })
-  const logAdmin = await buatLog(adminNotif.id, 'TARIK_PERMINTAAN', null)
+  const logAkun = await buatLog(akunSA.id, 'UBAH_IZIN', { alasan: 'Uji pembaruan dari super admin', contoh: [{ nim: NIM }] }, AKUN_ADMIN)
+  const logLain = [
+    await buatLog(akunSA.id, 'UBAH_AKUN', { alasan: 'Uji: data mahasiswa, bukan urusan akun admin' }),
+    await buatLog(akunSA.id, 'CETAK_SERTIFIKAT', { kali: 1 }),
+    await buatLog(akunSA.id, 'UBAH_IZIN', { alasan: 'Uji: akun admin lain' }, 'akun uji.lain.' + SUF + '@umn.ac.id'),
+    await buatLog(akunSA.id, 'PUTUSKAN_PERSETUJUAN', { keputusan: 'ditolak' }, 'permintaan P-99999999'),
+    await buatLog(adminNotif.id, 'UBAH_IZIN', null, AKUN_ADMIN),
+  ]
+  const logKeputusan = await buatLog(
+    akunSA.id,
+    'PUTUSKAN_PERSETUJUAN',
+    { keputusan: 'disetujui', catatan: 'Uji keputusan permintaan admin' },
+    'permintaan P-' + milikAdmin.id,
+  )
   const pb1 = (await bacaPembaruan(admin)).isi
   const atas = pb1.baris?.[0]
-  cek('tindakan super admin terbaru ada di baris teratas', atas && nomor(atas) === logSA.id, JSON.stringify(atas ?? null).slice(0, 200))
-  cek('baris membawa pelaku, waktu WIB, aksi, sasaran', atas?.aktorPeran === 'SUPER_ADMIN' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(atas?.waktu ?? '') && atas?.aksi === 'UBAH_AKUN' && atas?.target === 'mahasiswa ' + NIM)
-  cek('baris baru bertanda baru', atas?.baru === true)
-  cek('contoh dibuang dari rincian, alasan tetap', atas?.rincian?.alasan === 'Uji pembaruan dari super admin' && !('contoh' in (atas?.rincian ?? {})))
-  cek('pembukaan cetak dan tindakan admin bukan pembaruan', !pb1.baris.some((b) => [logCetak.id, logAdmin.id].includes(nomor(b))))
-  cek('terbaru = id log pembaruan paling baru', pb1.terbaru === logSA.id, String(pb1.terbaru))
-  cek('belum dibaca sedikitnya 1', pb1.belum >= 1, String(pb1.belum))
+  const barisAkunAdmin = pb1.baris?.find((b) => nomor(b) === logAkun.id)
+  cek(
+    'keputusan super admin atas permintaan admin ini ada di baris teratas',
+    atas && nomor(atas) === logKeputusan.id && atas.aksi === 'PUTUSKAN_PERSETUJUAN',
+    JSON.stringify(atas ?? null).slice(0, 200),
+  )
+  cek(
+    'perubahan super admin pada akun admin ini masuk, dengan pelaku, waktu WIB, aksi, sasaran',
+    barisAkunAdmin?.aktorPeran === 'SUPER_ADMIN' &&
+      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(barisAkunAdmin?.waktu ?? '') &&
+      barisAkunAdmin?.aksi === 'UBAH_IZIN' &&
+      barisAkunAdmin?.target === AKUN_ADMIN,
+    JSON.stringify(barisAkunAdmin ?? null).slice(0, 200),
+  )
+  cek('baris baru bertanda baru', atas?.baru === true && barisAkunAdmin?.baru === true)
+  cek('contoh dibuang dari rincian, alasan tetap', barisAkunAdmin?.rincian?.alasan === 'Uji pembaruan dari super admin' && !('contoh' in (barisAkunAdmin?.rincian ?? {})))
+  cek(
+    'tindakan super admin yang tidak berkaitan dengan admin ini, dan tindakan admin sendiri, tidak masuk',
+    !pb1.baris.some((b) => logLain.some((l) => l.id === nomor(b))),
+  )
+  cek('lonceng tanpa tindakan super admin lain sama sekali', pb1.baris.every((b) => b.target === AKUN_ADMIN || /^permintaan P-\d+$/.test(b.target)))
+  cek('terbaru = id log pembaruan paling baru', pb1.terbaru === logKeputusan.id, String(pb1.terbaru))
+  cek('belum dibaca sedikitnya 2', pb1.belum >= 2, String(pb1.belum))
 
   const jumlahLog = await db.logAktivitas.count()
   cek('penanda bukan angka ditolak 400', (await tandaiPembaruan(admin, 'abc')).status === 400)
-  cek('penanda yang bukan pembaruan ditolak 404', (await tandaiPembaruan(admin, logCetak.id)).status === 404)
-  cek('super admin tidak bisa menandai 403', (await tandaiPembaruan(sa, logSA.id)).status === 403)
+  cek('penanda tindakan super admin yang tidak berkaitan ditolak 404', (await tandaiPembaruan(admin, logLain[0].id)).status === 404)
+  cek('super admin tidak bisa menandai 403', (await tandaiPembaruan(sa, logKeputusan.id)).status === 403)
   const tandaR = await tandaiPembaruan(admin, pb1.terbaru)
   cek('admin menandai semua sudah dibaca', tandaR.status === 200 && tandaR.isi.belum === 0 && tandaR.isi.baris?.[0]?.baru === false, JSON.stringify(tandaR.isi).slice(0, 200))
-  cek('penanda tersimpan di akun admin', (await db.pengguna.findUnique({ where: { id: adminNotif.id } })).notifDibacaId === logSA.id)
+  cek('penanda tersimpan di akun admin', (await db.pengguna.findUnique({ where: { id: adminNotif.id } })).notifDibacaId === logKeputusan.id)
   cek('menandai dibaca tidak menulis log', (await db.logAktivitas.count()) === jumlahLog)
-  const lebihLama = pb1.baris.find((b) => nomor(b) < logSA.id)
-  if (lebihLama) {
-    await tandaiPembaruan(admin, nomor(lebihLama))
-    cek('penanda tidak mundur ke pembaruan yang lebih lama', (await db.pengguna.findUnique({ where: { id: adminNotif.id } })).notifDibacaId === logSA.id)
-  }
+  await tandaiPembaruan(admin, logAkun.id)
+  cek('penanda tidak mundur ke pembaruan yang lebih lama', (await db.pengguna.findUnique({ where: { id: adminNotif.id } })).notifDibacaId === logKeputusan.id)
 
-  const logSA2 = await buatLog(akunSA.id, 'UBAH_AKUN', { catatan: 'Uji pembaruan kedua' })
+  const logAkun2 = await buatLog(akunSA.id, 'UBAH_AKSES_ANGKATAN', { alasan: 'Uji pembaruan kedua' }, AKUN_ADMIN)
+  await buatLog(akunSA.id, 'UBAH_AKUN', { alasan: 'Uji: tidak berkaitan, sesudah ditandai' })
   const pb2 = (await bacaPembaruan(admin)).isi
-  cek('pembaruan sesudah ditandai terhitung satu yang baru', pb2.belum === 1 && nomor(pb2.baris[0]) === logSA2.id && pb2.baris[0].baru === true && pb2.baris[1]?.baru === false, JSON.stringify(pb2).slice(0, 200))
+  cek(
+    'sesudah ditandai, hanya pembaruan yang berkaitan yang terhitung baru',
+    pb2.belum === 1 && nomor(pb2.baris[0]) === logAkun2.id && pb2.baris[0].baru === true && pb2.baris[1]?.baru === false,
+    JSON.stringify(pb2).slice(0, 200),
+  )
 
   /* ------------------------------ keluar ------------------------------ */
-  garis('23. KELUAR')
+  /* ------------------------------ akses angkatan admin ------------------------------ */
+  garis('23. AKSES ANGKATAN ADMIN (DIBUKA DAN DINONAKTIFKAN)')
+  logAksesAngkatanSejak = (await db.logAktivitas.aggregate({ _max: { id: true } }))._max.id ?? 0
+  const akunAdminUji = await db.pengguna.findUnique({ where: { email: EMAIL_ADMIN } })
+  const akunSimon = await db.pengguna.findUnique({ where: { email: 'simon.petrus@lecturer.umn.ac.id' } })
+  // akunSA: akun super admin, dari bagian 22.
+  const m3 = await db.mahasiswa.findUnique({ where: { nim: NIM3 } })
+  const ALASAN_ANGKATAN = 'Uji akses angkatan untuk admin'
+  const aturAngkatan = (p, isi) => p('/api/akses/angkatan', { metode: 'POST', isi })
+  const labelC = 'Uji C ' + SUF
+  /** aksesAngkatan sebuah akun dalam bentuk ringkas 'id:terlihat', urut id, untuk dibandingkan. */
+  const ringkasAkses = (akun) => (akun?.aksesAngkatan ?? []).map((a) => a.id + ':' + a.terlihat).join()
+
+  // Pintu dan pemeriksaan isiannya.
+  cek('tanpa sesi: mengatur akses angkatan ditolak 401', (await aturAngkatan(tamu, {})).status === 401)
+  cek(
+    'admin biasa tidak boleh mengatur akses angkatan (403)',
+    (await aturAngkatan(admin, { id: akunAdminUji.id, dibuka: [], ditutup: [], alasan: ALASAN_ANGKATAN })).status === 403,
+  )
+  cek('alasan pendek ditolak (400)', (await aturAngkatan(sa, { id: akunAdminUji.id, dibuka: [ANG_A], alasan: 'pendek' })).status === 400)
+  cek(
+    'daftar dibuka atau ditutup yang bukan larik ditolak (400)',
+    (await aturAngkatan(sa, { id: akunAdminUji.id, dibuka: ANG_A, alasan: ALASAN_ANGKATAN })).status === 400 &&
+      (await aturAngkatan(sa, { id: akunAdminUji.id, ditutup: ANG_B, alasan: ALASAN_ANGKATAN })).status === 400,
+  )
+  cek('akun dosen ditolak (403)', (await aturAngkatan(sa, { id: akunSimon.id, dibuka: [ANG_A], alasan: ALASAN_ANGKATAN })).status === 403)
+  cek('akun super admin ditolak (403)', (await aturAngkatan(sa, { id: akunSA.id, dibuka: [ANG_A], alasan: ALASAN_ANGKATAN })).status === 403)
+  cek(
+    'angkatan tidak dikenal ditolak (400)',
+    (await aturAngkatan(sa, { id: akunAdminUji.id, dibuka: ['TIDAKADA' + SUF], alasan: ALASAN_ANGKATAN })).status === 400,
+  )
+  const bukaBerjalan = await aturAngkatan(sa, { id: akunAdminUji.id, dibuka: [ANG_B], alasan: ALASAN_ANGKATAN })
+  cek(
+    'membuka angkatan yang masih di Semester 1–3 ditolak (400), karena sudah terlihat',
+    bukaBerjalan.status === 400 && /Semester 1–3/.test(bukaBerjalan.isi.galat ?? ''),
+    JSON.stringify(bukaBerjalan),
+  )
+  const tutupLewat = await aturAngkatan(sa, { id: akunAdminUji.id, dibuka: [ANG_A], ditutup: [ANG_C], alasan: ALASAN_ANGKATAN })
+  cek(
+    'menonaktifkan angkatan yang sudah lewat Semester 3 ditolak (400), karena sudah tersembunyi',
+    tutupLewat.status === 400 && /sudah lewat Semester 3/.test(tutupLewat.isi.galat ?? ''),
+    JSON.stringify(tutupLewat),
+  )
+
+  // Super admin menutup ANG_C (cukup tidak disebut di dibuka): admin uji tinggal punya ANG_A yang dibuka.
+  const tutupC = await aturAngkatan(sa, { id: akunAdminUji.id, dibuka: [ANG_A], ditutup: [], alasan: ALASAN_ANGKATAN })
+  cek(
+    'super admin menutup ANG_C untuk admin uji',
+    tutupC.status === 200 && ringkasAkses(tutupC.isi.akun) === ANG_A + ':true',
+    JSON.stringify(tutupC.isi),
+  )
+  const logTutup = await db.logAktivitas.findFirst({
+    where: { aksi: 'UBAH_AKSES_ANGKATAN', target: 'akun ' + EMAIL_ADMIN, id: { gt: logAksesAngkatanSejak } },
+    orderBy: { id: 'desc' },
+  })
+  cek(
+    'tercatat UBAH_AKSES_ANGKATAN oleh super admin, dengan sebelum, sesudah, dan alasan',
+    logTutup?.aktorId === akunSA.id &&
+      logTutup.rincian?.sebelum?.dibuka?.includes(labelC) &&
+      !logTutup.rincian?.sesudah?.dibuka?.includes(labelC) &&
+      Array.isArray(logTutup.rincian?.sesudah?.ditutup) &&
+      logTutup.rincian?.alasan === ALASAN_ANGKATAN,
+    JSON.stringify(logTutup?.rincian),
+  )
+  const jumlahLogAngkatan = await db.logAktivitas.count({ where: { aksi: 'UBAH_AKSES_ANGKATAN' } })
+  const samaLagi = await aturAngkatan(sa, { id: akunAdminUji.id, dibuka: [ANG_A], alasan: ALASAN_ANGKATAN })
+  cek(
+    'menyimpan pengaturan yang sama tidak mencatat log baru',
+    samaLagi.status === 200 && (await db.logAktivitas.count({ where: { aksi: 'UBAH_AKSES_ANGKATAN' } })) === jumlahLogAngkatan,
+  )
+  const barisAkun = (await sa('/api/akses', { metode: 'POST', isi: {} })).isi.akun?.find((a) => a.id === akunAdminUji.id)
+  cek('daftar akun membawa akses angkatan admin', ringkasAkses(barisAkun) === ANG_A + ':true', JSON.stringify(barisAkun))
+
+  // Yang dikirim ke admin uji: angkatan Semester 1–3 dan ANG_A, tanpa ANG_C maupun angkatan asli yang sudah lewat.
+  const dTutup = (await admin('/api/data')).isi
+  const intakeDb = (a) => ({ tahun: a.periodeTahun, semester: a.periodeSemester === 'GENAP' ? 'Genap' : 'Ganjil' })
+  const harusTersembunyi = (await db.angkatan.findMany())
+    .filter((a) => programSelesai(intakeDb(a)) && a.id !== ANG_A)
+    .map((a) => a.id)
+    .sort()
+  cek(
+    'angkatanTersembunyi = semua angkatan lewat Semester 3 kecuali yang dibuka (ANG_A)',
+    [...(dTutup.angkatanTersembunyi ?? [])].sort().join() === harusTersembunyi.join() && harusTersembunyi.includes(ANG_C),
+    JSON.stringify([dTutup.angkatanTersembunyi, harusTersembunyi]),
+  )
+  cek('admin tidak menerima mahasiswa ANG_C', !dTutup.mahasiswa.some((m) => m.nim === NIM3))
+  cek('admin tetap menerima mahasiswa ANG_A yang dibuka', dTutup.mahasiswa.some((m) => m.nim === NIM2))
+  cek('admin tetap menerima mahasiswa angkatan Semester 1–3', dTutup.mahasiswa.some((m) => m.nim === NIM))
+  cek(
+    'admin tidak menerima mahasiswa angkatan mana pun yang tersembunyi',
+    !dTutup.mahasiswa.some((m) => harusTersembunyi.includes(m.angkatanId)),
+  )
+  cek(
+    'jejak nilai, sertifikat, koreksi, dan batch ANG_C tidak dikirim',
+    !dTutup.audit.some((a) => a.nim === NIM3) &&
+      !dTutup.sertifikat.some((s) => s.nim === NIM3) &&
+      !dTutup.koreksi.some((k) => k.nim === NIM3) &&
+      ![...dTutup.batch, ...dTutup.batchImport].some((b) => b.angkatanId === ANG_C),
+  )
+  const dSA = (await sa('/api/data')).isi
+  cek('super admin tetap menerima semuanya', dSA.mahasiswa.some((m) => m.nim === NIM3) && dSA.angkatanTersembunyi?.length === 0)
+
+  // Pintu yang bisa dipakai admin untuk mahasiswa atau angkatan tertentu menolak ANG_C.
+  const ringkasTutup = (await admin('/api/angkatan')).isi.angkatan ?? []
+  cek(
+    'ringkasan angkatan admin tanpa ANG_C, dengan ANG_A dan ANG_B',
+    !ringkasTutup.some((a) => a.angkatanId === ANG_C) &&
+      ringkasTutup.some((a) => a.angkatanId === ANG_A) &&
+      ringkasTutup.some((a) => a.angkatanId === ANG_B),
+  )
+  cek('pratinjau ANG_C ditolak (403)', (await admin('/api/angkatan/pratinjau', { metode: 'POST', isi: { angkatanId: ANG_C } })).status === 403)
+  cek('pratinjau ANG_A tetap bisa', (await admin('/api/angkatan/pratinjau', { metode: 'POST', isi: { angkatanId: ANG_A } })).status === 200)
+  const permintaanSebelum = await db.permintaanAdmin.count()
+  cek(
+    'mengajukan kunci ANG_C ditolak (403) tanpa membuat permintaan',
+    (await admin('/api/angkatan/kunci', { metode: 'POST', isi: { angkatanId: ANG_C, konfirmasi: labelC, alasan: ALASAN_ANGKATAN } })).status === 403 &&
+      (await db.permintaanAdmin.count()) === permintaanSebelum,
+  )
+  cek(
+    'mengajukan tanda final/sementara untuk mahasiswa ANG_C ditolak (403)',
+    (
+      await admin('/api/penguncian', {
+        metode: 'POST',
+        isi: { daftar: [{ nim: NIM3, aspekId: getAspekList()[0].id }], status: 'sementara', alasan: ALASAN_ANGKATAN },
+      })
+    ).status === 403 && (await db.permintaanAdmin.count()) === permintaanSebelum,
+  )
+  // Koreksi, permintaan sertifikat, dan satu jejak nilai mahasiswa ANG_C dibuat langsung di basis data; semuanya
+  // terhapus bersama mahasiswa itu di bersihkanMahasiswa().
+  const koreksiC = await db.pengajuanKoreksi.create({
+    data: { mahasiswaId: m3.id, komponenId: KOMPONEN[0].id, alasan: 'Uji akses angkatan: koreksi mahasiswa ANG_C' },
+  })
+  const keputusanKoreksiC = await admin('/api/koreksi/keputusan', {
+    metode: 'POST',
+    isi: { id: 'K-' + koreksiC.id, keputusan: 'ditolak', catatan: ALASAN_ANGKATAN },
+  })
+  cek(
+    'memutuskan koreksi mahasiswa ANG_C ditolak (403), pengajuannya tetap menunggu',
+    keputusanKoreksiC.status === 403 &&
+      (await db.pengajuanKoreksi.findUnique({ where: { id: koreksiC.id } })).status === 'MENUNGGU_ADMIN',
+  )
+  const sertifikatC = await db.permintaanSertifikat.create({ data: { mahasiswaId: m3.id } })
+  const keputusanSertifikatC = await admin('/api/sertifikat/keputusan', {
+    metode: 'POST',
+    isi: { id: 'S-' + sertifikatC.id, keputusan: 'ditolak', catatan: ALASAN_ANGKATAN },
+  })
+  cek(
+    'memutuskan akses cetak mahasiswa ANG_C ditolak (403), permintaannya tetap menunggu',
+    keputusanSertifikatC.status === 403 &&
+      (await db.permintaanSertifikat.findUnique({ where: { id: sertifikatC.id } })).status === 'MENUNGGU_ADMIN',
+  )
+  cek(
+    'mencabut akses cetak mahasiswa ANG_C ditolak (403)',
+    (await admin('/api/sertifikat/cabut', { metode: 'POST', isi: { id: 'S-' + sertifikatC.id, alasan: ALASAN_ANGKATAN } })).status === 403,
+  )
+  cek(
+    'membuka sertifikat mahasiswa ANG_C untuk dicetak ditolak (403)',
+    (await admin('/api/sertifikat/cetak', { metode: 'POST', isi: { id: 'S-' + sertifikatC.id } })).status === 403,
+  )
+  // Atas nama dosen, bukan super admin: perubahan oleh super admin memang tidak pernah terbaca admin biasa (bagian 9).
+  await db.auditLog.create({ data: { aktorId: akunSimon.id, mahasiswaId: m3.id, komponenId: KOMPONEN[0].id, nilaiLama: 80, nilaiBaru: 81 } })
+  const logNilai = (p, isi) => p('/api/log', { metode: 'POST', isi: { jenis: 'nilai', ...isi } })
+  cek('log nilai admin untuk NIM ANG_C kosong', (await logNilai(admin, { nim: NIM3 })).isi.total === 0)
+  cek(
+    'log nilai super admin untuk NIM ANG_C tetap terbaca',
+    (await logNilai(sa, { nim: NIM3 })).isi.total === (await db.auditLog.count({ where: { mahasiswaId: m3.id } })),
+  )
+  cek(
+    'log nilai admin tanpa saringan tidak memuat mahasiswa ANG_C',
+    !(await logNilai(admin, { ukuran: 100 })).isi.baris.some((b) => b.nim === NIM3),
+  )
+
+  // Membuka lagi ANG_C: langsung berlaku di permintaan berikutnya.
+  const bukaC = await aturAngkatan(sa, { id: akunAdminUji.id, dibuka: [ANG_C, ANG_A], alasan: ALASAN_ANGKATAN })
+  cek(
+    'super admin membuka lagi ANG_C (urutan isian tidak berpengaruh)',
+    bukaC.status === 200 && ringkasAkses(bukaC.isi.akun) === [ANG_A, ANG_C].sort().map((x) => x + ':true').join(),
+    JSON.stringify(bukaC.isi),
+  )
+  const dBuka = (await admin('/api/data')).isi
+  cek('admin kembali menerima mahasiswa ANG_C', dBuka.mahasiswa.some((m) => m.nim === NIM3) && !dBuka.angkatanTersembunyi.includes(ANG_C))
+  cek('pratinjau ANG_C kembali bisa', (await admin('/api/angkatan/pratinjau', { metode: 'POST', isi: { angkatanId: ANG_C } })).status === 200)
+  cek('log nilai admin untuk NIM ANG_C kembali terbaca', (await logNilai(admin, { nim: NIM3 })).isi.total >= 1)
+
+  // Menonaktifkan angkatan Semester 1–3: ANG_B dan angkatan mahasiswa uji utama (Genap 2025/2026, Semester 2).
+  const nonaktif = await aturAngkatan(sa, {
+    id: akunAdminUji.id,
+    dibuka: [ANG_A, ANG_C],
+    ditutup: [ANG_B, angkatan.id],
+    alasan: ALASAN_ANGKATAN,
+  })
+  cek(
+    'super admin menonaktifkan dua angkatan Semester 1–3, angkatan yang dibuka tetap',
+    nonaktif.status === 200 &&
+      ringkasAkses(nonaktif.isi.akun) ===
+        [
+          [ANG_A, true],
+          [ANG_B, false],
+          [ANG_C, true],
+          [angkatan.id, false],
+        ]
+          .sort((x, y) => x[0].localeCompare(y[0]))
+          .map(([x, t]) => x + ':' + t)
+          .join(),
+    JSON.stringify(nonaktif.isi),
+  )
+  const logNonaktif = await db.logAktivitas.findFirst({
+    where: { aksi: 'UBAH_AKSES_ANGKATAN', target: 'akun ' + EMAIL_ADMIN, id: { gt: logAksesAngkatanSejak } },
+    orderBy: { id: 'desc' },
+  })
+  cek(
+    'log mencatat angkatan yang dinonaktifkan',
+    logNonaktif?.rincian?.sebelum?.ditutup?.length === 0 &&
+      logNonaktif.rincian?.sesudah?.ditutup?.includes('Uji B ' + SUF) &&
+      logNonaktif.rincian?.sesudah?.ditutup?.includes(angkatan.label),
+    JSON.stringify(logNonaktif?.rincian),
+  )
+  const dNonaktif = (await admin('/api/data')).isi
+  cek(
+    'admin tidak menerima mahasiswa angkatan yang dinonaktifkan, walau masih Semester 2',
+    !dNonaktif.mahasiswa.some((m) => m.nim === NIM) &&
+      dNonaktif.angkatanTersembunyi.includes(angkatan.id) &&
+      dNonaktif.angkatanTersembunyi.includes(ANG_B),
+    JSON.stringify(dNonaktif.angkatanTersembunyi),
+  )
+  cek('angkatan yang dibuka tetap terlihat', dNonaktif.mahasiswa.some((m) => m.nim === NIM2 || m.nim === NIM3))
+  cek(
+    'ringkasan angkatan admin tanpa ANG_B yang dinonaktifkan',
+    !((await admin('/api/angkatan')).isi.angkatan ?? []).some((a) => a.angkatanId === ANG_B),
+  )
+  cek('pratinjau ANG_B yang dinonaktifkan ditolak (403)', (await admin('/api/angkatan/pratinjau', { metode: 'POST', isi: { angkatanId: ANG_B } })).status === 403)
+  cek('log nilai admin untuk mahasiswa angkatan yang dinonaktifkan kosong', (await logNilai(admin, { nim: NIM })).isi.total === 0)
+  cek('super admin tetap menerima mahasiswa angkatan itu', (await sa('/api/data')).isi.mahasiswa.some((m) => m.nim === NIM))
+  const barisNonaktif = (await sa('/api/akses', { metode: 'POST', isi: {} })).isi.akun?.find((a) => a.id === akunAdminUji.id)
+  cek(
+    'daftar akun membedakan angkatan yang dibuka dan yang dinonaktifkan',
+    barisNonaktif?.aksesAngkatan?.find((a) => a.id === ANG_B)?.terlihat === false &&
+      barisNonaktif?.aksesAngkatan?.find((a) => a.id === ANG_A)?.terlihat === true,
+  )
+
+  // Mengaktifkan lagi: cukup tidak disebut di ditutup, angkatan itu kembali ke bawaannya (terlihat).
+  const aktifLagi = await aturAngkatan(sa, { id: akunAdminUji.id, dibuka: [ANG_A, ANG_C], ditutup: [], alasan: ALASAN_ANGKATAN })
+  const dAktif = (await admin('/api/data')).isi
+  cek(
+    'mengaktifkan lagi: mahasiswa angkatan Semester 1–3 itu kembali dikirim',
+    aktifLagi.status === 200 &&
+      dAktif.mahasiswa.some((m) => m.nim === NIM) &&
+      !dAktif.angkatanTersembunyi.includes(angkatan.id) &&
+      !dAktif.angkatanTersembunyi.includes(ANG_B),
+  )
+
+  // Kembali ke bawaan semuanya: admin hanya melihat angkatan Semester 1–3.
+  const cabutSemua = await aturAngkatan(sa, { id: akunAdminUji.id, dibuka: [], ditutup: [], alasan: ALASAN_ANGKATAN })
+  const dCabut = (await admin('/api/data')).isi
+  cek(
+    'kembali ke bawaan: mahasiswa ANG_A dan ANG_C tidak dikirim lagi, angkatan Semester 1–3 terlihat',
+    cabutSemua.status === 200 &&
+      cabutSemua.isi.akun?.aksesAngkatan?.length === 0 &&
+      !dCabut.mahasiswa.some((m) => m.nim === NIM2 || m.nim === NIM3) &&
+      dCabut.mahasiswa.some((m) => m.nim === NIM),
+  )
+
+  garis('24. KELUAR')
   await sa('/api/keluar', { metode: 'POST' })
   await mhs('/api/keluar', { metode: 'POST' })
   cek('setelah keluar, sesi tidak berlaku', (await mhs('/api/sesi')).status === 401)

@@ -1,6 +1,7 @@
 import { db } from "./db.js";
 import { GalatApi } from "./api.js";
 import { catatLog } from "./log.js";
+import { selesaiProgram } from "./muat.js";
 import bcrypt from 'bcryptjs';
 
 
@@ -18,6 +19,7 @@ export const ALASAN_MIN = 10;
 const SERTA = {
   dosen: { include: { prodi: true, angkatan: { include: { angkatan: true } } } },
   mahasiswa: { include: { prodi: true, angkatan: true } },
+  aksesAngkatan: { include: { angkatan: true } },
 };
 
 /**
@@ -38,8 +40,17 @@ function susunAkun(p) {
     email: p.email,
     peran: PERAN[p.peran],
     aktif: p.aktif,
-    // Hanya admin biasa yang izinnya bisa diatur; super admin selalu punya (punyaIzinMaster di api.js).
-    ...(p.peran === "ADMIN" ? { kelolaMaster: p.kelolaMaster } : {}),
+    // Hanya admin biasa yang izin dan akses angkatannya bisa diatur; super admin selalu punya (punyaIzinMaster di
+    // api.js) dan selalu melihat semua angkatan. aksesAngkatan: angkatan yang aksesnya diatur super admin, urut id;
+    // terlihat true = angkatan lewat Semester 3 yang dibuka, false = angkatan Semester 1–3 yang dinonaktifkan.
+    ...(p.peran === "ADMIN"
+      ? {
+          kelolaMaster: p.kelolaMaster,
+          aksesAngkatan: (p.aksesAngkatan ?? [])
+            .map((a) => ({ id: a.angkatanId, label: a.angkatan.label, terlihat: a.terlihat }))
+            .sort((a, b) => a.id.localeCompare(b.id)),
+        }
+      : {}),
     ...(p.dosen
       ? { nama: p.dosen.nama, nip: p.dosen.nip, prodi: p.dosen.prodi.nama, ...kelasDosen(p.dosen) }
       : {}),
@@ -154,6 +165,88 @@ export async function bukaAksesMaster(pengguna) {
   if (!akun || akun.peran !== 'ADMIN' || !akun.aktif) return { ok: false }
   if (!akun.kelolaMaster) await db.pengguna.update({ where: { id: akun.id }, data: { kelolaMaster: true } })
   return { ok: true }
+}
+
+/* ------------------------------ akses angkatan ------------------------------ */
+
+// Permintaan 30–31 Okt 2026, per akun admin biasa dan per angkatan. Bawaannya: angkatan yang masih di Semester 1–3
+// (atau belum mulai) terlihat, angkatan yang programnya sudah lewat Semester 3 tersembunyi. Super admin bisa membuka
+// angkatan yang sudah lewat, atau menonaktifkan angkatan Semester 1–3, sampai diubah lagi. Yang tersimpan di
+// AdminAngkatan hanya yang berbeda dari bawaan, jadi angkatan baru otomatis mengikuti bawaannya. Penyaringnya
+// angkatanTersembunyi di muat.js, dibaca ulang setiap permintaan, jadi perubahannya langsung berlaku. Siapa, kapan, dan
+// alasannya tercatat di LogAktivitas (UBAH_AKSES_ANGKATAN).
+
+/**
+ * Mengganti seluruh akses angkatan satu akun admin biasa. `dibuka` = angkatan yang sudah lewat Semester 3 dan terlihat
+ * olehnya; `ditutup` = angkatan Semester 1–3 yang dinonaktifkan untuknya. Angkatan yang tidak disebut kembali ke
+ * bawaan ([] dan [] = semua bawaan). Jawabannya { akun }.
+ */
+export async function aturAksesAngkatan(pengguna, { id, dibuka = [], ditutup = [], alasan }) {
+  const target = Number(id)
+  if (!Number.isInteger(target)) throw new GalatApi('Akun tidak valid.')
+  if (!Array.isArray(dibuka) || !Array.isArray(ditutup)) throw new GalatApi('Daftar angkatan tidak valid.')
+  const teksAlasan = String(alasan ?? '').trim()
+  if (teksAlasan.length < ALASAN_MIN) throw new GalatApi('Alasan wajib diisi, minimal 10 karakter.')
+
+  const akun = await db.pengguna.findUnique({ where: { id: target }, include: SERTA })
+  if (!akun) throw new GalatApi('Akun tidak ditemukan.', 404)
+  if (akun.peran === 'SUPER_ADMIN') throw new GalatApi('Super Admin selalu melihat semua angkatan.', 403)
+  if (akun.peran !== 'ADMIN') throw new GalatApi('Akses angkatan hanya untuk akun admin Kemahasiswaan.', 403)
+
+  const rapikan = (xs) => [...new Set(xs.map((a) => String(a ?? '').trim()).filter(Boolean))].sort()
+  const idBuka = rapikan(dibuka)
+  const idTutup = rapikan(ditutup)
+  const daftar = await db.angkatan.findMany({ where: { id: { in: [...idBuka, ...idTutup] } } })
+  const dariId = new Map(daftar.map((a) => [a.id, a]))
+  const asing = [...idBuka, ...idTutup].find((x) => !dariId.has(x))
+  if (asing) throw new GalatApi('Angkatan ' + asing + ' tidak ditemukan.')
+  // Hanya yang berbeda dari bawaan yang disimpan, supaya daftar akses tidak menyesatkan.
+  const sebut = (xs) => xs.map((x) => dariId.get(x).label).join(', ')
+  const masihBerjalan = idBuka.filter((x) => !selesaiProgram(dariId.get(x)))
+  if (masihBerjalan.length) {
+    throw new GalatApi('Angkatan ' + sebut(masihBerjalan) + ' masih di Semester 1–3, jadi sudah terlihat tanpa dibuka.')
+  }
+  const sudahLewat = idTutup.filter((x) => selesaiProgram(dariId.get(x)))
+  if (sudahLewat.length) {
+    throw new GalatApi('Angkatan ' + sebut(sudahLewat) + ' sudah lewat Semester 3, jadi sudah tersembunyi tanpa dinonaktifkan.')
+  }
+
+  const lama = new Map(akun.aksesAngkatan.map((a) => [a.angkatanId, a.terlihat]))
+  const mau = new Map([...idBuka.map((x) => [x, true]), ...idTutup.map((x) => [x, false])])
+  const sama = lama.size === mau.size && [...mau].every(([x, terlihat]) => lama.get(x) === terlihat)
+  if (sama) return { akun: susunAkun(akun) } // tidak ada yang berubah, tidak dicatat
+  const baruDibuka = idBuka.filter((x) => lama.get(x) !== true)
+  if (baruDibuka.length && !akun.aktif) {
+    throw new GalatApi('Pulihkan dulu akses akun ini sebelum membuka angkatan untuknya.', 409)
+  }
+
+  // Label untuk log: yang disebut dari tabel Angkatan, yang dilepas dari baris aksesnya.
+  const label = (x) => dariId.get(x)?.label ?? akun.aksesAngkatan.find((a) => a.angkatanId === x)?.angkatan.label ?? x
+  const ringkas = (peta) => ({
+    dibuka: [...peta].filter(([, t]) => t).map(([x]) => label(x)).sort(),
+    ditutup: [...peta].filter(([, t]) => !t).map(([x]) => label(x)).sort(),
+  })
+  // Baris yang tetap sama dibiarkan (pemberi dan waktunya tidak berubah); yang dilepas atau berganti dihapus lalu dibuat.
+  const lepas = [...lama].filter(([x, terlihat]) => mau.get(x) !== terlihat).map(([x]) => x)
+  const buat = [...mau].filter(([x, terlihat]) => lama.get(x) !== terlihat)
+  // Perubahan dan catatan lognya dalam satu transaksi: berhasil bersama atau gagal bersama.
+  const baru = await db.$transaction(async (tx) => {
+    if (lepas.length) await tx.adminAngkatan.deleteMany({ where: { penggunaId: akun.id, angkatanId: { in: lepas } } })
+    if (buat.length) {
+      await tx.adminAngkatan.createMany({
+        data: buat.map(([angkatanId, terlihat]) => ({ penggunaId: akun.id, angkatanId, terlihat, olehId: pengguna.id })),
+      })
+    }
+    const hasil = await tx.pengguna.findUnique({ where: { id: akun.id }, include: SERTA })
+    await catatLog(tx, {
+      aktorId: pengguna.id,
+      aksi: 'UBAH_AKSES_ANGKATAN',
+      target: 'akun ' + akun.email,
+      rincian: { email: akun.email, sebelum: ringkas(lama), sesudah: ringkas(mau), alasan: teksAlasan },
+    })
+    return hasil
+  })
+  return { akun: susunAkun(baru) }
 }
 
 /* ------------------------------- tambah akun ------------------------------ */

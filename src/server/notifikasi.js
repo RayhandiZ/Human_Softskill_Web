@@ -1,22 +1,37 @@
 import { db } from './db.js'
 import { GalatApi } from './api.js'
 import { petaAkun, waktuWib } from './muat.js'
-import { pelaku } from './log.js'
+import { idSuperAdmin, pelaku } from './log.js'
 
-// Pembaruan dari Super Admin di lonceng admin biasa (rapat 24 Okt 2026: notifikasi untuk admin saat super admin
-// memperbarui data). Isinya dibaca dari LogAktivitas, jadi tidak ada tabel kedua yang bisa berbeda dari log. Status
-// dibacanya satu penanda per akun, Pengguna.notifDibacaId: id log terakhir yang sudah ditandai dibaca. Akun yang belum
-// pernah menandai menghitung sejak akunnya dibuat, supaya admin baru tidak menerima seluruh riwayat sebagai pembaruan.
-// Menandai dibaca tidak dicatat di LogAktivitas: penandanya keadaan layar milik akun itu sendiri, seperti membaca log.
+// Pemberitahuan dari Super Admin di lonceng admin biasa. Rapat 24 Okt 2026 memasukkan semua tindakan super admin;
+// sejak permintaan 31 Okt 2026 isinya hanya tindakan super admin yang berkaitan dengan admin itu sendiri: perubahan pada
+// akunnya (akses akun, izin lihat data master, akses angkatan) dan keputusan atas permintaan yang ia ajukan. Tindakan
+// super admin yang lain tidak sampai ke admin, di sini maupun di Log Aktivitas (bacaLog di log.js).
+// Isinya dibaca dari LogAktivitas, jadi tidak ada tabel kedua yang bisa berbeda dari log. Status dibacanya satu penanda
+// per akun, Pengguna.notifDibacaId: id log terakhir yang sudah ditandai dibaca. Akun yang belum pernah menandai
+// menghitung sejak akunnya dibuat, supaya admin baru tidak menerima seluruh riwayat sebagai pembaruan. Menandai dibaca
+// tidak dicatat di LogAktivitas: penandanya keadaan layar milik akun itu sendiri, seperti membaca log.
 
-// Tindakan super admin yang tidak mengubah data bersama: membuka sertifikat untuk dicetak dan mengubah profil sendiri.
-const BUKAN_PEMBARUAN = ['CETAK_SERTIFIKAT', 'UBAH_PROFIL']
+// Tindakan super admin pada akun admin itu; targetnya 'akun <email>' (src/server/akses.js).
+const AKSI_AKUN = ['UBAH_AKSES', 'UBAH_IZIN', 'UBAH_AKSES_ANGKATAN']
 const TAMPIL = 20
 
-/** Saringan LogAktivitas untuk pembaruan: pelakunya akun yang saat ini berperan Super Admin. */
-async function saringPembaruan() {
-  const superAdmin = await db.pengguna.findMany({ where: { peran: 'SUPER_ADMIN' }, select: { id: true } })
-  return { aktorId: { in: superAdmin.map((p) => p.id) }, aksi: { notIn: BUKAN_PEMBARUAN } }
+/**
+ * Saringan LogAktivitas untuk lonceng `pengguna`: pelakunya akun yang saat ini berperan Super Admin, dan tindakannya
+ * mengenai akun itu sendiri atau memutuskan permintaan yang diajukan akun itu (PermintaanAdmin.diajukanOleh).
+ */
+async function saringPembaruan(pengguna) {
+  const [superAdmin, permintaan] = await Promise.all([
+    idSuperAdmin(),
+    db.permintaanAdmin.findMany({ where: { diajukanOleh: pengguna.id }, select: { id: true } }),
+  ])
+  return {
+    aktorId: { in: superAdmin },
+    OR: [
+      { aksi: { in: AKSI_AKUN }, target: 'akun ' + pengguna.email },
+      { aksi: 'PUTUSKAN_PERSETUJUAN', target: { in: permintaan.map((p) => 'permintaan P-' + p.id) } },
+    ],
+  }
 }
 
 // Super admin lolos penjaga ['admin'] di tangani(), padahal yang dilaporkan di sini tindakannya sendiri.
@@ -40,7 +55,7 @@ export async function bacaNotifikasi(pengguna) {
   wajibAdminBiasa(pengguna)
   const [akun, where] = await Promise.all([
     db.pengguna.findUnique({ where: { id: pengguna.id }, select: { notifDibacaId: true, dibuat: true } }),
-    saringPembaruan(),
+    saringPembaruan(pengguna),
   ])
   const dibaca = akun.notifDibacaId
   const belumDibaca = dibaca != null ? { id: { gt: dibaca } } : { waktu: { gt: akun.dibuat } }
@@ -72,7 +87,7 @@ export async function tandaiNotifikasi(pengguna, { sampai } = {}) {
   wajibAdminBiasa(pengguna)
   const id = Number(sampai)
   if (!Number.isInteger(id) || id < 1) throw new GalatApi('Penanda baca tidak valid.')
-  const ada = await db.logAktivitas.count({ where: { id, ...(await saringPembaruan()) } })
+  const ada = await db.logAktivitas.count({ where: { id, ...(await saringPembaruan(pengguna)) } })
   if (!ada) throw new GalatApi('Pembaruan itu tidak ditemukan.', 404)
   // Penanda hanya maju: tab lain yang masih memegang daftar lama tidak mengembalikan yang sudah dibaca.
   await db.pengguna.updateMany({

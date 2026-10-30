@@ -694,7 +694,7 @@ const RUTE = [
     ['alasan atau catatan super admin ikut tampil', hpa.adaAlasan],
     ['pelaku dan waktu WIB tampil', hpa.adaPelakuWaktu],
     ['ketiganya terbaca "belum dibaca" oleh pembaca layar', hpa.belumDibacaAwal === 3, String(hpa.belumDibacaAwal)],
-    ['ada tautan ke Log Aktivitas', hpa.adaTautanLog],
+    ['tanpa tautan ke Log Aktivitas (tindakan Super Admin tidak ada di Log admin)', hpa.tanpaTautanLog],
     ['tombol Tandai semua sudah dibaca ada', hpa.adaTombolTandai],
     ['sesudah ditandai: tidak ada yang belum dibaca', hpa.belumDibacaSesudah === 0, String(hpa.belumDibacaSesudah)],
     ['sesudah ditandai: tombolnya hilang, barisnya tetap', hpa.tombolTandaiHilang && hpa.barisTetapAda],
@@ -1186,6 +1186,8 @@ const RUTE = [
     ['tombol kunci hidup setelah diketik persis', ak.hidupBilaCocok],
     ['sesudah disahkan, statusnya dan tautan cetak sertifikat tampil', ak.terkunciSesudahnya && ak.tautanSertifikat],
     ['Cetak Sertifikat menerima ?angkatan=', ak.sertifikatTersaring],
+    ['angkatan yang disembunyikan server (lewat atau dinonaktifkan) hilang dari kartu, beserta catatannya', ak.angkatanTersembunyiHilang],
+    ['tanpa angkatan tersembunyi, semua kartu kembali dan catatannya hilang', ak.angkatanKembaliSemua],
   ]
   const rusakAk = cekAk.filter(([, ok]) => !ok)
   gagal += rusakAk.length
@@ -1251,6 +1253,7 @@ const RUTE = [
     ['akun super admin (milik sendiri) tidak bisa dicabut', ps.superTidakBisaDicabut],
     ['tab Mahasiswa: NIM, prodi, dan angkatan tampil, pencarian NIM jalan, akses bisa dicabut', ps.aksesMahasiswa],
     ['izin lihat data master: hanya di baris admin biasa, butuh alasan, lalu lencananya muncul', ps.beriIzinMaster],
+    ['akses angkatan: panel di baris admin biasa, centang = terlihat (Semester 1–3 tercentang, yang lewat kosong), simpan butuh perubahan dan alasan', ps.panelAksesAngkatan],
     ['Data Master: admin tanpa izin melihat kartu minta akses baca (tombolnya mati tanpa alasan), menunya ada', ps.dataMasterTanpaIzin],
     ['Data Master: admin berizin hanya melihat, tanpa tombol tambah dan ubah', ps.dataMasterBacaSaja],
     ['Data Master: super admin melihat menu, tiga tab, pratinjau angkatan, dan catatan NIM', ps.dataMasterSuper],

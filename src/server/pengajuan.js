@@ -1,6 +1,6 @@
 import { db } from './db.js'
 import { GalatApi } from './api.js'
-import { angkaId, diKelasDosen, selesaiProgram, semesterDari } from './muat.js'
+import { angkaId, diKelasDosen, selesaiProgram, semesterDari, wajibAksesAngkatan } from './muat.js'
 import { ALASAN_MIN, catatBatch, cariTerkunci, contohBatch, petaMahasiswa, tulisBatch, wajibkanAlasan } from './nilai.js'
 import { catatLog } from './log.js'
 import { ajukanDalam } from './persetujuan.js'
@@ -70,6 +70,7 @@ export async function putuskanKoreksi(pengguna, { id, keputusan, catatan, nilaiB
   if (!KEPUTUSAN.includes(keputusan)) throw new GalatApi('Keputusan harus "disetujui" atau "ditolak".')
   const k = await db.pengajuanKoreksi.findUnique({ where: { id: angkaId(id) }, include: { mahasiswa: true } })
   if (!k) throw new GalatApi('Pengajuan tidak ditemukan.', 404)
+  await wajibAksesAngkatan(pengguna, [k.mahasiswa.angkatanId])
   const lapis = pengguna.superAdmin ? 'MENUNGGU_SUPERADMIN' : 'MENUNGGU_ADMIN'
   if (k.status !== lapis) return { ok: false }
 

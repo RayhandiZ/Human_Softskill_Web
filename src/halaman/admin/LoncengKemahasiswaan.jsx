@@ -10,7 +10,6 @@ import {
   IconChevronRight,
   IconEye,
   IconInfo,
-  IconList,
   IconPencil,
   IconUndo,
 } from '../../components/Icons'
@@ -156,7 +155,8 @@ export function usePekerjaanKemahasiswaan() {
 const SEGAR_PEMBARUAN = 60_000
 
 /**
- * Pembaruan dari Super Admin untuk admin biasa (rapat 24 Okt 2026; src/server/notifikasi.js). Dibaca ulang setiap
+ * Pembaruan dari Super Admin untuk admin biasa (src/server/notifikasi.js): sejak 31 Okt 2026 hanya tindakan yang
+ * berkaitan dengan admin itu sendiri, yaitu perubahan pada akunnya dan keputusan atas permintaannya. Dibaca ulang setiap
  * data panel dimuat (termasuk tombol Segarkan), saat tab peramban kembali terlihat, dan tiap menit selama terlihat.
  * Super admin tidak memakainya: yang dilaporkan justru tindakannya sendiri.
  */
@@ -244,7 +244,8 @@ function BarisPembaruan({ b }) {
   )
 }
 
-function PanelPembaruan({ pembaruan, onPilih }) {
+/* Tanpa tautan ke Log Aktivitas: sejak 31 Okt 2026 tindakan Super Admin tidak ada di Log Aktivitas admin. */
+function PanelPembaruan({ pembaruan }) {
   const t = useTeks()
   const { isi, galat, menandai, muat, tandai } = pembaruan
   const baris = isi?.baris ?? []
@@ -287,16 +288,6 @@ function PanelPembaruan({ pembaruan, onPilih }) {
             ))}
           </ul>
         ) : null}
-      </div>
-      <div className="border-t border-line bg-surface-2 px-4 py-3">
-        <Link
-          href="/admin/log"
-          onClick={onPilih}
-          className="inline-flex items-start gap-1.5 text-[12.5px] font-bold leading-snug text-brand-ink hover:underline"
-        >
-          <IconList size={13} className="mt-px shrink-0" />
-          {t('Rincian lengkap dan pembaruan yang lebih lama ada di Log Aktivitas')}
-        </Link>
       </div>
     </>
   )
@@ -404,7 +395,7 @@ export default function LoncengKemahasiswaan({ nada = 'onbrand' }) {
           ) : null}
 
           {tabPembaruan ? (
-            <PanelPembaruan pembaruan={pembaruan} onPilih={tutup} />
+            <PanelPembaruan pembaruan={pembaruan} />
           ) : (
             <>
               <div className="max-h-[min(55vh,460px)] overflow-y-auto px-2 py-2">
