@@ -25,7 +25,7 @@ const RINGKAS_PERAN = {
   Mahasiswa: 'Melihat capaiannya sendiri, mengajukan koreksi bila nilainya keliru, dan meminta akses cetak sertifikat.',
   Dosen: 'Mengunggah nilai angkatan yang diampunya lewat Excel dan memantau hasilnya; perbaikan untuk angkatan yang sudah disahkan diajukan ke Super Admin.',
   Kemahasiswaan:
-    'Membaca nilai dan memantau kelengkapannya, memutuskan lapis pertama pengajuan koreksi dan akses cetak sertifikat, serta mengurus angkatan dan kurikulum.',
+    'Membaca nilai dan memantau kelengkapannya, memutuskan lapis pertama pengajuan koreksi, meninjau akses cetak sertifikat dan meneruskannya dengan rekomendasi, serta mengurus angkatan dan kurikulum.',
   'Super Admin':
     'Wewenang tertinggi: memegang nilai dan data master, memutuskan lapis kedua koreksi dan akses cetak sertifikat, menyetujui permintaan admin, mengatur penilaian dan akses, dan mengawasi seluruh jejak.',
 }
@@ -51,9 +51,15 @@ const MATRIKS = [
   },
   // /api/sertifikat dan /api/sertifikat/keputusan (src/server/sertifikat.js).
   { tindakan: 'Meminta akses cetak sertifikat', izin: [['syarat', 'bila seluruh syarat terpenuhi'], ['tidak'], ['tidak'], ['tidak']] },
+  // Admin tidak menyetujui atau menolak sendiri; ia meneruskan dengan rekomendasi dan alasan (keputusan 26 Okt 2026).
   {
     tindakan: 'Menyetujui akses cetak sertifikat',
-    izin: [['tidak'], ['tidak'], ['syarat', 'lapis pertama'], ['syarat', 'lapis kedua, sesudah admin']],
+    izin: [
+      ['tidak'],
+      ['tidak'],
+      ['syarat', 'lapis pertama: meneruskan dengan rekomendasi disarankan atau tidak disarankan, wajib beralasan'],
+      ['syarat', 'lapis kedua, sesudah admin: menyetujui atau menolak'],
+    ],
   },
   // /api/sertifikat/cabut: akses yang sudah Siap dicetak, satu orang cukup; mahasiswa boleh meminta lagi lewat dua lapis.
   {

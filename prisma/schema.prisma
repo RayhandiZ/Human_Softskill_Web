@@ -307,13 +307,15 @@ model PengajuanKoreksi {         // mahasiswa mengajukan, admin meneruskan (lapi
   mahasiswa       Mahasiswa         @relation(fields: [mahasiswaId], references: [id])
 }
 
-model PermintaanSertifikat {     // mahasiswa yang layak meminta akses cetak; admin lalu super admin menyetujui
+model PermintaanSertifikat {     // mahasiswa yang layak meminta akses cetak; admin meneruskan, super admin memutuskan
   id          Int              @id @default(autoincrement())
   mahasiswaId Int
   status      StatusSertifikat @default(MENUNGGU_ADMIN)
   diajukan    DateTime         @default(now())
-  adminOleh   Int?                          // lapis 1
+  adminOleh   Int?                          // lapis 1: admin yang meneruskan
   adminPada   DateTime?
+  adminSaran  Boolean?                      // rekomendasi admin: true disarankan, false tidak disarankan
+  adminCatatan String?         @db.Text     // alasan rekomendasi admin, dibaca super admin (bukan mahasiswa)
   superOleh   Int?                          // lapis 2
   superPada   DateTime?
   ditolakOleh Int?

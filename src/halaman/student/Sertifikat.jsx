@@ -11,14 +11,15 @@ import { useStudent } from './StudentLayout'
 import LembarSertifikat from './LembarSertifikat'
 
 /* Sertifikat mahasiswa. Sejak rapat 24 Okt 2026 memenuhi seluruh syarat saja belum cukup: mahasiswa meminta akses
-   cetak, admin Kemahasiswaan lalu Super Admin menyetujuinya, baru sertifikat bisa dicetak atau disimpan sebagai PDF
-   dari halaman ini. Sertifikat tidak dikirim lewat surel. Akses yang sudah disetujui bisa dicabut Kemahasiswaan, dan
+   cetak, admin Kemahasiswaan meninjaunya, lalu Super Admin menyetujuinya, baru sertifikat bisa dicetak atau disimpan
+   sebagai PDF dari halaman ini. Rekomendasi admin untuk Super Admin tidak dikirim ke mahasiswa (susunSertifikat di
+   src/server/muat.js); yang terbaca di sini hanya keputusan akhirnya. Sertifikat tidak dikirim lewat surel. Akses yang sudah disetujui bisa dicabut Kemahasiswaan, dan
    setiap kali dibuka untuk dicetak tercatat. Lihat src/server/sertifikat.js dan README.md › Sertifikat. */
 
 const KALIMAT_KEADAAN = {
   bisa_diminta: 'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.',
   menunggu_admin: 'Permintaan akses cetak sedang ditinjau admin Kemahasiswaan.',
-  menunggu_superadmin: 'Admin Kemahasiswaan sudah menyetujui. Menunggu persetujuan Super Admin.',
+  menunggu_superadmin: 'Admin Kemahasiswaan sudah meninjau. Menunggu keputusan Super Admin.',
   siap_dicetak: 'Akses cetak sudah disetujui. Sertifikat siap dicetak.',
   ditolak: 'Permintaan akses cetak ditolak. Periksa alasannya, lalu ajukan lagi bila sudah sesuai.',
   dicabut: 'Akses cetak sertifikatmu dicabut. Baca alasannya, lalu minta lagi bila masalahnya sudah selesai.',
@@ -190,7 +191,7 @@ function LangkahAkses({ permintaan }) {
   const sekarang = LANGKAH_SERTIFIKAT.indexOf(permintaan.status)
   const keterangan = [
     permintaan.lapis1
-      ? teks('Disetujui {tanggal}', { tanggal: permintaan.lapis1.tanggal })
+      ? teks('Ditinjau {tanggal}', { tanggal: permintaan.lapis1.tanggal })
       : teks('Diajukan {tanggal}', { tanggal: permintaan.diajukan }),
     permintaan.lapis2
       ? teks('Disetujui {tanggal}', { tanggal: permintaan.lapis2.tanggal })

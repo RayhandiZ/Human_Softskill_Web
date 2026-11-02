@@ -470,6 +470,7 @@ export const EN = {
   'Tolak pengajuan ubah nilai': 'Reject score change request',
   'Setujui akses cetak sertifikat': 'Approve certificate print access',
   'Tolak akses cetak sertifikat': 'Reject certificate print access',
+  'Teruskan akses cetak sertifikat': 'Forward certificate print access',
   'Cabut akses cetak sertifikat': 'Revoke certificate print access',
   'Buka sertifikat untuk dicetak': 'Open certificate for printing',
   'batch {id}': 'batch {id}',
@@ -1162,8 +1163,8 @@ export const EN = {
     'Uploads scores for the cohorts they teach through Excel and monitors the results; fixes for ratified cohorts go to the Super Admin for approval.',
   'Melihat capaiannya sendiri, mengajukan koreksi bila nilainya keliru, dan meminta akses cetak sertifikat.':
     'Views their own achievements, requests a correction when a score is wrong, and requests certificate print access.',
-  'Membaca nilai dan memantau kelengkapannya, memutuskan lapis pertama pengajuan koreksi dan akses cetak sertifikat, serta mengurus angkatan dan kurikulum.':
-    'Reads scores and monitors their completeness, decides the first layer of correction and certificate print access requests, and handles cohorts and curriculum.',
+  'Membaca nilai dan memantau kelengkapannya, memutuskan lapis pertama pengajuan koreksi, meninjau akses cetak sertifikat dan meneruskannya dengan rekomendasi, serta mengurus angkatan dan kurikulum.':
+    'Reads scores and monitors their completeness, decides the first layer of correction requests, reviews certificate print access and forwards it with a recommendation, and handles cohorts and curriculum.',
   'Wewenang tertinggi: memegang nilai dan data master, memutuskan lapis kedua koreksi dan akses cetak sertifikat, menyetujui permintaan admin, mengatur penilaian dan akses, dan mengawasi seluruh jejak.':
     'Highest authority: holds scores and master data, decides the second layer of corrections and certificate print access, approves admin requests, manages assessment and access, and oversees every trail.',
   'Melihat capaian mahasiswa': 'View student achievements',
@@ -1174,8 +1175,9 @@ export const EN = {
   'Meminta akses cetak sertifikat': 'Request certificate print access',
   'bila seluruh syarat terpenuhi': 'once every requirement is met',
   'Menyetujui akses cetak sertifikat': 'Approve certificate print access',
-  'lapis pertama': 'first layer',
-  'lapis kedua, sesudah admin': 'second layer, after the admin',
+  'lapis pertama: meneruskan dengan rekomendasi disarankan atau tidak disarankan, wajib beralasan':
+    'first layer: forwards with a recommended or not recommended verdict, reason required',
+  'lapis kedua, sesudah admin: menyetujui atau menolak': 'second layer, after the admin: approve or reject',
   'Mencetak sertifikat': 'Print certificates',
   'sesudah akses cetaknya disetujui': 'after its print access is approved',
   'Mencabut akses cetak sertifikat': 'Revoke certificate print access',
@@ -1189,8 +1191,8 @@ export const EN = {
     'The certificate can only be printed with the Print certificate button on this page, after its print access is approved.',
   'Sertifikat dicetak, atau disimpan sebagai PDF lewat dialog cetak, dari tombol di halaman ini, dan setiap pembukaan dialog cetak tercatat. Sertifikat tidak dikirim lewat surel.':
     'Print the certificate, or save it as a PDF through the print dialog, with the button on this page; every time the print dialog opens is recorded. Certificates are not sent by email.',
-  'Tombol cetak hanya aktif untuk sertifikat yang akses cetaknya sudah disetujui admin Kemahasiswaan dan Super Admin. Akses itu bisa dicabut lagi, dan setiap pembukaan dialog cetak tercatat. Sertifikat dicetak atau disimpan sebagai PDF dari website ini; jangan kirim lewat surel.':
-    'The print button is only active for certificates whose print access was approved by the Student Affairs admin and the Super Admin. That access can be revoked again, and every time the print dialog opens is recorded. Certificates are printed or saved as PDF from this website; do not send them by email.',
+  'Tombol cetak hanya aktif untuk sertifikat yang akses cetaknya sudah ditinjau admin Kemahasiswaan dan disetujui Super Admin. Akses itu bisa dicabut lagi, dan setiap pembukaan dialog cetak tercatat. Sertifikat dicetak atau disimpan sebagai PDF dari website ini; jangan kirim lewat surel.':
+    'The print button is only active for certificates whose print access was reviewed by the Student Affairs admin and approved by the Super Admin. That access can be revoked again, and every time the print dialog opens is recorded. Certificates are printed or saved as PDF from this website; do not send them by email.',
   'dicabut {tanggal}': 'revoked {tanggal}',
   'dibuka untuk dicetak {n} kali, terakhir {waktu}': 'opened for printing {n} times, last {waktu}',
   'belum pernah dibuka untuk dicetak': 'never opened for printing',
@@ -1199,8 +1201,8 @@ export const EN = {
     'A revocation reason is required, at least 10 characters, so the student knows why.',
   'Akses cetak ini sudah tidak Siap dicetak, mungkin sudah dicabut di jendela lain.':
     'This print access is no longer Ready to print; it may have been revoked in another window.',
-  'Sesudah dicabut, mahasiswa tidak bisa mencetak lagi sampai permintaan barunya disetujui admin Kemahasiswaan dan Super Admin. Sertifikat yang sudah telanjur tercetak tidak ikut tertarik.':
-    'Once revoked, the student cannot print again until a new request is approved by the Student Affairs admin and the Super Admin. Certificates already printed are not recalled.',
+  'Sesudah dicabut, mahasiswa tidak bisa mencetak lagi sampai permintaan barunya ditinjau admin Kemahasiswaan dan disetujui Super Admin. Sertifikat yang sudah telanjur tercetak tidak ikut tertarik.':
+    'Once revoked, the student cannot print again until a new request is reviewed by the Student Affairs admin and approved by the Super Admin. Certificates already printed are not recalled.',
   'Sudah dibuka untuk dicetak {n} kali, terakhir {waktu} oleh {oleh}.': 'Opened for printing {n} times, last on {waktu} by {oleh}.',
   'Belum pernah dibuka untuk dicetak.': 'Never opened for printing.',
   'Alasan pencabutan (wajib, terbaca mahasiswa)': 'Reason for revocation (required, shown to the student)',
@@ -1812,8 +1814,8 @@ export const EN = {
   'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.':
     'All requirements are met. Request print access to get your certificate.',
   'Permintaan akses cetak sedang ditinjau admin Kemahasiswaan.': 'Your print access request is being reviewed by Student Affairs.',
-  'Admin Kemahasiswaan sudah menyetujui. Menunggu persetujuan Super Admin.':
-    'Student Affairs has approved it. Waiting for the Super Admin to approve.',
+  'Admin Kemahasiswaan sudah meninjau. Menunggu keputusan Super Admin.':
+    'Student Affairs has reviewed it. Waiting for the Super Admin to decide.',
   'Akses cetak sudah disetujui. Sertifikat siap dicetak.': 'Print access is approved. Your certificate is ready to print.',
   'Permintaan akses cetak ditolak. Periksa alasannya, lalu ajukan lagi bila sudah sesuai.':
     'Your print access request was rejected. Check the reason, then request again once it is resolved.',
@@ -1826,6 +1828,7 @@ export const EN = {
   'Langkah akses cetak': 'Print access steps',
   'Diajukan {tanggal}': 'Requested {tanggal}',
   'Disetujui {tanggal}': 'Approved {tanggal}',
+  'Ditinjau {tanggal}': 'Reviewed {tanggal}',
   'Sedang ditinjau': 'Under review',
   'Bisa dicetak sekarang': 'Can be printed now',
   // Ubin Sertifikat di Dashboard mahasiswa.
@@ -1865,29 +1868,55 @@ export const EN = {
   'Nilai baru {nilai}.': 'New score {nilai}.',
   'Tidak ada pengajuan ubah nilai yang menunggu Anda': 'No score change requests are waiting for you',
   // Cetak Sertifikat dan Persetujuan.
-  'Putuskan lapis pertama permintaan akses cetak, dan bantu mahasiswa yang kesulitan mencetak sertifikatnya sendiri.':
-    'Decide the first layer of print access requests, and help students who struggle to print their own certificate.',
+  'Tinjau permintaan akses cetak dan teruskan ke Super Admin dengan rekomendasi Anda, dan bantu mahasiswa yang kesulitan mencetak sertifikatnya sendiri.':
+    'Review print access requests and forward them to the Super Admin with your recommendation, and help students who struggle to print their own certificate.',
   'Putuskan lapis kedua permintaan akses cetak, dan bantu mahasiswa yang kesulitan mencetak sertifikatnya sendiri.':
     'Decide the second layer of print access requests, and help students who struggle to print their own certificate.',
   'Menunggu Anda': 'Waiting for you',
   'Akses cetak': 'Print access',
   'Belum diminta': 'Not requested',
   Tinjau: 'Review',
+  'Tinjau permintaan akses cetak {nama}': 'Review the print access request of {nama}',
   'Tidak ada permintaan yang menunggu Anda': 'No requests are waiting for you',
-  'Admin Kemahasiswaan sudah menyetujui permintaan ini pada {tanggal}. Setujui untuk membuka akses cetak mahasiswa.':
-    'Student Affairs approved this request on {tanggal}. Approve to open print access for the student.',
-  'Periksa syarat dan nilainya. Bila sesuai, teruskan ke Super Admin; akses cetak baru terbuka setelah Super Admin menyetujui.':
-    'Check the requirements and scores. If they are correct, forward it to the Super Admin; print access opens only after the Super Admin approves.',
+  'Setujui untuk membuka akses cetak mahasiswa, atau tolak dengan alasan yang dibaca mahasiswa.':
+    'Approve to open print access for the student, or reject with a reason the student will read.',
+  'Periksa syarat dan nilai tiap aspek, lalu teruskan ke Super Admin dengan rekomendasi Anda beserta alasannya. Super Admin yang memutuskan; akses cetak baru terbuka setelah Super Admin menyetujui.':
+    'Check the requirements and the score of each aspect, then forward it to the Super Admin with your recommendation and its reason. The Super Admin decides; print access opens only after the Super Admin approves.',
   'Mahasiswa ini sudah tidak memenuhi syarat. Tolak permintaannya dengan alasan itu.':
     'This student no longer meets the requirements. Reject the request with that reason.',
+  'Mahasiswa ini sudah tidak memenuhi syarat. Teruskan dengan rekomendasi Tidak disarankan beserta alasan itu.':
+    'This student no longer meets the requirements. Forward it as Not recommended with that reason.',
   'Setujui akses cetak': 'Approve print access',
+  // Rekomendasi admin saat meneruskan akses cetak (TinjauPermintaan di CetakSertifikat.jsx, keputusan 26 Okt 2026).
+  'Teruskan: disarankan': 'Forward: recommended',
+  'Teruskan: tidak disarankan': 'Forward: not recommended',
+  'Disarankan': 'Recommended',
+  'Tidak disarankan': 'Not recommended',
+  'Tidak tercatat': 'Not recorded',
+  'Rekomendasi': 'Recommendation',
+  'Rekomendasi admin': 'Admin recommendation',
+  'Alasan rekomendasi (wajib, dibaca Super Admin)': 'Reason for the recommendation (required, read by the Super Admin)',
+  'Alasan rekomendasi wajib diisi, minimal 10 karakter, supaya Super Admin tahu pertimbangan Anda.':
+    'A reason for the recommendation is required, at least 10 characters, so the Super Admin knows your consideration.',
+  'Diteruskan sebelum alasan rekomendasi diwajibkan, jadi tidak ada alasan tertulis.':
+    'Forwarded before a recommendation reason was required, so there is no written reason.',
+  'Lihat nilai tiap aspek': 'View the score of each aspect',
+  // Mode tinjau di detail mahasiswa (?tinjau=sertifikat, StudentDetail.jsx).
+  'Anda sedang meninjau permintaan akses cetak sertifikat {nama}. Periksa nilai tiap aspek di transkrip di bawah, lalu putuskan di bagian Kelayakan sertifikat.':
+    'You are reviewing the certificate print access request of {nama}. Check the score of each aspect in the transcript below, then decide in the Certificate eligibility section.',
+  'Ke keputusan': 'Go to the decision',
+  'Kembali ke Cetak Sertifikat': 'Back to Print Certificates',
+  'Kembali ke Persetujuan': 'Back to Approvals',
+  'Permintaan akses cetak mahasiswa ini tidak sedang menunggu keputusan Anda. Statusnya sekarang: {status}.':
+    "This student's print access request is not waiting for your decision. Its current status: {status}.",
+  'Mahasiswa ini belum meminta akses cetak sertifikat.': 'This student has not requested certificate print access.',
   'Permintaan ini sudah diputuskan, mungkin di jendela lain.': 'This request has already been decided, perhaps in another window.',
   'Akses cetak sertifikat': 'Certificate print access',
   'Pengajuan ubah nilai': 'Score change requests',
   'Sudah diteruskan admin Kemahasiswaan. Setujui untuk menerapkan nilai barunya, atau tolak dengan alasan.':
     'Forwarded by Student Affairs. Approve to apply the new score, or reject with a reason.',
-  'Sudah disetujui admin Kemahasiswaan. Setujui untuk membuka akses cetak mahasiswa, atau tolak dengan alasan.':
-    'Approved by Student Affairs. Approve to open print access for the student, or reject with a reason.',
+  'Sudah ditinjau admin Kemahasiswaan beserta rekomendasinya. Setujui untuk membuka akses cetak mahasiswa, atau tolak dengan alasan.':
+    'Reviewed by Student Affairs with a recommendation. Approve to open print access for the student, or reject with a reason.',
   'Tidak ada permintaan akses cetak yang menunggu Anda': 'No print access requests are waiting for you',
   'Nilai akhir {nilai}': 'Final score {nilai}',
   'Permintaan admin dan dosen yang perlu persetujuan Anda, misalnya tanda final, bobot, pengesahan angkatan, akses data master, dan perbaikan nilai untuk angkatan yang sudah disahkan. Setujui untuk menjalankannya persis seperti yang diajukan, atau tolak dengan catatan.':

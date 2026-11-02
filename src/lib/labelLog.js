@@ -35,6 +35,7 @@ export const LABEL_LOG = {
   TERUSKAN_KOREKSI: 'Teruskan pengajuan ubah nilai',
   SETUJUI_KOREKSI: 'Setujui dan terapkan ubah nilai',
   TOLAK_KOREKSI: 'Tolak pengajuan ubah nilai',
+  TERUSKAN_SERTIFIKAT: 'Teruskan akses cetak sertifikat',
   SETUJUI_SERTIFIKAT: 'Setujui akses cetak sertifikat',
   TOLAK_SERTIFIKAT: 'Tolak akses cetak sertifikat',
   CABUT_SERTIFIKAT: 'Cabut akses cetak sertifikat',

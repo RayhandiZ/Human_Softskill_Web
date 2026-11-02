@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Link from 'next/link'
 import { Badge, Card, CardHeader, CatatanKaki, EmptyState, JudulHalaman, TabSaring } from '../../components/Ui'
 import { IconAlert, IconCertificate, IconCheck, IconInbox, IconUndo, IconX } from '../../components/Icons'
 import { PERMINTAAN, PERMINTAAN_SERTIFIKAT, batalkanPermintaan, putuskanPermintaan, useStore } from '../../lib/store'
@@ -102,7 +103,7 @@ export default function PersetujuanAdmin() {
             <CardHeader
               icon={IconCertificate}
               title={t('Akses cetak sertifikat')}
-              subtitle={t('Sudah disetujui admin Kemahasiswaan. Setujui untuk membuka akses cetak mahasiswa, atau tolak dengan alasan.')}
+              subtitle={t('Sudah ditinjau admin Kemahasiswaan beserta rekomendasinya. Setujui untuk membuka akses cetak mahasiswa, atau tolak dengan alasan.')}
             />
             <SertifikatLapisDua aktor={admin?.officer} />
           </Card>
@@ -135,6 +136,19 @@ function SertifikatLapisDua({ aktor }) {
               {[s?.program, s ? t('Angkatan {label}', { label: s.angkatanLabel }) : null, k ? t('Nilai akhir {nilai}', { nilai: k.transkrip.akhir.nilai ?? '–' }) : null, t('diajukan {tanggal}', { tanggal: p.diajukan })]
                 .filter(Boolean)
                 .join(' · ')}
+              {/* Nilai tiap aspek ada di halaman detail mahasiswa; mode tinjau di sana memasang keputusan yang sama dan
+                  kembali ke sini sesudahnya (StudentDetail.jsx). */}
+              {s ? (
+                <>
+                  {' · '}
+                  <Link
+                    href={'/admin/mahasiswa/' + s.id + '?tinjau=sertifikat&dari=persetujuan'}
+                    className="font-bold text-brand-ink underline-offset-4 hover:underline"
+                  >
+                    {t('Lihat nilai tiap aspek')}
+                  </Link>
+                </>
+              ) : null}
             </p>
             <TinjauPermintaan p={p} layak={Boolean(k?.layak)} superAdmin aktor={aktor} />
           </li>

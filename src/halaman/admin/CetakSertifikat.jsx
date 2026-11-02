@@ -28,7 +28,7 @@ import {
   segarkanData,
   useStore,
 } from '../../lib/store'
-import { LABEL_SERTIFIKAT, keadaanSertifikat, statusGiliran } from '../../lib/duaLapis'
+import { LABEL_SARAN, LABEL_SERTIFIKAT, keadaanSertifikat, statusGiliran } from '../../lib/duaLapis'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 
@@ -36,11 +36,12 @@ const PAGE_SIZE = 12
 
 /* Susunannya sama dengan Data Mahasiswa: tab kelayakan berjumlah, alat saring, tabel, kaki bernomor halaman.
    Lihat README.md › Panel Kemahasiswaan › Tampilan. Sejak rapat 24 Okt 2026 sertifikat hanya bisa dicetak setelah
-   akses cetaknya disetujui dua lapis: mahasiswa meminta, admin Kemahasiswaan memutuskan lapis pertama, Super Admin
-   lapis kedua. Halaman ini tempat keduanya memutuskan (tab Menunggu Anda), dan tombol Cetak di sini pun hanya aktif
-   untuk yang sudah Siap dicetak, supaya tidak ada sertifikat yang terbit tanpa pemeriksaan. Akses yang sudah Siap
-   dicetak bisa dicabut di sini (misalnya ada laporan sikap sesudah disetujui), dan kolom Akses cetak menyebut berapa
-   kali sertifikatnya sudah dibuka untuk dicetak. */
+   akses cetaknya melewati dua lapis: mahasiswa meminta, admin Kemahasiswaan meninjau dan meneruskannya dengan
+   rekomendasi, Super Admin memutuskan. Tab Menunggu Anda memuat giliran akun ini; tombol Tinjau membuka halaman
+   detail mahasiswa dalam mode tinjau (?tinjau=sertifikat), supaya nilai tiap aspek terbaca di tempat yang sama dengan
+   keputusannya. Tombol Cetak di sini pun hanya aktif untuk yang sudah Siap dicetak, supaya tidak ada sertifikat yang
+   terbit tanpa pemeriksaan. Akses yang sudah Siap dicetak bisa dicabut di sini (misalnya ada laporan sikap sesudah
+   disetujui), dan kolom Akses cetak menyebut berapa kali sertifikatnya sudah dibuka untuk dicetak. */
 export default function CetakSertifikat() {
   const t = useTeks()
   const versi = useStore()
@@ -53,7 +54,6 @@ export default function CetakSertifikat() {
   const [kelompok, setKelompok] = useState(() => (params.get('tab') === 'permintaan' ? 'permintaan' : 'semua'))
   const [page, setPage] = useState(1)
   const [dicetak, setDicetak] = useState(null)
-  const [tinjau, setTinjau] = useState(null)
   const [cabutNim, setCabutNim] = useState(null)
   const [galatCetak, setGalatCetak] = useState('')
   const giliran = statusGiliran(user)
@@ -124,7 +124,7 @@ export default function CetakSertifikat() {
         keterangan={t(
           user?.superAdmin
             ? 'Putuskan lapis kedua permintaan akses cetak, dan bantu mahasiswa yang kesulitan mencetak sertifikatnya sendiri.'
-            : 'Putuskan lapis pertama permintaan akses cetak, dan bantu mahasiswa yang kesulitan mencetak sertifikatnya sendiri.',
+            : 'Tinjau permintaan akses cetak dan teruskan ke Super Admin dengan rekomendasi Anda, dan bantu mahasiswa yang kesulitan mencetak sertifikatnya sendiri.',
         )}
       >
         <p className="mt-1 text-[14px] text-ink-2">
@@ -208,8 +208,6 @@ export default function CetakSertifikat() {
                 const sebab = k.gagal.map((g) => g.ringkasT).filter(Boolean)
                 const nilai = k.transkrip.akhir.nilai
                 const giliranSaya = p?.status === giliran
-                // Bila diputuskan dari jendela lain, panelnya ikut hilang bersama tombol Tinjau yang menutupnya.
-                const terbuka = tinjau === s.nim && giliranSaya
                 // Pencabutan bergantung pada status permintaannya saja: akses yang Siap dicetak tetap bisa dicabut walau
                 // syaratnya sudah gugur karena nilainya berubah.
                 const bisaDicabut = p?.status === 'siap_dicetak'
@@ -258,15 +256,15 @@ export default function CetakSertifikat() {
                       </td>
                       <td className="py-2 pl-3 pr-4 text-right sm:pr-5">
                         {giliranSaya ? (
-                          <button
-                            type="button"
-                            onClick={() => setTinjau(terbuka ? null : s.nim)}
-                            aria-expanded={terbuka}
-                            aria-controls={'tinjau-' + s.id}
+                          /* Ke halaman detail mahasiswa dalam mode tinjau: nilai tiap aspek dan keputusannya di satu
+                             halaman (TinjauPermintaan di bawah, dipasang KartuSertifikat di StudentDetail.jsx). */
+                          <Link
+                            href={'/admin/mahasiswa/' + s.id + '?tinjau=sertifikat'}
+                            aria-label={t('Tinjau permintaan akses cetak {nama}', { nama: s.name })}
                             className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-brand-ink bg-brand-soft px-3 text-[13px] font-bold text-brand-ink transition hover:brightness-95"
                           >
-                            {t(terbuka ? 'Tutup' : 'Tinjau')}
-                          </button>
+                            {t('Tinjau')}
+                          </Link>
                         ) : (
                           <span className="inline-flex flex-wrap justify-end gap-2">
                             {/* Tombol garis, bukan isian penuh: satu tombol biru pekat per baris membuat tabel terasa berat. */}
@@ -298,37 +296,24 @@ export default function CetakSertifikat() {
                         )}
                       </td>
                     </tr>
-                    {terbuka || cabutTerbuka ? (
+                    {cabutTerbuka ? (
                       <tr className="[&>td]:border-b [&>td]:border-line">
-                        <td id={(terbuka ? 'tinjau-' : 'cabut-') + s.id} colSpan={8} className="bg-surface-2 p-0">
+                        <td id={'cabut-' + s.id} colSpan={8} className="bg-surface-2 p-0">
                           {/* Di HP tabel digulir ke kanan untuk mencapai tombol di kolom terakhir; panel selebar tabel akan
                               terbuka di luar layar. Selebar bagian yang terlihat dan menempel di kiri, panelnya selalu tampil. */}
                           <div className="sticky left-0 w-[100cqi] px-4 py-4 sm:px-5">
-                            {terbuka ? (
-                              <TinjauPermintaan
-                                p={p}
-                                layak={k.layak}
-                                superAdmin={Boolean(user?.superAdmin)}
-                                aktor={admin?.officer}
-                                onSelesai={() => {
-                                  setTinjau(null)
-                                  fokusNama(s)
-                                }}
-                              />
-                            ) : (
-                              <PanelCabut
-                                p={p}
-                                aktor={admin?.officer}
-                                onBatal={() => {
-                                  setCabutNim(null)
-                                  fokusKe('[aria-controls="cabut-' + s.id + '"]')
-                                }}
-                                onSelesai={() => {
-                                  setCabutNim(null)
-                                  fokusNama(s)
-                                }}
-                              />
-                            )}
+                            <PanelCabut
+                              p={p}
+                              aktor={admin?.officer}
+                              onBatal={() => {
+                                setCabutNim(null)
+                                fokusKe('[aria-controls="cabut-' + s.id + '"]')
+                              }}
+                              onSelesai={() => {
+                                setCabutNim(null)
+                                fokusNama(s)
+                              }}
+                            />
                           </div>
                         </td>
                       </tr>
@@ -354,7 +339,7 @@ export default function CetakSertifikat() {
       </Card>
 
       <CatatanKaki>
-        {t('Tombol cetak hanya aktif untuk sertifikat yang akses cetaknya sudah disetujui admin Kemahasiswaan dan Super Admin. Akses itu bisa dicabut lagi, dan setiap pembukaan dialog cetak tercatat. Sertifikat dicetak atau disimpan sebagai PDF dari website ini; jangan kirim lewat surel.')}
+        {t('Tombol cetak hanya aktif untuk sertifikat yang akses cetaknya sudah ditinjau admin Kemahasiswaan dan disetujui Super Admin. Akses itu bisa dicabut lagi, dan setiap pembukaan dialog cetak tercatat. Sertifikat dicetak atau disimpan sebagai PDF dari website ini; jangan kirim lewat surel.')}
       </CatatanKaki>
 
       {/* Dipasang di <body> hanya selama mencetak; lihat README.md › Cetak. */}
@@ -366,8 +351,10 @@ export default function CetakSertifikat() {
 }
 
 /**
- * Keputusan satu permintaan akses cetak: admin biasa meneruskan ke Super Admin, Super Admin membuka akses cetaknya.
- * Dipakai juga halaman Persetujuan super admin.
+ * Keputusan satu permintaan akses cetak, dipasang di halaman detail mahasiswa yang dibuka tombol Tinjau
+ * (?tinjau=sertifikat) dan di halaman Persetujuan super admin. Admin biasa tidak menyetujui atau menolak sendiri: ia
+ * meneruskan ke Super Admin dengan rekomendasi Disarankan atau Tidak disarankan dan alasan wajib (keputusan 26 Okt
+ * 2026). Super Admin membaca rekomendasi itu, lalu menyetujui atau menolak dengan alasan yang dibaca mahasiswa.
  */
 export function TinjauPermintaan({ p, layak, superAdmin, aktor, onSelesai = () => {} }) {
   const t = useTeks()
@@ -378,8 +365,15 @@ export function TinjauPermintaan({ p, layak, superAdmin, aktor, onSelesai = () =
 
   async function putuskan(keputusan) {
     setGalat('')
-    if (keputusan === 'ditolak' && catatan.trim().length < 10) {
-      setGalat(t('Alasan penolakan wajib diisi, minimal 10 karakter, supaya mahasiswa tahu sebabnya.'))
+    // Admin selalu beralasan; Super Admin hanya bila menolak.
+    if ((!superAdmin || keputusan === 'ditolak') && catatan.trim().length < 10) {
+      setGalat(
+        t(
+          superAdmin
+            ? 'Alasan penolakan wajib diisi, minimal 10 karakter, supaya mahasiswa tahu sebabnya.'
+            : 'Alasan rekomendasi wajib diisi, minimal 10 karakter, supaya Super Admin tahu pertimbangan Anda.',
+        ),
+      )
       return
     }
     setSibuk(true)
@@ -396,21 +390,27 @@ export function TinjauPermintaan({ p, layak, superAdmin, aktor, onSelesai = () =
 
   return (
     <div className="max-w-3xl space-y-3 text-left">
+      {superAdmin ? <RekomendasiAdmin lapis1={p.lapis1} /> : null}
       <p className="text-[13.5px] leading-relaxed text-ink">
         {t(
           superAdmin
-            ? 'Admin Kemahasiswaan sudah menyetujui permintaan ini pada {tanggal}. Setujui untuk membuka akses cetak mahasiswa.'
-            : 'Periksa syarat dan nilainya. Bila sesuai, teruskan ke Super Admin; akses cetak baru terbuka setelah Super Admin menyetujui.',
-          { tanggal: p.lapis1?.tanggal ?? '' },
+            ? 'Setujui untuk membuka akses cetak mahasiswa, atau tolak dengan alasan yang dibaca mahasiswa.'
+            : 'Periksa syarat dan nilai tiap aspek, lalu teruskan ke Super Admin dengan rekomendasi Anda beserta alasannya. Super Admin yang memutuskan; akses cetak baru terbuka setelah Super Admin menyetujui.',
         )}
       </p>
       {!layak ? (
         <p className="text-[13px] font-semibold text-[color:var(--teks-kritis,var(--critical))]">
-          {t('Mahasiswa ini sudah tidak memenuhi syarat. Tolak permintaannya dengan alasan itu.')}
+          {t(
+            superAdmin
+              ? 'Mahasiswa ini sudah tidak memenuhi syarat. Tolak permintaannya dengan alasan itu.'
+              : 'Mahasiswa ini sudah tidak memenuhi syarat. Teruskan dengan rekomendasi Tidak disarankan beserta alasan itu.',
+          )}
         </p>
       ) : null}
       <label htmlFor={idCatatan} className="block">
-        <span className="mb-1.5 block label">{t('Catatan (wajib bila menolak)')}</span>
+        <span className="mb-1.5 block label">
+          {t(superAdmin ? 'Catatan (wajib bila menolak)' : 'Alasan rekomendasi (wajib, dibaca Super Admin)')}
+        </span>
         <input id={idCatatan} className="field !py-2.5" value={catatan} onChange={(e) => setCatatan(e.target.value)} />
       </label>
       {galat ? (
@@ -423,20 +423,48 @@ export function TinjauPermintaan({ p, layak, superAdmin, aktor, onSelesai = () =
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2.5">
-        <button type="button" className="btn-primary min-h-[44px]" disabled={sibuk || !layak} onClick={() => putuskan('disetujui')}>
+        <button
+          type="button"
+          className="btn-primary min-h-[44px]"
+          disabled={sibuk || !layak}
+          onClick={() => putuskan(superAdmin ? 'disetujui' : 'disarankan')}
+        >
           <IconCheck size={16} />
-          {t(superAdmin ? 'Setujui akses cetak' : 'Teruskan ke Super Admin')}
+          {t(superAdmin ? 'Setujui akses cetak' : 'Teruskan: disarankan')}
         </button>
         <button
           type="button"
           disabled={sibuk}
-          onClick={() => putuskan('ditolak')}
+          onClick={() => putuskan(superAdmin ? 'ditolak' : 'tidak_disarankan')}
           className="btn-ghost min-h-[44px] hover:border-[var(--critical)] hover:text-[color:var(--teks-kritis,var(--critical))]"
         >
           <IconX size={15} />
-          {t('Tolak')}
+          {t(superAdmin ? 'Tolak' : 'Teruskan: tidak disarankan')}
         </button>
       </div>
+    </div>
+  )
+}
+
+/** Rekomendasi admin Kemahasiswaan dari lapis pertama beserta alasannya, dibaca Super Admin sebelum memutuskan. */
+function RekomendasiAdmin({ lapis1 }) {
+  const t = useTeks()
+  if (!lapis1) return null
+  const tidak = lapis1.saran === 'tidak_disarankan'
+  return (
+    <div className="rounded-xl border border-line bg-surface px-4 py-3">
+      <p className="text-[13.5px] text-ink">
+        <span className="font-bold">{t('Rekomendasi admin')}:</span>{' '}
+        <span className={'font-bold ' + (tidak ? 'teks-kritis' : 'text-brand-ink')}>
+          {t(LABEL_SARAN[lapis1.saran] ?? 'Tidak tercatat')}
+        </span>
+      </p>
+      <p className="mt-1 text-[13.5px] leading-relaxed text-ink">
+        {lapis1.catatan
+          ? '“' + lapis1.catatan + '”'
+          : t('Diteruskan sebelum alasan rekomendasi diwajibkan, jadi tidak ada alasan tertulis.')}
+      </p>
+      <p className="mt-1 text-[12.5px] text-ink-2">{t('{oleh}, {tanggal}', { oleh: lapis1.oleh ?? '', tanggal: lapis1.tanggal })}</p>
     </div>
   )
 }
@@ -475,7 +503,7 @@ function PanelCabut({ p, aktor, onBatal, onSelesai }) {
     <div className="max-w-3xl space-y-3 text-left">
       <p className="text-[13.5px] leading-relaxed text-ink">
         {t(
-          'Sesudah dicabut, mahasiswa tidak bisa mencetak lagi sampai permintaan barunya disetujui admin Kemahasiswaan dan Super Admin. Sertifikat yang sudah telanjur tercetak tidak ikut tertarik.',
+          'Sesudah dicabut, mahasiswa tidak bisa mencetak lagi sampai permintaan barunya ditinjau admin Kemahasiswaan dan disetujui Super Admin. Sertifikat yang sudah telanjur tercetak tidak ikut tertarik.',
         )}
       </p>
       <p className="text-[13px] font-semibold text-ink">

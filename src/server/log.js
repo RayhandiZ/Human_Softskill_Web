@@ -60,6 +60,7 @@ export const AKSI_LOG = [
   'TERUSKAN_KOREKSI',
   'SETUJUI_KOREKSI',
   'TOLAK_KOREKSI',
+  'TERUSKAN_SERTIFIKAT',
   'SETUJUI_SERTIFIKAT',
   'TOLAK_SERTIFIKAT',
   // Sesudah disetujui: pencabutan oleh admin atau super admin, dan setiap kali sertifikat dibuka untuk dicetak.

@@ -95,6 +95,7 @@ const LABEL_RINCIAN = {
   lapis: 'Lapis',
   status: 'Status',
   keputusan: 'Keputusan',
+  rekomendasi: 'Rekomendasi',
   aksi: 'Tindakan',
   judul: 'Judul',
   dampak: 'Dampak',
@@ -194,6 +195,8 @@ function teksNilai(v, t, { kunci = null, aksi = null } = {}) {
   if (kunci === 'sumber') return dari(NAMA_SUMBER)
   if (kunci === 'cara') return dari(LABEL_CARA)
   if (kunci === 'keputusan') return dari(LABEL_KEPUTUSAN)
+  // Rekomendasi admin pada akses cetak sertifikat ('Disarankan' / 'Tidak disarankan', sertifikat.js).
+  if (kunci === 'rekomendasi') return t(s)
   if (kunci === 'dari' || kunci === 'ke') return dari(LABEL_TANDA)
   if (kunci === 'aksi') return LABEL_AKSI[s] || LABEL_LOG[s] ? t(LABEL_AKSI[s] ?? LABEL_LOG[s]) : s
   if (kunci === 'status') return LABEL_SERTIFIKAT[s.toLowerCase()] ? t(LABEL_SERTIFIKAT[s.toLowerCase()]) : s

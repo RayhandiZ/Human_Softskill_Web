@@ -1,23 +1,32 @@
 import { useState } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Transkrip from '../student/Transkrip'
 import { Badge, Card, CardHeader, CatatanKaki, EmptyState, GulirTabel, JUDUL_KOLOM } from '../../components/Ui'
 import { IconAlert, IconArrowLeft, IconCheck, IconList, IconLock, IconPencil, IconPrint, IconUndo } from '../../components/Icons'
 import { bolehTandaiFinal, kelayakanSertifikat } from '../../lib/rules'
 import { auditUntuk, getStudent, transkripOf } from '../../lib/data'
-import { menungguPersetujuan, setPenguncian } from '../../lib/store'
+import { PERMINTAAN_SERTIFIKAT, menungguPersetujuan, setPenguncian } from '../../lib/store'
+import { LABEL_SERTIFIKAT, statusGiliran } from '../../lib/duaLapis'
 import { CONFIG } from '../../lib/config'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 import { useStore } from '../../lib/store'
 import { CatatanPersetujuan, PesanMenunggu } from './PermintaanTerkirim'
 import { tautanInput } from './LoncengKemahasiswaan'
+import { TinjauPermintaan } from './CetakSertifikat'
 
+/* Mode tinjau (?tinjau=sertifikat): dibuka tombol Tinjau di Cetak Sertifikat, atau dari halaman Persetujuan super
+   admin bila ditambah &dari=persetujuan. Halamannya tetap sama (transkrip, syarat, riwayat), ditambah kalimat
+   pembuka di atas dan keputusan akses cetak di kartu Kelayakan sertifikat, hanya selama permintaannya memang
+   menunggu akun ini. Sesudah diputuskan kembali ke halaman asalnya. Lihat README.md › Persetujuan dua lapis. */
 export default function StudentDetail() {
   const teks = useTeks()
   useStore()
   const { id } = useParams()
+  const params = useSearchParams()
+  const router = useRouter()
+  const { user, admin } = useAuth()
   const student = getStudent(id)
 
   if (!student) {
@@ -33,16 +42,26 @@ export default function StudentDetail() {
     )
   }
 
+  const dariTinjau = params.get('tinjau') === 'sertifikat'
+  const dariPersetujuan = params.get('dari') === 'persetujuan'
+  const kembaliKe = dariPersetujuan ? '/super/persetujuan' : '/admin/sertifikat?tab=permintaan'
+  // Permintaan terbaru mahasiswa ini; tombol keputusan hanya ada selama permintaan itu menunggu akun ini, jadi yang
+  // sudah diputuskan di jendela lain tidak bisa diputuskan dua kali dari sini (server juga menolaknya).
+  const permintaan = PERMINTAAN_SERTIFIKAT.find((x) => x.nim === student.nim) ?? null
+  const meninjau = dariTinjau && permintaan?.status === statusGiliran(user)
+
   return (
     <div className="space-y-6">
       {/* Kembali dan pintasan kerja untuk mahasiswa ini: mengisi nilai semester berjalannya. */}
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
-          href="/admin/mahasiswa"
+          href={dariTinjau ? kembaliKe : '/admin/mahasiswa'}
           className="inline-flex min-h-[40px] items-center gap-2 text-[13.5px] font-bold text-ink-2 hover:text-brand-ink"
         >
           <IconArrowLeft size={16} />
-          {teks('Kembali ke data mahasiswa')}
+          {teks(
+            !dariTinjau ? 'Kembali ke data mahasiswa' : dariPersetujuan ? 'Kembali ke Persetujuan' : 'Kembali ke Cetak Sertifikat',
+          )}
         </Link>
         <Link
           href={tautanInput({ semester: student.semesterAktif, angkatanId: student.angkatanId, nim: student.nim })}
@@ -53,9 +72,36 @@ export default function StudentDetail() {
         </Link>
       </div>
 
+      {meninjau ? (
+        <p className="rounded-xl border border-brand-ink bg-brand-soft px-4 py-3 text-[13.5px] leading-relaxed text-ink print:hidden">
+          {teks(
+            'Anda sedang meninjau permintaan akses cetak sertifikat {nama}. Periksa nilai tiap aspek di transkrip di bawah, lalu putuskan di bagian Kelayakan sertifikat.',
+            { nama: student.name },
+          )}{' '}
+          <a href="#keputusan-sertifikat" className="font-bold text-brand-ink underline-offset-4 hover:underline">
+            {teks('Ke keputusan')}
+          </a>
+        </p>
+      ) : dariTinjau ? (
+        // Dibuka dari tautan Tinjau, tetapi permintaannya sudah diputuskan (mungkin di jendela lain) atau bukan giliran akun ini.
+        <p className="rounded-xl bg-surface-2 px-4 py-3 text-[13.5px] leading-relaxed text-ink print:hidden">
+          {permintaan
+            ? teks('Permintaan akses cetak mahasiswa ini tidak sedang menunggu keputusan Anda. Statusnya sekarang: {status}.', {
+                status: teks(LABEL_SERTIFIKAT[permintaan.status] ?? permintaan.status),
+              })
+            : teks('Mahasiswa ini belum meminta akses cetak sertifikat.')}
+        </p>
+      ) : null}
+
       <Transkrip student={student} untukAdmin />
 
-      <KartuSertifikat student={student} />
+      <KartuSertifikat
+        student={student}
+        tinjau={meninjau ? permintaan : null}
+        superAdmin={Boolean(user?.superAdmin)}
+        aktor={admin?.officer}
+        onSelesai={() => router.push(kembaliKe)}
+      />
 
       <RiwayatPerubahan nim={student.nim} />
 
@@ -135,7 +181,9 @@ function RiwayatPerubahan({ nim }) {
 
 /* -------------------------- kelayakan sertifikat -------------------------- */
 
-function KartuSertifikat({ student }) {
+/** Lima syarat sertifikat. `tinjau`: permintaan akses cetak yang sedang ditinjau akun ini (mode tinjau), keputusannya
+    dipasang di bawah syarat. */
+function KartuSertifikat({ student, tinjau = null, superAdmin = false, aktor, onSelesai }) {
   const teks = useTeks()
   const k = kelayakanSertifikat(student)
 
@@ -162,7 +210,11 @@ function KartuSertifikat({ student }) {
         ))}
       </ul>
 
-      {k.layak ? (
+      {tinjau ? (
+        <div id="keputusan-sertifikat" className="border-t border-line px-5 py-4 sm:px-6">
+          <TinjauPermintaan p={tinjau} layak={k.layak} superAdmin={superAdmin} aktor={aktor} onSelesai={onSelesai} />
+        </div>
+      ) : k.layak ? (
         <div className="border-t border-line px-5 py-3.5 sm:px-6">
           <Link
             href={'/admin/sertifikat?cari=' + encodeURIComponent(student.nim)}

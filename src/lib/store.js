@@ -305,29 +305,44 @@ export async function mintaSertifikat(isi = {}) {
   return tulis('/api/sertifikat', {})
 }
 
+// Rekomendasi admin biasa di lapis pertama; sama dengan SARAN di src/server/sertifikat.js.
+const SARAN_SERTIFIKAT = ['disarankan', 'tidak_disarankan']
+
 function putuskanSertifikatLokal(id, keputusan, { aktor, catatan, superAdmin = false } = {}) {
+  if (superAdmin ? !['disetujui', 'ditolak'].includes(keputusan) : !SARAN_SERTIFIKAT.includes(keputusan)) {
+    throw new Error(
+      superAdmin
+        ? 'Keputusan Super Admin harus "disetujui" atau "ditolak".'
+        : 'Admin meneruskan permintaan ke Super Admin dengan rekomendasi "disarankan" atau "tidak_disarankan".',
+    )
+  }
   const p = PERMINTAAN_SERTIFIKAT.find((x) => x.id === id)
   if (!p || p.status !== (superAdmin ? 'menunggu_superadmin' : 'menunggu_admin')) return false
   const teks = String(catatan ?? '').trim()
   const jejak = { oleh: aktor, tanggal: new Date().toISOString().slice(0, 10) }
-  if (keputusan === 'ditolak') {
+  const s = getStudentByNim(p.nim)
+  const layak = !s || kelayakanSertifikat(s).layak
+  if (!superAdmin) {
+    if (teks.length < ALASAN_TOLAK_MIN) {
+      throw new Error('Alasan rekomendasi wajib diisi, minimal 10 karakter, supaya Super Admin tahu pertimbangan Anda.')
+    }
+    if (keputusan === 'disarankan' && !layak) {
+      throw new Error('Mahasiswa ini sudah tidak memenuhi syarat sertifikat. Teruskan dengan rekomendasi tidak disarankan beserta alasan itu.')
+    }
+    p.status = 'menunggu_superadmin'
+    p.lapis1 = { ...jejak, saran: keputusan, catatan: teks }
+  } else if (keputusan === 'ditolak') {
     if (teks.length < ALASAN_TOLAK_MIN) {
       throw new Error('Alasan penolakan wajib diisi, minimal 10 karakter, supaya mahasiswa tahu sebabnya.')
     }
     p.status = 'ditolak'
     p.ditolak = { ...jejak, catatan: teks }
   } else {
-    const s = getStudentByNim(p.nim)
-    if (s && !kelayakanSertifikat(s).layak) {
+    if (!layak) {
       throw new Error('Mahasiswa ini sudah tidak memenuhi syarat sertifikat. Tolak permintaannya dengan alasan itu.')
     }
-    if (superAdmin) {
-      p.status = 'siap_dicetak'
-      p.lapis2 = jejak
-    } else {
-      p.status = 'menunggu_superadmin'
-      p.lapis1 = jejak
-    }
+    p.status = 'siap_dicetak'
+    p.lapis2 = jejak
   }
   berubah()
   simpanKePenyimpanan()
@@ -335,8 +350,10 @@ function putuskanSertifikatLokal(id, keputusan, { aktor, catatan, superAdmin = f
 }
 
 /**
- * Keputusan atas permintaan akses cetak: admin biasa lapis pertama, super admin lapis kedua (`opsi.superAdmin`
- * dipakai mode lokal; server membaca perannya sendiri). false bila sudah diputuskan atau menunggu lapis lain.
+ * Keputusan atas permintaan akses cetak. Admin biasa (lapis pertama) meneruskan ke super admin dengan `keputusan`
+ * 'disarankan' atau 'tidak_disarankan' dan alasan wajib; super admin (lapis kedua) 'disetujui' atau 'ditolak'
+ * (`opsi.superAdmin` dipakai mode lokal; server membaca perannya sendiri). false bila sudah diputuskan atau menunggu
+ * lapis lain.
  */
 export async function putuskanSertifikat(id, keputusan, opsi = {}) {
   if (modeLokal()) return putuskanSertifikatLokal(id, keputusan, opsi)

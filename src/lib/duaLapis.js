@@ -21,6 +21,12 @@ export const LABEL_SERTIFIKAT = {
   dicabut: 'Dicabut',
 }
 
+/** Rekomendasi admin Kemahasiswaan saat meneruskan akses cetak ke Super Admin (lapis1.saran, keputusan 26 Okt 2026). */
+export const LABEL_SARAN = {
+  disarankan: 'Disarankan',
+  tidak_disarankan: 'Tidak disarankan',
+}
+
 /** Urutan langkah akses cetak untuk penanda langkah di layar mahasiswa. */
 export const LANGKAH_SERTIFIKAT = ['menunggu_admin', 'menunggu_superadmin', 'siap_dicetak']
 

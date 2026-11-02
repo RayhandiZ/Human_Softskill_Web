@@ -6,7 +6,8 @@ import { catatLog } from './log.js'
 import { kelayakanSertifikat } from '../lib/rules.js'
 
 // Akses cetak sertifikat dua lapis (rapat 24 Okt 2026). Mahasiswa yang memenuhi seluruh syarat tetap harus meminta
-// akses cetak; admin Kemahasiswaan memutuskan lapis pertama, super admin lapis kedua, lalu statusnya SIAP_DICETAK.
+// akses cetak; admin Kemahasiswaan meninjau lapis pertama dan selalu meneruskannya ke super admin dengan rekomendasi
+// beserta alasannya (keputusan 26 Okt 2026), lalu super admin memutuskan: SIAP_DICETAK atau DITOLAK.
 // Sertifikat dicetak dari website (lembar cetak di halaman Sertifikat), tidak pernah dikirim lewat surel. Lapis
 // pertama hanya untuk admin biasa dan lapis kedua hanya untuk super admin, supaya selalu dua orang yang memeriksa.
 // Kelayakan dihitung ulang di setiap langkah karena nilai bisa berubah setelah permintaan diajukan. Akses yang sudah
@@ -42,27 +43,56 @@ export async function mintaSertifikat(pengguna) {
   return { id: 'S-' + baru.id }
 }
 
+// Rekomendasi admin biasa di lapis pertama (kolom adminSaran). Keduanya meneruskan ke super admin.
+const SARAN = { disarankan: true, tidak_disarankan: false }
+const LABEL_SARAN = { disarankan: 'Disarankan', tidak_disarankan: 'Tidak disarankan' }
+
 /**
- * Keputusan atas permintaan akses cetak: admin biasa memutuskan MENUNGGU_ADMIN (disetujui diteruskan ke super
- * admin), super admin memutuskan MENUNGGU_SUPERADMIN (disetujui menjadi SIAP_DICETAK). Menolak wajib menyebut
- * alasannya. { ok: false } bila permintaan sudah diputuskan atau sedang menunggu lapis yang lain.
+ * Keputusan atas permintaan akses cetak. Admin biasa (lapis 1, MENUNGGU_ADMIN) tidak menyetujui atau menolak sendiri:
+ * ia selalu meneruskan ke super admin dengan keputusan 'disarankan' atau 'tidak_disarankan' dan alasan wajib yang
+ * dibaca super admin. Super admin (lapis 2, MENUNGGU_SUPERADMIN) memutuskan 'disetujui' (SIAP_DICETAK) atau
+ * 'ditolak' dengan alasan yang dibaca mahasiswa. { ok: false } bila permintaan sudah diputuskan atau sedang menunggu
+ * lapis yang lain.
  */
 export async function putuskanSertifikat(pengguna, { id, keputusan, catatan }) {
-  if (!['disetujui', 'ditolak'].includes(keputusan)) throw new GalatApi('Keputusan harus "disetujui" atau "ditolak".')
+  const superAdmin = Boolean(pengguna.superAdmin)
+  if (superAdmin && !['disetujui', 'ditolak'].includes(keputusan)) {
+    throw new GalatApi('Keputusan Super Admin harus "disetujui" atau "ditolak".')
+  }
+  if (!superAdmin && !Object.hasOwn(SARAN, String(keputusan))) {
+    throw new GalatApi('Admin meneruskan permintaan ke Super Admin dengan rekomendasi "disarankan" atau "tidak_disarankan".')
+  }
   const p = await db.permintaanSertifikat.findUnique({ where: { id: angkaId(id) }, include: { mahasiswa: true } })
   if (!p) throw new GalatApi('Permintaan tidak ditemukan.', 404)
   await wajibAksesAngkatan(pengguna, [p.mahasiswa.angkatanId])
-  const lapis = pengguna.superAdmin ? 'MENUNGGU_SUPERADMIN' : 'MENUNGGU_ADMIN'
+  const lapis = superAdmin ? 'MENUNGGU_SUPERADMIN' : 'MENUNGGU_ADMIN'
   if (p.status !== lapis) return { ok: false }
 
   const teks = String(catatan ?? '').trim()
   const sekarang = new Date()
   let data
-  if (keputusan === 'ditolak') {
+  let aksi
+  if (!superAdmin) {
+    if (teks.length < ALASAN_MIN) {
+      throw new GalatApi('Alasan rekomendasi wajib diisi, minimal ' + ALASAN_MIN + ' karakter, supaya Super Admin tahu pertimbangan Anda.')
+    }
+    if (SARAN[keputusan]) {
+      const { k } = await kelayakan(p.mahasiswaId)
+      if (!k.layak) {
+        throw new GalatApi(
+          'Mahasiswa ini sudah tidak memenuhi syarat sertifikat (' + sebabTidakLayak(k) + '). Teruskan dengan rekomendasi tidak disarankan beserta alasan itu.',
+          409,
+        )
+      }
+    }
+    data = { status: 'MENUNGGU_SUPERADMIN', adminOleh: pengguna.id, adminPada: sekarang, adminSaran: SARAN[keputusan], adminCatatan: teks }
+    aksi = 'TERUSKAN_SERTIFIKAT'
+  } else if (keputusan === 'ditolak') {
     if (teks.length < ALASAN_MIN) {
       throw new GalatApi('Alasan penolakan wajib diisi, minimal ' + ALASAN_MIN + ' karakter, supaya mahasiswa tahu sebabnya.')
     }
     data = { status: 'DITOLAK', ditolakOleh: pengguna.id, ditolakPada: sekarang, catatan: teks }
+    aksi = 'TOLAK_SERTIFIKAT'
   } else {
     const { k } = await kelayakan(p.mahasiswaId)
     if (!k.layak) {
@@ -71,9 +101,8 @@ export async function putuskanSertifikat(pengguna, { id, keputusan, catatan }) {
         409,
       )
     }
-    data = pengguna.superAdmin
-      ? { status: 'SIAP_DICETAK', superOleh: pengguna.id, superPada: sekarang }
-      : { status: 'MENUNGGU_SUPERADMIN', adminOleh: pengguna.id, adminPada: sekarang }
+    data = { status: 'SIAP_DICETAK', superOleh: pengguna.id, superPada: sekarang }
+    aksi = 'SETUJUI_SERTIFIKAT'
   }
 
   return db.$transaction(async (tx) => {
@@ -82,13 +111,14 @@ export async function putuskanSertifikat(pengguna, { id, keputusan, catatan }) {
     if (hasil.count !== 1) return { ok: false }
     await catatLog(tx, {
       aktorId: pengguna.id,
-      aksi: keputusan === 'ditolak' ? 'TOLAK_SERTIFIKAT' : 'SETUJUI_SERTIFIKAT',
+      aksi,
       target: 'mahasiswa ' + p.mahasiswa.nim,
       rincian: {
         permintaan: 'S-' + p.id,
         nama: p.mahasiswa.nama,
-        lapis: pengguna.superAdmin ? 2 : 1,
+        lapis: superAdmin ? 2 : 1,
         status: data.status,
+        ...(superAdmin ? {} : { rekomendasi: LABEL_SARAN[keputusan] }),
         ...(teks ? { catatan: teks } : {}),
       },
     })

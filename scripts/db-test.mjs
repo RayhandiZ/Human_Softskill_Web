@@ -1085,8 +1085,8 @@ try {
 
   /* ------------------------------ akses cetak sertifikat ------------------------------ */
   garis('11. AKSES CETAK SERTIFIKAT DUA LAPIS')
-  // Rapat 24 Okt 2026: mahasiswa yang memenuhi seluruh syarat meminta akses cetak, admin biasa memutuskan lapis
-  // pertama, super admin lapis kedua. NIM3 (seluruh komponennya terisi di bagian 10) dibuat layak dengan mengesahkan
+  // Rapat 24 Okt 2026: mahasiswa yang memenuhi seluruh syarat meminta akses cetak, admin biasa meneruskannya dengan
+  // rekomendasi dan alasan (keputusan 26 Okt 2026), super admin memutuskan lapis kedua. NIM3 (seluruh komponennya terisi di bagian 10) dibuat layak dengan mengesahkan
   // angkatannya langsung di basis data; mahasiswa uji (semester 2) tetap belum layak.
   await db.angkatan.update({ where: { id: ANG_C }, data: { status: 'TERKUNCI', dikunciOleh: saId, dikunciPada: new Date() } })
   await db.pengguna.update({ where: { id: akunUji3.id }, data: { passwordHash: await bcrypt.hash('umn12345', 10) } })
@@ -1121,15 +1121,54 @@ try {
   cek('mahasiswa lain tidak menerima permintaan ini', (await mhs('/api/data')).isi.sertifikat.length === 0)
   cek('dosen tidak menerima data sertifikat', (await dosen('/api/data')).isi.sertifikat.length === 0)
   cek('super admin belum bisa memutuskan lapis pertama', (await putuskanS(sa, { id: s1.isi.id, keputusan: 'disetujui' })).isi.ok === false)
+  // Keputusan 26 Okt 2026: admin tidak menyetujui atau menolak sendiri, selalu meneruskan dengan rekomendasi dan alasan.
   cek(
-    'menolak dengan alasan kurang dari 10 karakter ditolak (400)',
-    (await putuskanS(admin, { id: s1.isi.id, keputusan: 'ditolak', catatan: 'pendek' })).status === 400,
+    'admin tidak bisa menolak sendiri (400)',
+    (await putuskanS(admin, { id: s1.isi.id, keputusan: 'ditolak', catatan: 'Uji: admin mencoba menolak.' })).status === 400,
   )
-  const tolakS = await putuskanS(admin, { id: s1.isi.id, keputusan: 'ditolak', catatan: 'Uji: nilai belum diperiksa prodi.' })
+  cek('admin tidak bisa menyetujui langsung (400)', (await putuskanS(admin, { id: s1.isi.id, keputusan: 'disetujui' })).status === 400)
+  cek(
+    'rekomendasi yang tidak dikenal ditolak (400)',
+    (await putuskanS(admin, { id: s1.isi.id, keputusan: 'toString', catatan: 'Uji: rekomendasi yang aneh.' })).status === 400,
+  )
+  cek(
+    'meneruskan dengan alasan kurang dari 10 karakter ditolak (400)',
+    (await putuskanS(admin, { id: s1.isi.id, keputusan: 'tidak_disarankan', catatan: 'pendek' })).status === 400 &&
+      (await permintaanNim3(admin))?.status === 'menunggu_admin',
+  )
+  const teruskanTidak = await putuskanS(admin, { id: s1.isi.id, keputusan: 'tidak_disarankan', catatan: 'Uji: nilai sikap belum diperiksa prodi.' })
+  const sTidak = await permintaanNim3(sa)
+  const barisTidak = await db.permintaanSertifikat.findUnique({ where: { id: Number(s1.isi.id.slice(2)) } })
+  cek(
+    'admin meneruskan dengan rekomendasi tidak disarankan; super admin membaca rekomendasi dan alasannya',
+    teruskanTidak.isi.ok === true &&
+      sTidak?.status === 'menunggu_superadmin' &&
+      sTidak.lapis1?.oleh === 'Biro Kemahasiswaan' &&
+      sTidak.lapis1?.saran === 'tidak_disarankan' &&
+      sTidak.lapis1?.catatan === 'Uji: nilai sikap belum diperiksa prodi.' &&
+      barisTidak?.adminSaran === false &&
+      barisTidak?.adminCatatan === 'Uji: nilai sikap belum diperiksa prodi.',
+    JSON.stringify(sTidak),
+  )
+  const sMhsTidak = await permintaanNim3(mhs3)
+  cek(
+    'mahasiswa tidak menerima rekomendasi dan alasan admin',
+    sMhsTidak?.status === 'menunggu_superadmin' && Boolean(sMhsTidak.lapis1) && !('saran' in sMhsTidak.lapis1) && !('catatan' in sMhsTidak.lapis1),
+    JSON.stringify(sMhsTidak?.lapis1),
+  )
+  cek(
+    'super admin tidak memakai rekomendasi admin (400)',
+    (await putuskanS(sa, { id: s1.isi.id, keputusan: 'disarankan', catatan: 'Uji: super admin merekomendasikan.' })).status === 400,
+  )
+  cek(
+    'super admin menolak dengan alasan kurang dari 10 karakter ditolak (400)',
+    (await putuskanS(sa, { id: s1.isi.id, keputusan: 'ditolak', catatan: 'pendek' })).status === 400,
+  )
+  const tolakS = await putuskanS(sa, { id: s1.isi.id, keputusan: 'ditolak', catatan: 'Uji: nilai belum diperiksa prodi.' })
   const sDitolak = await permintaanNim3(mhs3)
   cek(
-    'admin menolak dengan alasan, mahasiswa membaca alasan dan penolaknya',
-    tolakS.isi.ok === true && sDitolak?.status === 'ditolak' && sDitolak.ditolak?.catatan === 'Uji: nilai belum diperiksa prodi.' && sDitolak.ditolak?.oleh === 'Biro Kemahasiswaan',
+    'super admin menolak dengan alasan, mahasiswa membaca alasan dan penolaknya',
+    tolakS.isi.ok === true && sDitolak?.status === 'ditolak' && sDitolak.ditolak?.catatan === 'Uji: nilai belum diperiksa prodi.' && sDitolak.ditolak?.oleh === 'Super Admin',
     JSON.stringify(sDitolak),
   )
 
@@ -1140,9 +1179,9 @@ try {
   // Kelayakan dihitung ulang saat memutuskan: satu nilai yang hilang menahan persetujuan.
   const satuNilai = await db.nilai.findFirst({ where: { mahasiswaId: akunUji3.mahasiswa.id } })
   await db.nilai.delete({ where: { id: satuNilai.id } })
-  const tidakLayakLagi = await putuskanS(admin, { id: s2.isi.id, keputusan: 'disetujui' })
+  const tidakLayakLagi = await putuskanS(admin, { id: s2.isi.id, keputusan: 'disarankan', catatan: 'Uji: semua aspek final.' })
   cek(
-    'persetujuan ditahan bila syaratnya tidak lagi terpenuhi (409)',
+    'rekomendasi disarankan ditahan bila syaratnya tidak lagi terpenuhi (409)',
     tidakLayakLagi.status === 409 && /tidak memenuhi syarat/.test(tidakLayakLagi.isi.galat ?? '') && (await permintaanNim3(admin))?.status === 'menunggu_admin',
     JSON.stringify(tidakLayakLagi.isi),
   )
@@ -1150,14 +1189,17 @@ try {
     data: { mahasiswaId: satuNilai.mahasiswaId, komponenId: satuNilai.komponenId, nilai: satuNilai.nilai, penilaiId: satuNilai.penilaiId, batchId: satuNilai.batchId },
   })
 
-  const teruskanS = await putuskanS(admin, { id: s2.isi.id, keputusan: 'disetujui' })
-  const sLapis1 = await permintaanNim3(mhs3)
+  const teruskanS = await putuskanS(admin, { id: s2.isi.id, keputusan: 'disarankan', catatan: 'Uji: semua aspek final.' })
+  const sLapis1 = await permintaanNim3(sa)
   cek(
-    'admin meneruskan ke super admin',
-    teruskanS.isi.ok === true && sLapis1?.status === 'menunggu_superadmin' && sLapis1.lapis1?.oleh === 'Biro Kemahasiswaan',
+    'admin meneruskan ke super admin dengan rekomendasi disarankan',
+    teruskanS.isi.ok === true && sLapis1?.status === 'menunggu_superadmin' && sLapis1.lapis1?.oleh === 'Biro Kemahasiswaan' && sLapis1.lapis1?.saran === 'disarankan',
     JSON.stringify(sLapis1),
   )
-  cek('admin tidak bisa memutuskan lapis kedua', (await putuskanS(admin, { id: s2.isi.id, keputusan: 'disetujui' })).isi.ok === false)
+  cek(
+    'admin tidak bisa memutuskan lapis kedua',
+    (await putuskanS(admin, { id: s2.isi.id, keputusan: 'disarankan', catatan: 'Uji: meneruskan dua kali.' })).isi.ok === false,
+  )
   const siapS = await putuskanS(sa, { id: s2.isi.id, keputusan: 'disetujui' })
   const sSiap = await permintaanNim3(mhs3)
   cek(
@@ -1172,10 +1214,14 @@ try {
   cek('yang sudah siap dicetak tidak bisa diminta lagi (409)', (await minta(mhs3)).status === 409)
   const logS = await db.logAktivitas.findMany({ where: { target: 'mahasiswa ' + NIM3 }, orderBy: { id: 'asc' } })
   cek(
-    'tiap keputusan tercatat di log beserta lapisnya',
-    logS.filter((l) => l.aksi === 'TOLAK_SERTIFIKAT').length === 1 &&
-      logS.filter((l) => l.aksi === 'SETUJUI_SERTIFIKAT').map((l) => l.rincian?.lapis).join() === '1,2',
-    JSON.stringify(logS.map((l) => [l.aksi, l.rincian?.lapis])),
+    'tiap keputusan tercatat di log beserta lapis dan rekomendasinya',
+    logS
+      .filter((l) => l.aksi === 'TERUSKAN_SERTIFIKAT')
+      .map((l) => l.rincian?.lapis + ':' + l.rincian?.rekomendasi)
+      .join() === '1:Tidak disarankan,1:Disarankan' &&
+      logS.filter((l) => l.aksi === 'TOLAK_SERTIFIKAT').map((l) => l.rincian?.lapis).join() === '2' &&
+      logS.filter((l) => l.aksi === 'SETUJUI_SERTIFIKAT').map((l) => l.rincian?.lapis).join() === '2',
+    JSON.stringify(logS.map((l) => [l.aksi, l.rincian?.lapis, l.rincian?.rekomendasi])),
   )
 
   // Sesudah Siap dicetak: setiap pembukaan cetak tercatat, admin atau super admin bisa mencabut aksesnya langsung.
@@ -1217,7 +1263,7 @@ try {
   cek('kedua pembukaan cetak tercatat di log', (await db.logAktivitas.count({ where: { aksi: 'CETAK_SERTIFIKAT', target: 'mahasiswa ' + NIM3 } })) === 2)
   const s3 = await minta(mhs3)
   cek('sesudah dicabut mahasiswa boleh meminta lagi', s3.status === 200 && s3.isi.id !== s2.isi.id, JSON.stringify(s3.isi))
-  await putuskanS(admin, { id: s3.isi.id, keputusan: 'disetujui' })
+  await putuskanS(admin, { id: s3.isi.id, keputusan: 'disarankan', catatan: 'Uji: semua aspek final.' })
   await putuskanS(sa, { id: s3.isi.id, keputusan: 'disetujui' })
   const cabutSuper = await cabutS(sa, 'Uji: dicabut oleh super admin.', s3.isi.id)
   cek(
@@ -2474,7 +2520,7 @@ try {
   const sertifikatC = await db.permintaanSertifikat.create({ data: { mahasiswaId: m3.id } })
   const keputusanSertifikatC = await admin('/api/sertifikat/keputusan', {
     metode: 'POST',
-    isi: { id: 'S-' + sertifikatC.id, keputusan: 'ditolak', catatan: ALASAN_ANGKATAN },
+    isi: { id: 'S-' + sertifikatC.id, keputusan: 'tidak_disarankan', catatan: ALASAN_ANGKATAN },
   })
   cek(
     'memutuskan akses cetak mahasiswa ANG_C ditolak (403), permintaannya tetap menunggu',

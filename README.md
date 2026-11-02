@@ -360,7 +360,7 @@ Matriks lengkapnya ada di halaman *Peran & Wewenang* (`super-admin/Wewenang.jsx`
 | Peran | Nilai | Data master |
 |---|---|---|
 | Dosen | mengunggah rekap Excel angkatan yang diampunya, langsung tersimpan; perbaikan untuk angkatan yang sudah selesai atau disahkan, atau aspek final, **diajukan** ke Super Admin (lihat Panel Dosen); selebihnya memantau | tidak |
-| Admin (Kemahasiswaan) | **hanya melihat** (menu *Nilai Mahasiswa*), untuk angkatan Semester 1–3 kecuali dinonaktifkan Super Admin, dan angkatan yang sudah lewat bila dibuka Super Admin (lihat Akses angkatan); lapis pertama pengajuan koreksi dan akses cetak sertifikat, dan mencabut akses cetak yang sudah disetujui; tanda final, bobot, penilaian aspek, aspek CPMK, dan pengesahan angkatan **diajukan** ke Super Admin | hanya melihat, setelah diberi izin Super Admin atau permintaan aksesnya disetujui |
+| Admin (Kemahasiswaan) | **hanya melihat** (menu *Nilai Mahasiswa*), untuk angkatan Semester 1–3 kecuali dinonaktifkan Super Admin, dan angkatan yang sudah lewat bila dibuka Super Admin (lihat Akses angkatan); lapis pertama pengajuan koreksi, meninjau akses cetak sertifikat dan meneruskannya dengan rekomendasi (tidak menolak sendiri), dan mencabut akses cetak yang sudah disetujui; tanda final, bobot, penilaian aspek, aspek CPMK, dan pengesahan angkatan **diajukan** ke Super Admin | hanya melihat, setelah diberi izin Super Admin atau permintaan aksesnya disetujui |
 | Super Admin | menyimpan, mengimpor, dan membatalkan batch; menetapkan tanda final; lapis kedua pengajuan koreksi (menerapkan nilainya) dan akses cetak sertifikat, dan mencabut akses cetak; memutuskan usulan dosen lama dan semua permintaan admin | menambah dan mengubah |
 | Mahasiswa | mengajukan koreksi; meminta akses cetak sertifikat bila seluruh syarat terpenuhi | tidak |
 
@@ -422,13 +422,21 @@ Pengajuan koreksi nilai dan akses cetak sertifikat diputuskan dua orang: admin K
 lalu Super Admin (lapis 2). Pintunya `['admin']` (`/api/koreksi/keputusan`, `/api/sertifikat/keputusan`), dan
 lapisnya ditentukan perannya: admin biasa hanya bisa memutuskan yang `MENUNGGU_ADMIN`, super admin hanya yang
 `MENUNGGU_SUPERADMIN`. Keputusan untuk lapis lain dijawab `{ ok: false }`, begitu juga keputusan kedua atas hal yang
-sama, karena perubahannya memakai `updateMany` bersyarat status lama. Menolak di lapis mana pun wajib beralasan
-minimal 10 karakter, dan alasannya terbaca mahasiswa.
+sama, karena perubahannya memakai `updateMany` bersyarat status lama. Menolak wajib beralasan minimal 10 karakter, dan
+alasannya terbaca mahasiswa. Akses cetak sertifikat hanya bisa ditolak Super Admin (lihat tabel).
 
 | | Lapis 1 (admin) | Lapis 2 (Super Admin) |
 |---|---|---|
-| Pengajuan koreksi (`PengajuanKoreksi`, enum `StatusKoreksi`) | meneruskan dengan **nilai usulan** (bawaannya nilai yang diharapkan mahasiswa); nilai mahasiswa belum berubah | menyetujui: nilai usulan, boleh diubah, langsung masuk sebagai satu batch bercara `koreksi` lewat jalur yang sama dengan Input Nilai, jadi tercatat di AuditLog, muncul di Riwayat batch, dan bisa di-rollback; data final atau angkatan yang sudah disahkan menuntut catatan minimal 10 karakter |
-| Akses cetak sertifikat (`PermintaanSertifikat`, enum `StatusSertifikat`) | meneruskan; kelayakan dihitung ulang dan permintaan yang syaratnya sudah tidak terpenuhi ditahan (409) | menyetujui: `SIAP_DICETAK`, kelayakan dihitung ulang lagi |
+| Pengajuan koreksi (`PengajuanKoreksi`, enum `StatusKoreksi`) | meneruskan dengan **nilai usulan** (bawaannya nilai yang diharapkan mahasiswa), atau menolak; nilai mahasiswa belum berubah | menyetujui: nilai usulan, boleh diubah, langsung masuk sebagai satu batch bercara `koreksi` lewat jalur yang sama dengan Input Nilai, jadi tercatat di AuditLog, muncul di Riwayat batch, dan bisa di-rollback; data final atau angkatan yang sudah disahkan menuntut catatan minimal 10 karakter |
+| Akses cetak sertifikat (`PermintaanSertifikat`, enum `StatusSertifikat`) | **selalu meneruskan**, tidak menyetujui atau menolak sendiri (keputusan 26 Okt 2026): `keputusan` `disarankan` atau `tidak_disarankan` (kolom `adminSaran`) dengan alasan wajib minimal 10 karakter (`adminCatatan`). Rekomendasi `disarankan` untuk mahasiswa yang syaratnya sudah tidak terpenuhi ditahan (409); `tidak_disarankan` tetap bisa diteruskan. Keputusan lain dari admin dijawab 400 | menyetujui (`SIAP_DICETAK`, kelayakan dihitung ulang lagi) atau menolak (`DITOLAK`), sesudah membaca rekomendasi dan alasan admin |
+
+Rekomendasi dan alasan admin dikirim `/api/data` sebagai `lapis1.saran` dan `lapis1.catatan` hanya ke Kemahasiswaan
+dan Super Admin; mahasiswa hanya menerima siapa dan kapan lapis pertama meninjau (`susunSertifikat` di
+`src/server/muat.js`), lalu keputusan akhirnya. Admin meninjau di halaman detail mahasiswa dalam **mode tinjau**:
+tombol Tinjau di Cetak Sertifikat membuka `/admin/mahasiswa/[id]?tinjau=sertifikat`, yang memasang kalimat pembuka di
+atas transkrip dan keputusan di kartu Kelayakan sertifikat, hanya selama permintaannya memang giliran akun itu.
+Sesudah diputuskan, halaman kembali ke tab Menunggu Anda. Super Admin memutuskan di halaman Persetujuan, yang
+menautkan ke mode tinjau yang sama (`&dari=persetujuan`, lalu kembali ke Persetujuan).
 
 Status di layar ditulis huruf kecil (`menunggu_admin`, `menunggu_superadmin`, `disetujui`/`siap_dicetak`,
 `ditolak`), labelnya di `src/lib/duaLapis.js`. Antrean tiap akun hanya berisi giliran akun itu
@@ -436,7 +444,8 @@ Status di layar ditulis huruf kecil (`menunggu_admin`, `menunggu_superadmin`, `d
 kartu *Keputusan Anda* di panel Super Admin, serta halaman Persetujuan super admin, yang memuat dua kartu tambahan
 (pengajuan ubah nilai dan akses cetak sertifikat).
 Tiap keputusan tercatat di Log Aktivitas: `TERUSKAN_KOREKSI`, `SETUJUI_KOREKSI` (nilai lama dan baru, id batch),
-`TOLAK_KOREKSI`, `SETUJUI_SERTIFIKAT` dan `TOLAK_SERTIFIKAT` (masing-masing dengan `lapis` 1 atau 2).
+`TOLAK_KOREKSI` (masing-masing dengan `lapis` 1 atau 2), `TERUSKAN_SERTIFIKAT` (lapis 1, beserta `rekomendasi` dan
+`catatan` admin), serta `SETUJUI_SERTIFIKAT` dan `TOLAK_SERTIFIKAT` (lapis 2).
 
 Satu komponen hanya boleh punya satu pengajuan koreksi yang berjalan, dan satu mahasiswa satu permintaan akses
 cetak yang berjalan atau sudah siap dicetak (409); yang ditolak atau dicabut boleh diajukan lagi.
@@ -456,8 +465,10 @@ cetak dibuka, bukan apakah kertasnya benar-benar keluar.
 
 Migrasi `persetujuan_dua_lapis` memindahkan pengajuan yang masih `MENUNGGU` ke `MENUNGGU_ADMIN` dalam tiga langkah,
 karena MySQL tanpa mode strict mengosongkan nilai enum yang hilang dari daftar bila diubah dengan satu `MODIFY`.
-Migrasi `cabut_sertifikat` hanya menambah kolom pencabutan dan cetak serta nilai `DICABUT` di ujung enum. Setelah
-menarik migrasi ini, hentikan `npm run dev` lebih dulu, lalu jalankan `npx prisma migrate deploy` dan
+Migrasi `cabut_sertifikat` hanya menambah kolom pencabutan dan cetak serta nilai `DICABUT` di ujung enum. Migrasi
+`rekomendasi_sertifikat` (2 Nov 2026) hanya menambah kolom kosong `adminSaran` dan `adminCatatan`; permintaan yang
+sudah diteruskan sebelumnya dulu diteruskan dengan "menyetujui", jadi diisi `adminSaran = true` tanpa alasan
+tertulis, dan layar Super Admin menyebutnya begitu. Setelah menarik migrasi ini, hentikan `npm run dev` lebih dulu, lalu jalankan `npx prisma migrate deploy` dan
 `npx prisma generate`. Di Windows `generate` gagal (EPERM) selama server dev memuat mesin Prisma, dan server yang
 sudah jalan belum mengenal tabel dan status baru.
 
@@ -788,12 +799,16 @@ besar.
   - *Detail mahasiswa*: tautan kembali dan tombol *Masukkan nilai* di atas, transkrip versi admin
     (`<Transkrip untukAdmin />`), syarat sertifikat, dan riwayat perubahan nilai yang menampilkan 10
     terbaru lebih dulu (tombol *Tampilkan semua*). Versi admin tidak memuat kartu "Ajukan koreksi nilai"
-    milik mahasiswa: pengajuan dari akun admin selalu ditolak server (403).
+    milik mahasiswa: pengajuan dari akun admin selalu ditolak server (403). Dalam mode tinjau
+    (`?tinjau=sertifikat`, lihat Persetujuan dua lapis) tautan kembalinya menuju Cetak Sertifikat (atau
+    Persetujuan bila `&dari=persetujuan`), kalimat pembuka di atas transkrip bertaut *Ke keputusan*, dan kartu
+    Kelayakan sertifikat memuat keputusan akses cetaknya. Bila permintaannya sudah tidak menunggu akun itu, misalnya
+    diputuskan di jendela lain, keputusannya hilang dan diganti keterangan statusnya.
   - *Cetak Sertifikat*: tab Semua, Menunggu Anda (permintaan akses cetak yang menjadi giliran akun ini,
     dibuka langsung lewat `?tab=permintaan`), Berhak, dan Belum berhak beserta jumlahnya, kolom cari dan
     pilihan angkatan, lalu tabel berhalaman dengan kolom *Akses cetak*. Baris yang menjadi giliran akun ini
-    memakai tombol Tinjau, yang membuka panel keputusan di baris bawahnya; panel itu ikut hilang bila
-    permintaannya diputuskan dari jendela lain. Tombol Cetak di baris lain menyebut nama mahasiswanya bagi
+    memakai tautan Tinjau ke detail mahasiswa dalam mode tinjau, supaya nilai tiap aspek terbaca di halaman yang
+    sama dengan keputusannya. Tombol Cetak di baris lain menyebut nama mahasiswanya bagi
     pembaca layar dan hanya hidup untuk yang sudah Siap dicetak (lihat Sertifikat). Baris yang Siap dicetak juga
     punya tombol Cabut akses, yang membuka panel berisi jumlah cetak sejauh ini dan isian alasan. Panel ini
     selebar bagian tabel yang terlihat dan menempel di kiri (`sticky`, `100cqi`), karena di HP tabelnya digulir ke
@@ -2229,7 +2244,8 @@ panah kiri/kanan). Bagian yang mudah rusak:
 | — | Panel dosen: Beranda (pantau) dan Unggah Nilai (rekap Excel, langsung tersimpan) | selesai, sesuai rapat 24 Okt 2026; Penilaian tiga langkah dan Riwayat Pengiriman dihapus (lihat Panel Dosen) |
 | — | Hak peran rapat 24 Okt 2026: admin hanya melihat nilai, tanda final dan bobot dari admin diajukan, data master hanya super admin | selesai (lihat Hak peran) |
 | — | Persetujuan dua lapis rapat 24 Okt 2026: pengajuan ubah nilai dan akses cetak sertifikat, beserta pencabutan akses cetak dan catatan cetak | selesai (lihat Persetujuan dua lapis) |
-| — | Basis data MySQL: 24 tabel, 17 migrasi, 39 pintu API, sesi cookie | selesai |
+| — | Basis data MySQL: 24 tabel, 18 migrasi, 39 pintu API, sesi cookie | selesai |
+| — | Akses cetak sertifikat: admin meninjau di detail mahasiswa (mode tinjau) dan selalu meneruskan dengan rekomendasi disarankan/tidak disarankan beserta alasan; Super Admin yang menyetujui atau menolak (keputusan 26 Okt 2026, dikerjakan 2 Nov 2026) | selesai; lonceng untuk mahasiswa belum |
 | — | Pembaruan dari Super Admin di lonceng admin biasa, status dibaca per akun (rapat 24 Okt 2026) | selesai; sejak 31 Okt 2026 hanya yang berkaitan dengan admin itu (lihat Panel Kemahasiswaan › Lonceng) |
 | — | Log Aktivitas admin biasa tanpa tindakan Super Admin, kedua tab (31 Okt 2026) | selesai (lihat Log aktivitas); Log Aktivitas super admin tetap memuat semuanya |
 | — | Akses angkatan admin biasa (30–31 Okt 2026): bawaannya angkatan Semester 1–3; Super Admin bisa menonaktifkannya atau membuka angkatan yang sudah lewat, per admin | selesai (lihat Hak peran › Akses angkatan); admin belum bisa meminta aksesnya sendiri |

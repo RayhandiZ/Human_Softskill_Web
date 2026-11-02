@@ -197,16 +197,21 @@ function susunKoreksi(k, nama) {
 
 const idKoreksi = (daftar) => daftar.flatMap((k) => [k.adminOleh, k.diputuskanOleh])
 
-// status: 'menunggu_admin' | 'menunggu_superadmin' | 'siap_dicetak' | 'ditolak' | 'dicabut'.
-function susunSertifikat(p, nama) {
+// status: 'menunggu_admin' | 'menunggu_superadmin' | 'siap_dicetak' | 'ditolak' | 'dicabut'. lapis1.saran:
+// 'disarankan' | 'tidak_disarankan' | null, dan lapis1.catatan alasannya: pertimbangan admin untuk super admin, jadi
+// tidak dikirim ke mahasiswa (`untukMahasiswa`), yang hanya membaca keputusan akhirnya.
+function susunSertifikat(p, nama, { untukMahasiswa = false } = {}) {
   const jejak = (oleh, pada) => (oleh ? { oleh: nama.get(oleh) ?? null, tanggal: tanggalWib(pada) } : null)
+  const saran = p.adminSaran == null ? null : p.adminSaran ? 'disarankan' : 'tidak_disarankan'
   return {
     id: 'S-' + p.id,
     nim: p.mahasiswa.nim,
     nama: p.mahasiswa.nama,
     status: kecil(p.status),
     diajukan: tanggalWib(p.diajukan),
-    lapis1: jejak(p.adminOleh, p.adminPada),
+    lapis1: p.adminOleh
+      ? { ...jejak(p.adminOleh, p.adminPada), ...(untukMahasiswa ? {} : { saran, catatan: p.adminCatatan ?? '' }) }
+      : null,
     lapis2: jejak(p.superOleh, p.superPada),
     ditolak: p.ditolakOleh ? { ...jejak(p.ditolakOleh, p.ditolakPada), catatan: p.catatan ?? '' } : null,
     dicabut: p.dicabutOleh ? { ...jejak(p.dicabutOleh, p.dicabutPada), alasan: p.alasanCabut ?? '' } : null,
@@ -388,7 +393,7 @@ export async function muatData(pengguna) {
     const nama = await petaNama([...idPengguna([m]), ...idKoreksi(koreksi), ...idSertifikat(sertifikat)])
     hasil.mahasiswa = [susunMahasiswa(m, nama)]
     hasil.koreksi = koreksi.map((k) => susunKoreksi(k, nama))
-    hasil.sertifikat = sertifikat.map((p) => susunSertifikat(p, nama))
+    hasil.sertifikat = sertifikat.map((p) => susunSertifikat(p, nama, { untukMahasiswa: true }))
     return hasil
   }
 

@@ -135,7 +135,7 @@ const DARI_DATA = [
   'Menunggu Admin', 'Menunggu Super Admin', 'Disetujui', 'Ditolak', 'Siap dicetak',
   'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.',
   'Permintaan akses cetak sedang ditinjau admin Kemahasiswaan.',
-  'Admin Kemahasiswaan sudah menyetujui. Menunggu persetujuan Super Admin.',
+  'Admin Kemahasiswaan sudah meninjau. Menunggu keputusan Super Admin.',
   'Akses cetak sudah disetujui. Sertifikat siap dicetak.',
   'Permintaan akses cetak ditolak. Periksa alasannya, lalu ajukan lagi bila sudah sesuai.',
   'Belum tersedia', 'Bisa diminta', 'Minta akses cetak di halaman ini', 'Menunggu persetujuan',
@@ -143,6 +143,9 @@ const DARI_DATA = [
   'Permintaan ditolak', 'Buka untuk melihat alasannya',
   /* Akses cetak yang dicabut: label status, kalimat keadaan, dan ubin Dashboard. */
   'Dicabut', 'Akses dicabut',
+  /* Rekomendasi admin saat meneruskan akses cetak (LABEL_SARAN di duaLapis.js), kuncinya di Rincian Log Aktivitas, dan
+     label tindakannya (LABEL_LOG). */
+  'Disarankan', 'Tidak disarankan', 'Tidak tercatat', 'Rekomendasi', 'Teruskan akses cetak sertifikat',
   /* Unggahan dosen yang diajukan ke Super Admin (SEBAB_PERSETUJUAN dan STATUS_PERMINTAAN di dosen/Unggah.jsx), dan
      label tindakannya di Persetujuan dan Log Aktivitas (LABEL_AKSI, LABEL_LOG). */
   'angkatan sudah disahkan', 'program sudah selesai', 'aspek sudah final',

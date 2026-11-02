@@ -169,6 +169,8 @@ const RUTE = {
   '/admin': { pohon: () => admin(<Overview />) },
   '/admin/mahasiswa': { pohon: () => admin(<Students />) },
   '/admin/mahasiswa/DEMO-3': { pohon: () => admin(<StudentDetail />), params: { id: 'DEMO-3' } },
+  // Mahasiswa contoh yang layak sertifikat, untuk mode tinjau akses cetak (ujiAlurSertifikat).
+  '/admin/mahasiswa/DEMO-LAYAK': { pohon: () => admin(<StudentDetail />), params: { id: 'DEMO-LAYAK' } },
   '/admin/sertifikat': { pohon: () => admin(<CetakSertifikat />) },
   '/admin/angkatan': { pohon: () => admin(<Angkatan />) },
   '/admin/kurikulum': { pohon: () => admin(<Kurikulum />) },
@@ -1680,8 +1682,9 @@ export async function ujiSertifikatAdmin(studentId) {
 
 /* --------------------------------------------------------------------------
    Akses cetak sertifikat dua lapis (rapat 24 Okt 2026). Mahasiswa yang layak
-   meminta, admin Kemahasiswaan menolak atau meneruskan, Super Admin membuka
-   aksesnya. Sebelum Siap dicetak tidak boleh ada lembar sertifikat di layar.
+   meminta, admin Kemahasiswaan meninjau di detail mahasiswa dan meneruskan
+   dengan rekomendasi (keputusan 26 Okt 2026), Super Admin menolak atau
+   membuka aksesnya. Sebelum Siap dicetak tidak boleh ada lembar sertifikat di layar.
    Uji cetak mahasiswa dan admin dijalankan di dalamnya, selagi aksesnya
    terbuka; sesudahnya permintaan dan simpanan lokal dikembalikan.
    -------------------------------------------------------------------------- */
@@ -1694,6 +1697,7 @@ export async function ujiAlurSertifikat() {
   const ADMIN = { role: 'admin', email: 'a@umn.ac.id', name: 'Y', initials: 'KH' }
   const SUPER = { role: 'admin', superAdmin: true, email: 'super.admin@umn.ac.id', name: 'Super Admin', initials: 'SA' }
   const tombol = (akar, teks) => [...(akar?.querySelectorAll('button') ?? [])].find((b) => b.textContent.trim() === teks)
+  const tautan = (akar, teks) => [...(akar?.querySelectorAll('a') ?? [])].find((a) => a.textContent.trim() === teks)
   const m = getStudent('DEMO-LAYAK')
   const milik = () => PERMINTAAN_SERTIFIKAT.find((p) => p.nim === m.nim) ?? null
   const jumlahMilik = () => PERMINTAAN_SERTIFIKAT.filter((p) => p.nim === m.nim).length
@@ -1719,42 +1723,82 @@ export async function ujiAlurSertifikat() {
       hasil.gandaDitahan = jumlahMilik() === 1
     }
 
-    // 2. Lapis pertama menolak: tanpa alasan ditahan, dengan alasan tercatat.
+    /* 2. Lapis pertama: tautan Tinjau membuka detail mahasiswa dalam mode tinjau (keputusan 26 Okt 2026: admin tidak
+       menolak sendiri). Halaman detail biasa tidak memasang keputusan. Admin meneruskan dengan rekomendasi tidak
+       disarankan; tanpa alasan ditahan, dengan alasan tercatat, lalu kembali ke tab Menunggu Anda. */
     sesi(ADMIN)
+    const alamatTinjau = '/admin/mahasiswa/' + m.id + '?tinjau=sertifikat'
     ;({ el, lepas } = await pasang('/admin/sertifikat?tab=permintaan&cari=' + m.nim))
-    const tinjau = tombol(el, 'Tinjau')
-    hasil.adminAdaTinjau = tinjau?.getAttribute('aria-expanded') === 'false' && el.querySelectorAll('tbody tr').length === 1
-    await klik(tinjau)
-    hasil.tinjauTerbuka = tinjau?.getAttribute('aria-expanded') === 'true' && Boolean(el.querySelector('#' + tinjau?.getAttribute('aria-controls')))
-    await klik(tombol(el, 'Tolak'))
-    hasil.tolakTanpaAlasanDitahan =
+    const tinjau = tautan(el, 'Tinjau')
+    hasil.adminAdaTinjau = tinjau?.getAttribute('href') === alamatTinjau && el.querySelectorAll('tbody tr').length === 1
+    lepas()
+    ;({ el, lepas } = await pasang('/admin/mahasiswa/' + m.id))
+    hasil.detailBiasaTanpaKeputusan = !tombol(el, 'Teruskan: disarankan') && !el.querySelector('#keputusan-sertifikat')
+    lepas()
+    ;({ el, lepas } = await pasang(alamatTinjau))
+    const kartuKelayakan = el.querySelector('#keputusan-sertifikat')?.closest('section.card')
+    hasil.tinjauTerbuka =
+      /Anda sedang meninjau permintaan akses cetak sertifikat/.test(el.textContent) &&
+      Boolean(el.querySelector('#keputusan-sertifikat')) &&
+      /Kelayakan sertifikat/.test(kartuKelayakan?.textContent ?? '') &&
+      Boolean(el.querySelector('a[href="#keputusan-sertifikat"]'))
+    hasil.tinjauKembaliKeDaftar = tautan(el, 'Kembali ke Cetak Sertifikat')?.getAttribute('href') === '/admin/sertifikat?tab=permintaan'
+    hasil.adminTanpaTolak = !tombol(el, 'Tolak') && Boolean(tombol(el, 'Teruskan: disarankan')) && Boolean(tombol(el, 'Teruskan: tidak disarankan'))
+    await klik(tombol(el, 'Teruskan: tidak disarankan'))
+    hasil.teruskanTanpaAlasanDitahan =
       /minimal 10 karakter/.test(el.querySelector('[role="alert"]')?.textContent ?? '') && milik()?.status === 'menunggu_admin'
-    await ketik(el.querySelector('input[id^="catatan-S-"]'), 'Nilai akhir belum dicek prodi.')
-    await klik(tombol(el, 'Tolak'))
+    rekamNavigasi.length = 0
+    await ketik(el.querySelector('input[id^="catatan-S-"]'), 'Nilai sikap semester 3 belum dicek prodi.')
+    await klik(tombol(el, 'Teruskan: tidak disarankan'))
+    hasil.diteruskanTidakDisarankan =
+      milik()?.status === 'menunggu_superadmin' &&
+      milik()?.lapis1?.saran === 'tidak_disarankan' &&
+      milik()?.lapis1?.catatan === 'Nilai sikap semester 3 belum dicek prodi.'
+    hasil.kembaliSesudahMemutuskan =
+      rekamNavigasi.some((n) => n.cara === 'push' && n.ke === '/admin/sertifikat?tab=permintaan') && !el.querySelector('#keputusan-sertifikat')
+    lepas()
+
+    // 2b. Lapis kedua menolak dari halaman Persetujuan: rekomendasi dan alasan admin terbaca, menolak wajib beralasan.
+    sesi(SUPER)
+    ;({ el, lepas } = await pasang('/super/persetujuan'))
+    const kartuSa = () => [...el.querySelectorAll('li')].find((li) => li.textContent.includes(m.nim) && tombol(li, 'Setujui akses cetak'))
+    hasil.superMelihatRekomendasi =
+      /Rekomendasi admin:\s*Tidak disarankan/.test(kartuSa()?.textContent ?? '') &&
+      (kartuSa()?.textContent ?? '').includes('Nilai sikap semester 3 belum dicek prodi.')
+    hasil.tautanKartuSa = [...(kartuSa()?.querySelectorAll('a') ?? [])].map((a) => a.getAttribute('href')).join(' ')
+    hasil.superAdaTautanNilai = hasil.tautanKartuSa.split(' ').includes(alamatTinjau + '&dari=persetujuan')
+    await klik(tombol(kartuSa(), 'Tolak'))
+    hasil.tolakTanpaAlasanDitahan =
+      /minimal 10 karakter/.test(kartuSa()?.querySelector('[role="alert"]')?.textContent ?? '') && milik()?.status === 'menunggu_superadmin'
+    await ketik(kartuSa()?.querySelector('input[id^="catatan-S-"]'), 'Nilai akhir belum dicek prodi.')
+    await klik(tombol(kartuSa(), 'Tolak'))
     hasil.ditolak = milik()?.status === 'ditolak' && milik()?.ditolak?.catatan === 'Nilai akhir belum dicek prodi.'
     lepas()
 
-    // 3. Mahasiswa membaca alasannya, lalu meminta lagi.
+    // 3. Mahasiswa membaca alasan Super Admin (bukan alasan rekomendasi admin), lalu meminta lagi.
     sesi(MAHASISWA)
     ;({ el, lepas } = await pasang('/mahasiswa/sertifikat'))
     hasil.alasanTampil = el.textContent.includes('Nilai akhir belum dicek prodi.')
+    hasil.rekomendasiTidakTampil = !el.textContent.includes('Nilai sikap semester 3 belum dicek prodi.')
     await klik(tombol(el, 'Minta akses cetak lagi'))
     hasil.mintaLagi = milik()?.status === 'menunggu_admin' && jumlahMilik() === 2
     lepas()
 
-    /* 4. Lapis pertama meneruskan; lapis kedua bukan haknya. Jendela lain di tab Semua sudah membuka Tinjau untuk
-       permintaan yang sama: barisnya tetap ada di sana, jadi panel keputusannya harus ikut hilang. */
+    /* 4. Lapis pertama meneruskan dengan rekomendasi disarankan; lapis kedua bukan haknya. Jendela lain sudah membuka
+       halaman tinjau yang sama: keputusannya harus ikut hilang dan diganti keterangan bahwa tidak menunggu Anda. */
     sesi(ADMIN)
-    const jendelaLain = await pasang('/admin/sertifikat?cari=' + m.nim)
-    await klik(tombol(jendelaLain.el, 'Tinjau'))
-    ;({ el, lepas } = await pasang('/admin/sertifikat?tab=permintaan&cari=' + m.nim))
-    await klik(tombol(el, 'Tinjau'))
-    await klik(tombol(el, 'Teruskan ke Super Admin'))
-    hasil.diteruskan = milik()?.status === 'menunggu_superadmin' && milik()?.lapis1?.oleh === 'Biro Kemahasiswaan'
+    const jendelaLain = await pasang(alamatTinjau)
+    ;({ el, lepas } = await pasang(alamatTinjau))
+    await ketik(el.querySelector('input[id^="catatan-S-"]'), 'Semua aspek final dan nilai di atas ambang.')
+    await klik(tombol(el, 'Teruskan: disarankan'))
+    hasil.diteruskan =
+      milik()?.status === 'menunggu_superadmin' && milik()?.lapis1?.oleh === 'Biro Kemahasiswaan' && milik()?.lapis1?.saran === 'disarankan'
     hasil.adminTakBisaLapisDua =
-      (await putuskanSertifikat(milik().id, 'disetujui', { aktor: 'X', superAdmin: false })) === false
+      (await putuskanSertifikat(milik().id, 'disarankan', { aktor: 'X', catatan: 'Uji: meneruskan dua kali.', superAdmin: false })) === false
     hasil.panelJendelaLainHilang =
-      !tombol(jendelaLain.el, 'Teruskan ke Super Admin') && !jendelaLain.el.querySelector('[id^="tinjau-"]')
+      !tombol(jendelaLain.el, 'Teruskan: disarankan') &&
+      !jendelaLain.el.querySelector('#keputusan-sertifikat') &&
+      /tidak sedang menunggu keputusan Anda/.test(jendelaLain.el.textContent)
     jendelaLain.lepas()
     lepas()
 
@@ -1763,11 +1807,11 @@ export async function ujiAlurSertifikat() {
     hasil.belumBisaCetak = Boolean(tombol(el, 'Menunggu persetujuan')?.disabled) && !document.querySelector('.lembar-sertifikat')
     lepas()
 
-    // 5. Lapis kedua dari halaman Persetujuan super admin.
+    // 5. Lapis kedua dari halaman Persetujuan super admin, dengan rekomendasi admin yang terbaca.
     sesi(SUPER)
     ;({ el, lepas } = await pasang('/super/persetujuan'))
     const kartu = () => [...el.querySelectorAll('li')].find((li) => li.textContent.includes(m.nim) && tombol(li, 'Setujui akses cetak'))
-    hasil.superMelihat = Boolean(kartu())
+    hasil.superMelihat = /Rekomendasi admin:\s*Disarankan/.test(kartu()?.textContent ?? '')
     await klik(tombol(kartu(), 'Setujui akses cetak'))
     hasil.siap = milik()?.status === 'siap_dicetak' && milik()?.lapis2?.oleh === 'Super Admin'
     hasil.hilangDariDaftar = !kartu()
