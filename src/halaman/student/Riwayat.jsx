@@ -45,8 +45,8 @@ function Catatan({ e }) {
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block text-[13px] font-semibold text-ink-2">{e.aspek.nama}</span>
-        <span className="mt-0.5 block text-[15px] font-bold leading-snug text-ink">{e.k.label}</span>
+        <span className="block text-[13px] font-semibold text-ink-2">{t(e.aspek.nama)}</span>
+        <span className="mt-0.5 block text-[15px] font-bold leading-snug text-ink">{t(e.k.label)}</span>
         <span className="mt-1 block text-[13.5px] leading-relaxed text-ink-2">
           {t('dari {sumber}', { sumber: SUMBER[e.k.sumber]?.label ?? e.k.sumber })},{' '}
           {t(e.final ? 'disetujui oleh' : 'dinilai oleh')}{' '}
@@ -88,9 +88,9 @@ function Koreksi({ k }) {
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           <p className="text-[13px] font-semibold text-ink-2">
-            {aspek ? aspek.kode + ' ' + aspek.nama : k.aspekId}
+            {aspek ? aspek.kode + ' ' + t(aspek.nama) : k.aspekId}
           </p>
-          <p className="mt-0.5 text-[15px] font-bold leading-snug text-ink">{k.komponenLabel}</p>
+          <p className="mt-0.5 text-[15px] font-bold leading-snug text-ink">{t(k.komponenLabel)}</p>
         </div>
         <Badge tone={lencana.tone} icon={lencana.icon}>
           {t(LABEL_KOREKSI[k.status] ?? k.status)}

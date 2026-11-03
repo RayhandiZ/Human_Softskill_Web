@@ -179,7 +179,7 @@ function BarisUsulan({ usulan: u, aktor, bacaSaja, terbuka, onToggle }) {
       setMenunggu(menungguPersetujuan(hasil) ? hasil : null)
       setCatatan('')
     } catch (e) {
-      setGalat(e.message)
+      setGalat(t(e.message))
     }
   }
 
@@ -204,7 +204,7 @@ function BarisUsulan({ usulan: u, aktor, bacaSaja, terbuka, onToggle }) {
               unit: SUMBER[u.sumber]?.label ?? u.sumber,
               semester: u.semester,
             })}
-            {u.prodi ? ', ' + u.prodi : ''} · {t(u.cara === 'manual' ? 'input manual' : 'unggah berkas')}
+            {u.prodi ? ', ' + t(u.prodi) : ''} · {t(u.cara === 'manual' ? 'input manual' : 'unggah berkas')}
           </span>
         </span>
         <span className="text-[12.5px] tabular-nums text-ink-2">{u.waktu}</span>

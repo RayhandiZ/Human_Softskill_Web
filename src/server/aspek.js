@@ -4,7 +4,7 @@ import { ambilKurikulum, kunciVersiKurikulum, siapkanKurikulum } from './kurikul
 import { catatLog } from './log.js'
 import { SERTA_MAHASISWA, susunMahasiswa } from './muat.js'
 import { idBaru } from './penilaian.js'
-import { BIDANG_ASPEK, KUNCI_VERSI_KURIKULUM, KURIKULUM_TERPASANG, getAspek } from '../lib/curriculum.js'
+import { BIDANG_ASPEK, BIDANG_ASPEK_EN, KUNCI_VERSI_KURIKULUM, KURIKULUM_TERPASANG, getAspek } from '../lib/curriculum.js'
 import { dampakAspek, periksaAspek, rapikanIsiAspek, susunPerubahan } from '../lib/aspek.js'
 
 // Mengelola aspek CPMK itu sendiri (src/lib/aspek.js): tambah aspek baru beserta komponen pertamanya, ubah kode
@@ -82,7 +82,7 @@ export async function kelolaAspek(pengguna, isiMentah = {}) {
       await tx.aspek.create({
         data: {
           id,
-          ...Object.fromEntries(BIDANG_ASPEK.map((b) => [b, isi[b] ?? null])),
+          ...Object.fromEntries([...BIDANG_ASPEK, ...BIDANG_ASPEK_EN].map((b) => [b, isi[b] ?? null])),
           kode: isi.kode,
           cluster: isi.cluster,
           semester: isi.semester,
@@ -100,6 +100,7 @@ export async function kelolaAspek(pengguna, isiMentah = {}) {
             id: idKomponen,
             aspekId: id,
             label: k.label,
+            labelEn: k.labelEn,
             sumber: k.sumber,
             jenis: k.jenis,
             ranah: k.ranah,

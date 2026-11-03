@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Card, EmptyState } from '../../components/Ui'
+import { Card, EmptyState, KartuAngka } from '../../components/Ui'
 import ChartFrame from '../../components/charts/ChartFrame'
 import {
   IconBuilding,
@@ -31,11 +31,11 @@ import { tanggalWib } from '../admin/Log'
 import { LABEL_LOG, labelSasaran } from '../../lib/labelLog'
 
 /* Pusat Kendali Super Admin, disusun mengikuti satu keputusan yang diambil di sini: permintaan admin yang
-   menunggu. Kartu navy itu titik fokusnya; keadaan sistem, nilai tersimpan per bulan, dan tindakan admin
-   terbaru adalah bahan pengawasan di bawahnya. Semua angka dihitung dari data yang termuat atau /api/log.
+   menunggu. Kartu navy itu titik fokusnya; di bawahnya ringkasan angka, grafik nilai tersimpan selebar halaman,
+   lalu rincian aktivitas dan pengawasan. Semua angka dihitung dari data yang termuat atau /api/log.
    Pemilih periode di pojok kanan atas menyaring keputusan, perubahan nilai, dan tindakan admin ke rentang
    semester itu (rentangPeriode di src/lib/data.js); antrean, angkatan terkunci, dan aturan tetap keadaan
-   saat ini. Lihat README.md › Panel Super Admin. */
+   saat ini, dan saat periode lain dipilih ketiganya ditandai "Saat ini". Lihat README.md › Panel Super Admin. */
 
 const RANTAI = [
   { peran: 'Super Admin', tugas: 'Memegang nilai dan data master, menyetujui permintaan admin, dan mengawasi seluruh jejak.' },
@@ -149,7 +149,7 @@ function TautanKepala({ href, children }) {
   return (
     <Link
       href={href}
-      className="inline-flex min-h-[44px] items-center gap-1 text-[13px] font-bold text-brand-ink hover:underline sm:min-h-0"
+      className="inline-flex min-h-[44px] items-center gap-1 text-[13px] font-bold text-brand-ink hover:underline sm:min-h-[24px]"
     >
       {children}
       <IconChevronRight size={15} />
@@ -173,25 +173,6 @@ function KepalaKartu({ icon: Ikon, title, subtitle, action }) {
       </div>
       {action ? <div className="shrink-0 pl-12 sm:pl-0">{action}</div> : null}
     </header>
-  )
-}
-
-/** Batang meter: isian satu warna di atas lintasan dari ramp yang sama (lihat .isi-data di index.css). */
-function Meter({ nilai, total, peringatan = false }) {
-  const persen = total ? Math.round((nilai / total) * 100) : 0
-  return (
-    <span
-      aria-hidden="true"
-      className={
-        'mt-2.5 block h-2 overflow-hidden rounded-full ' +
-        (peringatan ? 'bg-[color-mix(in_srgb,var(--warning)_22%,transparent)]' : 'bg-brand-soft')
-      }
-    >
-      <span
-        className={'block h-full rounded-full ' + (peringatan ? 'bg-[var(--warning)]' : 'isi-data')}
-        style={{ width: persen + '%' }}
-      />
-    </span>
   )
 }
 
@@ -351,7 +332,7 @@ function KeputusanAnda({ menunggu, lapisDua, saatIni, t, bahasa }) {
     // Di layar sempit tombolnya turun ke paling bawah, sesudah daftar.
     <section
       aria-labelledby="judul-keputusan"
-      className="kartu-aurora relative grid gap-6 rounded-3xl p-5 text-white sm:p-7 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-rows-[auto_1fr] lg:gap-x-10 xl:col-span-12 dark:ring-1 dark:ring-white/10"
+      className="kartu-aurora relative grid gap-6 rounded-3xl p-5 text-white sm:p-7 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-rows-[auto_1fr] lg:gap-x-10 dark:ring-1 dark:ring-white/10"
     >
       <div className="lg:col-start-1 lg:row-start-1">
         <div className="flex items-start gap-3">
@@ -375,7 +356,7 @@ function KeputusanAnda({ menunggu, lapisDua, saatIni, t, bahasa }) {
         </div>
 
         <p className="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="text-[56px] font-extrabold leading-none tracking-tight">{menunggu.length}</span>
+          <span className="text-[56px] font-extrabold leading-none tracking-tight tabular-nums">{menunggu.length}</span>
           <span className="text-[15px] font-semibold text-white/85">{t('permintaan menunggu')}</span>
         </p>
         {menunggu.length ? (
@@ -460,7 +441,8 @@ function KeputusanAnda({ menunggu, lapisDua, saatIni, t, bahasa }) {
 
 /* --------------------------- 2. keadaan sistem --------------------------- */
 
-function KeadaanSistem({ t, rentang, label, periodeLain }) {
+// Angka "Saat ini" (angkatan, aturan) ditandai saat periode lain dipilih, supaya tidak terbaca ikut tersaring.
+function KeadaanSistem({ t, rentang, label, periodeLain, tersimpan }) {
   const putus = PERMINTAAN.filter((p) => {
     const tgl = String(p.diputuskanPada ?? '').slice(0, 10)
     return LABEL_KEPUTUSAN[p.status] && tgl >= rentang.mulai && tgl <= rentang.selesai
@@ -477,59 +459,63 @@ function KeadaanSistem({ t, rentang, label, periodeLain }) {
   // Sama dengan tabel Aturan Sistem: aturan yang bisa ditimpa ditambah lama program yang selalu ditetapkan.
   const jumlahAturan = KUNCI_DAPAT_DIUBAH.length + 1
   const aturanMenunggu = KUNCI_DAPAT_DIUBAH.filter((k) => MENUNGGU_KONFIRMASI.includes(k)).length
+  const tandaSaatIni = periodeLain ? t('Saat ini') : null
+  const bagi = (n, total) => (total ? Math.round((n / total) * 100) : 0)
 
   return (
-    <Card className="flex flex-col xl:col-span-4 xl:col-start-9">
-      <h2 className="px-5 pt-5 text-[15px] font-bold text-ink sm:px-6">{t('Keadaan sistem')}</h2>
-      {periodeLain ? (
-        <p className="px-5 pt-1 text-[12.5px] leading-snug text-ink-2 sm:px-6">
-          {t('Angkatan dan aturan di bawah ini menunjukkan keadaan saat ini.')}
-        </p>
-      ) : null}
-      <dl className="grid flex-1 divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0 xl:grid-cols-1 xl:divide-x-0 xl:divide-y">
-        <div className="px-5 py-4 sm:px-6">
-          <dt className="text-[13px] font-semibold text-ink-2">{t('Diputuskan di {periode}', { periode: label })}</dt>
-          <dd className="mt-1 text-[26px] font-extrabold leading-tight text-ink">{putus.length}</dd>
-          <dd className="mt-1 text-[12.5px] leading-snug text-ink-2">
-            {rincianPutus.length ? rincianPutus.join(' · ') : t('Belum ada keputusan di periode ini.')}
-          </dd>
-        </div>
-        <div className="px-5 py-4 sm:px-6">
-          <dt className="text-[13px] font-semibold text-ink-2">{t('Angkatan disahkan')}</dt>
-          <dd className="mt-1 text-[26px] font-extrabold leading-tight text-ink">
-            {terkunci.length}
-            <span className="text-[15px] font-bold text-ink-2"> / {angkatan.length}</span>
-          </dd>
-          <dd>
-            <Meter nilai={terkunci.length} total={angkatan.length} />
-          </dd>
-          <dd className="mt-2 text-[12.5px] leading-snug text-ink-2">
-            {terkunci.length
-              ? t('Disahkan: {daftar}', { daftar: terkunci.map((c) => c.label).join(', ') })
-              : t('Belum ada angkatan yang disahkan.')}
-          </dd>
-        </div>
-        <div className="px-5 py-4 sm:px-6">
-          <dt className="text-[13px] font-semibold text-ink-2">{t('Aturan menunggu konfirmasi')}</dt>
-          <dd className="mt-1 text-[26px] font-extrabold leading-tight text-ink">
-            {aturanMenunggu}
-            <span className="text-[15px] font-bold text-ink-2"> / {jumlahAturan}</span>
-          </dd>
-          <dd>
-            <Meter nilai={aturanMenunggu} total={jumlahAturan} peringatan />
-          </dd>
-          <dd className="mt-1">
-            <TautanKepala href="/super/aturan">{t('Lihat aturan')}</TautanKepala>
-          </dd>
-        </div>
-      </dl>
-    </Card>
+    <section aria-labelledby="judul-keadaan" className="space-y-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 id="judul-keadaan" className="text-[15px] font-bold text-ink">
+          {t('Keadaan sistem')}
+        </h2>
+        {periodeLain ? (
+          <p className="text-[12.5px] leading-snug text-ink-2">{t('Angkatan dan aturan di bawah ini menunjukkan keadaan saat ini.')}</p>
+        ) : null}
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KartuAngka
+          ikon={IconCheckShield}
+          judul={t('Diputuskan di {periode}', { periode: label })}
+          nilai={putus.length}
+          keterangan={rincianPutus.length ? rincianPutus.join(' · ') : t('Belum ada keputusan di periode ini.')}
+        />
+        <KartuAngka
+          ikon={IconPencil}
+          judul={t('Nilai tersimpan di {periode}', { periode: label })}
+          nilai={tersimpan.total.toLocaleString('id-ID')}
+          keterangan={t('Input baru maupun perubahan.') + ' ' + t('Mahasiswa dengan nilai tersimpan: {n}', { n: tersimpan.mahasiswa })}
+        />
+        <KartuAngka
+          ikon={IconLock}
+          judul={t('Angkatan disahkan')}
+          tanda={tandaSaatIni}
+          nilai={terkunci.length}
+          satuan={'/ ' + angkatan.length}
+          persen={bagi(terkunci.length, angkatan.length)}
+          persenLabel={
+            terkunci.length
+              ? t('Disahkan: {daftar}', { daftar: terkunci.map((c) => t(c.label)).join(', ') })
+              : t('Belum ada angkatan yang disahkan.')
+          }
+        />
+        <KartuAngka
+          ikon={IconDocument}
+          judul={t('Aturan menunggu konfirmasi')}
+          tanda={tandaSaatIni}
+          nilai={aturanMenunggu}
+          satuan={'/ ' + jumlahAturan}
+          persen={bagi(aturanMenunggu, jumlahAturan)}
+          persenLabel={<TautanKepala href="/super/aturan">{t('Lihat aturan')}</TautanKepala>}
+          warnaBilah="var(--warning)"
+        />
+      </div>
+    </section>
   )
 }
 
 /* ----------------------- 3. perubahan nilai per bulan ----------------------- */
 
-const TINGGI_PLOT = 216
+const TINGGI_PLOT = 260
 
 /** Batas atas sumbu Y yang rapi: dua langkah 1, 2, atau 5 kali pangkat sepuluh, minimal sebesar nilai terbesar. */
 function skalaRapi(maks) {
@@ -556,7 +542,8 @@ const namaBulan = (b, bahasa, panjang = false) =>
     panjang ? { month: 'long', year: 'numeric', timeZone: 'UTC' } : { month: 'short', timeZone: 'UTC' },
   ).format(new Date(b + '-15T00:00:00Z'))
 
-function GrafikPerubahan({ periode, t, bahasa }) {
+/** Nilai tersimpan per bulan di satu periode, dari baris AuditLog: dipakai grafik dan kartu angka, jadi keduanya sama. */
+function nilaiTersimpan(periode) {
   const bulan = bulanPeriode(periode)
   const bulanIni = tanggalWib(0).slice(0, 7)
   const hitung = new Map(bulan.map((b) => [b, 0]))
@@ -569,7 +556,11 @@ function GrafikPerubahan({ periode, t, bahasa }) {
   }
   // Bulan sesudah bulan ini (periode aktif) belum berjalan: tanpa batang, bukan nol.
   const data = bulan.map((b) => ({ bulan: b, n: hitung.get(b), nanti: b > bulanIni }))
-  const total = data.reduce((a, d) => a + d.n, 0)
+  return { data, bulanIni, total: data.reduce((a, d) => a + d.n, 0), mahasiswa: mahasiswa.size }
+}
+
+function GrafikPerubahan({ periode, tersimpan, t, bahasa }) {
+  const { data, bulanIni, total, mahasiswa } = tersimpan
   const maks = Math.max(...data.map((d) => d.n))
   const { atas, langkah } = skalaRapi(maks)
   // Hanya nilai terbesar yang diberi label; sisanya lewat sumbu, tooltip, dan tabel.
@@ -597,7 +588,7 @@ function GrafikPerubahan({ periode, t, bahasa }) {
       {total ? (
         <div className="px-3 pb-2 pt-1 sm:px-2">
           <p className="text-[13px] text-ink-2">
-            {label + ': ' + t('{n} nilai tersimpan untuk {m} mahasiswa.', { n: total, m: mahasiswa.size })}
+            {label + ': ' + t('{n} nilai tersimpan untuk {m} mahasiswa.', { n: total, m: mahasiswa })}
           </p>
           {/* mt-8: ruang untuk label nilai puncak, yang bisa naik melewati garis teratas. */}
           <div className="mt-8 flex gap-2">
@@ -614,7 +605,12 @@ function GrafikPerubahan({ periode, t, bahasa }) {
             </div>
             <div className="relative flex-1" style={{ height: TINGGI_PLOT }}>
               {[0, 50, 100].map((p) => (
-                <span key={p} aria-hidden="true" className="absolute inset-x-0 h-px bg-[var(--grid)]" style={{ top: p + '%' }} />
+                <span
+                  key={p}
+                  aria-hidden="true"
+                  className={'absolute inset-x-0 border-t ' + (p === 100 ? 'border-line-strong' : 'border-dashed border-line')}
+                  style={{ top: p + '%' }}
+                />
               ))}
               <ol aria-label={t('Nilai tersimpan per bulan di {periode}', { periode: label })} className="relative flex h-full items-end">
                 {data.map((d) => {
@@ -630,7 +626,7 @@ function GrafikPerubahan({ periode, t, bahasa }) {
                       {d.nanti ? null : (
                         <span
                           aria-hidden="true"
-                          className="isi-data block w-[44%] max-w-[24px] rounded-t-[4px] transition-opacity group-hover:opacity-80"
+                          className="isi-data block w-[46%] max-w-[64px] rounded-t-[6px] transition-opacity group-hover:opacity-80"
                           style={{ height: (d.n / atas) * 100 + '%' }}
                         />
                       )}
@@ -803,7 +799,7 @@ export default function Kendali() {
     setAktivitas((a) => (a ? { ...a, memuat: true } : a))
     bacaLog({ jenis: 'aktivitas', ukuran: 6, dari: rentang.mulai, sampai: rentang.selesai })
       .then((h) => !batal && setAktivitas(h))
-      .catch((e) => !batal && setAktivitas({ galat: e.message, baris: [] }))
+      .catch((e) => !batal && setAktivitas({ galat: t(e.message), baris: [] }))
     return () => {
       batal = true
     }
@@ -816,9 +812,10 @@ export default function Kendali() {
     sertifikat: PERMINTAAN_SERTIFIKAT.filter((p) => p.status === 'menunggu_superadmin').length,
   }
   const hariIni = tanggalWib(0)
+  const tersimpan = nilaiTersimpan(periode)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Pemilih periode di pojok kanan, tepat di bawah menu akun di bilah atas (lebar isinya sama). Di layar
           sempit ia turun ke baris sendiri, tetap rata kanan. */}
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
@@ -826,7 +823,7 @@ export default function Kendali() {
           <p className="text-[13.5px] font-semibold text-ink-2">
             {[t(sapaan()) + (user?.name ? ', ' + user.name : ''), tanggalPanjang(hariIni, bahasa)].join(' · ')}
           </p>
-          <h1 className="mt-1 text-[26px] font-extrabold tracking-tight text-ink">{t('Pusat Kendali')}</h1>
+          <h1 className="mt-1 text-[26px] font-bold tracking-tight text-ink">{t('Pusat Kendali')}</h1>
           <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-ink-2">
             {t('Pengawasan seluruh sistem VIBE: permintaan yang perlu diputuskan, jejak tindakan, dan aturan yang berlaku.')}
           </p>
@@ -836,14 +833,11 @@ export default function Kendali() {
         </div>
       </header>
 
-      {/* Urutan di HP: keputusan, ringkasan angka, grafik, linimasa, rantai. Di layar lebar ringkasan pindah
-          ke kanan grafik (col-start-9) dan grid-flow-dense mengisi sisi kirinya dengan grafik. */}
-      <div className="grid gap-6 xl:grid-flow-row-dense xl:grid-cols-12">
-        <KeputusanAnda menunggu={menunggu} lapisDua={lapisDua} saatIni={periodeLain} t={t} bahasa={bahasa} />
-        <KeadaanSistem t={t} rentang={rentang} label={labelPeriode} periodeLain={periodeLain} />
-        <div className="flex flex-col xl:col-span-8 [&>section]:flex-1">
-          <GrafikPerubahan periode={periode} t={t} bahasa={bahasa} />
-        </div>
+      {/* Urutan yang sama di semua lebar: keputusan, ringkasan angka, grafik selebar halaman, lalu rincian. */}
+      <KeputusanAnda menunggu={menunggu} lapisDua={lapisDua} saatIni={periodeLain} t={t} bahasa={bahasa} />
+      <KeadaanSistem t={t} rentang={rentang} label={labelPeriode} periodeLain={periodeLain} tersimpan={tersimpan} />
+      <GrafikPerubahan periode={periode} tersimpan={tersimpan} t={t} bahasa={bahasa} />
+      <div className="grid gap-5 xl:grid-cols-12">
         <Aktivitas aktivitas={aktivitas} label={labelPeriode} t={t} bahasa={bahasa} />
         <RantaiPengawasan t={t} />
       </div>

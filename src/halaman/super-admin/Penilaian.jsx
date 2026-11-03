@@ -98,7 +98,7 @@ export default function Penilaian() {
                       <span className="text-[15px] font-extrabold tracking-tight text-ink">{a.kode}</span>
                       {aspekPunyaDraft(a.id) ? <TandaDraft>{t('draft')}</TandaDraft> : null}
                     </span>
-                    <span className="mt-0.5 block text-[12.5px] leading-snug text-ink-2">{a.nama}</span>
+                    <span className="mt-0.5 block text-[12.5px] leading-snug text-ink-2">{t(a.nama)}</span>
                     <span className="mt-2 block text-[12px] text-ink-3">
                       {t('{n} komponen', { n: getKomponen(a.id).length })} ·{' '}
                       {t(bobot.aspek[a.id] != null ? 'bobot manual' : 'bobot otomatis')}

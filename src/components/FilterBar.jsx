@@ -13,7 +13,6 @@ export const DEFAULT_FILTER = {
   query: '',
 }
 
-const LABEL_ANGKATAN = Object.fromEntries(COHORTS.map((c) => [c.label, c.id]))
 const PILIHAN = ['faculty', 'program', 'angkatan', 'semester']
 
 /** Banyaknya pilihan saringan (fakultas, prodi, angkatan, semester) yang tidak lagi bernilai bawaan. */
@@ -34,13 +33,13 @@ export default function FilterBar({ value, onChange, withSearch = true, classNam
   const t = useTeks()
   const idSaring = useId()
   const [bukaSaring, setBukaSaring] = useState(false)
-  // Hanya "Semua" yang diterjemahkan. Nama fakultas, prodi, dan angkatan adalah data; melewatkannya ke t() dulu
-  // memenuhi konsol mode Inggris dengan peringatan "belum ada padanan" untuk setiap pilihan.
-  const tampilkan = (o) => (o === 'Semua' ? t('Semua') : o)
+  // Tertulis dalam bahasa aktif; nilai yang dikirim tetap nama aslinya, karena saringannya membandingkan dengan data.
+  const tampilkan = (o) => t(o)
   const set = (k) => (v) => {
     const next = { ...value, [k]: v }
     if (k === 'faculty') next.program = 'Semua'
-    if (k === 'angkatan') next.angkatan = v === 'Semua' ? 'Semua' : LABEL_ANGKATAN[v] ?? v
+    // Dicari saat dipilih: sewaktu modul ini dimuat, COHORTS masih berisi angkatan bawaan kode, belum data master.
+    if (k === 'angkatan') next.angkatan = v === 'Semua' ? 'Semua' : COHORTS.find((c) => c.label === v)?.id ?? v
     onChange(next)
   }
 
@@ -82,7 +81,7 @@ export default function FilterBar({ value, onChange, withSearch = true, classNam
             aria-expanded={bukaSaring}
             aria-controls={idSaring}
             className={
-              'inline-flex shrink-0 items-center gap-2 rounded-xl border px-3.5 text-[14px] font-bold transition sm:hidden ' +
+              'inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-xl border px-3.5 text-[14px] font-bold transition sm:hidden ' +
               (bukaSaring || n ? 'border-brand-ink text-brand-ink' : 'border-line text-ink-2 hover:border-line-strong')
             }
           >

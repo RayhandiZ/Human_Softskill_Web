@@ -30,8 +30,8 @@ const LABEL_PERAN = {
 /* Asal nilai satu batch (Batch.cara), juga sebutan `cara` di rincian log data terkunci. */
 const LABEL_CARA = {
   manual: 'input manual',
-  import: 'import CSV',
-  'import-mentah': 'import CSV',
+  import: 'import berkas',
+  'import-mentah': 'import berkas',
   koreksi: 'pengajuan koreksi',
   'unggah-dosen': 'unggahan dosen',
   'perbaikan dosen': 'perbaikan nilai dosen',
@@ -64,6 +64,12 @@ const LABEL_RINCIAN = {
   angkatan: 'Angkatan',
   angkatanDiampu: 'Angkatan yang diampu',
   label: 'Label',
+  labelEn: 'Nama (Inggris)',
+  namaEn: 'Nama (Inggris)',
+  deskripsiEn: 'Deskripsi (Inggris)',
+  pdpEn: 'Kegiatan PDP (Inggris)',
+  mkEn: 'Mata kuliah (Inggris)',
+  engagementEn: 'Kegiatan Kemahasiswaan (Inggris)',
   id: 'Kode',
   kode: 'Kode',
   periode: 'Periode',
@@ -140,6 +146,7 @@ const LABEL_RINCIAN = {
   deskripsi: 'Deskripsi',
 }
 
+const KUNCI_NAMA = ['prodi', 'fakultas', 'angkatan', 'label', 'periode', 'dibuka', 'ditutup', 'angkatanTerkunci']
 const UKURAN = 25
 const KOSONG = { aktorId: '', aksi: '', nim: '', dari: '', sampai: '' }
 const BATAS_TABEL = 20 // contoh di rincian log paling banyak 20 baris (BATAS_CONTOH di src/server/nilai.js)
@@ -163,7 +170,7 @@ const sama = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
 const kunciTerbaca = (k) => (/^[a-z][a-zA-Z]*$/.test(k) ? k.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase() : k)
 const labelKunci = (k, t) => (LABEL_RINCIAN[k] ? t(LABEL_RINCIAN[k]) : kunciTerbaca(k))
 const potong = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
-const kodeAspek = (a) => a.kode.replace(/\.$/, '') + ' ' + a.nama
+const kodeAspek = (a, t) => a.kode.replace(/\.$/, '') + ' ' + t(a.nama)
 
 /** Isian yang berbeda antara dua objek; dua nilai biasa dianggap satu isian tanpa nama. */
 const isianBerubah = (a, b) =>
@@ -184,7 +191,7 @@ function teksNilai(v, t, { kunci = null, aksi = null } = {}) {
   if (adalahObjek(v)) {
     if (punyaSebelumSesudah(v)) return teksNilai(v.sebelum, t, { kunci, aksi }) + ' → ' + teksNilai(v.sesudah, t, { kunci, aksi })
     // Angkatan yang diampu dan sejenisnya ({ id, label }) cukup ditulis labelnya.
-    if (typeof v.label === 'string') return v.label
+    if (typeof v.label === 'string') return t(v.label)
     return Object.entries(v)
       .map(([k, x]) => labelKunci(k, t) + ': ' + teksNilai(x, t, { kunci: k, aksi }))
       .join('; ')
@@ -197,16 +204,18 @@ function teksNilai(v, t, { kunci = null, aksi = null } = {}) {
   if (kunci === 'keputusan') return dari(LABEL_KEPUTUSAN)
   // Rekomendasi admin pada akses cetak sertifikat ('Disarankan' / 'Tidak disarankan', sertifikat.js).
   if (kunci === 'rekomendasi') return t(s)
+  // Nama fakultas, prodi, dan angkatan ikut bahasa aktif; nama lama yang sudah diganti tampil apa adanya.
+  if (KUNCI_NAMA.includes(kunci) || (kunci === 'nama' && /_(FAKULTAS|PRODI)$/.test(aksi ?? ''))) return t(s)
   if (kunci === 'dari' || kunci === 'ke') return dari(LABEL_TANDA)
   if (kunci === 'aksi') return LABEL_AKSI[s] || LABEL_LOG[s] ? t(LABEL_AKSI[s] ?? LABEL_LOG[s]) : s
   if (kunci === 'status') return LABEL_SERTIFIKAT[s.toLowerCase()] ? t(LABEL_SERTIFIKAT[s.toLowerCase()]) : s
   if (kunci === 'komponen') {
     const k = getKomponenById(s)
-    return k ? k.label + ' (' + s + ')' : s
+    return k ? t(k.label) + ' (' + s + ')' : s
   }
   if (kunci === 'aspekId' || kunci === 'aspek') {
     const a = getAspek(s)
-    return a ? kodeAspek(a) : s
+    return a ? kodeAspek(a, t) : s
   }
   return s
 }
@@ -429,11 +438,12 @@ function SelKomponen({ b }) {
   const t = useTeks()
   // Tanpa basis data (uji) barisnya dari AUDIT_LOG yang termuat, tanpa label; dicari dari kurikulum yang terpasang.
   const komponen = b.komponenLabel ? null : getKomponenById(b.komponen)
-  const label = b.komponenLabel ?? komponen?.label ?? b.komponen
+  const nama = b.komponenLabel ?? komponen?.label
+  const label = nama ? t(nama) : b.komponen
   const aspek = b.aspekKode ? { kode: b.aspekKode, nama: b.aspekNama ?? '' } : getAspek(b.aspek ?? komponen?.aspekId)
   const sumber = b.sumber ?? komponen?.sumber
   const asal = [
-    aspek ? kodeAspek(aspek) : null,
+    aspek ? kodeAspek(aspek, t) : null,
     sumber ? t(NAMA_SUMBER[sumber] ?? sumber) : null,
     b.semester ? t('Semester {n}', { n: b.semester }) : null,
   ]
@@ -506,7 +516,7 @@ export default function Log() {
     if (jenis === 'nilai' && saring.nim) isi.nim = saring.nim
     bacaLog(isi)
       .then((h) => !batal && setHasil(h))
-      .catch((e) => !batal && setGalat(e.message))
+      .catch((e) => !batal && setGalat(t(e.message)))
       .finally(() => !batal && setMemuat(false))
     return () => {
       batal = true

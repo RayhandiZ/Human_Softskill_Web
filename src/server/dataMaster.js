@@ -16,12 +16,21 @@ const SEMESTER_MASUK = { Ganjil: 'GANJIL', Genap: 'GENAP' }
 const TAHUN_MIN = 2000
 const JENJANG = ['S1', 'D3']
 const EMAIL_SAH = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const BATAS_NAMA_EN = 191 // panjang kolom namaEn dan labelEn
 
 /** Alasan perubahan, wajib untuk setiap `ubah` supaya Log Aktivitas menjelaskan kenapa data master berubah. */
 function alasanUbah(alasan) {
   const teks = String(alasan ?? '').trim()
   if (teks.length < ALASAN_MIN) throw new GalatApi('Alasan wajib diisi, minimal ' + ALASAN_MIN + ' karakter.')
   return teks
+}
+
+/** Padanan Inggris yang boleh kosong: tidak dikirim berarti tetap, dikosongkan berarti kembali memakai kamus (src/lib/kamusData.js). */
+function namaInggris(nilai, lama = null) {
+  if (nilai === undefined) return lama
+  const teks = String(nilai ?? '').trim()
+  if (teks.length > BATAS_NAMA_EN) throw new GalatApi('Nama bahasa Inggris paling panjang 191 karakter.')
+  return teks || null
 }
 
 /** `aksi` 'tambah' atau 'ubah' dari isi permintaan. */
@@ -90,28 +99,29 @@ async function tambahAngkatan(pengguna, { tahun, semester }) {
   return { angkatan: { id: data.id, label: data.label }, master: await ambilAngkatanProdi() }
 }
 
-async function ubahAngkatan(pengguna, { id, label, alasan }) {
+async function ubahAngkatan(pengguna, { id, label, labelEn, alasan }) {
   const teksAlasan = alasanUbah(alasan)
   const a = await db.angkatan.findUnique({ where: { id: wajib(id, 'Angkatan') } })
   if (!a) throw new GalatApi('Angkatan tidak ditemukan.', 404)
   if (a.status === 'TERKUNCI') throw new GalatApi('Angkatan ' + a.label + ' sudah dikunci, jadi tidak bisa diubah.', 409)
 
-  const labelBaru = wajib(label, 'Label angkatan')
-  if (labelBaru === a.label) return { angkatan: { id: a.id, label: a.label }, master: await ambilAngkatanProdi() }
-  if (await db.angkatan.findFirst({ where: { label: labelBaru, NOT: { id: a.id } } })) {
-    throw new GalatApi('Label ' + labelBaru + ' sudah dipakai angkatan lain.', 409)
+  const baru = { label: wajib(label, 'Label angkatan'), labelEn: namaInggris(labelEn, a.labelEn) }
+  const beda = bedaIsi({ label: a.label, labelEn: a.labelEn }, baru)
+  if (!beda.berubah) return { angkatan: { id: a.id, label: a.label }, master: await ambilAngkatanProdi() }
+  if (baru.label !== a.label && (await db.angkatan.findFirst({ where: { label: baru.label, NOT: { id: a.id } } }))) {
+    throw new GalatApi('Label ' + baru.label + ' sudah dipakai angkatan lain.', 409)
   }
 
   await db.$transaction(async (tx) => {
-    await tx.angkatan.update({ where: { id: a.id }, data: { label: labelBaru } })
+    await tx.angkatan.update({ where: { id: a.id }, data: baru })
     await catatLog(tx, {
       aktorId: pengguna.id,
       aksi: 'UBAH_ANGKATAN',
       target: 'angkatan ' + a.label,
-      rincian: { id: a.id, sebelum: { label: a.label }, sesudah: { label: labelBaru }, alasan: teksAlasan },
+      rincian: { id: a.id, sebelum: beda.sebelum, sesudah: beda.sesudah, alasan: teksAlasan },
     })
   })
-  return { angkatan: { id: a.id, label: labelBaru }, master: await ambilAngkatanProdi() }
+  return { angkatan: { id: a.id, label: baru.label }, master: await ambilAngkatanProdi() }
 }
 
 /* ------------------------------ fakultas dan prodi ------------------------------ */
@@ -146,38 +156,20 @@ async function denganNamaUnik(kerja, pesan) {
   }
 }
 
-async function tambahFakultas(pengguna, { nama }) {
+async function tambahFakultas(pengguna, { nama, namaEn }) {
   const teks = wajib(nama, 'Nama fakultas')
+  const en = namaInggris(namaEn)
   const kembar = 'Fakultas ' + teks + ' sudah ada.'
   if (await db.fakultas.findUnique({ where: { nama: teks } })) throw new GalatApi(kembar, 409)
   await denganNamaUnik(
     () =>
       db.$transaction(async (tx) => {
-        await tx.fakultas.create({ data: { nama: teks } })
-        await catatLog(tx, { aktorId: pengguna.id, aksi: 'TAMBAH_FAKULTAS', target: 'fakultas ' + teks, rincian: { nama: teks } })
-      }),
-    kembar,
-  )
-  return { master: await ambilAngkatanProdi() }
-}
-
-async function ubahFakultas(pengguna, { nama, namaBaru, alasan }) {
-  const teksAlasan = alasanUbah(alasan)
-  const f = await cariFakultas(nama)
-  const baru = wajib(namaBaru, 'Nama baru fakultas')
-  if (baru === f.nama) return { master: await ambilAngkatanProdi() }
-  const kembar = 'Fakultas ' + baru + ' sudah ada.'
-  if (await db.fakultas.findUnique({ where: { nama: baru } })) throw new GalatApi(kembar, 409)
-
-  await denganNamaUnik(
-    () =>
-      db.$transaction(async (tx) => {
-        await tx.fakultas.update({ where: { id: f.id }, data: { nama: baru } })
+        await tx.fakultas.create({ data: { nama: teks, namaEn: en } })
         await catatLog(tx, {
           aktorId: pengguna.id,
-          aksi: 'UBAH_FAKULTAS',
-          target: 'fakultas ' + f.nama,
-          rincian: { sebelum: { nama: f.nama }, sesudah: { nama: baru }, alasan: teksAlasan },
+          aksi: 'TAMBAH_FAKULTAS',
+          target: 'fakultas ' + teks,
+          rincian: { nama: teks, ...(en ? { namaEn: en } : {}) },
         })
       }),
     kembar,
@@ -185,8 +177,34 @@ async function ubahFakultas(pengguna, { nama, namaBaru, alasan }) {
   return { master: await ambilAngkatanProdi() }
 }
 
-async function tambahProdi(pengguna, { nama, jenjang, fakultas }) {
+async function ubahFakultas(pengguna, { nama, namaBaru, namaEn, alasan }) {
+  const teksAlasan = alasanUbah(alasan)
+  const f = await cariFakultas(nama)
+  const baru = { nama: wajib(namaBaru, 'Nama baru fakultas'), namaEn: namaInggris(namaEn, f.namaEn) }
+  const beda = bedaIsi({ nama: f.nama, namaEn: f.namaEn }, baru)
+  if (!beda.berubah) return { master: await ambilAngkatanProdi() }
+  const kembar = 'Fakultas ' + baru.nama + ' sudah ada.'
+  if (baru.nama !== f.nama && (await db.fakultas.findUnique({ where: { nama: baru.nama } }))) throw new GalatApi(kembar, 409)
+
+  await denganNamaUnik(
+    () =>
+      db.$transaction(async (tx) => {
+        await tx.fakultas.update({ where: { id: f.id }, data: baru })
+        await catatLog(tx, {
+          aktorId: pengguna.id,
+          aksi: 'UBAH_FAKULTAS',
+          target: 'fakultas ' + f.nama,
+          rincian: { sebelum: beda.sebelum, sesudah: beda.sesudah, alasan: teksAlasan },
+        })
+      }),
+    kembar,
+  )
+  return { master: await ambilAngkatanProdi() }
+}
+
+async function tambahProdi(pengguna, { nama, namaEn, jenjang, fakultas }) {
   const teks = wajib(nama, 'Nama program studi')
+  const en = namaInggris(namaEn)
   const j = jenjangSah(jenjang)
   const f = await cariFakultas(fakultas)
   const kembar = 'Program studi ' + teks + ' sudah ada.'
@@ -195,12 +213,12 @@ async function tambahProdi(pengguna, { nama, jenjang, fakultas }) {
   await denganNamaUnik(
     () =>
       db.$transaction(async (tx) => {
-        await tx.programStudi.create({ data: { nama: teks, jenjang: j, fakultasId: f.id } })
+        await tx.programStudi.create({ data: { nama: teks, namaEn: en, jenjang: j, fakultasId: f.id } })
         await catatLog(tx, {
           aktorId: pengguna.id,
           aksi: 'TAMBAH_PRODI',
           target: 'prodi ' + teks,
-          rincian: { nama: teks, jenjang: j, fakultas: f.nama },
+          rincian: { nama: teks, ...(en ? { namaEn: en } : {}), jenjang: j, fakultas: f.nama },
         })
       }),
     kembar,
@@ -208,15 +226,16 @@ async function tambahProdi(pengguna, { nama, jenjang, fakultas }) {
   return { master: await ambilAngkatanProdi() }
 }
 
-async function ubahProdi(pengguna, { nama, namaBaru, jenjang, fakultas, alasan }) {
+async function ubahProdi(pengguna, { nama, namaBaru, namaEn, jenjang, fakultas, alasan }) {
   const teksAlasan = alasanUbah(alasan)
   const p = await db.programStudi.findUnique({ where: { nama: wajib(nama, 'Program studi') }, include: { fakultas: true } })
   if (!p) throw new GalatApi('Program studi tidak ditemukan.', 404)
 
   const f = fakultas == null || fakultas === p.fakultas.nama ? p.fakultas : await cariFakultas(fakultas)
-  const lama = { nama: p.nama, jenjang: p.jenjang, fakultas: p.fakultas.nama }
+  const lama = { nama: p.nama, namaEn: p.namaEn, jenjang: p.jenjang, fakultas: p.fakultas.nama }
   const baru = {
     nama: namaBaru == null ? p.nama : wajib(namaBaru, 'Nama baru program studi'),
+    namaEn: namaInggris(namaEn, p.namaEn),
     jenjang: jenjang == null ? p.jenjang : jenjangSah(jenjang),
     fakultas: f.nama,
   }
@@ -232,7 +251,7 @@ async function ubahProdi(pengguna, { nama, namaBaru, jenjang, fakultas, alasan }
       db.$transaction(async (tx) => {
         await tx.programStudi.update({
           where: { id: p.id },
-          data: { nama: baru.nama, jenjang: baru.jenjang, fakultasId: f.id },
+          data: { nama: baru.nama, namaEn: baru.namaEn, jenjang: baru.jenjang, fakultasId: f.id },
         })
         await catatLog(tx, {
           aktorId: pengguna.id,

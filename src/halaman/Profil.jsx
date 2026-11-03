@@ -148,7 +148,7 @@ export default function Profil() {
       setSedangDiatur(await bacaFoto(file))
       setTersimpanPesan(false)
     } catch (e) {
-      setGalat(e.message)
+      setGalat(t(e.message))
     }
   }
 
@@ -171,7 +171,7 @@ export default function Profil() {
       await simpanProfil(kunci, { ...form, telepon, ponsel, alamat: form.alamat.trim() })
       setTersimpanPesan(true)
     } catch (err) {
-      setGalat(err.message)
+      setGalat(t(err.message))
     }
   }
 
@@ -194,7 +194,7 @@ export default function Profil() {
         <button
           type="button"
           onClick={() => setTerbuka(semuaTerbuka ? new Set() : new Set(SEMUA_SEKSI))}
-          className="text-[15px] font-bold text-brand-ink underline underline-offset-4 hover:text-brand"
+          className="min-h-[44px] text-[15px] font-bold text-brand-ink underline underline-offset-4 hover:text-brand sm:min-h-0"
         >
           {t(semuaTerbuka ? 'Tutup semua' : 'Buka semua')}
         </button>
@@ -386,7 +386,7 @@ export default function Profil() {
             <button
               type="button"
               onClick={() => setForm((f) => ({ ...f, foto: null }))}
-              className="mt-3 text-[14px] font-bold text-[color:var(--teks-kritis,var(--critical))] underline underline-offset-4"
+              className="mt-3 min-h-[44px] text-[14px] font-bold text-[color:var(--teks-kritis,var(--critical))] underline underline-offset-4 sm:min-h-0"
             >
               {t('Hapus foto')}
             </button>
@@ -403,15 +403,15 @@ export default function Profil() {
         {mahasiswa ? (
           <>
             <Baris label={t('Fakultas')}>
-              <Tetap>{student.faculty}</Tetap>
+              <Tetap>{t(student.faculty)}</Tetap>
             </Baris>
             <Baris label={t('Program studi')}>
               <Tetap>
-                {student.program} · {student.jenjang}
+                {t(student.program)} · {student.jenjang}
               </Tetap>
             </Baris>
             <Baris label={t('Angkatan')}>
-              <Tetap>{student.angkatanLabel}</Tetap>
+              <Tetap>{t(student.angkatanLabel)}</Tetap>
             </Baris>
             <Baris label={t('Semester berjalan')}>
               <Tetap>
@@ -422,27 +422,27 @@ export default function Profil() {
         ) : dosen ? (
           <>
             <Baris label={t('Unit asesmen')}>
-              <Tetap>{SUMBER[dosen.sumber]?.nama ?? dosen.sumber}</Tetap>
+              <Tetap>{t(SUMBER[dosen.sumber]?.nama ?? dosen.sumber)}</Tetap>
             </Baris>
             <Baris
               label={t('Kelas yang dipegang')}
               catatan={t('Menentukan pengumpulan mana yang masuk ke antrean Anda dan komponen mana yang boleh Anda nilai.')}
             >
               <Tetap>
-                {t('Semester {n}', { n: dosen.semester })} · {dosen.prodi}
+                {t('Semester {n}', { n: dosen.semester })} · {t(dosen.prodi)}
               </Tetap>
             </Baris>
             <Baris label={t('Fakultas')}>
-              <Tetap>{dosen.fakultas}</Tetap>
+              <Tetap>{t(dosen.fakultas)}</Tetap>
             </Baris>
             <Baris label={t('Periode aktif')}>
-              <Tetap>{labelPeriode(PERIODE_AKTIF)}</Tetap>
+              <Tetap>{t(labelPeriode(PERIODE_AKTIF))}</Tetap>
             </Baris>
           </>
         ) : (
           <>
             <Baris label={t('Periode aktif')}>
-              <Tetap>{labelPeriode(PERIODE_AKTIF)}</Tetap>
+              <Tetap>{t(labelPeriode(PERIODE_AKTIF))}</Tetap>
             </Baris>
             <Baris label={t('Cakupan program')}>
               <Tetap>

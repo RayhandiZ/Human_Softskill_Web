@@ -108,7 +108,7 @@ export default function StudentLayout({ children }) {
               <MenuAkun
                 foto={foto}
                 tone="terang"
-                rinci={{ judul: student.name, sub: student.nim + ' · ' + student.program }}
+                rinci={{ judul: student.name, sub: student.nim + ' · ' + teks(student.program) }}
               />
             </div>
           </div>

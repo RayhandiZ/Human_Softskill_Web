@@ -1,12 +1,12 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
-import { Card, CardHeader, CatatanKaki, EmptyState, StatusTeks } from '../../components/Ui'
+import { Card, CatatanKaki, EmptyState, StatusTeks } from '../../components/Ui'
 import { IconAlert, IconCheck, IconClock, IconDocument, IconDownload, IconUpload } from '../../components/Icons'
 import { SUMBER } from '../../lib/curriculum'
 import { dosenSesi, getAngkatan, komponenDosen, mahasiswaKelas } from '../../lib/data'
 import { PERMINTAAN, batalkanPermintaan, unggahNilaiDosen, unggahanDosen, useStore } from '../../lib/store'
-import { barisCSV } from '../../lib/csv'
+import { bacaBarisBerkas } from '../../lib/csv'
 import { bacaRekap, judulKolom, lembarTemplat } from '../../lib/unggahDosen'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
@@ -18,7 +18,6 @@ import { useTeks } from '../../lib/bahasa'
    semuanya (unggahNilaiDosen di src/server/pengajuan.js) dan Super Admin bisa membatalkan satu unggahan. Lihat
    README.md › Panel Dosen. */
 
-const BATAS_UKURAN = 5 * 1024 * 1024
 const TAMPIL_PERUBAHAN = 30
 const TAMPIL_GALAT = 12
 const ALASAN_MIN = 10
@@ -39,25 +38,7 @@ const STATUS_PERMINTAAN = {
   dibatalkan: 'Ditarik',
 }
 
-const salahBerkas = (teks) => Object.assign(new Error(teks), { kamus: true })
 const angka = (n) => (n == null ? '–' : n.toLocaleString('id-ID', { maximumFractionDigits: 2 }))
-
-/** Baris mentah berkas, baris pertama judul. Excel dibaca dari lembar pertama. */
-async function bacaBerkas(berkas) {
-  const nama = berkas.name.toLowerCase()
-  if (berkas.size > BATAS_UKURAN) throw salahBerkas('Berkasnya lebih dari 5 MB. Pastikan ini rekap nilai kelas Anda.')
-  if (nama.endsWith('.csv')) return barisCSV(await berkas.text())
-  if (nama.endsWith('.xls')) {
-    throw salahBerkas('Berkas .xls (Excel lama) belum bisa dibaca. Buka di Excel, simpan sebagai .xlsx, lalu unggah lagi.')
-  }
-  if (!nama.endsWith('.xlsx')) throw salahBerkas('Pilih berkas .xlsx atau .csv.')
-  const { readSheet } = await import('read-excel-file/browser')
-  try {
-    return await readSheet(berkas)
-  } catch {
-    throw salahBerkas('Berkas ini tidak terbaca sebagai Excel. Simpan ulang sebagai .xlsx lalu unggah lagi.')
-  }
-}
 
 async function unduhTemplat({ dosen, mahasiswa, komponen, t }) {
   const { default: tulisXlsx } = await import('write-excel-file/browser')
@@ -90,6 +71,7 @@ export default function Unggah() {
   const [galatSimpan, setGalatSimpan] = useState(null)
   const [alasan, setAlasan] = useState('')
   const [galatTarik, setGalatTarik] = useState(null)
+  const [sudahUnduh, setSudahUnduh] = useState(false)
   const masukan = useRef(null)
 
   // Dibaca ulang setiap data termuat ulang, supaya "nilai lama" selalu yang tersimpan sekarang.
@@ -124,9 +106,9 @@ export default function Unggah() {
     setAlasan('')
     setMembaca(true)
     try {
-      setBerkas({ nama: f.name, baris: await bacaBerkas(f) })
+      setBerkas({ nama: f.name, baris: await bacaBarisBerkas(f) })
     } catch (e) {
-      setGalatBerkas(e.kamus ? t(e.message) : e.message)
+      setGalatBerkas(t(e.message))
     } finally {
       setMembaca(false)
     }
@@ -137,6 +119,7 @@ export default function Unggah() {
     setGalatTemplat(null)
     try {
       await unduhTemplat({ dosen, mahasiswa, komponen, t })
+      setSudahUnduh(true)
     } catch {
       setGalatTemplat(t('Templat gagal dibuat. Muat ulang halaman, lalu coba lagi.'))
     } finally {
@@ -158,7 +141,7 @@ export default function Unggah() {
       setBerkas(null)
       setAlasan('')
     } catch (e) {
-      setGalatSimpan(e.message)
+      setGalatSimpan(t(e.message))
     } finally {
       setMenyimpan(false)
     }
@@ -169,13 +152,13 @@ export default function Unggah() {
     try {
       if (!(await batalkanPermintaan(id))) setGalatTarik(t('Permintaan ini sudah diputuskan, jadi tidak bisa ditarik lagi.'))
     } catch (e) {
-      setGalatTarik(e.message)
+      setGalatTarik(t(e.message))
     }
   }
 
   const tanpaKolom = rekap ? komponen.filter((k) => !rekap.kolom.some((c) => c.komponen.id === k.id)) : []
   // Kolom yang judulnya sama persis dengan templat cukup dihitung; yang dikenali dengan cara lain dirinci.
-  const kolomLain = rekap ? rekap.kolom.filter((c) => c.judul !== judulKolom(c.komponen)) : []
+  const kolomLain = rekap ? rekap.kolom.filter((c) => c.judul !== judulKolom(c.komponen) && c.judul !== judulKolom(c.komponen, t)) : []
   const kolomTemplat = rekap ? rekap.kolom.length - kolomLain.length : 0
   // Nilai yang diajukan ke Super Admin; sisanya langsung tersimpan.
   const perlu = rekap?.perluPersetujuan ?? 0
@@ -183,17 +166,21 @@ export default function Unggah() {
   const kurangAlasan = perlu > 0 && alasan.trim().length < ALASAN_MIN
   const bisaSimpan = Boolean(rekap && !rekap.galat.length && rekap.perubahan.length && !kurangAlasan)
   // Angkatan yang diampu, bila Super Admin sudah memilihnya (sama dengan Beranda, dosen/Pantau.jsx).
-  const angkatanDiampu = dosen.angkatan.map((id) => getAngkatan(id)?.label ?? id).join(', ')
+  const angkatanDiampu = dosen.angkatan.map((id) => t(getAngkatan(id)?.label ?? id)).join(', ')
+  // Langkah yang sedang berjalan. Hanya penunjuk arah: dosen yang sudah punya berkas tetap boleh langsung mengunggah.
+  const langkahKini = tersimpan ? 5 : rekap ? (rekap.galat.length || !rekap.perubahan.length ? 3 : 4) : membaca || sudahUnduh ? 2 : 1
 
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-[26px] font-extrabold tracking-tight text-ink">{t('Unggah Nilai')}</h1>
+        <h1 className="text-[26px] font-bold tracking-tight text-ink">{t('Unggah Nilai')}</h1>
         <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-ink-2">
           {t('Unggah rekap nilai kelas Anda dari Excel. Periksa perubahannya, lalu simpan: nilainya langsung masuk transkrip mahasiswa.')}{' '}
           {t('Perbaikan untuk angkatan yang sudah disahkan atau selesai diajukan ke Super Admin dulu.')}
         </p>
       </header>
+
+      {komponen.length && mahasiswa.length ? <AlurUnggah kini={langkahKini} /> : null}
 
       {!komponen.length ? (
         <Card>
@@ -315,11 +302,11 @@ export default function Unggah() {
 
       {rekap ? (
         <Card className="overflow-hidden">
-          <CardHeader
-            icon={IconCheck}
-            title={t('Periksa sebelum menyimpan')}
-            subtitle={t('Hanya nilai yang berbeda dari yang tersimpan yang akan ditulis.')}
-          />
+          <div className="border-b border-line px-5 py-4 sm:px-6">
+            <Langkah nomor={3} judul={t('Periksa sebelum menyimpan')}>
+              {t('Hanya nilai yang berbeda dari yang tersimpan yang akan ditulis.')}
+            </Langkah>
+          </div>
           <div className="space-y-5 px-5 py-5 sm:px-6">
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Ringkas label={t('Nilai berubah')} nilai={rekap.perubahan.length} />
@@ -340,7 +327,7 @@ export default function Unggah() {
                       <li key={c.indeks}>
                         <span className="font-semibold text-ink">{c.judul}</span>
                         {' → '}
-                        {judulKolom(c.komponen)}
+                        {judulKolom(c.komponen, t)}
                         {c.cara === 'mirip' ? (
                           <span className="teks-tunggu font-semibold"> {t('(dicocokkan dari kemiripan nama, periksa lagi)')}</span>
                         ) : null}
@@ -450,7 +437,9 @@ export default function Unggah() {
 
             {galatSimpan ? <Galat>{galatSimpan}</Galat> : null}
 
-            <div className="flex flex-wrap items-center gap-3">
+            {/* Langkah 4: tulisan tombolnya menyebut berapa yang langsung tersimpan dan berapa yang diajukan. */}
+            <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-soft text-[14px] font-extrabold text-brand-ink">4</span>
               <button type="button" onClick={simpan} disabled={!bisaSimpan || menyimpan} className="btn-primary min-h-[44px]">
                 <IconCheck size={18} />
                 {menyimpan
@@ -479,12 +468,12 @@ export default function Unggah() {
       ) : null}
 
       <Card className="overflow-hidden">
-        <CardHeader
-          icon={IconClock}
-          title={t('Riwayat unggahan')}
-          subtitle={t('Unggahan dan perbaikan yang diajukan atas nama Anda, terbaru di atas.')}
-        />
-        {galatTarik ? <Galat className="mx-5 mb-3 sm:mx-6">{galatTarik}</Galat> : null}
+        <div className="border-b border-line px-5 py-4 sm:px-6">
+          <Langkah nomor={5} judul={t('Riwayat unggahan')}>
+            {t('Unggahan dan perbaikan yang diajukan atas nama Anda, terbaru di atas.')}
+          </Langkah>
+        </div>
+        {galatTarik ? <Galat className="mx-5 mt-3 sm:mx-6">{galatTarik}</Galat> : null}
         {riwayat.length ? (
           <ul className="divide-y divide-line">
             {riwayat.map((u) =>
@@ -495,7 +484,7 @@ export default function Unggah() {
                     <p className="text-[12.5px] tabular-nums text-ink-2">
                       {u.waktu} · {u.id}
                       {u.status === 'ditolak' && u.catatanKeputusan ? ' · ' + u.catatanKeputusan : ''}
-                      {u.status === 'gagal' && u.hasil?.galat ? ' · ' + u.hasil.galat : ''}
+                      {u.status === 'gagal' && u.hasil?.galat ? ' · ' + t(u.hasil.galat) : ''}
                     </p>
                   </div>
                   <span className="flex flex-wrap items-center gap-3">
@@ -533,6 +522,58 @@ export default function Unggah() {
         {t('Perbaikan yang masih menunggu Super Admin bisa Anda tarik.')}
       </CatatanKaki>
     </div>
+  )
+}
+
+/* Penunjuk urutan kerja di atas halaman: yang sudah lewat tercentang, yang berjalan bercincin. Di HP labelnya satu kata
+   supaya lima langkah muat sampai lebar 360px. */
+const ALUR = [
+  { pendek: 'Unduh', panjang: 'Unduh templat' },
+  { pendek: 'Unggah', panjang: 'Unggah berkas' },
+  { pendek: 'Tinjau', panjang: 'Tinjau perubahan' },
+  { pendek: 'Simpan', panjang: 'Simpan atau ajukan' },
+  { pendek: 'Riwayat', panjang: 'Lihat riwayat' },
+]
+
+function AlurUnggah({ kini }) {
+  const t = useTeks()
+  return (
+    <Card className="px-3 py-4 sm:px-6">
+      <ol aria-label={t('Langkah unggah nilai')} className="flex items-start">
+        {ALUR.map((l, i) => {
+          const nomor = i + 1
+          const lewat = nomor < kini
+          const aktif = nomor === kini
+          return (
+            <li key={l.pendek} aria-current={aktif ? 'step' : undefined} className="relative flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center">
+              {i > 0 ? (
+                <span
+                  aria-hidden="true"
+                  className={'absolute right-1/2 top-[15px] h-0.5 w-full ' + (nomor <= kini ? 'bg-brand-ink' : 'bg-[var(--grid)]')}
+                />
+              ) : null}
+              <span
+                className={
+                  // z-10: garis langkah berikutnya digambar sesudahnya dan tanpa ini melintasi angka.
+                  'relative z-10 grid h-8 w-8 place-items-center rounded-full text-[13px] font-bold ' +
+                  (lewat
+                    ? 'bg-brand-ink text-surface'
+                    : aktif
+                      ? 'border-2 border-brand-ink bg-surface text-brand-ink'
+                      : 'border border-line-strong bg-surface text-ink-2')
+                }
+              >
+                {lewat ? <IconCheck size={16} /> : nomor}
+              </span>
+              <span className={'text-[12.5px] leading-tight sm:text-[13px] ' + (aktif ? 'font-bold text-ink' : 'font-semibold text-ink-2')}>
+                <span className="sm:hidden">{t(l.pendek)}</span>
+                <span className="hidden sm:inline">{t(l.panjang)}</span>
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+    </Card>
   )
 }
 

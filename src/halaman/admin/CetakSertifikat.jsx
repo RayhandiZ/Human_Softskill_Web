@@ -77,9 +77,9 @@ export default function CetakSertifikat() {
 
   const cocok = useMemo(() => {
     const angkatanId = COHORTS.find((c) => c.label === angkatan)?.id ?? 'Semua'
-    const ids = new Set(filterStudents({ angkatan: angkatanId, query: cari }).map((s) => s.id))
+    const ids = new Set(filterStudents({ angkatan: angkatanId, query: cari }, t).map((s) => s.id))
     return semua.filter((x) => ids.has(x.s.id))
-  }, [semua, cari, angkatan])
+  }, [semua, cari, angkatan, t])
 
   const berhak = cocok.filter((x) => x.k.layak)
   const belum = cocok.filter((x) => !x.k.layak)
@@ -102,7 +102,7 @@ export default function CetakSertifikat() {
       // Dicatat dan diperiksa server dulu: akses yang baru dicabut di jendela lain ditolak di sini.
       await catatCetakSertifikat(p.id, { aktor: admin?.officer })
     } catch (e) {
-      setGalatCetak(s.name + ': ' + e.message)
+      setGalatCetak(s.name + ': ' + t(e.message))
       segarkanData()
       return
     }
@@ -181,7 +181,7 @@ export default function CetakSertifikat() {
             value={angkatan}
             onChange={setAngkatan}
             options={['Semua', ...COHORTS.map((c) => c.label)]}
-            tampilkan={(o) => (o === 'Semua' ? t('Semua') : o)}
+            tampilkan={(o) => t(o)}
           />
         </div>
 
@@ -220,9 +220,9 @@ export default function CetakSertifikat() {
                         <Link href={'/admin/mahasiswa/' + s.id} className="text-[14.5px] font-bold text-ink hover:text-brand-ink hover:underline">
                           {s.name}
                         </Link>
-                        <span className="block text-[12.5px] text-ink-2">{s.program}</span>
+                        <span className="block text-[12.5px] text-ink-2">{t(s.program)}</span>
                       </td>
-                      <td className="px-3 py-3 text-sm text-ink-2">{s.angkatanLabel}</td>
+                      <td className="px-3 py-3 text-sm text-ink-2">{t(s.angkatanLabel)}</td>
                       <td className="px-3 py-3 text-right text-[14px] font-bold tabular-nums text-ink">{nilai ?? '-'}</td>
                       <td className="px-3 py-3 text-right">
                         <PredikatTeks nilai={nilai} />
@@ -382,7 +382,7 @@ export function TinjauPermintaan({ p, layak, superAdmin, aktor, onSelesai = () =
       if (!ok) setGalat(t('Permintaan ini sudah diputuskan, mungkin di jendela lain.'))
       else onSelesai()
     } catch (e) {
-      setGalat(e.message)
+      setGalat(t(e.message))
     } finally {
       setSibuk(false)
     }
@@ -493,7 +493,7 @@ function PanelCabut({ p, aktor, onBatal, onSelesai }) {
       if (!ok) setGalat(t('Akses cetak ini sudah tidak Siap dicetak, mungkin sudah dicabut di jendela lain.'))
       else onSelesai()
     } catch (e) {
-      setGalat(e.message)
+      setGalat(t(e.message))
     } finally {
       setSibuk(false)
     }

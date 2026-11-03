@@ -40,7 +40,7 @@ export default function PemuatData({ children }) {
           <>
             <p role="alert" className="mt-5 flex items-start justify-center gap-2 text-[14px] font-semibold text-[var(--critical)]">
               <IconAlert size={17} className="mt-px shrink-0" />
-              {status.pesan}
+              {t(status.pesan)}
             </p>
             <div className="mt-5 flex justify-center gap-2.5">
               <button type="button" className="btn-primary" onClick={() => muatDariServer().catch(() => {})}>

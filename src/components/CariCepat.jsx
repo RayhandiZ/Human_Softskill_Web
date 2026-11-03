@@ -69,7 +69,7 @@ export default function CariCepat({ halaman, mahasiswa, keMahasiswa }) {
               jenis: 'mahasiswa',
               ke: keMahasiswa(s),
               judul: s.name,
-              rinci: [s.nim, s.program, t('Angkatan {label}', { label: s.angkatanLabel })].filter(Boolean).join(' · '),
+              rinci: [s.nim, t(s.program), t('Angkatan {label}', { label: s.angkatanLabel })].filter(Boolean).join(' · '),
             }))
     const hal = halaman
       .filter((h) => !q || t(h.label).toLowerCase().includes(q))
@@ -142,7 +142,7 @@ export default function CariCepat({ halaman, mahasiswa, keMahasiswa }) {
         aria-keyshortcuts="Control+K Meta+K"
         // Versi lebar hanya mulai 1280px, dan lebarnya tetap: di 1024 sampai 1279px menu samping memakan
         // tempatnya, dan versi selebar 24vw dulu memotong teksnya sekaligus menghimpit lokasi halaman.
-        className="hidden h-11 w-[310px] items-center gap-2.5 rounded-2xl border border-line bg-surface px-3.5 text-[14px] text-ink-2 transition hover:border-line-strong xl:flex min-[1440px]:w-[330px]"
+        className="hidden h-10 w-[310px] items-center gap-2.5 rounded-xl border border-line bg-surface-2 px-3.5 text-[14px] text-ink-2 transition hover:border-line-strong xl:flex min-[1440px]:w-[330px]"
       >
         <IconSearch size={17} className="shrink-0" />
         <span className="min-w-0 flex-1 truncate text-left">{t('Cari mahasiswa atau halaman')}</span>
@@ -157,7 +157,7 @@ export default function CariCepat({ halaman, mahasiswa, keMahasiswa }) {
         aria-haspopup="dialog"
         aria-label={t('Cari mahasiswa atau halaman')}
         aria-keyshortcuts="Control+K Meta+K"
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-ink-2 transition hover:bg-surface hover:text-ink xl:hidden"
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-ink-2 transition hover:bg-surface-2 hover:text-ink xl:hidden"
       >
         <IconSearch size={20} />
       </button>

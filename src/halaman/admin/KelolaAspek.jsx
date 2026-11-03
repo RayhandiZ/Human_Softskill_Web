@@ -21,6 +21,7 @@ import { menungguPersetujuan, simpanAspek, useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 import EditorPenilaian from './EditorPenilaian'
+import IsianInggris from './IsianInggris'
 import { Dampak } from './Kurikulum'
 import { PesanMenunggu } from './PermintaanTerkirim'
 
@@ -65,6 +66,7 @@ export default function KelolaAspek({ aspekId, onPilih }) {
 
 /** Pengirim aksi aspek: { sibuk, galat, pesan, menunggu, kirim(isi, sesudah) }; admin biasa mendapat `menunggu`. */
 function useKirimAspek() {
+  const t = useTeks()
   const [keadaan, setKeadaan] = useState({ sibuk: false, galat: '', pesan: '', menunggu: null })
   async function kirim(isi, sesudah) {
     if (keadaan.sibuk) return
@@ -74,7 +76,7 @@ function useKirimAspek() {
       if (menungguPersetujuan(hasil)) setKeadaan({ sibuk: false, galat: '', pesan: '', menunggu: hasil })
       else setKeadaan({ sibuk: false, galat: '', pesan: sesudah(hasil), menunggu: null })
     } catch (e) {
-      setKeadaan({ sibuk: false, galat: e.message, pesan: '', menunggu: null })
+      setKeadaan({ sibuk: false, galat: t(e.message), pesan: '', menunggu: null })
     }
   }
   return { ...keadaan, kirim }
@@ -158,7 +160,7 @@ function BagianKirim({ isi, alasan, onAlasan, label, bahaya = false, k, onBatal 
         // Pesan aturan yang sama dengan penolakan server, jadi ditampilkan apa adanya seperti galat server.
         <ul className="space-y-1 text-[13px] font-semibold text-[var(--critical)]">
           {masalah.map((m) => (
-            <li key={m}>{m}</li>
+            <li key={m}>{t(m)}</li>
           ))}
         </ul>
       ) : dampak === undefined ? (
@@ -270,7 +272,7 @@ function FormArsipAspek({ aspek, onSelesai, onBatal = null, className = '' }) {
   )
 }
 
-const KOMPONEN_KOSONG = { label: '', sumber: 'MK', jenis: 'TUGAS', ranah: 'kognitif', status: 'resmi' }
+const KOMPONEN_KOSONG = { label: '', labelEn: '', sumber: 'MK', jenis: 'TUGAS', ranah: 'kognitif', status: 'resmi' }
 
 /**
  * Isian awal aspek baru. Di dalam satu semester (`semesterTetap`), area dan cluster mengikuti aspek terakhir di
@@ -290,6 +292,11 @@ function isianTambahAwal(semesterTetap) {
     pdp: '',
     mk: '',
     engagement: '',
+    namaEn: '',
+    deskripsiEn: '',
+    pdpEn: '',
+    mkEn: '',
+    engagementEn: '',
   }
 }
 
@@ -359,11 +366,13 @@ function FormTambahAspek({ semesterTetap = null, onSelesai, onBatal = null, clas
         <Isian label={t('Kegiatan Kemahasiswaan')} value={isian.engagement} onChange={pasang('engagement')} />
       </div>
       <Isian label={t('Deskripsi')} multi value={isian.deskripsi} onChange={pasang('deskripsi')} />
+      <IsianInggris isian={isian} onUbah={(b, v) => pasang(b)(v)} />
 
       <fieldset className="space-y-3 rounded-xl border border-line bg-surface-2/60 p-4">
         <legend className="px-1 text-[13.5px] font-bold text-ink">{t('Komponen pertama')}</legend>
         <div className="grid gap-3 sm:grid-cols-2">
           <Isian label={t('Nama komponen')} value={komponen.label} onChange={(v) => setKomponen((x) => ({ ...x, label: v }))} />
+          <Isian label={t('Nama komponen (Inggris)')} value={komponen.labelEn} onChange={(v) => setKomponen((x) => ({ ...x, labelEn: v }))} />
           <Select
             label={t('Sumber penilaian')}
             value={komponen.sumber}
@@ -509,7 +518,7 @@ function DaftarArsip({ arsip, onPilih, onPesan }) {
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
               <div className="min-w-0">
                 <p className="text-[14.5px] font-bold text-ink">
-                  {a.kode} {a.nama}
+                  {a.kode} {t(a.nama)}
                 </p>
                 <p className="mt-0.5 text-[12.5px] text-ink-2">
                   {t('Semester {n}', { n: a.semester })} · {labelCluster(a.cluster)}
@@ -627,7 +636,7 @@ export function AspekSemester({ semester }) {
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
               <div className="min-w-0">
                 <p className="text-[14.5px] font-bold text-ink">
-                  {a.kode} {a.nama}
+                  {a.kode} {t(a.nama)}
                 </p>
                 <p className="mt-0.5 text-[12.5px] text-ink-2">
                   {labelCluster(a.cluster)} · {t('{n} komponen', { n: getKomponen(a.id).length })}
@@ -682,7 +691,7 @@ export function AspekSemester({ semester }) {
               <li key={a.id}>
                 <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                   <p className="text-[13.5px] text-ink-2">
-                    <span className="font-semibold text-ink">{a.kode}</span> {a.nama}
+                    <span className="font-semibold text-ink">{a.kode}</span> {t(a.nama)}
                   </p>
                   <TombolAksi terbuka={terbuka(a.id, 'pulihkan')} onClick={() => alih(a.id, 'pulihkan')} ikon={IconUndo}>
                     {t('Pulihkan aspek')}

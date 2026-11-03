@@ -101,7 +101,7 @@ export default function Akses() {
           ) : (
             <div className="px-6 py-12 text-center">
               <p className="text-[15px] font-bold text-ink">{t('Daftar akun gagal dimuat')}</p>
-              <p className="mx-auto mt-1.5 max-w-sm text-[13px] text-ink-2">{muat.galat?.message}</p>
+              <p className="mx-auto mt-1.5 max-w-sm text-[13px] text-ink-2">{t(muat.galat?.message)}</p>
               <button type="button" className="btn-ghost mt-4" onClick={ambil}>
                 <IconRefresh size={16} />
                 {t('Coba lagi')}
@@ -270,7 +270,7 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
       onGanti(akun)
       tutup()
     } catch (err) {
-      setGalat(err.message)
+      setGalat(t(err.message))
     } finally {
       setSibuk(false)
     }
@@ -280,7 +280,7 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
     a.nama ? a.email : null,
     a.nip ? 'NIP ' + a.nip : null,
     a.nim ? 'NIM ' + a.nim : null,
-    a.prodi,
+    t(a.prodi),
     a.angkatan ? t('Angkatan {label}', { label: a.angkatan }) : null,
     // Kelas dosen: tanpa angkatan terpilih, kelasnya angkatan yang sedang di semester itu.
     ...(a.peran === 'dosen'
@@ -288,7 +288,7 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
           SUMBER_DOSEN[a.sumber] ?? a.sumber,
           t('Semester {n}', { n: a.semester }),
           a.angkatanDiampu?.length
-            ? t('Angkatan {label}', { label: a.angkatanDiampu.map((x) => x.label).join(', ') })
+            ? t('Angkatan {label}', { label: a.angkatanDiampu.map((x) => t(x.label)).join(', ') })
             : t('angkatan otomatis'),
         ]
       : []),
@@ -478,7 +478,7 @@ function PilihAngkatan({ terpilih, onUbah }) {
             className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl border border-line bg-surface px-3 text-[13.5px] font-semibold text-ink has-[:checked]:border-brand-ink has-[:checked]:bg-brand-soft"
           >
             <input type="checkbox" className="h-4 w-4 accent-[var(--brand-ink)]" checked={terpilih.includes(c.id)} onChange={() => ganti(c.id)} />
-            {c.label}
+            {t(c.label)}
             {c.status === 'terkunci' ? <span className="font-medium text-ink-2">{t('(disahkan)')}</span> : null}
           </label>
         ))}
@@ -512,7 +512,7 @@ function PanelKelas({ a, onBatal, onSelesai }) {
       const { akun } = await ubahKelasDosen({ id: a.id, ...isian })
       onSelesai(akun)
     } catch (err) {
-      setGalat(err.message)
+      setGalat(t(err.message))
     } finally {
       setSibuk(false)
     }
@@ -524,7 +524,7 @@ function PanelKelas({ a, onBatal, onSelesai }) {
         {t('Kelas menentukan mahasiswa yang terlihat dan bisa diunggah nilainya oleh dosen ini. Nilai yang sudah tersimpan tidak berubah.')}
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Select label={t('Program studi')} value={isian.prodi} onChange={pasang('prodi')} options={PROGRAMS.map((p) => p.program)} />
+        <Select label={t('Program studi')} value={isian.prodi} onChange={pasang('prodi')} options={PROGRAMS.map((p) => p.program)} tampilkan={(x) => t(x)} />
         <Select
           label={t('Sumber penilaian')}
           value={isian.sumber}
@@ -565,8 +565,8 @@ function PanelKelas({ a, onBatal, onSelesai }) {
 
 /** Baris rincian akses angkatan seorang admin di daftar akun: yang dibuka dan yang dinonaktifkan, atau bawaannya. */
 function ringkasAksesAngkatan(akses = [], t) {
-  const dibuka = akses.filter((x) => x.terlihat).map((x) => x.label)
-  const ditutup = akses.filter((x) => !x.terlihat).map((x) => x.label)
+  const dibuka = akses.filter((x) => x.terlihat).map((x) => t(x.label))
+  const ditutup = akses.filter((x) => !x.terlihat).map((x) => t(x.label))
   if (!dibuka.length && !ditutup.length) return [t('angkatan Semester 1–3 saja')]
   return [
     dibuka.length ? t('Angkatan dibuka: {label}', { label: dibuka.join(', ') }) : null,
@@ -609,7 +609,7 @@ function PanelAksesAngkatan({ a, onBatal, onSelesai }) {
       })
       onSelesai(akun)
     } catch (err) {
-      setGalat(err.message)
+      setGalat(t(err.message))
     } finally {
       setSibuk(false)
     }
@@ -649,7 +649,7 @@ function PanelAksesAngkatan({ a, onBatal, onSelesai }) {
                     checked={terlihat.includes(c.id)}
                     onChange={() => ganti(c.id)}
                   />
-                  {c.label}
+                  {t(c.label)}
                   {c.status === 'terkunci' ? <span className="font-medium text-ink-2">{t('(disahkan)')}</span> : null}
                 </label>
               ))}
@@ -738,7 +738,7 @@ function FormTambah({ kelompok, onBatal, onTambah }) {
       const { akun } = await tambahAkun({ ...isian, peran: kelompok })
       onTambah(akun)
     } catch (err) {
-      setGalat(err.message)
+      setGalat(t(err.message))
     } finally {
       setSibuk(false)
     }
@@ -764,6 +764,7 @@ function FormTambah({ kelompok, onBatal, onTambah }) {
               value={isian.prodi}
               onChange={pasang('prodi')}
               options={prodi}
+              tampilkan={(x) => t(x)}
               kosong={t('Pilih program studi')}
             />
             <Select
@@ -771,7 +772,7 @@ function FormTambah({ kelompok, onBatal, onTambah }) {
               value={isian.angkatanId}
               onChange={pasang('angkatanId')}
               options={COHORTS.map((c) => c.id)}
-              tampilkan={(id) => getAngkatan(id)?.label ?? id}
+              tampilkan={(id) => t(getAngkatan(id)?.label ?? id)}
               kosong={t('Pilih angkatan')}
             />
           </>
@@ -785,6 +786,7 @@ function FormTambah({ kelompok, onBatal, onTambah }) {
               value={isian.prodi}
               onChange={pasang('prodi')}
               options={prodi}
+              tampilkan={(x) => t(x)}
               kosong={t('Pilih program studi')}
             />
             <Select

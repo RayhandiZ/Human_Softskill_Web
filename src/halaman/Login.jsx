@@ -74,7 +74,7 @@ export default function Login() {
       {/* --------------------------- panel kiri --------------------------- */}
       {/* Tanpa overflow-hidden: latarnya menyambung ke panel kanan, jadi lingkaran hiasan tidak boleh terpotong
           tegak di batas panel. Halaman (akar) yang memotongnya di tepi layar. */}
-      <aside className="relative hidden p-12 text-white lg:flex lg:flex-col">
+      <aside className="relative hidden px-12 pb-8 pt-12 text-white lg:flex lg:flex-col">
         <svg className="pointer-events-none absolute -right-24 -top-24 h-[520px] w-[520px] opacity-[.09]" viewBox="0 0 200 200" aria-hidden="true">
           <circle cx="100" cy="100" r="98" fill="none" stroke="white" strokeWidth="1.5" />
           <circle cx="100" cy="100" r="72" fill="none" stroke="white" strokeWidth="1.5" />
@@ -83,7 +83,7 @@ export default function Login() {
         </svg>
 
         {/* Pita kertas menggantung dari tepi atas panel, kakinya tergulung ke luar; lihat README.md › Gerak. */}
-        <div className="-mt-12 mb-8 self-start">
+        <div className="-mt-12 mb-6 self-start">
           <div className="pita-logo">
             {/* Jendela yang membuka kertas mengikuti gulungan; lihat index.css › pita logo masuk. */}
             <div className="pita-jendela">
@@ -100,35 +100,38 @@ export default function Login() {
           </div>
         </div>
 
-        <div className="my-auto max-w-lg">
-          <h1 className="mt-4 text-[35px] font-extrabold leading-[1.1] tracking-tight">
+        {/* Tulisan blok ini dibesarkan supaya terbaca dosen (revisi 2 Nov 2026). Bloknya dilebarkan dan jaraknya
+            dirapatkan sepadan, supaya tingginya tidak bertambah dan tetap muat di laptop kecil. Di bawah 1280px
+            kolomnya sempit dan barisnya lebih banyak, jadi ukurannya satu tingkat di bawahnya. */}
+        <div className="my-auto max-w-[640px]">
+          <h1 className="text-[38px] font-extrabold leading-[1.1] tracking-tight xl:text-[40px]">
             {t('Apa sih VIBE itu?')}
           </h1>
-          <p className="mt-5 text-[15px] leading-relaxed text-white/80">
+          <p className="mt-5 text-[16px] leading-relaxed text-white/80 xl:text-[17px]">
             {t(
               'VIBE (Values, Intelligence, Behavior & Excellence) merupakan sistem penilaian yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:'
             )}
           </p>
 
-          <ul className="mt-9 space-y-3">
+          <ul className="mt-6 space-y-3">
             {AREA.map((a) => (
               <li key={a.id} className="flex items-center gap-3.5">
                 <span
-                  className="grid h-9 w-9 place-items-center rounded-xl text-[13px] font-extrabold text-white"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[14px] font-extrabold text-white"
                   style={{ background: a.warna }}
                 >
                   {a.id}
                 </span>
                 <div>
-                  <p className="text-[14.5px] font-bold">{t(a.nama)}</p>
-                  <p className="text-[12.5px] text-white/75">{t(a.ringkas)}</p>
+                  <p className="text-[15.5px] font-bold xl:text-[16.5px]">{t(a.nama)}</p>
+                  <p className="text-[14px] text-white/75 xl:text-[15px]">{t(a.ringkas)}</p>
                 </div>
               </li>
             ))}
           </ul>
         </div>
 
-        <p className="text-[12.5px] text-white/65">
+        <p className="text-[14px] text-white/65">
           Universitas Multimedia Nusantara
         </p>
       </aside>

@@ -77,7 +77,7 @@ export default function Transkrip({ student, untukAdmin = false }) {
           </div>
           {dokumen.watermark ? (
             <StatusTeks kuat className="tracking-[.06em]">
-              {dokumen.watermark}
+              {teks(dokumen.watermark)}
             </StatusTeks>
           ) : (
             <StatusTeks kuat>{teks('Dokumen final')}</StatusTeks>
@@ -88,9 +88,9 @@ export default function Transkrip({ student, untukAdmin = false }) {
           {[
             ['Nama', student.name],
             ['NIM', student.nim],
-            ['Program studi', student.program],
-            ['Fakultas', student.faculty],
-            ['Angkatan', student.angkatanLabel],
+            ['Program studi', teks(student.program)],
+            ['Fakultas', teks(student.faculty)],
+            ['Angkatan', teks(student.angkatanLabel)],
             [
               'Semester berjalan',
               teks('{n} dari {total}', {
@@ -98,7 +98,7 @@ export default function Transkrip({ student, untukAdmin = false }) {
                 total: CONFIG.TOTAL_SEMESTER_PROGRAM,
               }),
             ],
-            ['Periode cetak', labelPeriode(PERIODE_AKTIF)],
+            ['Periode cetak', teks(labelPeriode(PERIODE_AKTIF))],
             ['Nomor dokumen', nomorDokumen(student)],
           ].map(([k, v]) => (
             <div key={k}>
@@ -210,7 +210,7 @@ export default function Transkrip({ student, untukAdmin = false }) {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-[14px] font-semibold text-ink">{a.aspek.nama}</span>
+                          <span className="text-[14px] font-semibold text-ink">{teks(a.aspek.nama)}</span>
                           {a.adaDraft ? (
                             <TandaDraft className="ml-2 align-middle">
                               {teks('Skema belum final')}
@@ -231,7 +231,7 @@ export default function Transkrip({ student, untukAdmin = false }) {
                                 title={teks(SUMBER[s].nama)}
                                 className="sumber-pil rounded-md bg-surface-2 px-1.5 py-0.5 text-[11px] font-bold text-ink-2"
                               >
-                                {SUMBER[s].label}
+                                {teks(SUMBER[s].label)}
                               </span>
                             ))}
                           </span>
@@ -348,7 +348,7 @@ export default function Transkrip({ student, untukAdmin = false }) {
                 <Badge tone={k.status === 'disetujui' ? 'good' : k.status === 'ditolak' ? 'critical' : 'warning'}>
                   {teks(LABEL_KOREKSI[k.status] ?? k.status)}
                 </Badge>
-                <span className="text-ink">{k.komponenLabel}</span>
+                <span className="text-ink">{teks(k.komponenLabel)}</span>
                 <span className="text-ink-3">{teks('diajukan {tanggal}', { tanggal: k.diajukan })}</span>
                 {k.status === 'disetujui' && k.nilaiUsulan != null ? (
                   <span className="w-full text-[12.5px] text-ink-2">
@@ -497,9 +497,9 @@ function BarisRincian({ aspek }) {
             <tbody>
               {aspek.komponen.map((x) => (
                 <tr key={x.id} className="border-b border-line last:border-0">
-                  <td className="px-3 py-2.5 text-[12.5px] font-semibold text-ink-2">{SUMBER[x.sumber].label}</td>
+                  <td className="px-3 py-2.5 text-[12.5px] font-semibold text-ink-2">{t(SUMBER[x.sumber].label)}</td>
                   <td className="px-3 py-2.5 text-[13px] text-ink">
-                    {x.label}
+                    {t(x.label)}
                     {x.status === 'draft' ? (
                       <TandaDraft className="ml-2">{t('Draft')}</TandaDraft>
                     ) : null}
@@ -538,7 +538,7 @@ function BarisRincian({ aspek }) {
             {indikator.map((i) => (
               <li key={i.id} className="rounded-xl border border-line bg-surface px-3.5 py-3">
                 <p className="text-[13px] font-bold text-ink">{i.label}</p>
-                <p className="mt-1 text-[12.5px] leading-snug text-ink-2">{i.sumber.join(' · ')}</p>
+                <p className="mt-1 text-[12.5px] leading-snug text-ink-2">{i.sumber.map((s) => t(s)).join(' · ')}</p>
               </li>
             ))}
           </ul>
@@ -563,7 +563,7 @@ function FormKoreksi({ student, transkrip, onSelesai }) {
   const t = useTeks()
   const terbuka = transkrip.aspek.filter((a) => !a.terkunci)
   const pilihan = terbuka.flatMap((a) =>
-    a.komponen.map((k) => ({ id: k.id, label: a.aspek.kode + ' ' + k.label, terisi: k.terisi, nilai: k.nilai })),
+    a.komponen.map((k) => ({ id: k.id, label: a.aspek.kode + ' ' + t(k.label), terisi: k.terisi, nilai: k.nilai })),
   )
 
   const [komponenId, setKomponenId] = useState(pilihan[0]?.id ?? '')
@@ -583,7 +583,7 @@ function FormKoreksi({ student, transkrip, onSelesai }) {
       await ajukanKoreksi({ student, komponenId, alasan, nilaiDiharapkan })
       onSelesai()
     } catch (err) {
-      setGalat(err.message)
+      setGalat(t(err.message))
     }
   }
 

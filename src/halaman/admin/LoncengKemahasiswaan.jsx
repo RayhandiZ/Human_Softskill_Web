@@ -267,7 +267,7 @@ function PanelPembaruan({ pembaruan }) {
         </div>
         {galat ? (
           <p role="alert" className="px-2 py-3 text-[13px] leading-snug text-ink-2">
-            {galat}{' '}
+            {t(galat)}{' '}
             <button type="button" onClick={muat} className="font-bold text-brand-ink underline">
               {t('Coba lagi')}
             </button>
@@ -362,7 +362,7 @@ export default function LoncengKemahasiswaan({ nada = 'onbrand' }) {
         aria-label={label}
         className={
           nada === 'terang'
-            ? 'relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-ink-2 transition hover:bg-surface hover:text-ink'
+            ? 'relative grid h-11 w-11 shrink-0 place-items-center rounded-xl text-ink-2 transition hover:bg-surface-2 hover:text-ink'
             : 'relative grid h-9 w-9 place-items-center rounded-lg text-white/80 transition hover:bg-white/10 hover:text-white'
         }
       >
@@ -416,7 +416,7 @@ export default function LoncengKemahasiswaan({ nada = 'onbrand' }) {
                           ikon={IconCheckShield}
                           judul={u.dosenNama}
                           rinci={
-                            (SUMBER[u.sumber]?.label ?? u.sumber) +
+                            t(SUMBER[u.sumber]?.label ?? u.sumber) +
                             ' · ' +
                             t('Semester {n}', { n: u.semester }) +
                             ' · ' +
@@ -442,7 +442,7 @@ export default function LoncengKemahasiswaan({ nada = 'onbrand' }) {
                           onPilih={tutup}
                           ikon={IconUndo}
                           judul={k.nama + ' · ' + k.nim}
-                          rinci={k.komponenLabel}
+                          rinci={t(k.komponenLabel)}
                         />
                       ))}
                     </ul>
@@ -511,7 +511,7 @@ export default function LoncengKemahasiswaan({ nada = 'onbrand' }) {
                         judul={
                           t('Semester {n}', { n: p.semester }) +
                           ' · ' +
-                          (SUMBER[p.sumber]?.label ?? p.sumber)
+                          t(SUMBER[p.sumber]?.label ?? p.sumber)
                         }
                         rinci={
                           t('Angkatan {label}', { label: p.angkatan.label }) +

@@ -149,7 +149,7 @@ export default function Kurikulum({ tertanam = false, aspekAwal, onPilihAspek, o
           : t('Bobot tersimpan.'),
       )
     } catch (err) {
-      setGalat(err.message)
+      setGalat(t(err.message))
     } finally {
       setSibuk(false)
     }
@@ -192,7 +192,7 @@ export default function Kurikulum({ tertanam = false, aspekAwal, onPilihAspek, o
                   <span className="text-[15px] font-extrabold tracking-tight text-ink">{a.kode}</span>
                   <StatusTeks kuat={manual}>{t(manual ? 'Manual' : 'Otomatis')}</StatusTeks>
                 </span>
-                <span className="mt-0.5 block text-[12.5px] leading-snug text-ink-2">{a.nama}</span>
+                <span className="mt-0.5 block text-[12.5px] leading-snug text-ink-2">{t(a.nama)}</span>
                 <span className="mt-2 block text-[12px] text-ink-3">
                   {t('{n} komponen', { n: getKomponen(a.id).length })}
                   {diubah ? ' · ' + t('diubah') : ''}
@@ -341,7 +341,7 @@ function EditorAspek({ aspek, isian, usulan, mode, salah, onUbah }) {
   return (
     <Card className="overflow-hidden">
       <CardHeader
-        title={aspek.kode + ' ' + aspek.nama}
+        title={aspek.kode + ' ' + t(aspek.nama)}
         subtitle={t('Semester {n} · {k} komponen asesmen', { n: aspek.semester, k: komponen.length })}
       />
       <div className="space-y-3 px-5 pt-4 sm:px-6">
@@ -392,11 +392,11 @@ function EditorAspek({ aspek, isian, usulan, mode, salah, onUbah }) {
               return (
                 <tr key={k.id} className="border-b border-line align-middle last:border-0">
                   <td className="px-4 py-3">
-                    <span className="text-[14px] font-semibold text-ink">{k.label}</span>{' '}
+                    <span className="text-[14px] font-semibold text-ink">{t(k.label)}</span>{' '}
                     {k.status === 'draft' ? <TandaDraft>{t('draft')}</TandaDraft> : null}
                   </td>
                   <td className="px-4 py-3 text-[13px] text-ink-2">
-                    {SUMBER[k.sumber]?.label ?? k.sumber}
+                    {t(SUMBER[k.sumber]?.label ?? k.sumber)}
                     {k.jenis ? ' · ' + t(LABEL_JENIS[k.jenis] ?? k.jenis) : ''}
                   </td>
                   <td className="px-4 py-3 text-right text-[13.5px] tabular-nums text-ink-2">{persen(berlaku[k.id])}</td>
@@ -509,7 +509,7 @@ function PengaturanOtomatis({ pengaturan, salahKunci, onMode, onUbah }) {
             <GrupAngka
               judul={t('Bobot per sumber')}
               kunci={ISI_PENGATURAN.BOBOT_SUMBER}
-              label={(id) => SUMBER[id]?.label ?? id}
+              label={(id) => t(SUMBER[id]?.label ?? id)}
               isian={pengaturan.BOBOT_SUMBER}
               salah={salahKunci.has('BOBOT_SUMBER')}
               onUbah={(isi) => onUbah('BOBOT_SUMBER', isi)}

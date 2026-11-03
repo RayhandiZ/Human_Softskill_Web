@@ -19,6 +19,8 @@ const SESI = { student: JSON.stringify({ role:'student', studentId:'DEMO-2', ema
 const ISI = {
   '/mahasiswa': [
     [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
+    /* Kerangka panel kerja (bilah atas kapsul, susunan kartu) sengaja tidak menyentuh panel mahasiswa. */
+    [/panel-kerja/, 'panel mahasiswa tidak memakai kerangka panel kerja', false, true],
     [/Nilai akhir/, 'ubin nilai akhir ada'],
     /* Ubin nilai akhir hanya angka dan grade-nya, dan ubin Aspek final dihapus (permintaan 26 Okt 2026); status dan
        dasar hitungnya tetap di Transkrip (R3, diperiksa npm run assert). */
@@ -59,18 +61,19 @@ const ISI = {
        pekerjaan yang menunggu, atau satu baris tenang bila tidak ada. */
     [/Perlu dikerjakan|Tidak ada pekerjaan yang menunggu/, 'pekerjaan yang menunggu dibuka paling atas'],
     [/Halaman lain/, 'tidak ada lagi kartu Halaman lain', false],
-    [/Mahasiswa terpantau[\s\S]{0,400}Rata-rata nilai[\s\S]{0,400}Nilai sudah final/, 'hanya tiga angka utama'],
+    [/panel-kerja/, 'memakai rupa panel kerja', true, true],
+    [/Mahasiswa terpantau[\s\S]{0,400}Rata-rata nilai[\s\S]{0,400}Nilai sudah final[\s\S]{0,400}Kelengkapan nilai/, 'empat kartu angka utama'],
     /* Catatan "bobot sementara" DIHAPUS dari halaman oleh pemilik proyek, jadi
        pemeriksaannya ikut dilepas — bukan karena tidak penting. Kalimat itu yang
        dulu memberi tahu bahwa rata-rata masih memakai bobot MENUNGGU_KONFIRMASI
        dan bisa berubah. Bila nanti dipasang lagi, kembalikan baris ini. */
     [/Grafik Sebaran Aspek/, 'ada satu grafik sebaran'],
-    [/Nilai yang sudah masuk[\s\S]{0,40}%/, 'persentase nilai yang sudah masuk'],
+    [/Kelengkapan nilai\s*\d+%\s*Nilai yang sudah masuk/, 'persentase kelengkapan nilai beserta artinya'],
     [/Di atas batas 70[\s\S]{0,40}%/, 'persentase di atas batas kelulusan'],
     [/Sudah final[\s\S]{0,40}%/, 'persentase nilai yang sudah final'],
     [/Huruf A[\s\S]{0,200}Huruf B[\s\S]{0,200}Huruf C/, 'tiap irisan diberi label huruf, bukan warna saja'],
     [/sudah dinilai/, 'pusat donat menyebut dasar penghitungannya'],
-    [/Kelengkapan nilai/, 'tidak ada lagi tabel kelengkapan padat', false],
+    [/<th[^>]*>[^<]*Kelengkapan/, 'tidak ada lagi tabel kelengkapan padat', false, true],
     [/Rata-rata per aspek CPMK/, 'tidak ada lagi bar sepuluh aspek', false],
     [/Fakultas[\s\S]{0,60}Program studi[\s\S]{0,60}Angkatan[\s\S]{0,60}Semester/, 'tidak ada filter bertingkat', false],
   ],
@@ -130,7 +133,9 @@ const ISI = {
     [/<h1[^>]*>Beranda<\/h1>/, 'judul halaman Beranda, sama dengan menunya', true, true],
     [/Nilai terisi[\s\S]{0,400}dari \d+ nilai/, 'angka utama: nilai yang sudah masuk dari seluruhnya'],
     [/MK Humaniora Semester 1, Sistem Informasi/, 'kelas yang dipegang disebut di kerangka'],
-    [/href="\/dosen\/nilai"[^>]*>[\s\S]{0,300}Unggah nilai/, 'satu tombol menuju Unggah Nilai', true, true],
+    /* Tombol utama, bukan butir menu samping yang menuju tempat yang sama. */
+    [/<a[^>]*(?:href="\/dosen\/nilai"[^>]*btn-primary|btn-primary[^>]*href="\/dosen\/nilai")[^>]*>[\s\S]{0,300}Unggah Nilai/, 'satu tombol menuju Unggah Nilai', true, true],
+    [/panel-kerja/, 'memakai rupa panel kerja', true, true],
     [/Kelengkapan per tugas/, 'kelengkapan per tugas'],
     [/Nilai mahasiswa/, 'daftar nilai per mahasiswa'],
     [/aria-expanded="false"[^>]*>Rincian/, 'rincian per mahasiswa bisa dibuka', true, true],
@@ -146,6 +151,7 @@ const ISI = {
 
   '/dosen/nilai': [
     [/<h1[^>]*>Unggah Nilai<\/h1>/, 'judul halaman Unggah Nilai, sama dengan menunya', true, true],
+    [/aria-label="Langkah unggah nilai"[\s\S]*?aria-current="step"/, 'penunjuk lima langkah menandai langkah yang berjalan', true, true],
     [/Unduh templat \(\.xlsx\)/, 'templat Excel kelas bisa diunduh'],
     [/Templat berisi \d+ mahasiswa kelas Anda/, 'isi templat dijelaskan'],
     [/Berkas \.xlsx atau \.csv, paling besar 5 MB/, 'jenis dan batas berkas disebut'],
@@ -191,6 +197,11 @@ const ISI = {
     [/Pusat Kendali/, 'judul Pusat Kendali'],
     [/permintaan menunggu/, 'jumlah permintaan yang menunggu di kartu keputusan'],
     [/Perlu keputusan Anda/, 'daftar yang perlu diputuskan'],
+    [/panel-kerja/, 'memakai rupa panel kerja', true, true],
+    [/Perlu keputusan Anda[\s\S]*Keadaan sistem[\s\S]*Nilai tersimpan per bulan[\s\S]*Aktivitas terbaru/, 'urutan: keputusan, ringkasan, grafik, aktivitas'],
+    [/Diputuskan di[\s\S]{0,400}Nilai tersimpan di[\s\S]{0,400}Angkatan disahkan[\s\S]{0,400}Aturan menunggu konfirmasi/, 'empat kartu ringkasan'],
+    /* Tanpa data pendukung di server, metrik seperti ini tidak boleh muncul hanya karena referensinya punya. */
+    [/uptime|pengguna online|server health|\blive\b/i, 'tidak ada metrik tanpa sumber data', false],
     [/Rantai pengawasan/, 'rantai pengawasan'],
     [/aria-label="Menu super admin"/, 'menu samping super admin', true, true],
   ],
@@ -940,6 +951,130 @@ const RUTE = [
   console.log((rusakKamus.length ? 'GAGAL  ' : 'OK     ') + 'Ketahanan kamus terjemahan')
   for (const [ket, ok] of cekKamus) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
+  /* -------------- Isi kurikulum dan pesan server berbahasa Inggris ---------- */
+  const hie = await mod.ujiIsiInggris()
+  const cekIsiInggris = [
+    ['nama tugas bawaan dari kamus', hie.tugasBawaan],
+    ['deskripsi CPMK bawaan dari kamus', hie.deskripsiBawaan],
+    ['mode Indonesia tetap kalimat aslinya', hie.indonesiaTetap],
+    ['nama tugas di dalam kalimat ikut diterjemahkan', hie.nilaiSisipan],
+    ['pesan server statis', hie.pesanStatis],
+    ['pesan server yang dirakit', hie.pesanDirakit],
+    ['pesan bertingkat: sebab di dalam pesan ikut diterjemahkan', hie.pesanBertingkat],
+    ['beberapa pesan yang digabung server', hie.pesanGabungan],
+    ['daftar alasan yang dipisah titik koma', hie.pesanBerdaftar],
+    ['label isian di dalam pesan wajib diisi', hie.labelIsian],
+    ['judul ringkasan permintaan', hie.ringkasanPermintaan],
+    ['label periode di dalam kalimat', hie.periodeSisipan],
+    ['label periode berdiri sendiri', hie.periodeLangsung],
+    ['rincian data yang menahan akun', hie.rincianAkun],
+    ['judul templat Excel mengikuti bahasa', hie.judulTemplatInggris],
+    ['judul templat Excel tanpa bahasa tetap Indonesia', hie.judulIndonesiaTetap],
+    ['judul templat berbahasa Inggris dikenali saat diunggah', hie.judulInggrisDikenali],
+    ['kolom Inggris basis data menang atas kamus', hie.kolomMenangAtasKamus],
+    ['nama tugas dari layar memakai kolom Inggrisnya', hie.komponenDariLayar],
+    ['nama tugas tanpa padanan tetap tampil apa adanya', hie.tanpaPadananTetapTampil],
+    ['teks aspek dari layar memakai kolom Inggrisnya', hie.aspekDariLayar],
+    ['sesudah kurikulum diganti, padanan lama tidak tersisa', hie.kembaliKeKamus],
+  ]
+  /* Kata yang hanya muncul di nama tugas dan bukti indikator berbahasa Indonesia. Saat EN dipilih, tidak boleh tampil. */
+  const INDONESIA = /Tugas( \d)?:|Sikap:|UTS:|UAS:|Refleksi|Kehadiran|Partisipasi|Penilaian fasilitator|Religiositas/
+  for (const [peran, rute] of [
+    ['student', '/mahasiswa'],
+    ['student', '/mahasiswa/peta'],
+    ['student', '/mahasiswa/riwayat'],
+    ['student', '/mahasiswa/transkrip'],
+    ['dosen', '/dosen'],
+    ['admin', '/admin/kurikulum'],
+    ['super', '/super/penilaian'],
+  ]) {
+    w.localStorage.setItem('sk5c.session', SESI[peran])
+    const teks = await mod.teksInggris(rute)
+    cekIsiInggris.push([rute + ': tanpa nama tugas berbahasa Indonesia', !INDONESIA.test(teks), (teks.match(INDONESIA) || [])[0]])
+  }
+  /* Nama fakultas, prodi, dan angkatan: saat EN dipilih nama Indonesianya tidak boleh tampil, termasuk di pilihan saringan
+     dan lembar cetak yang tersembunyi; saat ID dipilih sebaliknya. textContent memuat keduanya. */
+  const hnm = await mod.ujiNamaMaster()
+  const cekNamaMaster = [
+    ['semua nama bawaan punya padanan', hnm.semuaBawaanPunyaPadanan],
+    ['nama fakultas', hnm.fakultas],
+    ['nama fakultas di dalam kalimat: Faculty of', hnm.fakultasDiKalimat],
+    ['nama prodi', hnm.prodi],
+    ['prodi dan daftar angkatan di dalam kalimat', hnm.prodiDiKalimat],
+    ['angkatan Genap', hnm.angkatanGenap],
+    ['angkatan tahun saja tetap angkanya', hnm.angkatanGanjil],
+    ['nama angkatan di dalam pesan server', hnm.pesanServer],
+    ['mode Indonesia tetap nama aslinya', hnm.indonesiaTetap],
+    ['contoh di kolom isian Inggris', hnm.contohKolom],
+    ['prodi ketemu lewat nama Inggris', hnm.cariNamaInggris],
+    ['prodi tetap ketemu lewat nama Indonesia', hnm.cariNamaIndonesia],
+    ['nama dari layar memakai kolom Inggrisnya', hnm.kolomLayar],
+    ['kolom Inggris menang atas kamus', hnm.kolomMenangAtasKamus],
+    ['nama tanpa padanan tetap tampil apa adanya', hnm.tanpaPadananTetapTampil],
+    ['memasang kurikulum tidak menghapus nama data master', hnm.kurikulumTidakMenghapusNama],
+    ['pilihan saringan tertulis Inggris', hnm.pilihanTertulisInggris],
+    ['angkatan yang hanya ada di basis data bisa dipilih di saringan', hnm.angkatanBasisDataBisaDipilih],
+    ['saringan tetap memakai nama asli', hnm.saringMemakaiNamaAsli],
+    ['kolom prodi diurutkan menurut nama yang tertulis', hnm.urutMenurutNamaTertulis],
+    ['konfirmasi pengesahan menyebut label Inggris', hnm.konfirmasiTertulisInggris],
+    ['konfirmasi yang salah ditolak', hnm.konfirmasiSalahDitolak],
+    ['label asli juga diterima', hnm.labelAsliDiterima],
+    ['label yang tertulis di layar diterima', hnm.labelTertulisDiterima],
+    ['pengesahan lolos dengan label asli terkirim', hnm.pengesahanLolos],
+    ['sesudah data master diganti, padanan lama tidak tersisa', hnm.kembaliKeKamus],
+  ]
+  const NAMA_ID = /Sistem Informasi|Informatika|Teknik (Komputer|Elektro|Fisika)|Ilmu Komunikasi|Komunikasi Strategis|Jurnalistik|Desain Komunikasi Visual|Film & Animasi|Seni & Desain|Arsitektur|Akuntansi|Manajemen|Perhotelan|Bisnis|\d{4} Genap/
+  const NAMA_EN = /Information Systems|Engineering & Informatics|Strategic Communication|Visual Communication Design|Film & Animation|Art & Design|\d{4} Even/
+  for (const [peran, rute] of [
+    ['student', '/mahasiswa/transkrip'],
+    ['student', '/mahasiswa/profil'],
+    ['dosen', '/dosen'],
+    ['dosen', '/dosen/nilai'],
+    ['dosen', '/dosen/profil'],
+    ['admin', '/admin/mahasiswa'],
+    ['admin', '/admin/program-studi'],
+    ['admin', '/admin/angkatan'],
+    ['admin', '/admin/sertifikat'],
+    ['admin', '/admin/nilai'],
+    ['super', '/super'],
+    ['super', '/super/aturan'],
+    ['super', '/super/akses'],
+  ]) {
+    w.localStorage.setItem('sk5c.session', SESI[peran])
+    const teksEn = await mod.teksInggris(rute)
+    cekNamaMaster.push([rute + ': EN tanpa nama Indonesia', !NAMA_ID.test(teksEn), (teksEn.match(NAMA_ID) || [])[0]])
+    const teksId = await mod.teksInggris(rute, 'id')
+    cekNamaMaster.push([rute + ': ID tanpa nama Inggris', !NAMA_EN.test(teksId), (teksId.match(NAMA_EN) || [])[0]])
+  }
+  const rusakNama = cekNamaMaster.filter((c) => !c[1])
+  if (rusakNama.length) gagal += rusakNama.length
+  console.log((rusakNama.length ? 'GAGAL  ' : 'OK     ') + 'Nama fakultas, prodi, dan angkatan mengikuti bahasa')
+  for (const [ket, ok, rinci] of cekNamaMaster) console.log('       ' + (ok ? 'v ' : 'x ') + ket + (!ok && rinci ? ' → ' + rinci : ''))
+
+  const hxl = await mod.ujiImportExcel()
+  const cekImportExcel = [
+    ['NIM dari Excel mendapat kembali nol di depannya', hxl.nolKembali],
+    ['nama berkoma tidak memecah kolom', hxl.komaDalamNamaAman],
+    ['nilai desimal utuh', hxl.angkaUtuh],
+    ['sel kosong tetap kosong, bukan nol', hxl.selKosong],
+    ['format baku dari Excel dikenali', hxl.formatBakuDikenali],
+    ['berkas .xls ditolak dengan penjelasan', hxl.tolakXls],
+    ['jenis berkas lain ditolak', hxl.tolakJenisLain],
+    ['berkas lebih dari 5 MB ditolak', hxl.tolakBesar],
+    ['CSV tetap diterima', hxl.csvTetapDiterima],
+  ]
+  const rusakImportExcel = cekImportExcel.filter(([, ok]) => !ok)
+  gagal += rusakImportExcel.length
+  console.log((rusakImportExcel.length ? 'GAGAL  ' : 'OK     ') + 'Import Excel super admin')
+  for (const [ket, ok] of cekImportExcel) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
+
+  const rusakIsiInggris = cekIsiInggris.filter(([, ok]) => !ok)
+  gagal += rusakIsiInggris.length
+  console.log((rusakIsiInggris.length ? 'GAGAL  ' : 'OK     ') + 'Isi kurikulum dan pesan server berbahasa Inggris')
+  for (const [ket, ok, rinci] of cekIsiInggris) {
+    console.log('       ' + (ok ? 'v ' : 'x ') + ket + (ok || rinci === undefined ? '' : '  → ' + rinci))
+  }
+
   /* ------------- Status polos & transkrip yang dicetak --------------------- */
   console.log('')
   w.localStorage.setItem('sk5c.session', SESI.student)
@@ -1246,6 +1381,7 @@ const RUTE = [
     ['ada permintaan menunggu: lonceng muncul dengan jumlahnya', ps.loncengMenunggu],
     ['grafik nilai tersimpan: enam batang bulanan yang bisa difokus, bukan jumlah pengajuan', ps.grafikBulanan],
     ['pemilih periode: memilih periode lain menyaring isi dan menandai antrean "Saat ini"', ps.pilihPeriode],
+    ['pemilih periode: angkatan dan aturan ditandai "Saat ini", angka yang tersaring tidak', ps.saatIniDitandai],
     ['log perubahan nilai terisi', ps.logNilaiTerisi],
     ['penyaring NIM hanya menyisakan mahasiswa itu', ps.saringNim],
     ['Penilaian & Bobot: semua aspek bisa dipilih, aspek pertama terbuka', ps.kartuSemuaAspek],
@@ -1276,6 +1412,8 @@ const RUTE = [
   const rl = await ujiRincianLog()
   const cekRl = [
     ['rincian log: sebelum/sesudah menjadi tabel bernama isian, alasan terbaca, tanpa JSON', rl.tabelPerubahan],
+    ['rincian log: nama fakultas dan prodi ikut bahasa aktif, alasan apa adanya', rl.namaMasterInggris],
+    ['rincian log: nama orang apa adanya, prodi dan angkatannya ikut bahasa aktif', rl.namaOrangApaAdanya],
     ['rincian log: ubah akses terbaca Aktif dan Dicabut (bukan true/false), peran bernama', rl.aksesTerbaca],
     ['rincian log: contoh nilai menjadi tabel dengan nama komponen, sumber, dan cara masuk nilai', rl.contohNilai],
     ['ringkasan baris: isian yang berubah beserta alasannya', rl.ringkasanBaris],

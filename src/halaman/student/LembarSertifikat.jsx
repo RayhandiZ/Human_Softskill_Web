@@ -34,7 +34,7 @@ export default function LembarSertifikat({ student, transkrip: t }) {
         <p className="mt-8 text-[13px]">{teks('diberikan kepada')}</p>
         <p className="mt-2 text-[30px] font-bold">{student.name}</p>
         <p className="mt-1 text-[12.5px]">
-          {teks('NIM')} {student.nim} · {student.program} · {student.faculty}
+          {teks('NIM')} {student.nim} · {teks(student.program)} · {teks(student.faculty)}
         </p>
 
         <p className="mt-6 max-w-[620px] text-[13.5px] leading-relaxed">

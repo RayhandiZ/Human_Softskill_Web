@@ -155,7 +155,7 @@ export default function Students() {
   const [page, setPage] = useState(1)
   const [ukuran, setUkuran] = useState(UKURAN_HALAMAN[0])
 
-  const dasar = useMemo(() => filterStudents(filter), [filter, versi])
+  const dasar = useMemo(() => filterStudents(filter, t), [filter, versi, t])
 
   const semua = useMemo(
     () =>
@@ -193,6 +193,8 @@ export default function Students() {
     const ambil = (x) => {
       if (x[sort.key] !== undefined) return x[sort.key]
       if (sort.key === 'huruf') return x.nilai
+      // Prodi dan angkatan diurutkan menurut yang tertulis di layar.
+      if (sort.key === 'program' || sort.key === 'angkatanLabel') return t(x.s[sort.key])
       return x.s[sort.key]
     }
     return [...rows].sort((a, b) => {
@@ -201,7 +203,7 @@ export default function Students() {
       const c = typeof p === 'string' ? p.localeCompare(q) : p - q
       return sort.dir === 'asc' ? c : -c
     })
-  }, [rows, sort])
+  }, [rows, sort, t])
 
   useEffect(() => setPage(1), [filter, sort, kelengkapan, ukuran])
 
@@ -212,11 +214,11 @@ export default function Students() {
     unduhBerkas(
       'data-mahasiswa-' + new Date().toISOString().slice(0, 10) + '.csv',
       susunCSV(
-        ['NIM', 'Nama', 'Email', 'Program studi', 'Angkatan', 'Semester', 'Nilai', 'Predikat', 'Aspek dinilai', 'Sertifikat'],
+        ['NIM', 'Nama', 'Email', 'Program studi', 'Angkatan', 'Semester', 'Nilai', 'Predikat', 'Aspek dinilai', 'Sertifikat'].map((k) => t(k)),
         urut.map((x) => [
-          x.s.nim, x.s.name, x.s.email, x.s.program, x.s.angkatanLabel,
+          x.s.nim, x.s.name, x.s.email, t(x.s.program), t(x.s.angkatanLabel),
           x.s.semesterAktif, x.nilai ?? '', hurufMutu(x.nilai)?.huruf ?? '',
-          x.dinilai + '/' + x.total, x.layak ? 'Berhak' : 'Belum',
+          x.dinilai + '/' + x.total, t(x.layak ? 'Berhak' : 'Belum'),
         ]),
       ),
     )
@@ -301,7 +303,7 @@ export default function Students() {
                         type="button"
                         onClick={() => toggle(c.key)}
                         className={
-                          'inline-flex items-center gap-1 whitespace-nowrap rounded-md text-[12.5px] font-bold transition hover:text-ink ' +
+                          'inline-flex min-h-[24px] items-center gap-1 whitespace-nowrap rounded-md text-[12.5px] font-bold transition hover:text-ink ' +
                           (aktif ? 'text-brand-ink' : 'text-ink-2')
                         }
                       >
@@ -330,8 +332,8 @@ export default function Students() {
                       {x.s.name}
                     </Link>
                   </td>
-                  <td className="px-3 py-3 text-sm text-ink-2">{x.s.program}</td>
-                  <td className="px-3 py-3 text-sm text-ink-2">{x.s.angkatanLabel}</td>
+                  <td className="px-3 py-3 text-sm text-ink-2">{t(x.s.program)}</td>
+                  <td className="px-3 py-3 text-sm text-ink-2">{t(x.s.angkatanLabel)}</td>
                   <td className="px-3 py-3 text-right text-[13.5px] tabular-nums text-ink-2">
                     {x.s.semesterAktif}/{CONFIG.TOTAL_SEMESTER_PROGRAM}
                   </td>

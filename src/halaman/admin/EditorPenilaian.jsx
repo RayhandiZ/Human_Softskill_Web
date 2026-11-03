@@ -14,7 +14,8 @@ import {
 import { STUDENTS } from '../../lib/data'
 import { menungguPersetujuan, simpanPenilaian, useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
-import { useTeks } from '../../lib/bahasa'
+import { padananKamus, useTeks } from '../../lib/bahasa'
+import IsianInggris from './IsianInggris'
 import { PesanMenunggu } from './PermintaanTerkirim'
 import { GulirTabel, TandaContoh } from '../../components/Ui'
 
@@ -64,6 +65,7 @@ function dariDraf(d) {
     komponen: d.komponen.map((k) => ({
       id: k.id,
       label: k.label,
+      labelEn: k.labelEn,
       sumber: k.sumber,
       jenis: k.sumber === 'MK' ? k.jenis || null : null,
       ranah: k.ranah,
@@ -152,6 +154,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
           kunci: 'baru-' + ++kunciBaru,
           id: null,
           label: '',
+          labelEn: '',
           sumber: sumberAwal ?? 'MK',
           jenis: (sumberAwal ?? 'MK') === 'MK' ? 'TUGAS' : '',
           ranah: 'kognitif',
@@ -204,7 +207,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
       if (menungguPersetujuan(hasil)) setMenunggu(hasil)
       else setPesan(t('Penilaian {kode} tersimpan dan langsung berlaku untuk semua angkatan.', { kode: kodeAspek }))
     } catch (err) {
-      setGalat(err.message)
+      setGalat(t(err.message))
     } finally {
       setSibuk(false)
     }
@@ -246,6 +249,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
           />
         </label>
       </fieldset>
+      <IsianInggris isian={draf.aspek} onUbah={ubahAspek} />
 
       {/* ---------------------------- komponen aktif ----------------------------- */}
       <div>
@@ -327,6 +331,14 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
                         aria-label={t('Nama komponen')}
                         placeholder={t('Misalnya: Tugas 3: Refleksi akhir')}
                       />
+                      {/* Contoh di dalam kolom: terjemahan bawaan yang berlaku selama kolom ini kosong. */}
+                      <input
+                        className="field mt-1.5 !min-w-[220px] !px-3 !py-2"
+                        value={k.labelEn ?? ''}
+                        onChange={(e) => ubahKomponen(k.kunci, { labelEn: e.target.value })}
+                        aria-label={t('Nama komponen (Inggris)')}
+                        placeholder={padananKamus(k.label) ?? t('Nama dalam bahasa Inggris')}
+                      />
                       <span className="mt-1 block font-mono text-[10.5px] text-ink-3">{k.id ?? t('baru, ID dibuat saat disimpan')}</span>
                     </td>
                     <td className="px-3 py-2.5">
@@ -341,7 +353,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
                       >
                         {SUMBER_LIST.map((s) => (
                           <option key={s.id} value={s.id}>
-                            {s.label}
+                            {t(s.label)}
                           </option>
                         ))}
                       </PilihanSel>
@@ -437,7 +449,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
       {/* --------------------------------- arsip --------------------------------- */}
       {arsip.length ? (
         <details className="group rounded-xl border border-line bg-surface px-4 py-3">
-          <summary className="flex cursor-pointer items-center gap-2 text-[13px] font-bold text-ink">
+          <summary className="-my-3 flex cursor-pointer items-center gap-2 py-3 text-[13px] font-bold text-ink">
             {/* Panahnya ikut berputar saat arsip dibuka; dulu selalu menunjuk ke bawah. */}
             <IconChevronDown size={15} className="transition-transform group-open:rotate-180" />
             {t('Arsip komponen ({n})', { n: arsip.length })}
@@ -446,7 +458,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
             {arsip.map((k) => (
               <li key={k.kunci} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
                 <span className="text-[13px] text-ink-2">
-                  <span className="font-semibold text-ink">{k.label}</span> · {k.id}
+                  <span className="font-semibold text-ink">{t(k.label)}</span> · {k.id}
                 </span>
                 <button type="button" className="btn-ghost !px-3 !py-1.5 text-[12.5px]" onClick={() => ubahKomponen(k.kunci, { aktif: true, bobot: draf.bobotManual ? '0' : '' })}>
                   <IconUndo size={14} />
@@ -464,7 +476,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
           {masalah.slice(0, 6).map((m, i) => (
             <li key={i} className="flex items-start gap-2">
               <IconAlert size={14} className="mt-px shrink-0" />
-              {m.pesan}
+              {t(m.pesan)}
             </li>
           ))}
         </ul>

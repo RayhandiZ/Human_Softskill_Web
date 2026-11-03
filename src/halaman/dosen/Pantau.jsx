@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Card, CardHeader, CatatanKaki, EmptyState, Paginasi, ScoreBar, SearchInput, StatTile } from '../../components/Ui'
-import { IconChevronDown, IconList, IconUpload, IconUsers } from '../../components/Icons'
+import { Card, CardHeader, CatatanKaki, EmptyState, KartuAngka, Paginasi, SearchInput } from '../../components/Ui'
+import { IconAlert, IconChevronDown, IconList, IconTarget, IconUpload, IconUsers } from '../../components/Icons'
+import { SUMBER } from '../../lib/curriculum'
 import { CONFIG } from '../../lib/config'
 import { dosenSesi, getAngkatan, komponenDosen, mahasiswaKelas } from '../../lib/data'
 import { unggahanDosen, useStore } from '../../lib/store'
@@ -14,10 +15,20 @@ import { useTeks } from '../../lib/bahasa'
 /* Beranda dosen: memantau nilai kelas. Rapat 24 Okt 2026 menilai panel dosen terlalu ribet dan memutuskan dosen tidak
    lagi mengisi nilai satu per satu: nilai masuk lewat unggahan Excel (halaman Unggah Nilai) dan halaman ini hanya
    menampilkan hasilnya. Semua angka dihitung dari nilai yang tersimpan untuk tugas kelas dosen ini (ringkasKelas di
-   src/lib/unggahDosen.js). Lihat README.md › Panel Dosen. */
+   src/lib/unggahDosen.js). Datanya keadaan saat ini, jadi kelengkapan digambar sebagai bilah, bukan tren waktu.
+   Lihat README.md › Panel Dosen. */
 
 const PER_HALAMAN = 15
 const angka = (n) => (n == null ? '–' : n.toLocaleString('id-ID', { maximumFractionDigits: 1 }))
+
+/** Bilah kelengkapan: 0 berarti lintasan kosong, bukan potongan kecil yang terbaca sebagai sudah ada isinya. */
+function BilahIsi({ persen, tinggi = 'h-2' }) {
+  return (
+    <div className={'w-full overflow-hidden rounded-full bg-[var(--grid)] ' + tinggi}>
+      <div className="bilah-tumbuh h-full rounded-full bg-brand-ink" style={{ width: Math.min(100, persen) + '%' }} />
+    </div>
+  )
+}
 
 export default function Pantau() {
   const versi = useStore()
@@ -40,63 +51,62 @@ export default function Pantau() {
 
   const persen = ringkas.total ? Math.round((ringkas.terisi / ringkas.total) * 100) : 0
   // Angkatan yang diampu, bila Super Admin sudah memilihnya; tanpa pilihan, kelasnya angkatan yang sedang di semester ini.
-  const angkatanDiampu = dosen.angkatan.map((id) => getAngkatan(id)?.label ?? id).join(', ')
+  const angkatanDiampu = dosen.angkatan.map((id) => t(getAngkatan(id)?.label ?? id)).join(', ')
+  const cakupan = angkatanDiampu
+    ? t('{prodi}, angkatan {daftar}.', { prodi: dosen.prodi, daftar: angkatanDiampu })
+    : t('{prodi} dari Semester {n} sampai programnya selesai.', { prodi: dosen.prodi, n: dosen.semester })
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="text-[26px] font-extrabold tracking-tight text-ink">{t('Beranda')}</h1>
-        <p className="mt-1.5 text-[15px] text-ink-2">
-          {t('Pantau kelengkapan dan sebaran nilai kelas Anda. Nilai masuk lewat unggahan Excel.')}
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-[26px] font-bold tracking-tight text-ink">{t('Beranda')}</h1>
+          <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-ink-2">
+            {t('Pantau kelengkapan dan sebaran nilai kelas Anda. Nilai masuk lewat unggahan Excel.')}
+          </p>
+          <p className="mt-1 text-[13.5px] font-semibold text-ink-2">
+            {t('{unit} Semester {semester}', { unit: SUMBER[dosen.sumber]?.label ?? dosen.sumber, semester: dosen.semester })} · {cakupan}
+          </p>
+        </div>
+        <Link href="/dosen/nilai" className="btn-primary min-h-[44px] text-[14px]">
+          <IconUpload size={17} />
+          {t('Unggah Nilai')}
+        </Link>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,2fr)]">
-        {/* Titik fokus halaman: seberapa lengkap nilai kelas ini, dan satu tombol untuk melengkapinya. */}
-        <Card className="px-6 py-7">
-          <p className="text-[15px] font-semibold text-ink-2">{t('Nilai terisi')}</p>
-          <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
-            <span className="text-[46px] font-extrabold leading-none tracking-tight text-ink">{ringkas.terisi}</span>
-            <span className="text-[18px] font-semibold text-ink-2">{t('dari {n} nilai', { n: ringkas.total })}</span>
-          </p>
-          <div className="mt-4">
-            <ScoreBar value={persen} color="var(--brand-ink)" />
-          </div>
-          <p className="mt-3 text-[14.5px] leading-relaxed text-ink-2">
-            {!ringkas.total
+      <div className="grid gap-4 lg:grid-cols-12">
+        {/* Titik fokus halaman: seberapa lengkap nilai kelas ini. */}
+        <KartuAngka
+          ikon={IconList}
+          judul={t('Nilai terisi')}
+          nilai={ringkas.terisi}
+          satuan={t('dari {n} nilai', { n: ringkas.total })}
+          persen={persen}
+          persenLabel={
+            !ringkas.total
               ? t('Belum ada mahasiswa atau tugas di kelas Anda.')
               : !ringkas.terisi
                 ? t('Belum ada nilai yang masuk. Unggah rekap Excel kelas Anda.')
                 : ringkas.terisi < ringkas.total
                   ? t('{n} nilai belum masuk.', { n: ringkas.total - ringkas.terisi })
-                  : t('Semua nilai kelas Anda sudah masuk.')}
-          </p>
-          <Link href="/dosen/nilai" className="btn-primary mt-5 inline-flex min-h-[44px] items-center gap-2 px-4 text-[13.5px]">
-            <IconUpload size={16} />
-            {t('Unggah nilai')}
-          </Link>
-          {terakhir ? (
-            <p className="mt-3 text-[13px] text-ink-2">
-              {t('Unggahan terakhir {waktu}, {n} nilai.', { waktu: terakhir.waktu, n: terakhir.jumlah })}
-            </p>
-          ) : null}
-        </Card>
-
-        <div className="grid gap-5 sm:grid-cols-3">
-          <StatTile
-            label={t('Jumlah mahasiswa')}
-            value={mahasiswa.length}
-            hint={
-              angkatanDiampu
-                ? t('{prodi}, angkatan {daftar}.', { prodi: dosen.prodi, daftar: angkatanDiampu })
-                : t('{prodi} dari Semester {n} sampai programnya selesai.', { prodi: dosen.prodi, n: dosen.semester })
-            }
+                  : t('Semua nilai kelas Anda sudah masuk.')
+          }
+          keterangan={terakhir ? t('Unggahan terakhir {waktu}, {n} nilai.', { waktu: terakhir.waktu, n: terakhir.jumlah }) : null}
+          className="lg:col-span-5"
+        />
+        <div className="grid gap-4 sm:grid-cols-3 lg:col-span-7">
+          <KartuAngka ikon={IconUsers} judul={t('Jumlah mahasiswa')} nilai={mahasiswa.length} keterangan={cakupan} />
+          <KartuAngka
+            ikon={IconTarget}
+            judul={t('Rata-rata kelas')}
+            nilai={angka(ringkas.rata)}
+            keterangan={t('Dari seluruh nilai tugas yang sudah masuk.')}
           />
-          <StatTile label={t('Rata-rata kelas')} value={angka(ringkas.rata)} hint={t('Dari seluruh nilai tugas yang sudah masuk.')} />
-          <StatTile
-            label={t('Rata-rata di bawah {n}', { n: CONFIG.AMBANG_SERTIFIKAT })}
-            value={ringkas.dibawahAmbang}
-            hint={t('Mahasiswa yang rata-rata nilai tugasnya perlu perhatian.')}
+          <KartuAngka
+            ikon={IconAlert}
+            judul={t('Rata-rata di bawah {n}', { n: CONFIG.AMBANG_SERTIFIKAT })}
+            nilai={ringkas.dibawahAmbang}
+            keterangan={t('Mahasiswa yang rata-rata nilai tugasnya perlu perhatian.')}
           />
         </div>
       </div>
@@ -124,24 +134,23 @@ export default function Pantau() {
               : t('Bila Anda mengampu angkatan tertentu, termasuk yang sudah disahkan, minta Super Admin memilihnya di akun Anda.')}
           </EmptyState>
         ) : (
-          <ul className="divide-y divide-line">
+          <ul className="grid gap-x-10 px-5 py-2 sm:px-6 xl:grid-cols-2">
             {ringkas.perTugas.map(({ komponen: k, terisi, rata }) => (
-              <li
-                key={k.id}
-                className="grid gap-2 px-5 py-3.5 sm:grid-cols-[minmax(0,1fr)_220px_110px] sm:items-center sm:gap-5 sm:px-6"
-              >
-                <div className="min-w-0">
-                  <p className="text-[14px] font-semibold text-ink">{k.label}</p>
-                  <p className="text-[12.5px] text-ink-2">{t('Kode {id}', { id: k.id })}</p>
-                </div>
-                <div>
-                  <ScoreBar value={(terisi / mahasiswa.length) * 100} color="var(--brand-ink)" height={8} />
-                  <p className="mt-1 text-[12.5px] tabular-nums text-ink-2">
-                    {t('{n} dari {total} mahasiswa', { n: terisi, total: mahasiswa.length })}
+              <li key={k.id} className="border-b border-line py-3.5 [&:last-child]:border-b-0 xl:[&:nth-last-child(-n+2)]:border-b-0">
+                <div className="flex items-baseline justify-between gap-4">
+                  <p className="min-w-0 text-[14px] font-semibold text-ink">
+                    {t(k.label)}
+                    <span className="ml-2 text-[12px] font-medium text-ink-2">{t('Kode {id}', { id: k.id })}</span>
+                  </p>
+                  <p className="shrink-0 text-[13px] text-ink-2">
+                    {t('Rata-rata')} <strong className="tabular-nums text-ink">{angka(rata)}</strong>
                   </p>
                 </div>
-                <p className="text-[13px] text-ink-2 sm:text-right">
-                  {t('Rata-rata')} <strong className="tabular-nums text-ink">{angka(rata)}</strong>
+                <div className="mt-2">
+                  <BilahIsi persen={(terisi / mahasiswa.length) * 100} />
+                </div>
+                <p className="mt-1 text-[12.5px] tabular-nums text-ink-2">
+                  {t('{n} dari {total} mahasiswa', { n: terisi, total: mahasiswa.length })}
                 </p>
               </li>
             ))}
@@ -240,7 +249,7 @@ function NilaiMahasiswa({ perMahasiswa, jumlahTugas }) {
                     {m.isi.map(({ komponen: k, nilai }) => (
                       <li key={k.id} className="flex items-baseline justify-between gap-3 rounded-xl bg-surface-2 px-3.5 py-2.5">
                         <span className="min-w-0 text-[13px] text-ink">
-                          {k.label}
+                          {t(k.label)}
                           <span className="block text-[12px] text-ink-2">{k.id}</span>
                         </span>
                         <span className="shrink-0 text-[14px] font-bold tabular-nums text-ink">

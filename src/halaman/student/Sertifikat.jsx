@@ -44,7 +44,7 @@ export default function Sertifikat() {
     try {
       await mintaSertifikat({ student })
     } catch (e) {
-      setGalat(e.message)
+      setGalat(teks(e.message))
     } finally {
       setSibuk(false)
     }
@@ -64,7 +64,7 @@ export default function Sertifikat() {
       window.addEventListener('afterprint', selesai)
       window.print()
     } catch (e) {
-      setGalat(e.message)
+      setGalat(teks(e.message))
       segarkanData()
     } finally {
       setSibuk(false)

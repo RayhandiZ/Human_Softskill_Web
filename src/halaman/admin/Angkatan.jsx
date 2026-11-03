@@ -150,7 +150,7 @@ function KartuAngkatan({ x, aktif, onPilih }) {
       }
     >
       <span className="flex items-start justify-between gap-2">
-        <span className="text-[17px] font-extrabold tracking-tight text-ink">{c.label}</span>
+        <span className="text-[17px] font-extrabold tracking-tight text-ink">{t(c.label)}</span>
         <StatusTeks kuat={terkunci}>{t(terkunci ? 'Disahkan' : 'Aktif')}</StatusTeks>
       </span>
       <span className="mt-0.5 block text-[12.5px] text-ink-2">
@@ -197,7 +197,7 @@ function RincianAngkatan({ x }) {
           {t('Angkatan {label}', { label: c.label })}
         </h2>
         <p className="mt-1 text-[13px] text-ink-2">
-          {c.periode.map((p, i) => t('Semester {n}', { n: i + 1 }) + ': ' + labelPeriode(p)).join(' · ')}
+          {c.periode.map((p, i) => t('Semester {n}', { n: i + 1 }) + ': ' + t(labelPeriode(p))).join(' · ')}
         </p>
       </div>
 
@@ -212,7 +212,7 @@ function RincianAngkatan({ x }) {
               <li key={p.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5 sm:px-6">
                 <span className="min-w-[200px] flex-1">
                   <span className="block text-[14px] font-bold text-ink">
-                    {t('Semester {n}', { n: p.semester })} · {SUMBER[p.sumber]?.label ?? p.sumber}
+                    {t('Semester {n}', { n: p.semester })} · {t(SUMBER[p.sumber]?.label ?? p.sumber)}
                   </span>
                   <span className="block text-[12.5px] text-ink-2">
                     {t('{n} nilai kosong pada {m} mahasiswa', { n: p.kosong, m: p.mahasiswa })} ·{' '}
@@ -319,7 +319,7 @@ function DaftarPerlu({ x }) {
                         <Link href={'/admin/mahasiswa/' + p.s.id} className="text-[14.5px] font-bold text-ink hover:text-brand-ink hover:underline">
                           {p.s.name}
                         </Link>
-                        <span className="block text-[12.5px] text-ink-2">{p.s.program}</span>
+                        <span className="block text-[12.5px] text-ink-2">{t(p.s.program)}</span>
                       </td>
                       <td className="px-3 py-3">
                         <ul className="space-y-1 text-[13px] leading-snug text-ink">
@@ -328,7 +328,7 @@ function DaftarPerlu({ x }) {
                               {t('{n} komponen belum dinilai', { n: p.kosong.length })}
                               <span className="text-ink-2">
                                 {' '}
-                                ({daftarKode([pertama.aspek])} · {SUMBER[pertama.komponen.sumber]?.label ?? pertama.komponen.sumber})
+                                ({daftarKode([pertama.aspek])} · {t(SUMBER[pertama.komponen.sumber]?.label ?? pertama.komponen.sumber)})
                               </span>
                             </li>
                           ) : null}
@@ -410,7 +410,9 @@ function PanelKunci({ x }) {
   // Angkatan baru boleh dikunci sesudah Semester 3, jadi kunci oleh admin biasa selalu menunggu super admin.
   const perluPersetujuan = usePerluPersetujuan(c.intake)
   const pratinjau = useMemo(() => (kunci === 'boleh' ? pratinjauPenguncian(mhs) : null), [kunci, mhs])
-  const cocok = ketik.trim() === c.label
+  // Yang diminta diketik adalah label yang tertulis di layar; server tetap menerima label aslinya.
+  const labelTampil = t(c.label)
+  const cocok = ketik.trim() === labelTampil || ketik.trim() === c.label
 
   async function kirimKunci(e) {
     e.preventDefault()
@@ -418,7 +420,7 @@ function PanelKunci({ x }) {
     setGalat('')
     setSibuk(true)
     try {
-      const hasil = await kunciAngkatan({ angkatanId: c.id, konfirmasi: ketik.trim(), alasan: alasan.trim() })
+      const hasil = await kunciAngkatan({ angkatanId: c.id, konfirmasi: c.label, alasan: alasan.trim() })
       if (menungguPersetujuan(hasil)) {
         setMenunggu(hasil)
         setKetik('')
@@ -427,7 +429,7 @@ function PanelKunci({ x }) {
         setBaruDikunci(true)
       }
     } catch (err) {
-      setGalat(err.message)
+      setGalat(t(err.message))
     } finally {
       setSibuk(false)
     }
@@ -506,7 +508,7 @@ function PanelKunci({ x }) {
             ) : null}
             <form onSubmit={kirimKunci} className="flex flex-wrap items-end gap-3 pt-1">
               <label className="block min-w-[200px] flex-1 sm:max-w-xs">
-                <span className="mb-1.5 block label">{t('Ketik {label} untuk mengonfirmasi', { label: c.label })}</span>
+                <span className="mb-1.5 block label">{t('Ketik {label} untuk mengonfirmasi', { label: labelTampil })}</span>
                 <input
                   value={ketik}
                   onChange={(e) => setKetik(e.target.value)}

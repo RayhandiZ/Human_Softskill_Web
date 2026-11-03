@@ -229,13 +229,16 @@ export function bacaRekap(baris, { mahasiswa, komponenKelas }) {
   return hasil
 }
 
-/** Judul kolom satu tugas di templat, misalnya "A1-MK-T1 · Tugas 1: ...". */
-export const judulKolom = (k) => k.id + ' · ' + k.label
+/**
+ * Judul kolom satu tugas di templat, misalnya "A1-MK-T1 · Tugas 1: ...". Namanya mengikuti bahasa aktif (`t`); saat
+ * diunggah kolomnya dikenali dari kodenya (cocokkanKolom), jadi berkas berbahasa apa pun tetap terbaca.
+ */
+export const judulKolom = (k, t = (x) => x) => k.id + ' · ' + t(k.label)
 
 /** Isi templat: { judul, isi }. Nilai yang sudah tersimpan ikut terisi, jadi dosen cukup mengubah yang berubah. */
-export function isiTemplat({ mahasiswa, komponenKelas }) {
+export function isiTemplat({ mahasiswa, komponenKelas, t }) {
   return {
-    judul: ['NIM', 'Nama', ...komponenKelas.map(judulKolom)],
+    judul: ['NIM', 'Nama', ...komponenKelas.map((k) => judulKolom(k, t))],
     isi: [...mahasiswa]
       .sort((a, b) => a.nim.localeCompare(b.nim))
       .map((s) => [s.nim, s.name, ...komponenKelas.map((k) => nilaiTersimpan(s, k))]),
@@ -250,7 +253,7 @@ const LATAR_JUDUL = '#D9F2EF'
  * NIM ditulis sebagai teks supaya nol di depannya tidak hilang; bacaRekap membaca lembar pertama.
  */
 export function lembarTemplat({ mahasiswa, komponenKelas, kelas, t }) {
-  const { judul, isi } = isiTemplat({ mahasiswa, komponenKelas })
+  const { judul, isi } = isiTemplat({ mahasiswa, komponenKelas, t })
   const kepala = judul.map((j, i) => ({
     value: i === 1 ? t('Nama') : j,
     type: String,

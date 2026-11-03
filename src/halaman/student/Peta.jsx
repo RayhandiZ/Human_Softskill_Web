@@ -34,7 +34,7 @@ function Jalur({ sumber, nama, kegiatan, terkunci }) {
       <header className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-line px-4 py-3">
         <div className="min-w-0">
           <p className="text-[15px] font-bold text-ink">{nama}</p>
-          <p className="text-[12.5px] text-ink-2">{sumber.nama}</p>
+          <p className="text-[12.5px] text-ink-2">{t(sumber.nama)}</p>
         </div>
         {kegiatan.length && !terkunci ? (
           <p className="text-[12.5px] font-semibold text-ink-2">
@@ -57,7 +57,7 @@ function Jalur({ sumber, nama, kegiatan, terkunci }) {
                 )}
               </span>
               <span className="min-w-0 flex-1 text-[14px] leading-snug text-ink">
-                {k.label}
+                {t(k.label)}
                 <span className="ml-1.5 inline-flex items-center gap-1 align-middle">
                   <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-[11px] font-bold text-ink-2">
                     {aspek.kode}
@@ -93,11 +93,11 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
   // Jalur tanpa program dan tanpa kegiatan tidak ditampilkan, misalnya Kemahasiswaan di Semester 1.
   const jalur = SUMBER_LIST.map((sumber) => {
     const kunciNama = sumber.id === 'PDP' ? 'pdp' : sumber.id === 'MK' ? 'mk' : 'engagement'
-    const nama = [...new Set(aspek.map((a) => a.aspek[kunciNama]).filter(Boolean))].join(', ')
+    const nama = [...new Set(aspek.map((a) => a.aspek[kunciNama]).filter(Boolean))].map((x) => t(x)).join(', ')
     const kegiatan = aspek.flatMap((a) =>
       a.komponen.filter((k) => k.sumber === sumber.id).map((k) => ({ k, aspek: a.aspek })),
     )
-    return { sumber, nama: nama || sumber.label, kegiatan, adaProgram: Boolean(nama) }
+    return { sumber, nama: nama || t(sumber.label), kegiatan, adaProgram: Boolean(nama) }
   }).filter((j) => j.adaProgram || j.kegiatan.length)
 
   const semuaFinal = aspek.length > 0 && aspek.every((a) => a.status === 'final')
@@ -205,8 +205,8 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
                   <li key={a.aspekId} className="flex items-center gap-3 rounded-2xl bg-surface-2 px-3.5 py-2.5">
                     <span className="shrink-0 text-[12.5px] font-bold text-ink">{a.aspek.kode}</span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13.5px] font-semibold text-ink">{a.aspek.nama}</span>
-                      <span className="block truncate text-[12px] text-ink-3">
+                      <span className="block text-[13.5px] font-semibold leading-snug text-ink">{t(a.aspek.nama)}</span>
+                      <span className="block text-[12px] leading-snug text-ink-3">
                         {getCluster(a.aspek.cluster)?.nama}
                       </span>
                     </span>

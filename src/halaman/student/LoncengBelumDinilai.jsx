@@ -73,12 +73,12 @@ export default function LoncengBelumDinilai({ t }) {
                   <span className="grid h-7 min-w-[28px] place-items-center rounded-lg bg-surface-2 px-1 text-[11.5px] font-bold">
                     {aspek.kode}
                   </span>
-                  <span className="truncate">{aspek.nama}</span>
+                  <span className="min-w-0 leading-snug">{teks(aspek.nama)}</span>
                 </p>
                 <ul className="mt-2 space-y-1.5 pl-9">
                   {komponen.map((k) => (
                     <li key={k.id} className="text-[13.5px] leading-snug text-ink">
-                      {k.label}
+                      {teks(k.label)}
                       <span className="block text-[12.5px] text-ink-3">
                         {teks('dari {sumber}', { sumber: SUMBER[k.sumber]?.label ?? k.sumber })}
                       </span>

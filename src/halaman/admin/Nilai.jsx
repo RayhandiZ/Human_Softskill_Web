@@ -30,13 +30,14 @@ import {
 import { CONFIG } from '../../lib/config'
 import { KOMPONEN, SUMBER, SUMBER_LIST, getAspekSemester, getKomponen, getKomponenById } from '../../lib/curriculum'
 import { bolehTandaiFinal, validasiBatchImport } from '../../lib/rules'
-import { susunCSV, unduhBerkas } from '../../lib/csv'
+import { bacaBarisBerkas } from '../../lib/csv'
 import {
   AGREGASI,
   SKALA_PILIHAN,
   analisaBerkas,
   hitungEntri,
   keyakinan,
+  lembarKeTeks,
 } from '../../lib/ingest'
 import {
   BATCH_IMPORT,
@@ -291,7 +292,7 @@ export default function Nilai() {
             nilai={sumber}
             onPilih={setSumber}
             kolom={KOLOM_SUMBER[Math.min(sumberAktif().length, 3)]}
-            pilihan={sumberAktif().map((s) => ({ nilai: s.id, label: s.label, rinci: s.nama }))}
+            pilihan={sumberAktif().map((s) => ({ nilai: s.id, label: t(s.label), rinci: t(s.nama) }))}
           />
 
           <div>
@@ -308,7 +309,7 @@ export default function Nilai() {
                 {/* Jumlah mahasiswa ikut ditulis supaya angkatan yang masih kosong terlihat sebelum dipilih. */}
                 {COHORTS.map((c) => (
                   <option key={c.id} value={c.label}>
-                    {c.label} ·{' '}
+                    {t(c.label)} ·{' '}
                     {semesterKalender(c.intake) < 1
                       ? t('belum mulai')
                       : t('{n} mahasiswa', { n: STUDENTS.filter((s) => s.angkatanId === c.id).length.toLocaleString('id-ID') })}
@@ -343,7 +344,7 @@ export default function Nilai() {
               setProgram('Semua')
             }}
             options={['Semua', ...FACULTIES.map((f) => f.name)]}
-            tampilkan={(o) => (o === 'Semua' ? t('Semua') : o)}
+            tampilkan={(o) => t(o)}
             className="flex-[1_1_230px] sm:max-w-[320px]"
           />
           <Select
@@ -355,7 +356,7 @@ export default function Nilai() {
               if (v !== 'Semua') setFaculty(FAKULTAS_OF[v] ?? faculty)
             }}
             options={['Semua', ...programStudi(faculty)]}
-            tampilkan={(o) => (o === 'Semua' ? t('Semua') : o)}
+            tampilkan={(o) => t(o)}
             className="flex-[1_1_230px] sm:max-w-[320px]"
           />
           <p className="text-[13.5px] text-ink-2 sm:ml-auto">
@@ -474,7 +475,7 @@ export default function Nilai() {
                       ]
                     : [
                         { value: 'manual', label: t('Input manual') },
-                        { value: 'import', label: t('Import CSV') },
+                        { value: 'import', label: t('Import Excel') },
                         { value: 'koreksi', label: t('Pengajuan koreksi'), count: koreksiMenunggu },
                       ]
                 }
@@ -771,7 +772,7 @@ function InputManual({
         alasan: alasanUbah,
       })
     } catch (e) {
-      setGalat(e.message)
+      setGalat(teks(e.message))
       setSibuk(false)
       return
     }
@@ -791,7 +792,7 @@ function InputManual({
       setPesan({ batch, status: await terapkanStatus(batch, aktor, tandaBaris) })
     } catch (e) {
       setPesan({ batch, status: {} })
-      setGalat(e.message)
+      setGalat(teks(e.message))
     } finally {
       setSibuk(false)
     }
@@ -816,7 +817,7 @@ function InputManual({
           <SearchInput value={cari} onChange={setCari} label={teks('Cari mahasiswa')} placeholder={teks('Nama atau NIM…')} />
         </div>
         <p className="text-[12.5px] leading-snug text-ink-2 sm:col-span-2">
-          {aspekList.find((a) => a.id === aspekId)?.nama},{' '}
+          {teks(aspekList.find((a) => a.id === aspekId)?.nama)},{' '}
           {teks('{n} komponen dari {unit}.', {
             n: kolom.length,
             unit: SUMBER[sumber].label,
@@ -872,7 +873,7 @@ function InputManual({
                   key={k.id}
                   className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-[.07em] text-ink-3"
                 >
-                  <span className="block max-w-[190px] normal-case leading-snug text-ink-2">{k.label}</span>
+                  <span className="block max-w-[190px] normal-case leading-snug text-ink-2">{teks(k.label)}</span>
                   <span className="mt-1 block font-mono text-[10px] text-ink-3">{k.id}</span>
                   {k.status === 'draft' ? (
                     <TandaDraft className="mt-1 inline-block">
@@ -905,7 +906,7 @@ function InputManual({
                   </Link>
                   <span className="block text-[12px] tabular-nums text-ink-3">{s.nim}</span>
                   <span className="block max-w-[210px] text-[12px] leading-snug text-ink-3">
-                    {s.program} · {s.faculty}
+                    {teks(s.program)} · {teks(s.faculty)}
                   </span>
                 </td>
                 {kolom.map((k) => {
@@ -932,7 +933,7 @@ function InputManual({
                         inputMode="numeric"
                         value={nilaiInput}
                         onChange={(e) => ubah(s.nim, k.id, e.target.value)}
-                        aria-label={s.name + ', ' + k.label}
+                        aria-label={s.name + ', ' + teks(k.label)}
                         className={
                           'w-24 rounded-lg border px-2.5 py-1.5 text-[13.5px] font-semibold tabular-nums text-ink transition ' +
                           (buruk
@@ -1033,6 +1034,14 @@ function InputManual({
 const ABAIKAN = '— Abaikan kolom ini —'
 const labelKomponen = (k) => k.id + ' · ' + k.label
 
+/* Templat dan contoh sebagai Excel. Semua selnya teks supaya NIM tetap utuh dengan nol di depannya; kosong untuk diisi. */
+async function unduhExcel(nama, kepala, baris) {
+  const { default: tulisXlsx } = await import('write-excel-file/browser')
+  const sel = (v) => (v === '' ? null : { value: String(v), type: String })
+  const judul = kepala.map((k) => ({ value: k, type: String, fontWeight: 'bold', backgroundColor: '#D9F2EF' }))
+  await tulisXlsx([judul, ...baris.map((r) => r.map(sel))]).toFile(nama)
+}
+
 function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, aktor, program }) {
   const tr = useTeks()
   const perluPersetujuan = usePerluPersetujuan(angkatan?.intake)
@@ -1067,16 +1076,19 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
     }
   }
 
-  function bacaBerkas(e) {
+  async function bacaBerkas(e) {
     const f = e.target.files?.[0]
     if (!f) return
-    const fr = new FileReader()
-    fr.onload = () => {
-      const isi = String(fr.result ?? '')
+    setGalat('')
+    try {
+      const baris = await bacaBarisBerkas(f)
+      const isi = lembarKeTeks(baris, mahasiswa.map((s) => s.nim))
       setTeks(isi)
       analisaSekarang(isi)
+    } catch (err) {
+      setAnalisa(null)
+      setGalat(tr(err.message))
     }
-    fr.readAsText(f)
   }
 
   const batasSasaran = (m) => {
@@ -1136,7 +1148,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
         alasan: alasanUbah,
       })
     } catch (e) {
-      setGalat(e.message)
+      setGalat(tr(e.message))
       setSibuk(false)
       return
     }
@@ -1154,7 +1166,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
       setPesan({ batch, status: await terapkanStatus(batch, aktor) })
     } catch (e) {
       setPesan({ batch, status: {} })
-      setGalat(e.message)
+      setGalat(tr(e.message))
     } finally {
       setSibuk(false)
     }
@@ -1164,10 +1176,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
 
   function unduhTemplateBaku() {
     const baris = mahasiswa.slice(0, 3).flatMap((s) => komponenSumber.slice(0, 2).map((k) => [s.nim, k.id, '']))
-    unduhBerkas(
-      'template-baku-' + sumber.toLowerCase() + '-sem' + semester + '.csv',
-      susunCSV(['nim', 'komponen', 'nilai'], baris),
-    )
+    unduhExcel('template-baku-' + sumber.toLowerCase() + '-sem' + semester + '.xlsx', ['nim', 'komponen', 'nilai'], baris)
   }
 
   /* Kolom nilai sengaja kosong: NIM dan namanya milik mahasiswa sungguhan. */
@@ -1175,7 +1184,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
     const kolom = komponenSumber.slice(0, 4)
     const kepala = ['NIM', 'Nama Mahasiswa', ...kolom.map(namaKolomMentah)]
     const baris = mahasiswa.slice(0, 8).map((s) => [s.nim, s.name, ...kolom.map(() => '')])
-    unduhBerkas('contoh-rekap-mentah-sem' + semester + '.csv', susunCSV(kepala, baris))
+    unduhExcel('contoh-rekap-mentah-sem' + semester + '.xlsx', kepala, baris)
   }
 
   const adaAnalisa = Boolean(analisa) && !analisa.kosong
@@ -1204,16 +1213,19 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
 
       <div className="grid gap-3">
         <label className="flex flex-wrap items-center gap-3">
-          <span className="text-[13px] font-bold text-ink">{tr('Berkas CSV')}</span>
+          <span className="text-[13px] font-bold text-ink">{tr('Berkas Excel atau CSV')}</span>
           <input
             ref={berkasRef}
             type="file"
-            accept=".csv,text/csv"
+            accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             onChange={bacaBerkas}
             className="text-[13px] text-ink-2 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-soft file:px-3 file:py-2 file:text-[13px] file:font-bold file:text-brand-ink"
           />
           <span className="text-[12px] text-ink-3">{tr('langsung dianalisa setelah dipilih')}</span>
         </label>
+        <p className="text-[12.5px] leading-relaxed text-ink-2">
+          {tr('Bila memakai Template baku, jangan ubah baris judul dan urutan kolomnya. Berkas yang formatnya tidak dikenali akan ditolak dengan penjelasan per baris.')}
+        </p>
 
         <label>
           <span className="mb-1.5 block label">{tr('atau tempel isinya di sini')}</span>
@@ -1370,7 +1382,7 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
                               <option value={ABAIKAN}>{tr(ABAIKAN)}</option>
                               {komponenSumber.map((k) => (
                                 <option key={k.id} value={labelKomponen(k)}>
-                                  {labelKomponen(k)}
+                                  {k.id + ' · ' + tr(k.label)}
                                 </option>
                               ))}
                             </select>
@@ -1597,7 +1609,7 @@ function RiwayatBatch({ bacaSaja = false }) {
                     bersihkanPerubahan()
                     setGalat('')
                   } catch (e) {
-                    setGalat(e.message)
+                    setGalat(t(e.message))
                   }
                 }
               }}
@@ -1638,13 +1650,13 @@ function RiwayatBatch({ bacaSaja = false }) {
             <li key={b.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5 sm:px-6">
               <span className="font-mono text-[12.5px] font-bold text-ink">{b.id}</span>
               <span className="min-w-[200px] flex-1 text-[13px] text-ink-2">
-                {SUMBER[b.sumber].label} · {t('Semester {n}', { n: b.semester })} ·{' '}
+                {t(SUMBER[b.sumber].label)} · {t('Semester {n}', { n: b.semester })} ·{' '}
                 {/* Unggahan dosen untuk beberapa angkatan sekaligus disimpan dengan angkatanId 'campuran'. */}
                 {b.angkatanId === 'campuran'
                   ? t('beberapa angkatan')
                   : t('angkatan {id}', { id: getAngkatan(b.angkatanId)?.label ?? b.angkatanId })}{' '}
                 ·{' '}
-                {t(CARA_BATCH[b.cara] ?? 'import CSV')} ·{' '}
+                {t(CARA_BATCH[b.cara] ?? 'import berkas')} ·{' '}
                 {t('{n} nilai', { n: b.jumlah })}
               </span>
               <span className="text-[12.5px] tabular-nums text-ink-3">{b.waktu}</span>
@@ -1669,7 +1681,7 @@ function RiwayatBatch({ bacaSaja = false }) {
                       setGalat('')
                       setMenunggu(menungguPersetujuan(hasil) ? hasil : null)
                     } catch (e) {
-                      setGalat(e.message)
+                      setGalat(t(e.message))
                     }
                   }}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-[12.5px] font-bold text-ink-2 transition hover:border-[var(--critical)] hover:text-[var(--critical)]"
@@ -1697,7 +1709,7 @@ function RiwayatBatch({ bacaSaja = false }) {
               <li key={b.id} className="flex flex-wrap items-center gap-3 px-5 py-3 sm:px-6">
                 <span className="font-mono text-[12.5px] text-ink-2">{b.id}</span>
                 <span className="min-w-[200px] flex-1 text-[12.5px] text-ink-3">
-                  {SUMBER[b.sumber].label} · {b.periode} · {t('{n} baris', { n: b.baris })} ·{' '}
+                  {t(SUMBER[b.sumber].label)} · {t(b.periode)} · {t('{n} baris', { n: b.baris })} ·{' '}
                   {t('{n} ditolak', { n: b.ditolak })}
                 </span>
                 <span className="text-[12px] tabular-nums text-ink-3">{b.waktu}</span>

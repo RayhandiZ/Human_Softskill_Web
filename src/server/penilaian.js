@@ -4,7 +4,7 @@ import { ambilKurikulum, kunciVersiKurikulum, siapkanKurikulum } from './kurikul
 import { catatLog } from './log.js'
 import { SERTA_MAHASISWA, susunMahasiswa } from './muat.js'
 import { ALASAN_MIN } from './nilai.js'
-import { BIDANG_ASPEK, KUNCI_VERSI_KURIKULUM, KURIKULUM_TERPASANG, getAspek } from '../lib/curriculum.js'
+import { BIDANG_ASPEK, BIDANG_ASPEK_EN, KUNCI_VERSI_KURIKULUM, KURIKULUM_TERPASANG, getAspek } from '../lib/curriculum.js'
 import { dampakDari } from '../lib/bobot.js'
 import { bedaPenilaian, denganAspek, komponenSementara, periksaPenilaian, susunanPenilaian } from '../lib/penilaian.js'
 
@@ -26,6 +26,7 @@ const rapikanKomponen = (k) =>
     ? {
         id: k.id ?? null,
         label: teks(k.label),
+        labelEn: teks(k.labelEn) || null,
         sumber: k.sumber,
         // Jenis hanya untuk MK; yang tertinggal saat sumber diganti dari MK dibuang, bukan ditolak.
         jenis: k.sumber === 'MK' ? (k.jenis ?? null) : null,
@@ -59,7 +60,7 @@ export async function rencanakanPenilaian({ versi = null, aspekId, aspek, kompon
   const dinilai = new Set([...nilai, ...jejak].map((x) => x.komponenId))
 
   const baru = {
-    aspek: Object.fromEntries(BIDANG_ASPEK.map((b) => [b, teks(aspek?.[b]) || null])),
+    aspek: Object.fromEntries([...BIDANG_ASPEK, ...BIDANG_ASPEK_EN].map((b) => [b, teks(aspek?.[b]) || null])),
     komponen: (Array.isArray(komponen) ? komponen : []).map(rapikanKomponen),
   }
   const masalah = periksaPenilaian(baru, {
@@ -142,6 +143,7 @@ export async function simpanPenilaian(pengguna, isi = {}) {
     for (const [i, k] of r.baru.komponen.entries()) {
       const isiKomponen = {
         label: k.label,
+        labelEn: k.labelEn,
         sumber: k.sumber,
         jenis: k.jenis,
         ranah: k.ranah,
@@ -162,7 +164,7 @@ export async function simpanPenilaian(pengguna, isi = {}) {
       // Bobot komponen yang diarsipkan dibiarkan: tidak dihitung, dan dipakai lagi bila dipulihkan tanpa diubah.
       const bobot = k.aktif ? k.bobot : (l.bobot ?? null)
       const berubah =
-        l.label !== isiKomponen.label || l.sumber !== isiKomponen.sumber || (l.jenis ?? null) !== isiKomponen.jenis ||
+        l.label !== isiKomponen.label || (l.labelEn ?? null) !== isiKomponen.labelEn || l.sumber !== isiKomponen.sumber || (l.jenis ?? null) !== isiKomponen.jenis ||
         l.ranah !== isiKomponen.ranah || l.resmi !== isiKomponen.resmi || l.aktif !== isiKomponen.aktif ||
         l.urutan !== isiKomponen.urutan || (l.bobot ?? null) !== bobot
       if (berubah) await tx.komponen.update({ where: { id: k.id }, data: { ...isiKomponen, bobot, ...oleh } })

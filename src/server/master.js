@@ -25,12 +25,14 @@ export async function ambilAngkatanProdi() {
       id: a.id,
       angkatan: a.tahun,
       label: a.label,
+      labelEn: a.labelEn,
       intake: { tahun: a.periodeTahun, semester: a.periodeSemester === 'GENAP' ? 'Genap' : 'Ganjil' },
       status: a.status === 'TERKUNCI' ? 'terkunci' : 'aktif',
     })),
     fakultas: fakultas.map((f) => ({
       name: f.nama,
-      programs: f.prodi.map((p) => ({ nama: p.nama, jenjang: p.jenjang })),
+      namaEn: f.namaEn,
+      programs: f.prodi.map((p) => ({ nama: p.nama, namaEn: p.namaEn, jenjang: p.jenjang })),
     })),
   }
 }

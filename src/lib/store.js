@@ -959,13 +959,13 @@ async function tulisMaster(alamat, isi) {
   return hasil
 }
 
-/** { aksi: 'tambah', tahun, semester: 'Ganjil' | 'Genap' } atau { aksi: 'ubah', id, label, alasan }. */
+/** { aksi: 'tambah', tahun, semester: 'Ganjil' | 'Genap' } atau { aksi: 'ubah', id, label, labelEn?, alasan }. */
 export const simpanAngkatan = (isi) => tulisMaster('/api/master/angkatan', isi)
 
 /**
- * Fakultas: { jenis: 'fakultas', aksi: 'tambah', nama } atau { jenis: 'fakultas', aksi: 'ubah', nama, namaBaru, alasan }.
- * Prodi: { jenis: 'prodi', aksi: 'tambah', nama, jenjang, fakultas } atau { ..., aksi: 'ubah', nama, namaBaru?,
- * jenjang?, fakultas?, alasan }. Fakultas dan prodi dikenali dari namanya.
+ * Fakultas: { jenis: 'fakultas', aksi: 'tambah', nama, namaEn? } atau { jenis: 'fakultas', aksi: 'ubah', nama, namaBaru, namaEn?, alasan }.
+ * Prodi: { jenis: 'prodi', aksi: 'tambah', nama, namaEn?, jenjang, fakultas } atau { ..., aksi: 'ubah', nama, namaBaru?,
+ * namaEn?, jenjang?, fakultas?, alasan }. Fakultas dan prodi dikenali dari namanya.
  */
 export const simpanProdi = (isi) => tulisMaster('/api/master/prodi', isi)
 

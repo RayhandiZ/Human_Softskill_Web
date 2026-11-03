@@ -1060,6 +1060,219 @@ export async function ujiKamus() {
 }
 
 /* --------------------------------------------------------------------------
+   Isi kurikulum dan pesan server dalam bahasa Inggris (fase 5 rapat 24 Okt 2026).
+   Isi bawaan dari kamus, isian dari layar dari kolom *En basis data (menang atas
+   kamus), dan pesan yang dirakit server dari POLA_EN, termasuk gabungannya.
+   -------------------------------------------------------------------------- */
+export async function ujiIsiInggris() {
+  const { terjemah } = await import('../src/lib/bahasa')
+  const { KOMPONEN_BAWAAN } = await import('../src/lib/curriculum')
+  const en = (s, nilai) => terjemah('en', s, nilai)
+  const hasil = {
+    tugasBawaan: en('Tugas 1: Refleksi Diri') === 'Task 1: Self-reflection',
+    deskripsiBawaan: en(getAspekList()[0].deskripsi).startsWith('Applies the principles of integrity'),
+    indonesiaTetap: terjemah('id', 'Tugas 1: Refleksi Diri') === 'Tugas 1: Refleksi Diri',
+    nilaiSisipan: /Midterm: Personal reflection/.test(en('komponen {komponen} pada {kode} belum dinilai', { komponen: 'UTS: Refleksi Pribadi', kode: 'A.2' })),
+    pesanStatis: en('Akun tidak ditemukan.') === 'Account not found.',
+    pesanDirakit: en('Kode C.3. sudah dipakai aspek lain.') === 'Code C.3. is already used by another aspect.',
+    pesanBertingkat: en('Sertifikat belum bisa diminta: komponen UTS: Refleksi Pribadi pada A.2 belum dinilai.') ===
+      'The certificate cannot be requested yet: component Midterm: Personal reflection in A.2 has not been scored.',
+    pesanGabungan: en('Alasan wajib diisi, minimal 10 karakter. Kode C.3. sudah dipakai aspek lain.') ===
+      'A reason is required, at least 10 characters. Code C.3. is already used by another aspect.',
+    pesanBerdaftar: en('Baris 123 ditolak: Nilai kosong; NIM kosong') === 'Row 123 rejected: Score is empty; NIM is empty',
+    labelIsian: en('Nama fakultas wajib diisi.') === 'Faculty name is required.',
+    ringkasanPermintaan: en('Simpan 3 nilai MK Semester 1 (manual)') === 'Save 3 MK scores for Semester 1 (manual)',
+    periodeSisipan: en('Periode {periode}', { periode: 'Ganjil 2026/2027' }) === 'Period Odd 2026/2027',
+    periodeLangsung: en('Genap 2025/2026') === 'Even 2025/2026',
+    rincianAkun: /still has 5 scores, 1 correction requests and 2 submissions\./.test(
+      en('Akun ini tidak bisa dihapus karena masih punya 5 nilai, 1 pengajuan koreksi, dan 2 pengumpulan. Biarkan aksesnya tetap dicabut supaya datanya utuh.'),
+    ),
+  }
+
+  // Templat Excel dosen mengikuti bahasa aktif; kolomnya tetap dikenali lewat kode tugas saat diunggah.
+  const { cocokkanKolom, judulKolom } = await import('../src/lib/unggahDosen')
+  const tugas = KOMPONEN_BAWAAN.find((k) => k.label === 'Tugas 1: Refleksi Diri')
+  const judulEn = judulKolom(tugas, en)
+  hasil.judulTemplatInggris = judulEn === tugas.id + ' · Task 1: Self-reflection'
+  hasil.judulIndonesiaTetap = judulKolom(tugas) === tugas.id + ' · Tugas 1: Refleksi Diri'
+  hasil.judulInggrisDikenali = cocokkanKolom(judulEn, [tugas])?.komponen.id === tugas.id
+
+  // Isian dari layar: nama baru dengan kolom Inggris, dan nama bawaan yang padanannya diganti super admin.
+  const pertama = KOMPONEN_BAWAAN.find((k) => k.label === 'Tugas 1: Refleksi Diri')
+  isiKurikulum({
+    versi: 1,
+    komponen: [
+      ...KOMPONEN_BAWAAN.filter((k) => k.id !== pertama.id),
+      { ...pertama, labelEn: 'Task One, reworded' },
+      { ...pertama, id: 'A2-PDP-B1', label: 'Tugas buatan layar', labelEn: 'Task made on screen' },
+      { ...pertama, id: 'A2-PDP-B2', label: 'Tugas tanpa padanan', labelEn: null },
+    ],
+    aspek: { A1: { nama: 'Nama aspek baru', namaEn: 'New aspect name', deskripsi: 'Deskripsi baru', deskripsiEn: 'New description', mk: 'Matkul baru', mkEn: 'New course' } },
+  })
+  hasil.kolomMenangAtasKamus = en('Tugas 1: Refleksi Diri') === 'Task One, reworded'
+  hasil.komponenDariLayar = en('Tugas buatan layar') === 'Task made on screen'
+  hasil.tanpaPadananTetapTampil = en('Tugas tanpa padanan') === 'Tugas tanpa padanan'
+  hasil.aspekDariLayar =
+    en('Nama aspek baru') === 'New aspect name' && en('Deskripsi baru') === 'New description' && en('Matkul baru') === 'New course'
+  isiKurikulum({})
+  hasil.kembaliKeKamus = en('Tugas 1: Refleksi Diri') === 'Task 1: Self-reflection' && en('Tugas buatan layar') === 'Tugas buatan layar'
+  return hasil
+}
+
+/* Nama fakultas, prodi, dan angkatan mengikuti bahasa aktif, tetapi nilai yang dikirim tetap nama aslinya: saringan,
+   tautan, dan konfirmasi pengesahan membandingkannya dengan data. Lihat README.md › Kamus dan terjemahan. */
+export async function ujiNamaMaster() {
+  const { terjemah, padananKamus } = await import('../src/lib/bahasa')
+  const { filterStudents } = await import('../src/lib/data')
+  const en = (s, nilai) => terjemah('en', s, nilai)
+  const namaBawaan = MASTER_AWAL.fakultas.flatMap((f) => [f.name, ...f.programs.map((p) => p.nama)])
+  const jumlahSi = STUDENTS.filter((s) => s.program === 'Sistem Informasi').length
+  const hasil = {
+    semuaBawaanPunyaPadanan: namaBawaan.length > 0 && namaBawaan.every((n) => padananKamus(n) && padananKamus(n) !== n),
+    fakultas: en('Teknik & Informatika') === 'Engineering & Informatics',
+    fakultasDiKalimat: en('Fakultas {nama}', { nama: 'Seni & Desain' }) === 'Faculty of Art & Design',
+    prodi: en('Sistem Informasi') === 'Information Systems',
+    prodiDiKalimat: en('{prodi}, angkatan {daftar}.', { prodi: 'Sistem Informasi', daftar: '2025 Genap, 2024' }) === 'Information Systems, cohort 2025 Even, 2024.',
+    angkatanGenap: en('2025 Genap') === '2025 Even',
+    angkatanGanjil: en('2026') === '2026',
+    pesanServer: en('Angkatan 2025 Genap sudah dikunci, jadi tidak bisa diubah.') === 'Cohort 2025 Even is already ratified, so it cannot be changed.',
+    indonesiaTetap: terjemah('id', '2025 Genap') === '2025 Genap' && terjemah('id', 'Sistem Informasi') === 'Sistem Informasi',
+    contohKolom: padananKamus('2025 Genap') === '2025 Even' && padananKamus('Jurnalistik') === 'Journalism' && padananKamus('Nama Baru Sekali') === undefined,
+    cariNamaInggris: jumlahSi > 0 && filterStudents({ query: 'information systems' }, en).length === jumlahSi,
+    cariNamaIndonesia: jumlahSi > 0 && filterStudents({ query: 'sistem informasi' }, en).length === jumlahSi,
+  }
+
+  // Isian dari layar: nama baru dengan kolom Inggris, dan nama bawaan yang padanannya diganti super admin.
+  const denganIsianLayar = {
+    angkatan: [...MASTER_AWAL.angkatan, { id: '2030B', angkatan: 2030, label: '2030 Khusus', labelEn: '2030 Special', intake: { tahun: '2030/2031', semester: 'Genap' }, status: 'aktif' }],
+    fakultas: [
+      ...MASTER_AWAL.fakultas.map((f) => (f.name === 'Bisnis' ? { ...f, namaEn: 'School of Business' } : f)),
+      { name: 'Hukum', namaEn: 'Law', programs: [{ nama: 'Ilmu Hukum', namaEn: 'Legal Studies', jenjang: 'S1' }, { nama: 'Kenotariatan', namaEn: null, jenjang: 'S1' }] },
+    ],
+  }
+  isiMaster(denganIsianLayar)
+  hasil.kolomLayar = en('Hukum') === 'Law' && en('Ilmu Hukum') === 'Legal Studies' && en('2030 Khusus') === '2030 Special'
+  hasil.kolomMenangAtasKamus = en('Bisnis') === 'School of Business' && padananKamus('Bisnis') === 'Business'
+  hasil.tanpaPadananTetapTampil = en('Kenotariatan') === 'Kenotariatan'
+  // Kurikulum dan data master dipasang terpisah: memasang yang satu tidak boleh menghapus yang lain.
+  isiKurikulum({})
+  hasil.kurikulumTidakMenghapusNama = en('Ilmu Hukum') === 'Legal Studies'
+
+  const sesi = window.localStorage.getItem('sk5c.session')
+  const bahasa = window.localStorage.getItem('sk5c.bahasa.pilihan')
+  window.localStorage.setItem('sk5c.session', JSON.stringify({ role: 'admin', email: 'a@umn.ac.id', name: 'Y', initials: 'KH' }))
+  window.localStorage.setItem('sk5c.bahasa.pilihan', 'en')
+  const setelan = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
+  const pilih = async (sel, nilai) => {
+    await act(async () => {
+      setelan.call(sel, nilai)
+      sel.dispatchEvent(new window.Event('change', { bubbles: true }))
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  // Saringan Data Mahasiswa: tertulis Inggris, nilainya tetap nama asli, dan angkatan dari basis data bisa dipilih.
+  let { el, lepas } = await pasang('/admin/mahasiswa')
+  const pilihanDengan = (nilai) => [...el.querySelectorAll('main select')].find((s) => [...s.options].some((o) => o.value === nilai))
+  const tulisan = (nilai) => [...(pilihanDengan(nilai)?.options ?? [])].find((o) => o.value === nilai)?.textContent
+  hasil.pilihanTertulisInggris =
+    tulisan('Sistem Informasi') === 'Information Systems' && tulisan('Teknik & Informatika') === 'Engineering & Informatics' && tulisan('2030 Khusus') === '2030 Special'
+  await pilih(pilihanDengan('2030 Khusus'), '2030 Khusus')
+  hasil.angkatanBasisDataBisaDipilih = pilihanDengan('2030 Khusus')?.value === '2030 Khusus'
+  await pilih(pilihanDengan('2030 Khusus'), 'Semua')
+  await pilih(pilihanDengan('Sistem Informasi'), 'Sistem Informasi')
+  const kolomProdi = () => [...el.querySelectorAll('main tbody tr')].map((tr) => tr.children[2]?.textContent)
+  hasil.saringMemakaiNamaAsli = kolomProdi().length > 0 && kolomProdi().every((x) => x === 'Information Systems')
+  await pilih(pilihanDengan('Sistem Informasi'), 'Semua')
+  // Diurutkan menurut yang tertulis di layar, bukan menurut nama Indonesianya.
+  await klik([...el.querySelectorAll('main thead button')].find((b) => /Study programme/.test(b.textContent)))
+  const menurun = (daftar) => [...new Set(daftar)].sort((a, b) => b.localeCompare(a))[0]
+  const teratasTertulis = menurun(STUDENTS.map((s) => en(s.program)))
+  // Prasyarat: kalau nama teratas kedua bahasa sama, uji ini tidak membuktikan apa-apa.
+  hasil.urutMenurutNamaTertulis = teratasTertulis !== en(menurun(STUDENTS.map((s) => s.program))) && kolomProdi()[0] === teratasTertulis
+  lepas()
+
+  // Konfirmasi pengesahan: yang diminta diketik label di layar, yang dikirim label asli (angkatan 2025B dimundurkan
+  // setahun supaya boleh disahkan). Mode lokal menolak konfirmasi selain label asli, sama seperti server.
+  isiMaster({
+    angkatan: MASTER_AWAL.angkatan.map((a) => (a.id === '2025B' ? { ...a, intake: { tahun: '2024/2025', semester: 'Ganjil' } } : a)),
+    fakultas: MASTER_AWAL.fakultas,
+  })
+  ;({ el, lepas } = await pasang('/admin/angkatan?angkatan=2025B'))
+  const labelKetik = [...el.querySelectorAll('form label')].find((l) => l.querySelector('span')?.textContent === 'Type 2025 Even to confirm')
+  const isian = labelKetik?.querySelector('input')
+  const tombol = labelKetik?.closest('form').querySelector('button[type="submit"]')
+  hasil.konfirmasiTertulisInggris = Boolean(labelKetik)
+  if (labelKetik) {
+    await ketik(isian, '2024')
+    hasil.konfirmasiSalahDitolak = tombol.disabled
+    await ketik(isian, '2025 Genap')
+    hasil.labelAsliDiterima = !tombol.disabled
+    await ketik(isian, '2025 Even')
+    hasil.labelTertulisDiterima = !tombol.disabled
+    await act(async () => {
+      tombol.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    hasil.pengesahanLolos = /Cohort 2025 Even scores are ratified/.test(el.textContent) && !el.querySelector('[role=alert]')
+  }
+  lepas()
+  for (const s of STUDENTS) if (s.angkatanId === '2025B') s.statusAngkatan = 'aktif'
+
+  if (sesi) window.localStorage.setItem('sk5c.session', sesi)
+  else window.localStorage.removeItem('sk5c.session')
+  if (bahasa) window.localStorage.setItem('sk5c.bahasa.pilihan', bahasa)
+  else window.localStorage.removeItem('sk5c.bahasa.pilihan')
+  isiMaster(MASTER_AWAL)
+  hasil.kembaliKeKamus = en('Bisnis') === 'Business' && en('Hukum') === 'Hukum'
+  return hasil
+}
+
+/* Import Excel super admin (poin 9 rapat 24 Okt 2026): lembar Excel masuk alur analisa yang sama dengan CSV. */
+export async function ujiImportExcel() {
+  const { analisaBerkas, lembarKeTeks } = await import('../src/lib/ingest')
+  const { bacaBarisBerkas } = await import('../src/lib/csv')
+  const nim = ['00000103940', '00000103941']
+  // NIM tersimpan sebagai angka kehilangan nol di depannya; sel kosong dari Excel berupa null.
+  const teks = lembarKeTeks([['NIM', 'Nama Mahasiswa', 'Tugas 1'], [103940, 'A, B', 85.5], ['00000103941', 'C', null]], nim)
+  const komponenList = getKomponen('A1')
+  const mentah = analisaBerkas(teks, { komponenList })
+  const baku = analisaBerkas(lembarKeTeks([['nim', 'komponen', 'nilai'], ['00000103940', 'A1-MK-T1', 90]], nim), { komponenList })
+  const galat = async (nama, ukuran = 10) => {
+    try {
+      await bacaBarisBerkas({ name: nama, size: ukuran, text: async () => 'nim,komponen,nilai' })
+      return null
+    } catch (e) {
+      return e.message
+    }
+  }
+  return {
+    nolKembali: mentah.format === 'mentah' && mentah.baris[0]?.NIM === '00000103940',
+    komaDalamNamaAman: mentah.baris[0]?.['Nama Mahasiswa'] === 'A, B',
+    angkaUtuh: mentah.baris[0]?.['Tugas 1'] === '85.5',
+    selKosong: mentah.baris[1]?.['Tugas 1'] === '',
+    formatBakuDikenali: baku.format === 'baku',
+    tolakXls: /Excel lama/.test((await galat('rekap.xls')) ?? ''),
+    tolakJenisLain: /\.xlsx atau \.csv/.test((await galat('rekap.pdf')) ?? ''),
+    tolakBesar: /5 MB/.test((await galat('rekap.xlsx', 6 * 1024 * 1024)) ?? ''),
+    csvTetapDiterima: (await galat('rekap.csv')) === null,
+  }
+}
+
+/** Teks satu rute saat bahasa Inggris dipilih; pilihan bahasa dikembalikan sesudahnya. */
+export async function teksInggris(rute, bahasa = 'en') {
+  const lama = window.localStorage.getItem('sk5c.bahasa.pilihan')
+  window.localStorage.setItem('sk5c.bahasa.pilihan', bahasa)
+  const { el, lepas } = await pasang(rute)
+  await act(async () => { await new Promise((r) => setTimeout(r, 20)) })
+  const teks = el.textContent
+  lepas()
+  if (lama) window.localStorage.setItem('sk5c.bahasa.pilihan', lama)
+  else window.localStorage.removeItem('sk5c.bahasa.pilihan')
+  return teks
+}
+
+/* --------------------------------------------------------------------------
    Status aspek harus TEKS, bukan pil berwarna.
 
    Aturan lama menyatakan warna status selalu ditemani ikon dan tulisan, dan
@@ -2110,6 +2323,14 @@ export async function ujiPanelSuper() {
     keping()?.textContent.includes(nama) &&
     /Saat ini/.test(el.querySelector('#judul-keputusan')?.textContent ?? '') &&
     el.textContent.includes('Diputuskan di ' + nama)
+  // Yang tetap keadaan sekarang ditandai; yang ikut periode menyebut nama periodenya.
+  const kartuDengan = (teks) => [...el.querySelectorAll('main section.card')].find((k) => k.textContent.includes(teks))?.textContent ?? ''
+  hasil.saatIniDitandai =
+    /Saat ini/.test(kartuDengan('Angkatan disahkan')) &&
+    /Saat ini/.test(kartuDengan('Aturan menunggu konfirmasi')) &&
+    !/Saat ini/.test(kartuDengan('Diputuskan di')) &&
+    kartuDengan('Nilai tersimpan di').includes(nama) &&
+    !/Saat ini/.test(kartuDengan('Nilai tersimpan di'))
   lepas()
   PERMINTAAN.splice(PERMINTAAN.findIndex((p) => p.id === 'P-UJI'), 1)
   AUDIT_LOG.splice(AUDIT_LOG.findIndex((l) => l.id === 'A-UJI'), 1)
@@ -3151,7 +3372,27 @@ export async function ujiRincianLog() {
     }
   }
 
+  // Nama data master di rincian ikut bahasa aktif; nama orang dan alasan apa adanya.
+  const bahasaLama = window.localStorage.getItem('sk5c.bahasa.pilihan')
+  window.localStorage.setItem('sk5c.bahasa.pilihan', 'en')
   let r = await pasangRincian({
+    aksi: 'UBAH_PRODI',
+    rincian: { sebelum: { nama: 'Sistem Informasi', fakultas: 'Bisnis' }, sesudah: { nama: 'Informatika', fakultas: 'Seni & Desain', namaEn: 'Informatics Studies' }, alasan: 'Penyesuaian nama resmi.' },
+  })
+  hasil.namaMasterInggris =
+    /Information Systems/.test(r.teks) && /Informatics/.test(r.teks) && /Business/.test(r.teks) && /Art & Design/.test(r.teks) &&
+    /Informatics Studies/.test(r.teks) && /Name \(English\)/.test(r.teks) && /Penyesuaian nama resmi\./.test(r.teks) && !/Sistem Informasi|Seni & Desain/.test(r.teks)
+  r.lepas()
+  r = await pasangRincian({
+    aksi: 'TAMBAH_AKUN',
+    rincian: { nama: 'Sistem Informasi', prodi: 'Sistem Informasi', angkatan: '2025 Genap' },
+  })
+  hasil.namaOrangApaAdanya = /NameSistem Informasi/.test(r.teks) && /Information Systems/.test(r.teks) && /2025 Even/.test(r.teks)
+  r.lepas()
+  if (bahasaLama) window.localStorage.setItem('sk5c.bahasa.pilihan', bahasaLama)
+  else window.localStorage.removeItem('sk5c.bahasa.pilihan')
+
+  r = await pasangRincian({
     aksi: 'UBAH_ANGKATAN',
     rincian: { id: '2027', sebelum: { label: '2027' }, sesudah: { label: 'Angkatan 2027' }, alasan: 'Menyamakan dengan SK rektor.' },
   })
@@ -3203,7 +3444,7 @@ export async function ujiRincianLog() {
   )
   hasil.ringkasanBaris = rk[0] === 'Label: A → B' && rk.includes('Alasan: Menyamakan dengan SK rektor.')
   const rkNilai = ringkasan({ aksi: 'SIMPAN_NILAI', rincian: { jumlahNilai: 3, sumber: 'PDP', semester: 2, cara: 'import' } }, t)
-  hasil.ringkasanNilai = rkNilai[0] === '3 nilai · PDP · Semester 2 · import CSV'
+  hasil.ringkasanNilai = rkNilai[0] === '3 nilai · PDP · Semester 2 · import berkas'
   return hasil
 }
 

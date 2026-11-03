@@ -2,7 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { EN } from './teks'
+import { EN, POLA_EN } from './teks'
+import { padananData, rapikan } from './kamusData'
 import { dumpOtomatis, hasilOtomatis, mintaTerjemahan, saatSelesai } from './terjemahOtomatis'
 
 /* Kalimat Indonesia dipakai sebagai kunci kamus; lihat README.md › Kamus dan terjemahan. */
@@ -30,21 +31,56 @@ function isi(teks, nilai) {
 }
 
 /* Kunci dirapikan supaya penataan ulang kode tidak memutus terjemahan. */
-export const rapikan = (teks) => String(teks ?? '').trim().replace(/\s+/g, ' ')
-
 const EN_RAPI = new Map(Object.entries(EN).map(([k, v]) => [rapikan(k), v]))
+
+/* Isian dari basis data menang atas kamus: itu yang diketik super admin untuk teks ini. Nilai kosong di kamus berarti
+   belum diterjemahkan. */
+const padananTepat = (teks) => padananData(teks) ?? EN_RAPI.get(rapikan(teks))
+
+function dariPola(r) {
+  for (const [pola, en] of POLA_EN) {
+    const m = r.match(pola)
+    if (m) return en.replace(/\$(\d)/g, (_, i) => (m[i] === r ? m[i] : (padanan(m[i]) ?? m[i])))
+  }
+  return null
+}
+
+/** Padanan bawaan tanpa isian basis data (kamus teks.js, lalu POLA_EN); untuk contoh di kolom isian bahasa Inggris. */
+export const padananKamus = (teks) => EN_RAPI.get(rapikan(teks)) ?? dariPola(rapikan(teks)) ?? undefined
+
+/**
+ * Padanan Inggris tanpa efek samping, atau null. Sesudah padanan tepat, dicoba pola pesan yang dirakit server
+ * (POLA_EN; bagian yang ditangkap ikut diterjemahkan bila dikenal), lalu pesan gabungan: server menyambung beberapa
+ * pesan aturan dengan spasi atau '; ' dan beberapa isian dengan koma atau 'dan'. Gabungan dikenal bila setiap bagiannya
+ * dikenal.
+ */
+function padanan(teks) {
+  const r = rapikan(teks)
+  const tepat = padananTepat(r) ?? dariPola(r)
+  if (tepat) return tepat
+  for (const [pemisah, sambung] of [[/(?<=[.?!])\s+(?=\p{Lu})/u, ' '], [/;\s+/, '; '], [/,\s+/, ', '], [/,?\s+dan\s+/, ' and ']]) {
+    const bagian = r.split(pemisah)
+    if (bagian.length < 2) continue
+    const hasil = bagian.map(padanan)
+    if (hasil.every(Boolean)) return hasil.join(sambung)
+  }
+  return null
+}
+
+/* Nilai yang disisipkan ikut diterjemahkan bila dikenal, misalnya nama tugas di {komponen} dan periode di {periode}. */
+const nilaiInggris = (nilai) =>
+  nilai && Object.fromEntries(Object.entries(nilai).map(([k, v]) => [k, typeof v === 'string' ? (padanan(v) ?? v) : v]))
 
 const sudahDilapor = new Set()
 
 export function terjemah(bahasa, teks, nilai) {
   if (bahasa !== 'en') return isi(teks, nilai)
 
-  /* Nilai kosong berarti belum diterjemahkan. */
-  const padanan = EN_RAPI.get(rapikan(teks))
-  if (padanan) return isi(padanan, nilai)
+  const hasil = padanan(teks)
+  if (hasil) return isi(hasil, nilaiInggris(nilai))
 
   const mesin = hasilOtomatis(teks)
-  if (mesin) return isi(mesin, nilai)
+  if (mesin) return isi(mesin, nilaiInggris(nilai))
 
   if (OTOMATIS.aktif) mintaTerjemahan(teks)
 

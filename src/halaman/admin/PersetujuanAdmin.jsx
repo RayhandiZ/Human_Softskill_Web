@@ -133,7 +133,7 @@ function SertifikatLapisDua({ aktor }) {
               {p.nama} · <span className="tabular-nums">{p.nim}</span>
             </p>
             <p className="mb-3 mt-0.5 text-[12.5px] text-ink-2">
-              {[s?.program, s ? t('Angkatan {label}', { label: s.angkatanLabel }) : null, k ? t('Nilai akhir {nilai}', { nilai: k.transkrip.akhir.nilai ?? '–' }) : null, t('diajukan {tanggal}', { tanggal: p.diajukan })]
+              {[t(s?.program), s ? t('Angkatan {label}', { label: s.angkatanLabel }) : null, k ? t('Nilai akhir {nilai}', { nilai: k.transkrip.akhir.nilai ?? '–' }) : null, t('diajukan {tanggal}', { tanggal: p.diajukan })]
                 .filter(Boolean)
                 .join(' · ')}
               {/* Nilai tiap aspek ada di halaman detail mahasiswa; mode tinjau di sana memasang keputusan yang sama dan
@@ -179,7 +179,7 @@ function BarisPermintaan({ p, superAdmin }) {
       if (!hasil.ok && hasil.status !== 'gagal') setGalat(t('Permintaan ini sudah diputuskan sebelumnya.'))
       else setCatatan('')
     } catch (e) {
-      setGalat(e.message)
+      setGalat(t(e.message))
     } finally {
       setSibuk(false)
     }
@@ -191,7 +191,7 @@ function BarisPermintaan({ p, superAdmin }) {
     try {
       if (!(await batalkanPermintaan(p.id))) setGalat(t('Permintaan ini sudah diputuskan sebelumnya.'))
     } catch (e) {
-      setGalat(e.message)
+      setGalat(t(e.message))
     } finally {
       setSibuk(false)
     }
@@ -204,7 +204,7 @@ function BarisPermintaan({ p, superAdmin }) {
           <IconInbox size={18} />
         </span>
         <div className="min-w-[220px] flex-1">
-          <p className="text-[14.5px] font-bold leading-snug text-ink">{ringkas.judul ?? '-'}</p>
+          <p className="text-[14.5px] font-bold leading-snug text-ink">{ringkas.judul ? t(ringkas.judul) : '-'}</p>
           <p className="mt-0.5 text-[12.5px] leading-snug text-ink-2">
             <span className="font-mono">{p.id}</span> · {t(LABEL_AKSI[p.aksi] ?? p.aksi)} ·{' '}
             {t('Diajukan {oleh} pada {waktu}', { oleh: p.diajukanOleh ?? '-', waktu: p.diajukanPada ?? '-' })}
@@ -221,7 +221,7 @@ function BarisPermintaan({ p, superAdmin }) {
         {ringkas.baris?.length ? (
           <ul className="space-y-0.5 rounded-xl bg-surface-2 px-3.5 py-2.5 text-[12.5px] leading-relaxed tabular-nums text-ink-2">
             {ringkas.baris.map((b, i) => (
-              <li key={i}>{b}</li>
+              <li key={i}>{t(b)}</li>
             ))}
           </ul>
         ) : null}
@@ -234,7 +234,7 @@ function BarisPermintaan({ p, superAdmin }) {
             :{' '}
             {mahasiswa
               .slice(0, 8)
-              .map((m) => m.nama + ' (' + m.angkatan + ')')
+              .map((m) => m.nama + ' (' + t(m.angkatan) + ')')
               .join(', ')}
             {ringkas.jumlahMahasiswa > 8 ? ', …' : ''}
           </p>
@@ -255,7 +255,7 @@ function BarisPermintaan({ p, superAdmin }) {
             ) : null}
             {p.hasil?.batchId ? <p className="mt-0.5">{t('Tersimpan sebagai batch {id}.', { id: p.hasil.batchId })}</p> : null}
             {p.hasil?.galat ? (
-              <p className="mt-0.5 font-semibold text-[color:var(--teks-kritis,var(--critical))]">{p.hasil.galat}</p>
+              <p className="mt-0.5 font-semibold text-[color:var(--teks-kritis,var(--critical))]">{t(p.hasil.galat)}</p>
             ) : null}
           </div>
         ) : null}

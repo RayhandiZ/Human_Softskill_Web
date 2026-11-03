@@ -258,7 +258,7 @@ function Penjelasan({ kelompok }) {
   const { t, bahasa } = useBahasa()
   const ambang = CONFIG.AMBANG_SERTIFIKAT
   const daftar = new Intl.ListFormat(bahasa === 'en' ? 'en' : 'id', { type: 'conjunction' }).format(
-    kelompok.perAngkatan.map((p) => p.angkatan.label),
+    kelompok.perAngkatan.map((p) => t(p.angkatan.label)),
   )
 
   return (
@@ -314,7 +314,7 @@ export default function PerkembanganAngkatan({ rows }) {
     ? {
         head: ['Angkatan', 'Mahasiswa', ...aktif.batang.map((b) => 'Semester ' + b.sem), ...(aktif.n > 1 ? ['Selisih'] : [])],
         rows: [
-          ...aktif.perAngkatan.map((p) => [p.angkatan.label, p.jumlah, ...p.nilai, ...selisihSel(aktif, p.nilai)]),
+          ...aktif.perAngkatan.map((p) => [t(p.angkatan.label), p.jumlah, ...p.nilai, ...selisihSel(aktif, p.nilai)]),
           ['Gabungan', aktif.jumlah, ...aktif.batang.map((b) => b.nilai), ...selisihSel(aktif, aktif.batang.map((b) => b.nilai))],
         ],
       }

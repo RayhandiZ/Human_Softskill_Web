@@ -35,7 +35,7 @@ export default function Programs() {
 
   const daftar =
     tampilan === 'prodi'
-      ? programs.map((p) => ({ kunci: p.program, judul: p.program, sub: p.faculty, ...p }))
+      ? programs.map((p) => ({ kunci: p.program, judul: t(p.program), sub: t(p.faculty), ...p }))
       : tampilan === 'fakultas'
         ? fakultas.map((f) => ({
             kunci: f.nama,
@@ -60,7 +60,7 @@ export default function Programs() {
     unduhBerkas(
       'rekap-' + tampilan + '-' + new Date().toISOString().slice(0, 10) + '.csv',
       susunCSV(
-        ['Unit', 'Keterangan', 'Mahasiswa', 'Transkrip final', 'Rata-rata'],
+        ['Unit', 'Keterangan', 'Mahasiswa', 'Transkrip final', 'Rata-rata'].map((k) => t(k)),
         daftar.map((d) => [d.judul, d.sub, d.total, d.final, d.rata ?? '']),
       ),
     )

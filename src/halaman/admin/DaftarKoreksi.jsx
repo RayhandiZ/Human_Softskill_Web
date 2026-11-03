@@ -83,7 +83,7 @@ function KartuKoreksi({ k, aktor, superAdmin, giliranSaya }) {
       const ok = await putuskanKoreksi(k.id, keputusan, { aktor, catatan: catatan.trim(), nilaiBaru: angka, superAdmin })
       if (!ok) setGalat(t('Pengajuan ini sudah diputuskan, mungkin di jendela lain.'))
     } catch (e) {
-      setGalat(e.message)
+      setGalat(t(e.message))
     } finally {
       setSibuk(false)
     }
@@ -93,7 +93,7 @@ function KartuKoreksi({ k, aktor, superAdmin, giliranSaya }) {
     <li className="px-5 py-4 sm:px-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-[240px] flex-1">
-          <p className="text-[14px] font-bold text-ink">{k.komponenLabel}</p>
+          <p className="text-[14px] font-bold text-ink">{t(k.komponenLabel)}</p>
           <p className="mt-1 text-[12.5px] text-ink-2">
             {k.nama} · {k.nim} · {t('aspek {kode}', { kode: daftarKode([getAspek(k.aspekId) ?? k.aspekId]) })} ·{' '}
             {t('diajukan {tanggal}', { tanggal: k.diajukan })}

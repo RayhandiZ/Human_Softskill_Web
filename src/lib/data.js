@@ -1,5 +1,6 @@
 import { CONFIG, subscribeConfig } from './config.js'
 import { AREA, CLUSTER, getAspekList, getKomponen, isiKurikulum } from './curriculum.js'
+import { pasangPadananData } from './kamusData.js'
 import { hitungTranskrip, hurufMutu } from './scoring.js'
 
 /* Data master dari basis data, data isian mulai kosong; lihat README.md › Data dan store. */
@@ -193,7 +194,7 @@ function pasangFakultas(daftar) {
   isiUlang(FACULTIES, daftar)
   isiUlang(
     PROGRAMS,
-    daftar.flatMap((f) => f.programs.map((p) => ({ program: p.nama, jenjang: p.jenjang, faculty: f.name }))),
+    daftar.flatMap((f) => f.programs.map((p) => ({ program: p.nama, namaEn: p.namaEn, jenjang: p.jenjang, faculty: f.name }))),
   )
   isiPeta(FACULTY_OF, PROGRAMS.map((p) => [p.program, p.faculty]))
   isiPeta(JENJANG_OF, PROGRAMS.map((p) => [p.program, p.jenjang]))
@@ -213,6 +214,11 @@ export function isiMaster({ angkatan, fakultas, kurikulum, periode } = {}) {
   if (periode !== undefined) pasangPeriode(periode)
   if (angkatan) pasangAngkatan(angkatan)
   if (fakultas) pasangFakultas(fakultas)
+  // Nama yang diketik dari layar, jadi layar cukup memanggil t(s.program); lihat kamusData.js.
+  pasangPadananData('master', [
+    ...angkatanSemua.map((a) => [a.label, a.labelEn]),
+    ...FACULTIES.flatMap((f) => [[f.name, f.namaEn], ...f.programs.map((p) => [p.nama, p.namaEn])]),
+  ])
   // null = basis data belum di-seed: kurikulum dan CONFIG kembali ke isi dari kode.
   if (kurikulum !== undefined) isiKurikulum(kurikulum ?? {})
   resetTranskripCache()
@@ -343,7 +349,8 @@ export const nilaiAkhirOf = (student) => transkripOf(student).akhir
 
 /* ------------------------------ agregasi admin ---------------------------- */
 
-export function filterStudents({ faculty = 'Semua', program = 'Semua', angkatan = 'Semua', semester = 'Semua', query = '' } = {}) {
+/** `t`: penerjemah bahasa aktif, supaya prodi juga ketemu lewat nama yang tertulis di layar. */
+export function filterStudents({ faculty = 'Semua', program = 'Semua', angkatan = 'Semua', semester = 'Semua', query = '' } = {}, t = (x) => x) {
   const q = query.trim().toLowerCase()
   return STUDENTS.filter(
     (s) =>
@@ -351,7 +358,7 @@ export function filterStudents({ faculty = 'Semua', program = 'Semua', angkatan 
       (program === 'Semua' || s.program === program) &&
       (angkatan === 'Semua' || s.angkatanId === angkatan) &&
       (semester === 'Semua' || String(s.semesterAktif) === String(semester)) &&
-      (!q || s.name.toLowerCase().includes(q) || s.nim.includes(q) || s.program.toLowerCase().includes(q)),
+      (!q || s.name.toLowerCase().includes(q) || s.nim.includes(q) || s.program.toLowerCase().includes(q) || t(s.program).toLowerCase().includes(q)),
   )
 }
 

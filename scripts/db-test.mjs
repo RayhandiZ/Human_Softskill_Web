@@ -79,6 +79,7 @@ import * as notifikasi from '../app/api/notifikasi/route.js'
 import * as notifikasiDibaca from '../app/api/notifikasi/dibaca/route.js'
 import { idAspekBaru } from '../src/lib/aspek.js'
 import { hitungTranskrip } from '../src/lib/scoring.js'
+import { padananData } from '../src/lib/kamusData.js'
 import {
   KOMPONEN,
   KOMPONEN_BAWAAN,
@@ -1595,6 +1596,31 @@ try {
     JSON.stringify(logArsip?.rincian ?? null).slice(0, 200),
   )
 
+  // Padanan Inggris (fase 5 rapat 24 Okt 2026): kolom *En lewat pintu yang sama, dan tidak mengubah hasil mahasiswa.
+  const TUGAS_EN = 'Test task ' + SUF
+  const enUji = await kirimPenilaian(sa, (s) => {
+    s.aspek.namaEn = 'Test aspect ' + SUF
+    s.aspek.deskripsiEn = 'Test description ' + SUF
+    s.aspek.mkEn = 'Test course ' + SUF
+    s.komponen.find((k) => k.aktif).labelEn = TUGAS_EN
+  })
+  const logEn = await logPenilaianTerakhir()
+  const kurikulumEn = await ambilKurikulum()
+  const komponenEn = kurikulumEn.komponen.find((k) => k.labelEn === TUGAS_EN)
+  cek('padanan Inggris tersimpan dan ikut kurikulum', enUji.status === 200 && Boolean(komponenEn) && kurikulumEn.aspek.C2?.namaEn === 'Test aspect ' + SUF && kurikulumEn.aspek.C2?.deskripsiEn === 'Test description ' + SUF, JSON.stringify(enUji.isi).slice(0, 200))
+  cek('padanan Inggris terpasang di kamus data', padananData(komponenEn?.label) === TUGAS_EN && padananData(kurikulumEn.aspek.C2?.nama) === 'Test aspect ' + SUF)
+  cek('padanan Inggris tidak mengubah hasil mahasiswa', enUji.isi.dampak?.berubah === 0, JSON.stringify(enUji.isi.dampak))
+  cek('log mencatat isian Inggris yang berubah', logEn?.rincian?.aspek?.bidang?.includes('namaEn') && logEn.rincian.diubah?.some((x) => x.sesudah?.labelEn === TUGAS_EN), JSON.stringify(logEn?.rincian ?? null).slice(0, 200))
+  const enPanjang = await kirimPenilaian(sa, (s) => {
+    s.komponen.find((k) => k.aktif).labelEn = 'x'.repeat(192)
+  })
+  cek('padanan Inggris terlalu panjang ditolak 400', enPanjang.status === 400, String(enPanjang.status))
+  const enKosong = await kirimPenilaian(sa, (s) => {
+    s.komponen.find((k) => k.aktif).labelEn = ''
+  })
+  await logPenilaianTerakhir()
+  cek('mengosongkan padanan Inggris menyimpan null', enKosong.status === 200 && !(await ambilKurikulum()).komponen.some((k) => k.labelEn === TUGAS_EN))
+
   /* ------------------------------ periode ------------------------------ */
   garis('17. PERIODE AKADEMIK')
   periodeAsli = await db.konfigurasi.findUnique({ where: { kunci: KUNCI_PERIODE } })
@@ -1921,6 +1947,76 @@ try {
       (await db.programStudi.findUnique({ where: { nama: PRODI_UJI_B }, include: { fakultas: true } }))?.fakultas.nama === FAK_UJI_B,
   )
 
+  // Padanan Inggris nama (namaEn, labelEn): boleh kosong, ikut data master, tercatat di log, dan tidak dikirim berarti tetap.
+  const enAng = await kirimMaster(sa, 'angkatan', { aksi: 'ubah', id: pilihAngkatan.id, label: LABEL_UJI, labelEn: '  Test Cohort  ', alasan: ALASAN_DM })
+  const logEnAng = await logBaru('UBAH_ANGKATAN', 'angkatan ' + LABEL_UJI)
+  cek(
+    'padanan Inggris angkatan tersimpan rapi dan ikut data master',
+    enAng.status === 200 &&
+      (await db.angkatan.findUnique({ where: { id: pilihAngkatan.id } }))?.labelEn === 'Test Cohort' &&
+      enAng.isi.master?.angkatan?.find((a) => a.id === pilihAngkatan.id)?.labelEn === 'Test Cohort',
+    JSON.stringify(enAng.isi),
+  )
+  cek(
+    'log hanya memuat padanan Inggris angkatan yang berubah',
+    logEnAng?.rincian?.sesudah?.labelEn === 'Test Cohort' && !('label' in (logEnAng?.rincian?.sesudah ?? {})),
+    JSON.stringify(logEnAng?.rincian ?? null),
+  )
+  const enFak = await kirimMaster(sa, 'prodi', { jenis: 'fakultas', aksi: 'ubah', nama: FAK_UJI_B, namaBaru: FAK_UJI_B, namaEn: 'Test Faculty', alasan: ALASAN_DM })
+  const logEnFak = await logBaru('UBAH_FAKULTAS', 'fakultas ' + FAK_UJI_B)
+  cek(
+    'padanan Inggris fakultas tersimpan, ikut data master, dan tercatat',
+    enFak.status === 200 &&
+      enFak.isi.master?.fakultas?.find((f) => f.name === FAK_UJI_B)?.namaEn === 'Test Faculty' &&
+      logEnFak?.rincian?.sesudah?.namaEn === 'Test Faculty' &&
+      !('nama' in (logEnFak?.rincian?.sesudah ?? {})),
+    JSON.stringify(logEnFak?.rincian ?? enFak.isi),
+  )
+  const enProdi = await kirimMaster(sa, 'prodi', { jenis: 'prodi', aksi: 'ubah', nama: PRODI_UJI_B, namaEn: 'Test Programme', alasan: ALASAN_DM })
+  const logEnProdi = await logBaru('UBAH_PRODI', 'prodi ' + PRODI_UJI_B)
+  cek(
+    'padanan Inggris prodi tersimpan, ikut data master, dan log hanya memuat yang berubah',
+    enProdi.status === 200 &&
+      enProdi.isi.master?.fakultas?.find((f) => f.name === FAK_UJI_B)?.programs?.find((p) => p.nama === PRODI_UJI_B)?.namaEn === 'Test Programme' &&
+      logEnProdi?.rincian?.sesudah?.namaEn === 'Test Programme' &&
+      Object.keys(logEnProdi?.rincian?.sesudah ?? {}).length === 1,
+    JSON.stringify(logEnProdi?.rincian ?? enProdi.isi),
+  )
+  const jumlahLogProdi = await db.logAktivitas.count({ where: { aksi: 'UBAH_PRODI' } })
+  await kirimMaster(sa, 'prodi', { jenis: 'prodi', aksi: 'ubah', nama: PRODI_UJI_B, jenjang: 'D3', alasan: ALASAN_DM })
+  cek(
+    'padanan yang tidak dikirim tetap, dan tanpa perubahan tidak mencatat log baru',
+    (await db.programStudi.findUnique({ where: { nama: PRODI_UJI_B } }))?.namaEn === 'Test Programme' &&
+      (await db.logAktivitas.count({ where: { aksi: 'UBAH_PRODI' } })) === jumlahLogProdi,
+  )
+  cek(
+    'padanan Inggris lebih dari 191 karakter ditolak (400)',
+    (await kirimMaster(sa, 'prodi', { jenis: 'fakultas', aksi: 'ubah', nama: FAK_UJI_B, namaBaru: FAK_UJI_B, namaEn: 'x'.repeat(192), alasan: ALASAN_DM })).status === 400,
+  )
+  const kosongkanEn = await kirimMaster(sa, 'prodi', { jenis: 'prodi', aksi: 'ubah', nama: PRODI_UJI_B, namaEn: '', alasan: ALASAN_DM })
+  await logBaru('UBAH_PRODI', 'prodi ' + PRODI_UJI_B)
+  cek(
+    'mengosongkan padanan kembali memakai kamus (null)',
+    kosongkanEn.status === 200 && (await db.programStudi.findUnique({ where: { nama: PRODI_UJI_B } }))?.namaEn === null,
+  )
+  const FAK_UJI_EN = FAK_UJI + ' EN'
+  const PRODI_UJI_EN = PRODI_UJI + ' EN'
+  const tambahFakEn = await kirimMaster(sa, 'prodi', { jenis: 'fakultas', aksi: 'tambah', nama: FAK_UJI_EN, namaEn: 'Test Faculty Two' })
+  const logFakEn = await logBaru('TAMBAH_FAKULTAS', 'fakultas ' + FAK_UJI_EN)
+  const tambahProdiEn = await kirimMaster(sa, 'prodi', { jenis: 'prodi', aksi: 'tambah', nama: PRODI_UJI_EN, namaEn: 'Test Programme Two', jenjang: 'S1', fakultas: FAK_UJI_EN })
+  const logProdiEn = await logBaru('TAMBAH_PRODI', 'prodi ' + PRODI_UJI_EN)
+  cek(
+    'menambah fakultas dan prodi bersama padanan Inggrisnya',
+    tambahFakEn.status === 200 &&
+      tambahProdiEn.status === 200 &&
+      (await db.fakultas.findUnique({ where: { nama: FAK_UJI_EN } }))?.namaEn === 'Test Faculty Two' &&
+      (await db.programStudi.findUnique({ where: { nama: PRODI_UJI_EN } }))?.namaEn === 'Test Programme Two' &&
+      logFakEn?.rincian?.namaEn === 'Test Faculty Two' &&
+      logProdiEn?.rincian?.namaEn === 'Test Programme Two',
+  )
+  await db.programStudi.delete({ where: { nama: PRODI_UJI_EN } })
+  await db.fakultas.delete({ where: { nama: FAK_UJI_EN } })
+
   // Mahasiswa: tambah lewat tambahAkun, ubah tanpa NIM; pindah prodi/angkatan hanya selama belum punya data penilaian.
   const isiMhsDM = { aksi: 'tambah', email: EMAIL_DM, sandi: 'umn12345', nama: 'Mahasiswa Uji Master', nim: NIM_DM, prodi: PRODI_UJI_B }
   cek(
@@ -2001,7 +2097,7 @@ try {
   garis('20. ASPEK CPMK (TAMBAH, STRUKTUR, ARSIP)')
   aspekAsliUji = await db.aspek.findMany()
   const ALASAN_ASPEK = 'Uji otomatis aspek CPMK'
-  const KOMPONEN_UJI = [{ label: 'Tugas uji aspek', sumber: 'MK', jenis: 'TUGAS', ranah: 'kognitif', status: 'resmi' }]
+  const KOMPONEN_UJI = [{ label: 'Tugas uji aspek', labelEn: 'Aspect test task', sumber: 'MK', jenis: 'TUGAS', ranah: 'kognitif', status: 'resmi' }]
   const kirimAspek = (pelaku, isi) =>
     pelaku('/api/kurikulum/aspek', { metode: 'POST', isi: { versi: KURIKULUM_TERPASANG.versi, ...isi } })
   /** Log terbaru untuk aksi itu pada aspek `id`; id-nya dicatat supaya dihapus di bersihkan(). */
@@ -2029,7 +2125,9 @@ try {
     cluster: 'CL6',
     semester: 1,
     nama: 'Aspek Uji ' + SUF,
+    namaEn: 'Test Aspect ' + SUF,
     deskripsi: 'Deskripsi aspek uji otomatis.',
+    deskripsiEn: 'Automated test aspect description.',
     komponen: KOMPONEN_UJI,
     alasan: ALASAN_ASPEK,
   }
@@ -2060,6 +2158,11 @@ try {
       komponenAspekUji.length === 1 &&
       komponenAspekUji[0].id === idAspekUji + '-MK-B1',
     JSON.stringify(tambahAsp.isi.galat ?? barisAspekUji),
+  )
+  cek(
+    'aspek baru menyimpan padanan Inggris nama, deskripsi, dan komponennya',
+    barisAspekUji?.namaEn === 'Test Aspect ' + SUF && barisAspekUji?.deskripsiEn === 'Automated test aspect description.' && komponenAspekUji[0]?.labelEn === 'Aspect test task',
+    JSON.stringify(barisAspekUji),
   )
   cek('versi kurikulum naik dan jawaban membawa kurikulum baru', KURIKULUM_TERPASANG.versi === versiSebelum + 1 && Boolean(tambahAsp.isi.kurikulum?.aspek?.[idAspekUji]))
   const logTambahAsp = await logAspek('TAMBAH_ASPEK', idAspekUji)

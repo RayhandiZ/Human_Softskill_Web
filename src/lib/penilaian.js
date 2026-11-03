@@ -1,4 +1,4 @@
-import { BIDANG_ASPEK, JENIS_MK, KOMPONEN, RANAH, SUMBER, getAspek, getKomponen, getKomponenArsip } from './curriculum.js'
+import { BIDANG_ASPEK, BIDANG_ASPEK_EN, JENIS_MK, KOMPONEN, RANAH, SUMBER, getAspek, getKomponen, getKomponenArsip } from './curriculum.js'
 import { angkaBobotSah, genapSeratus } from './bobot.js'
 
 /* --------------------------------------------------------------------------
@@ -8,8 +8,8 @@ import { angkaBobotSah, genapSeratus } from './bobot.js'
    sebelum menyimpan (src/server/penilaian.js), jadi aturannya ditulis sekali.
 
    Bentuk "susunan penilaian" satu aspek:
-     aspek     { nama, deskripsi, pdp, mk, engagement }
-     komponen  [{ id | null (baru), label, sumber, jenis, ranah, status, aktif, bobot }]
+     aspek     { nama, deskripsi, pdp, mk, engagement, dan padanan Inggrisnya: namaEn, deskripsiEn, ... }
+     komponen  [{ id | null (baru), label, labelEn, sumber, jenis, ranah, status, aktif, bobot }]
                SEMUA komponen aspek itu, termasuk yang diarsipkan (aktif false);
                urutan larik = urutan tampil.
    Struktur aspek (kode, fase, area, cluster, semester) tetap di kode.
@@ -26,6 +26,7 @@ const teks = (v) => String(v ?? '').trim()
 const ringkasKomponen = (k) => ({
   id: k.id,
   label: k.label,
+  labelEn: k.labelEn ?? null,
   sumber: k.sumber,
   jenis: k.jenis ?? null,
   ranah: k.ranah,
@@ -37,7 +38,7 @@ const ringkasKomponen = (k) => ({
 export function susunanPenilaian(aspekId) {
   const a = getAspek(aspekId)
   return {
-    aspek: Object.fromEntries(BIDANG_ASPEK.map((b) => [b, a?.[b] ?? null])),
+    aspek: Object.fromEntries([...BIDANG_ASPEK, ...BIDANG_ASPEK_EN].map((b) => [b, a?.[b] ?? null])),
     komponen: [
       ...getKomponen(aspekId).map((k) => ({ ...ringkasKomponen(k), aktif: true })),
       ...getKomponenArsip(aspekId).map((k) => ({ ...ringkasKomponen(k), aktif: false })),
@@ -62,8 +63,11 @@ export function periksaPenilaian(susunan, { idLama, dinilai = new Set(), sumberL
   if (teks(aspek.deskripsi).length > BATAS_DESKRIPSI) {
     masalah.push({ bidang: 'deskripsi', pesan: 'Deskripsi aspek paling panjang ' + BATAS_DESKRIPSI + ' karakter.' })
   }
-  for (const b of ['pdp', 'mk', 'engagement']) {
+  for (const b of ['pdp', 'mk', 'engagement', 'namaEn', 'pdpEn', 'mkEn', 'engagementEn']) {
     if (teks(aspek[b]).length > BATAS_LABEL) masalah.push({ bidang: b, pesan: 'Isian ' + b + ' paling panjang ' + BATAS_LABEL + ' karakter.' })
+  }
+  if (teks(aspek.deskripsiEn).length > BATAS_DESKRIPSI) {
+    masalah.push({ bidang: 'deskripsiEn', pesan: 'Deskripsi aspek paling panjang ' + BATAS_DESKRIPSI + ' karakter.' })
   }
 
   const terlihat = new Set()
@@ -79,7 +83,7 @@ export function periksaPenilaian(susunan, { idLama, dinilai = new Set(), sumberL
       }
     }
     if (!teks(k.label)) masalah.push({ indeks: i, pesan: sebut + ': nama komponen wajib diisi.' })
-    if (teks(k.label).length > BATAS_LABEL) masalah.push({ indeks: i, pesan: sebut + ': nama paling panjang ' + BATAS_LABEL + ' karakter.' })
+    if (teks(k.label).length > BATAS_LABEL || teks(k.labelEn).length > BATAS_LABEL) masalah.push({ indeks: i, pesan: sebut + ': nama paling panjang ' + BATAS_LABEL + ' karakter.' })
     if (!SUMBER_ID.includes(k.sumber)) masalah.push({ indeks: i, pesan: sebut + ': sumber penilaian tidak dikenal.' })
     if (k.sumber === 'MK' && !JENIS_MK.includes(k.jenis)) masalah.push({ indeks: i, pesan: sebut + ': komponen MK wajib punya jenis (Tugas, Sikap, UTS, UAS).' })
     if (k.sumber !== 'MK' && k.jenis != null) masalah.push({ indeks: i, pesan: sebut + ': jenis hanya untuk komponen MK.' })
@@ -105,13 +109,14 @@ export function periksaPenilaian(susunan, { idLama, dinilai = new Set(), sumberL
 }
 
 const samaKomponen = (a, b) =>
-  a.label === teks(b.label) && a.sumber === b.sumber && (a.jenis ?? null) === (b.jenis ?? null) && a.ranah === b.ranah && a.status === b.status
+  a.label === teks(b.label) && (a.labelEn ?? null) === (teks(b.labelEn) || null) && a.sumber === b.sumber &&
+  (a.jenis ?? null) === (b.jenis ?? null) && a.ranah === b.ranah && a.status === b.status
 
 /** Apa saja yang berbeda di antara dua susunan penilaian satu aspek. */
 export function bedaPenilaian(lama, baru) {
   const dariId = new Map(lama.komponen.map((k) => [k.id, k]))
   const beda = { aspek: [], ditambah: [], diubah: [], diarsipkan: [], dipulihkan: [], bobot: false, urutan: false }
-  for (const b of BIDANG_ASPEK) if ((teks(lama.aspek[b]) || null) !== (teks(baru.aspek[b]) || null)) beda.aspek.push(b)
+  for (const b of [...BIDANG_ASPEK, ...BIDANG_ASPEK_EN]) if ((teks(lama.aspek[b]) || null) !== (teks(baru.aspek[b]) || null)) beda.aspek.push(b)
   for (const k of baru.komponen) {
     if (k.id == null) {
       beda.ditambah.push(teks(k.label))
@@ -143,6 +148,7 @@ export function komponenSementara(aspekId, susunan) {
       sumber: k.sumber,
       jenis: k.jenis ?? null,
       label: teks(k.label),
+      labelEn: teks(k.labelEn) || null,
       ranah: k.ranah,
       bobot: typeof k.bobot === 'number' ? k.bobot : null,
       status: k.status,

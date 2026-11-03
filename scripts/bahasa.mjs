@@ -31,6 +31,8 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { EN } from '../src/lib/teks.js'
+import { INDIKATOR_BAWAAN, KOMPONEN_BAWAAN, aspekBawaan } from '../src/lib/curriculum.js'
+import { MASTER_AWAL } from '../src/lib/data.js'
 
 const TULIS = process.argv.includes('--tulis')
 const BERKAS_KAMUS = 'src/lib/teks.js'
@@ -48,7 +50,7 @@ const BERKAS = [
   'src/lib/labelLog.js',
 ].filter((f) => /\.jsx?$/.test(f))
 
-/* Harus sama persis dengan rapikan() di src/lib/bahasa.jsx. */
+/* Harus sama persis dengan rapikan() di src/lib/kamusData.js. */
 const rapikan = (teks) => String(teks ?? '').trim().replace(/\s+/g, ' ')
 
 /* Kata yang memang identik di kedua bahasa, jadi tidak dihitung kurang. */
@@ -61,7 +63,7 @@ const SAMA = new Set(
        tertangkap pemindai. */
     '2-digit', 'id-ID',
     'Pilih Yan Akan Di Input', 'Manual', 'Semester', 'Skala', 'Keyakinan', 'Konversi',
-    'Rollback', 'Import CSV', 'Overview', 'Nilai',
+    'Rollback', 'Overview', 'Nilai',
   ].map(rapikan),
 )
 
@@ -122,7 +124,7 @@ const DARI_DATA = [
   'Belum dibuka',
   /* Nama lengkap sumber penilaian (SUMBER di curriculum.js), di "Arti kode" transkrip dan title pil sumber. */
   'Personal Development Program', 'Mata Kuliah Humaniora / Kebangsaan', 'Student Service & Engagement',
-  /* src/lib/ingest.js: label keyakinan, skala, dan cara menggabung kolom di Import CSV. */
+  /* src/lib/ingest.js: label keyakinan, skala, dan cara menggabung kolom di Import Excel. */
   'Yakin', 'Perlu dicek', 'Tebakan lemah', 'Tidak cocok',
   '0–100 (tanpa konversi)', '0–10 (dikali 10)', '0–4 (dikali 25)',
   'Rata-rata', 'Ambil tertinggi', 'Pakai kolom terakhir', '— Abaikan kolom ini —',
@@ -154,8 +156,8 @@ const DARI_DATA = [
   'Akses cetak sertifikatmu dicabut. Baca alasannya, lalu minta lagi bila masalahnya sudah selesai.',
   /* Label menu panel dosen (DosenLayout, diterjemahkan MenuSamping dan BilahBawah); 'Riwayat' juga menu mahasiswa. */
   'Beranda', 'Unggah Nilai', 'Unggah', 'Riwayat', 'Profil',
-  /* Unggahan nilai dosen: galat dan peringatan bacaRekap (src/lib/unggahDosen.js) dan galat bacaBerkas
-     (dosen/Unggah.jsx), diterjemahkan lewat t(g.teks, g.isi) dan t(e.message); lalu isi lembar templat Excel
+  /* Unggahan nilai dosen: galat dan peringatan bacaRekap (src/lib/unggahDosen.js) dan galat bacaBarisBerkas
+     (src/lib/csv.js), diterjemahkan lewat t(g.teks, g.isi) dan t(e.message); lalu isi lembar templat Excel
      (lembarTemplat di src/lib/unggahDosen.js, yang tidak dipindai). */
   'Cara mengisi templat ini', 'Kelas: {kelas}.', 'Nilai mahasiswa', 'Petunjuk',
   'Satu baris untuk satu mahasiswa. Jangan ubah baris judul, kolom NIM, dan urutan kolomnya.',
@@ -204,6 +206,32 @@ const catat = (k, berkas) => {
 
 for (const k of DARI_DATA) catat(k, 'src/lib/layanan.js')
 for (const k of DARI_ATURAN) catat(k, 'src/lib/rules.js')
+
+/* Isi kurikulum bawaan: tampil lewat t(k.label) dan t(a.deskripsi), jadi pemindai t(...) tidak melihat kalimatnya. */
+for (const k of KOMPONEN_BAWAAN) catat(k.label, 'src/lib/curriculum.js')
+for (const k of INDIKATOR_BAWAAN) for (const s of k.sumber) catat(s, 'src/lib/curriculum.js')
+for (const id of ['A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'B3', 'B4', 'C1', 'C2']) {
+  const a = aspekBawaan(id)
+  for (const b of ['nama', 'deskripsi', 'pdp', 'mk']) if (a[b]) catat(a[b], 'src/lib/curriculum.js')
+}
+
+/* Nama fakultas dan program studi bawaan: tampil lewat t(s.program) dan t(s.faculty). */
+for (const f of MASTER_AWAL.fakultas) {
+  catat(f.name, 'src/lib/data.js')
+  for (const p of f.programs) catat(p.nama, 'src/lib/data.js')
+}
+
+/* Pesan server dan aturan berupa satu literal utuh: new GalatApi('...') dan pesan: '...'. Layar menampilkannya lewat
+   t(e.message). Yang dirakit dengan angka atau nama ada di POLA_EN (teks.js) dan diuji contohnya di smoke. */
+const LITERAL = String.raw`'((?:[^'\\]|\\.)*)'\s*(?:[,)}]|$)`
+const PESAN = [
+  ...readdirSync('src/server').filter((f) => f.endsWith('.js')).map((f) => [join('src/server', f), new RegExp(String.raw`new GalatApi\(\s*` + LITERAL, 'gm')]),
+  ...['aspek', 'bobot', 'penilaian'].map((f) => [join('src/lib', f + '.js'), new RegExp(String.raw`pesan:\s*` + LITERAL, 'gm')]),
+]
+for (const [f, re] of PESAN) {
+  const teks = tanpaKomentar(readFileSync(f, 'utf8'))
+  for (const m of teks.matchAll(re)) catat(m[1].replace(/\\(['"])/g, '$1'), f)
+}
 for (const f of BERKAS) for (const k of kunciDi(readFileSync(f, 'utf8'))) catat(k, f)
 
 /* Kamus, juga dirapikan, supaya pembandingannya setara. */

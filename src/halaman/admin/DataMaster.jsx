@@ -13,7 +13,7 @@ import {
   useStore,
 } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
-import { useTeks } from '../../lib/bahasa'
+import { padananKamus, useTeks } from '../../lib/bahasa'
 
 /* Data Master: angkatan, fakultas, program studi, dan mahasiswa. Sejak rapat 24 Okt 2026 data master dipegang penuh
    super admin: hanya ia yang menambah dan mengubahnya (pintu /api/master/* ['superadmin'], src/server/dataMaster.js).
@@ -27,6 +27,8 @@ const TAB = [
 ]
 const JENJANG = ['S1', 'D3']
 const BATAS_DAFTAR = 20
+const CATATAN_INGGRIS = 'Tampil saat bahasa EN dipilih. Bila dikosongkan, terjemahan bawaan yang dipakai; bila belum ada, teks Indonesianya yang tampil.'
+const CATATAN_FAKULTAS = 'Tulis nama fakultasnya saja, tanpa kata "Faculty of". ' + CATATAN_INGGRIS
 
 export default function DataMaster() {
   useStore()
@@ -100,7 +102,7 @@ function MintaAkses() {
       await mintaAksesMaster({ alasan })
       setAlasan('')
     } catch (err) {
-      setGalat(err.message)
+      setGalat(t(err.message))
     } finally {
       setSibuk(false)
     }
@@ -200,7 +202,7 @@ function BagianAngkatan({ onBerhasil, bacaSaja }) {
             <li key={c.id} className="px-5 py-3.5 sm:px-6">
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                 <div className="min-w-0">
-                  <p className="text-[14.5px] font-bold text-ink">{c.label}</p>
+                  <p className="text-[14.5px] font-bold text-ink">{t(c.label)}</p>
                   <p className="mt-0.5 text-[12.5px] text-ink-2">
                     {t('Kode {id}', { id: c.id })} · {t('Masuk {periode}', { periode: labelPeriode(c.intake) })} ·{' '}
                     {t('{n} mahasiswa', { n: jumlah })}
@@ -226,8 +228,12 @@ function BagianAngkatan({ onBerhasil, bacaSaja }) {
               </div>
               {ubah === c.id ? (
                 <FormUbah
-                  awal={{ label: c.label }}
-                  kolom={[{ kunci: 'label', label: t('Label angkatan') }]}
+                  awal={{ label: c.label, labelEn: c.labelEn ?? '' }}
+                  kolom={[
+                    { kunci: 'label', label: t('Label angkatan') },
+                    { kunci: 'labelEn', label: t('Label angkatan (Inggris)'), contohDari: 'label' },
+                  ]}
+                  catatan={t(CATATAN_INGGRIS)}
                   simpan={(isi) => simpanAngkatan({ aksi: 'ubah', id: c.id, ...isi })}
                   onBatal={() => setUbah(null)}
                   onSelesai={() => {
@@ -311,8 +317,12 @@ function BagianProdi({ onBerhasil, bacaSaja }) {
         {tambah === 'fakultas' ? (
           <div className="border-b border-line px-5 py-4 sm:px-6">
             <FormUbah
-              awal={{ nama: '' }}
-              kolom={[{ kunci: 'nama', label: t('Nama fakultas') }]}
+              awal={{ nama: '', namaEn: '' }}
+              kolom={[
+                { kunci: 'nama', label: t('Nama fakultas') },
+                { kunci: 'namaEn', label: t('Nama fakultas (Inggris)'), contohDari: 'nama' },
+              ]}
+              catatan={t(CATATAN_FAKULTAS)}
               tanpaAlasan
               tombol={t('Simpan fakultas')}
               simpan={(isi) => simpanProdi({ jenis: 'fakultas', aksi: 'tambah', ...isi })}
@@ -328,15 +338,19 @@ function BagianProdi({ onBerhasil, bacaSaja }) {
           {FACULTIES.map((f) => (
             <li key={f.name} className="px-5 py-3.5 sm:px-6">
               <BarisUbah
-                judul={f.name}
+                judul={t(f.name)}
                 rincian={t('{n} program studi', { n: f.programs.length })}
                 terbuka={ubah === 'fakultas:' + f.name}
                 onToggle={bacaSaja ? null : () => setUbah(ubah === 'fakultas:' + f.name ? null : 'fakultas:' + f.name)}
               />
               {ubah === 'fakultas:' + f.name ? (
                 <FormUbah
-                  awal={{ namaBaru: f.name }}
-                  kolom={[{ kunci: 'namaBaru', label: t('Nama fakultas') }]}
+                  awal={{ namaBaru: f.name, namaEn: f.namaEn ?? '' }}
+                  kolom={[
+                    { kunci: 'namaBaru', label: t('Nama fakultas') },
+                    { kunci: 'namaEn', label: t('Nama fakultas (Inggris)'), contohDari: 'namaBaru' },
+                  ]}
+                  catatan={t(CATATAN_FAKULTAS)}
                   simpan={(isi) => simpanProdi({ jenis: 'fakultas', aksi: 'ubah', nama: f.name, ...isi })}
                   onBatal={() => setUbah(null)}
                   onSelesai={() => {
@@ -360,12 +374,14 @@ function BagianProdi({ onBerhasil, bacaSaja }) {
         {tambah === 'prodi' ? (
           <div className="border-b border-line px-5 py-4 sm:px-6">
             <FormUbah
-              awal={{ nama: '', jenjang: 'S1', fakultas: '' }}
+              awal={{ nama: '', namaEn: '', jenjang: 'S1', fakultas: '' }}
               kolom={[
                 { kunci: 'nama', label: t('Nama program studi') },
+                { kunci: 'namaEn', label: t('Nama program studi (Inggris)'), contohDari: 'nama' },
                 { kunci: 'jenjang', label: t('Jenjang'), pilihan: JENJANG },
-                { kunci: 'fakultas', label: t('Fakultas'), pilihan: fakultas, kosong: t('Pilih fakultas') },
+                { kunci: 'fakultas', label: t('Fakultas'), pilihan: fakultas, tampilkan: (x) => t(x), kosong: t('Pilih fakultas') },
               ]}
+              catatan={t(CATATAN_INGGRIS)}
               tanpaAlasan
               tombol={t('Simpan program studi')}
               simpan={(isi) => simpanProdi({ jenis: 'prodi', aksi: 'tambah', ...isi })}
@@ -381,19 +397,21 @@ function BagianProdi({ onBerhasil, bacaSaja }) {
           {PROGRAMS.map((p) => (
             <li key={p.program} className="px-5 py-3.5 sm:px-6">
               <BarisUbah
-                judul={p.program}
-                rincian={p.jenjang + ' · ' + p.faculty}
+                judul={t(p.program)}
+                rincian={p.jenjang + ' · ' + t(p.faculty)}
                 terbuka={ubah === 'prodi:' + p.program}
                 onToggle={bacaSaja ? null : () => setUbah(ubah === 'prodi:' + p.program ? null : 'prodi:' + p.program)}
               />
               {ubah === 'prodi:' + p.program ? (
                 <FormUbah
-                  awal={{ namaBaru: p.program, jenjang: p.jenjang, fakultas: p.faculty }}
+                  awal={{ namaBaru: p.program, namaEn: p.namaEn ?? '', jenjang: p.jenjang, fakultas: p.faculty }}
                   kolom={[
                     { kunci: 'namaBaru', label: t('Nama program studi') },
+                    { kunci: 'namaEn', label: t('Nama program studi (Inggris)'), contohDari: 'namaBaru' },
                     { kunci: 'jenjang', label: t('Jenjang'), pilihan: JENJANG },
-                    { kunci: 'fakultas', label: t('Fakultas'), pilihan: fakultas },
+                    { kunci: 'fakultas', label: t('Fakultas'), pilihan: fakultas, tampilkan: (x) => t(x) },
                   ]}
+                  catatan={t(CATATAN_INGGRIS)}
                   simpan={(isi) => simpanProdi({ jenis: 'prodi', aksi: 'ubah', nama: p.program, ...isi })}
                   onBatal={() => setUbah(null)}
                   onSelesai={() => {
@@ -420,7 +438,7 @@ function BagianMahasiswa({ onBerhasil, bacaSaja }) {
   const prodi = PROGRAMS.map((p) => p.program)
   // Angkatan terkunci tidak menerima mahasiswa baru maupun pindahan; server menolaknya juga.
   const angkatanTerbuka = COHORTS.filter((c) => c.status !== 'terkunci').map((c) => c.id)
-  const labelAngkatan = (id) => getAngkatan(id)?.label ?? id
+  const labelAngkatan = (id) => t(getAngkatan(id)?.label ?? id)
 
   const kata = cari.trim().toLowerCase()
   const cocok = STUDENTS.filter((s) => !kata || s.nim.includes(kata) || s.name.toLowerCase().includes(kata))
@@ -451,7 +469,7 @@ function BagianMahasiswa({ onBerhasil, bacaSaja }) {
               { kunci: 'sandi', label: t('Sandi awal (minimal {n} karakter)', { n: SANDI_AWAL_MIN }), autoComplete: 'new-password' },
               { kunci: 'nama', label: t('Nama lengkap') },
               { kunci: 'nim', label: 'NIM', inputMode: 'numeric' },
-              { kunci: 'prodi', label: t('Program studi'), pilihan: prodi, kosong: t('Pilih program studi') },
+              { kunci: 'prodi', label: t('Program studi'), pilihan: prodi, tampilkan: (x) => t(x), kosong: t('Pilih program studi') },
               { kunci: 'angkatanId', label: t('Angkatan'), pilihan: angkatanTerbuka, tampilkan: labelAngkatan, kosong: t('Pilih angkatan') },
             ]}
             tanpaAlasan
@@ -479,7 +497,7 @@ function BagianMahasiswa({ onBerhasil, bacaSaja }) {
               <li key={s.nim} className="px-5 py-3.5 sm:px-6">
                 <BarisUbah
                   judul={s.name}
-                  rincian={['NIM ' + s.nim, s.email, s.program, t('Angkatan {label}', { label: s.angkatanLabel })]
+                  rincian={['NIM ' + s.nim, s.email, t(s.program), t('Angkatan {label}', { label: s.angkatanLabel })]
                     .filter(Boolean)
                     .join(' · ')}
                   terbuka={ubah === s.nim}
@@ -493,8 +511,8 @@ function BagianMahasiswa({ onBerhasil, bacaSaja }) {
                       { kunci: 'email', label: t('Email'), type: 'email' },
                       // Mahasiswa yang sudah punya nilai atau angkatannya terkunci: prodi dan angkatan ditampilkan tetap.
                       adaNilai || terkunci
-                        ? { kunci: 'prodi', label: t('Program studi'), tetap: true }
-                        : { kunci: 'prodi', label: t('Program studi'), pilihan: prodi },
+                        ? { kunci: 'prodi', label: t('Program studi'), tetap: true, tampilkan: (x) => t(x) }
+                        : { kunci: 'prodi', label: t('Program studi'), pilihan: prodi, tampilkan: (x) => t(x) },
                       adaNilai || terkunci
                         ? { kunci: 'angkatanId', label: t('Angkatan'), tetap: true, tampilkan: labelAngkatan }
                         : {
@@ -542,6 +560,7 @@ function BagianMahasiswa({ onBerhasil, bacaSaja }) {
 
 /** Pemanggil simpan: { sibuk, galat, jalankan(kerja, sesudah) }. Galat dari server ditampilkan apa adanya. */
 function useKirim() {
+  const t = useTeks()
   const [sibuk, setSibuk] = useState(false)
   const [galat, setGalat] = useState('')
   async function jalankan(kerja, sesudah) {
@@ -552,7 +571,7 @@ function useKirim() {
       await kerja()
       sesudah()
     } catch (e) {
-      setGalat(e.message)
+      setGalat(t(e.message))
     } finally {
       setSibuk(false)
     }
@@ -604,7 +623,7 @@ function FormUbah({ awal, kolom, simpan, onBatal, onSelesai, tanpaAlasan = false
   return (
     <form onSubmit={kirim} className="mt-3 space-y-3 rounded-xl border border-line bg-surface-2/60 p-4">
       <div className="grid gap-3 sm:grid-cols-2">
-        {kolom.map(({ kunci, label, pilihan, tampilkan, tetap, kosong, ...sisa }) =>
+        {kolom.map(({ kunci, label, pilihan, tampilkan, tetap, kosong, contohDari, ...sisa }) =>
           tetap ? (
             <div key={kunci}>
               <span className="mb-1.5 block label">{label}</span>
@@ -626,7 +645,14 @@ function FormUbah({ awal, kolom, simpan, onBatal, onSelesai, tanpaAlasan = false
           ) : (
             <label key={kunci} className="block">
               <span className="mb-1.5 block label">{label}</span>
-              <input className="field !py-2.5" value={isian[kunci]} onChange={(e) => pasang(kunci)(e.target.value)} {...sisa} />
+              <input
+                className="field !py-2.5"
+                value={isian[kunci]}
+                // Kolom bahasa Inggris: contohnya terjemahan bawaan yang berlaku selama kolomnya kosong.
+                placeholder={contohDari ? (padananKamus(isian[contohDari]) ?? t('Nama dalam bahasa Inggris')) : undefined}
+                onChange={(e) => pasang(kunci)(e.target.value)}
+                {...sisa}
+              />
             </label>
           ),
         )}

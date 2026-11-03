@@ -252,7 +252,7 @@ function PanelStatusAspek({ student }) {
       if (menungguPersetujuan(hasil)) setMenunggu(hasil)
       setAlasan('')
     } catch (e) {
-      setGalat(e.message)
+      setGalat(teks(e.message))
     }
   }
 
@@ -310,7 +310,7 @@ function PanelStatusAspek({ student }) {
               <li key={a.aspek.id} className="flex flex-wrap items-start gap-3 px-5 py-4 sm:px-6">
                 <div className="min-w-[220px] flex-1">
                   <p className="text-[14px] font-bold text-ink">
-                    {a.aspek.kode} {a.aspek.nama}
+                    {a.aspek.kode} {teks(a.aspek.nama)}
                   </p>
                   <p className="mt-1 text-[12.5px] text-ink-2">
                     {teks('{n}/{total} komponen dinilai', {

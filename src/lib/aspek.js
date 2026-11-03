@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js'
-import { BIDANG_ASPEK, CLUSTER, denganAspekSementara, getAspek, getAspekArsip, getAspekList } from './curriculum.js'
+import { BIDANG_ASPEK, BIDANG_ASPEK_EN, CLUSTER, denganAspekSementara, getAspek, getAspekArsip, getAspekList } from './curriculum.js'
 import { BATAS_DESKRIPSI, BATAS_LABEL, komponenSementara, periksaPenilaian } from './penilaian.js'
 import { dampakDari } from './bobot.js'
 
@@ -11,7 +11,7 @@ import { dampakDari } from './bobot.js'
    Teks dan komponen aspek yang sudah ada tetap diubah lewat src/lib/penilaian.js.
 
    Isi satu permintaan:
-     tambah    { aksi, cluster, semester, kode, nama, deskripsi, pdp, mk, engagement, komponen: [...], alasan }
+     tambah    { aksi, cluster, semester, kode, nama, deskripsi, pdp, mk, engagement, namaEn, deskripsiEn, ..., komponen: [...], alasan }
      ubah      { aksi, id, kode?, cluster?, semester?, alasan }
      arsipkan  { aksi, id, alasan }
      pulihkan  { aksi, id, alasan }
@@ -59,6 +59,7 @@ const rapikanKomponen = (k) =>
     ? {
         id: null,
         label: teks(k.label),
+        labelEn: teks(k.labelEn) || null,
         sumber: k.sumber,
         jenis: k.sumber === 'MK' ? (k.jenis ?? null) : null,
         ranah: k.ranah,
@@ -78,7 +79,7 @@ export function rapikanIsiAspek(isi = {}) {
       cluster: isi.cluster ?? null,
       semester: angka(isi.semester),
       kode: kode(isi.kode),
-      ...Object.fromEntries(BIDANG_ASPEK.map((b) => [b, teks(isi[b]) || null])),
+      ...Object.fromEntries([...BIDANG_ASPEK, ...BIDANG_ASPEK_EN].map((b) => [b, teks(isi[b]) || null])),
       komponen: Array.isArray(isi.komponen) ? isi.komponen.map(rapikanKomponen) : [],
     })
   } else {
@@ -135,8 +136,11 @@ export function periksaAspek(isi) {
     if (teks(isi.deskripsi).length > BATAS_DESKRIPSI) {
       masalah.push({ bidang: 'deskripsi', pesan: 'Deskripsi aspek paling panjang ' + BATAS_DESKRIPSI + ' karakter.' })
     }
-    for (const b of ['pdp', 'mk', 'engagement']) {
+    for (const b of ['pdp', 'mk', 'engagement', 'namaEn', 'pdpEn', 'mkEn', 'engagementEn']) {
       if (teks(isi[b]).length > BATAS_LABEL) masalah.push({ bidang: b, pesan: 'Isian ' + b + ' paling panjang ' + BATAS_LABEL + ' karakter.' })
+    }
+    if (teks(isi.deskripsiEn).length > BATAS_DESKRIPSI) {
+      masalah.push({ bidang: 'deskripsiEn', pesan: 'Deskripsi aspek paling panjang ' + BATAS_DESKRIPSI + ' karakter.' })
     }
     // Komponen baru diperiksa dengan aturan yang sama dengan editor penilaian; minimal satu.
     const komponen = Array.isArray(isi.komponen) ? isi.komponen : []
@@ -178,7 +182,7 @@ export function susunPerubahan(isi) {
     return {
       id,
       timpa: {
-        ...Object.fromEntries(BIDANG_ASPEK.map((b) => [b, isi[b] ?? null])),
+        ...Object.fromEntries([...BIDANG_ASPEK, ...BIDANG_ASPEK_EN].map((b) => [b, isi[b] ?? null])),
         kode: isi.kode,
         cluster: isi.cluster,
         semester: isi.semester,

@@ -229,7 +229,8 @@ src/lib/
   theme.jsx       mode terang/gelap
   aksesibilitas.js setelan menu aksesibilitas semua panel, useAksesibilitas() (lihat Menu aksesibilitas)
   bahasa.jsx      pilihan bahasa dan useTeks()
-  teks.js         kamus Indonesia → Inggris — lihat Kamus dan terjemahan
+  teks.js         kamus Indonesia → Inggris dan pola pesan server (POLA_EN); lihat Kamus dan terjemahan
+  kamusData.js    padanan Inggris dari basis data: isi kurikulum dan nama data master; lihat Kamus dan terjemahan
   terjemahOtomatis.js  penerjemah bawaan peramban untuk kalimat yang belum ada di kamus
   nav.jsx         TautanNav, padanan <NavLink> untuk Next
   kurva.js        kurva monoton untuk grafik tren — lihat Grafik
@@ -295,7 +296,8 @@ src/components/   Ui (termasuk pola halaman Kemahasiswaan: JudulHalaman, KartuAn
                   LogoPdp, Lipat, MenuSamping (menu samping mahasiswa, dosen, Kemahasiswaan, dan
                   super admin), BilahBawah (menu bawah HP panel dosen), MenuAksesibilitas (semua panel),
                   TombolTema, CariCepat
-                  (pencarian cepat Ctrl+K panel Kemahasiswaan)
+                  (pencarian cepat Ctrl+K panel Kemahasiswaan), KerangkaKerja (kerangka bersama panel dosen,
+                  Kemahasiswaan, dan Super Admin; lihat Panel kerja)
 src/components/charts/  ChartFrame, RadarCluster (6 sumbu), AspectBars (10 aspek), MutuDonut,
                   PerkembanganAngkatan
 src/halaman/      Login, Profil (satu halaman profil untuk tiga peran)
@@ -564,7 +566,7 @@ dengan pilihan cepat Hari ini dan 7 hari terakhir. Setiap baris menjawab siapa, 
   peran, keputusan, status sertifikat, ya/tidak menjadi Aktif/Dicabut pada ubah akses), dan ID komponen
   ditulis bersama namanya. Bukan JSON mentah lagi.
 - **Perubahan nilai**: nama komponen, kode dan nama aspek, sumber, semester, cara masuk (input manual,
-  import CSV, unggahan dosen, pengajuan koreksi), ID batch, alasan bila menyentuh data terkunci, dan bila
+  import berkas, unggahan dosen, pengajuan koreksi), ID batch, alasan bila menyentuh data terkunci, dan bila
   batch-nya dibatalkan: siapa, kapan, dan alasannya.
 
 Tanpa basis data (uji), perubahan nilai dibaca dari `AUDIT_LOG` yang termuat (label komponen dan aspek
@@ -644,9 +646,9 @@ di `src/server/akses.js`. Bila server menjawab 404, halaman menyatakan fiturnya 
   `{ akun }`, dan setiap akun admin di `POST /api/akses` membawa `aksesAngkatan` (`[{ id, label, terlihat }]`). Di
   layar: tombol "Akses angkatan" di baris admin biasa.
 
-**Tampilan panel super admin** mengambil pola dasbor modern di Dribbble (sapaan bertanggal, satu kartu
-fokus, angka dengan meter, grafik batang dengan tooltip, linimasa berikon, kepingan periode) tanpa
-meninggalkan bahasa visual di bawah: warna padat, garis rambut, tanpa bayangan besar.
+**Tampilan panel super admin** memakai kerangka Panel kerja (di bawah): bilah atas kapsul dan susunan kartu. Warnanya navy
+dan toska. Susunan Pusat Kendali: kartu keputusan, empat kartu ringkasan, grafik selebar halaman, lalu aktivitas dan rantai
+pengawasan.
 
 - **Permukaan aurora.** Menu samping, laci HP (`Laci nada="aurora"`), kartu keputusan, Super Admin di
   rantai pengawasan, dan kartu peran Super Admin memakai `.kartu-aurora`: aurora halaman masuk versi diam
@@ -659,9 +661,9 @@ meninggalkan bahasa visual di bawah: warna padat, garis rambut, tanpa bayangan b
   keputusan, menu samping, dan laci, tema terang dan gelap, laptop dan HP: terendah 5,08:1 (keterangan
   putih 75%); tulisan toska terendah 5,65:1 ("Anda"). Bila cahayanya diubah, ukur ulang.
 - **Satu titik fokus.** Pusat Kendali disusun mengikuti satu keputusan yang diambil di sana: permintaan
-  admin yang menunggu. Kartu navy itu selebar halaman; sisanya bahan pengawasan. Toska hanya dipakai pada
-  tombol "Buka antrean persetujuan" saat ada yang menunggu; tanpa permintaan, kartunya tenang (tanda
-  centang, keterangan, keputusan terakhir) dan tombolnya putih tembus pandang.
+  admin yang menunggu. Kartu navy itu selebar halaman; sisanya bahan pengawasan. Toska hanya dipakai pada tombol
+  "Buka antrean persetujuan" saat ada yang menunggu; tanpa permintaan, kartunya tenang (tanda centang, keterangan,
+  keputusan terakhir) dan tombolnya putih samar.
 - **Angka asli saja.** Semua angka dihitung dari data yang termuat (`PERMINTAAN`, `AUDIT_LOG`, `COHORTS`,
   `MENUNGGU_KONFIRMASI`) atau `/api/log`; tidak ada delta atau tren tanpa periode pembanding yang nyata.
 - **Pemilih periode** (keping di pojok kanan atas Pusat Kendali, tepat di bawah menu akun) mendaftar semester dari intake angkatan
@@ -681,7 +683,7 @@ meninggalkan bahasa visual di bawah: warna padat, garis rambut, tanpa bayangan b
   "bukan jumlah pengajuan koreksi". Enam
   batang bulanan; bulan yang belum berjalan di periode aktif tidak diberi batang. Satu seri, satu warna
   (`.isi-data`: `--brand` di tema terang, `#5598e7` di tema gelap karena `--brand` di bawah 3:1 di kartu
-  gelap), batang paling lebar 24px dengan ujung 4px, garis bantu rambut, hanya nilai terbesar yang diberi
+  gelap), batang paling lebar 64px dengan ujung 6px, garis bantu rambut, hanya nilai terbesar yang diberi
   label. Setiap batang bisa difokus papan ketik dan menampilkan keterangan yang sama dengan tunjuk
   tetikus; tombol Tabel di `ChartFrame` memuat keenam angkanya.
 - **Menu samping berkelompok**: Utama (tempat bertindak) dan Pengawasan (hanya dibaca). Satu `MenuSamping`
@@ -708,9 +710,12 @@ Seluruh panel memakai satu bahasa yang sama, mengikuti gaya E-Learning UMN:
   pun tema perangkat. Cahaya dijauhkan dari judul, dan kontras setiap teksnya diukur sepanjang
   animasi (minimal 4,5:1, judul besar 3:1); bila cahaya diubah, ukur ulang. Gumpalan hanya
   menggerakkan `transform`, diam saat kurangi gerak aktif, dan kartunya menjadi padat saat kurangi
-  transparansi aktif. Tombol Masuk-nya juga bergradasi biru (`.tombol-masuk`, lihat Gerak).
+  transparansi aktif. Tombol Masuk-nya juga bergradasi biru (`.tombol-masuk`, lihat Gerak). Tulisan blok "Apa sih
+  VIBE itu?" dibesarkan supaya terbaca dosen (revisi 2 Nov 2026: judul 40px, paragraf 17px, nama penilaian 16,5px,
+  keterangan 15px; satu tingkat di bawahnya di bawah 1280px). Bloknya dilebarkan ke 640px dan jaraknya dirapatkan,
+  jadi tidak perlu digulir sampai tinggi layar 640px; bila ukurannya diubah, ukur ulang di 1366×657.
   Pengecualian kedua: menu samping dan kartu navy panel super admin (`.kartu-aurora`, lihat Panel
-  Super Admin › Tampilan) memakai aurora yang sama versi diam, sedikit lebih terang;
+  Super Admin);
   kartu identitas hanya diberi garis merek setebal 1px di atasnya;
 - **bayangan nyaris tidak ada** — kartu cukup dibatasi garis rambut;
 - **menu aktif diisi penuh warna merek dengan teks putih**, bukan latar samar —
@@ -728,21 +733,58 @@ Seluruh panel memakai satu bahasa yang sama, mengikuti gaya E-Learning UMN:
   Kemahasiswaan › Tampilan). Panel dosen memakai footer melayang yang sama dengan
   panel mahasiswa (lihat Panel Dosen › Kerangka).
 
+## Panel kerja
+
+Kerangka dan susunan bersama panel dosen, Kemahasiswaan, dan Super Admin sejak 3 Nov 2026, mengikuti tata letak video
+dasbor yang dipilih pemilik produk: menu samping mengambang, bilah atas kapsul, kartu angka di atas, dan grafik lebar. Isi
+referensi (data, foto, metrik penonton) tidak disalin. Panel mahasiswa, halaman masuk, dan lembar cetak tidak termasuk.
+
+**Warna tidak ikut berubah.** Redesign pertama memakai aksen peach dan menu samping arang; pemilik produk menolaknya pada
+hari yang sama dan meminta navy dan toska kembali. Karena itu panel ini tidak punya token warna sendiri: `:root` dan `.dark`
+berlaku seperti di panel lain, Admin dan Dosen bermenu samping putih, dan Super Admin bermenu samping `.kartu-aurora`. Warnanya
+jangan ditimpa di `.panel-kerja`. Animasi menu samping (`.menu-sorot`) membaca warna garis dan sorotannya dari `--brand-ink`
+dan `--brand-soft`, atau `--accent` di permukaan gelap, jadi token itu harus tetap kelihatan di atas menu samping; garis
+transparan pernah membuat animasinya tampak hilang padahal waktunya masih berjalan.
+
+**Kerangka.** `src/components/KerangkaKerja.jsx` hanya mengatur tampilan: menu samping, bilah atas, kolom isi, dan zoom
+aksesibilitas. Daftar menu, lencana, dan isi bilah atas tetap ditentukan `DosenLayout`, `AdminLayout`, dan `SuperLayout`,
+jadi hak akses dan tindakan per peran tidak pindah ke sini. Pencarian dan lonceng hanya ada di panel Kemahasiswaan, dan
+dosen tetap memakai bilah bawah di HP. `sampingGelap` memilih menu samping navy Super Admin.
+
+**Bentuk.** `index.css` › panel kerja hanya berisi bentuk dan jarak: bilah atas kapsul (`.kepala-kerja`, `.bilah-kerja`),
+judul halaman, dan sudut kartu. Semuanya di dalam `@media screen`, jadi lembar cetak tidak berubah, dan `.card` serta
+`.kartu` di luar panel ini tetap. Mode kontras membuat `.kepala-kerja` tidak tembus pandang.
+
+**Kartu angka.** `KartuAngka` di `Ui.jsx` menerima `ikon` dan `tanda` ("Saat ini"), dan `warnaBilah` hanya untuk bilah yang
+artinya bukan sekadar isian, misalnya hal yang menunggu. Tidak ada delta, panah naik, atau grafik mini: datanya keadaan saat
+ini, jadi tidak ada pembanding yang jujur.
+
+**Susunan dashboard.**
+
+- *Beranda dosen* (`Pantau.jsx`): judul dan konteks kelas dengan tombol Unggah Nilai, kartu kelengkapan kelas, tiga kartu
+  angka, bilah kelengkapan per tugas (0 berarti lintasan kosong), lalu daftar mahasiswa.
+- *Unggah Nilai* (`Unggah.jsx`): penunjuk lima langkah. Ia hanya penunjuk arah, jadi dosen yang sudah punya berkas tetap
+  boleh langsung mengunggah. Aturan simpan langsung dan ajukan ke Super Admin tidak berubah.
+- *Overview* (`Overview.jsx`): di HP pekerjaan paling atas. Di layar lebar empat kartu angka di atas, grafik di kiri, dan
+  pekerjaan menempel di kanan selama halaman digulir. Antrean tetap dari `usePekerjaanKemahasiswaan`, sumber lonceng.
+- *Pusat Kendali* (`Kendali.jsx`): kartu keputusan, empat kartu ringkasan, grafik selebar halaman, lalu aktivitas dan
+  rantai pengawasan. Angka yang tidak ikut pemilih periode ditandai "Saat ini" begitu periode lain dipilih.
+
+Kaca (`backdrop-filter`) hanya di `.kepala-kerja`, dan bayangan besar hanya untuk menu mengambang dan dialog.
+
 ## Panel Kemahasiswaan
 
 ### Tampilan
 
 Penggunanya staf Kemahasiswaan dan dosen dengan rentang usia yang lebar, dan panel ini dipakai bekerja
-setiap hari, jadi susunannya mengutamakan "cepat sampai ke pekerjaan" di atas hiasan. Polanya diambil dari
-dashboard admin modern (Dribbble, Pinterest): menu samping, bilah atas tipis dengan lokasi halaman, dan
-tabel dengan alat saring di kepalanya. Visualnya tetap VIBE: navy, toska hanya untuk lencana, tanpa gradien
-besar.
+setiap hari, jadi susunannya mengutamakan "cepat sampai ke pekerjaan" di atas hiasan: menu samping, bilah atas tipis
+dengan lokasi halaman, dan tabel dengan alat saring di kepalanya. Kerangkanya mengikuti Panel kerja.
 
-- **Menu samping putih** selebar 280px (`AdminLayout.jsx`; menu super admin navy, supaya dua panel itu
+- **Menu samping putih** selebar 272px (`AdminLayout.jsx`, `KerangkaKerja.jsx`; menu super admin navy, supaya dua panel itu
   tidak tertukar). Dua kelompok: *Kerja harian* (Overview, Data Mahasiswa, Input & Import Nilai bagi super admin
   atau Nilai Mahasiswa bagi admin biasa, Persetujuan Nilai Dosen bagi super admin selama masih ada usulan lama,
   Permintaan Saya atau Persetujuan Admin, Cetak Sertifikat, Angkatan) dan *Rujukan & catatan* (Kurikulum CPMK,
-  Program Studi, Data Master, Log Aktivitas). Lencana toska hanya untuk
+  Program Studi, Data Master, Log Aktivitas). Lencana hanya untuk
   pekerjaan yang menunggu (koreksi, usulan dosen, permintaan). Label menu tidak pernah dipotong "…": bila
   tidak muat, misalnya saat berlencana, ia turun ke baris kedua (`MenuSamping.jsx`). Di bawah 1024px menu
   pindah ke laci di balik tombol garis tiga.
@@ -936,7 +978,7 @@ hanya `transform` dan `opacity`, dan sekali jalan saat sesuatu muncul atau ditek
     `word-break: break-all`, dan `overflow-clip-margin: content-box`, yang menghasilkan "Desain Ko…", sama
     dengan select bawaan.
   - Base-select selebar pilihan terpilih, bukan selebar pilihan terpanjang. Select yang lebarnya tidak diatur
-    wadahnya (agregasi dan skala di Import CSV) diberi `min-w` setara select bawaan. Tanpa itu kolom skala
+    wadahnya (agregasi dan skala di Import Excel) diberi `min-w` setara select bawaan. Tanpa itu kolom skala
     tidak rata dan select-nya menyempit di HP sampai teksnya terpotong.
   - Setiap select di panel ini punya panah sendiri tepat sesudahnya (`select + svg`), dipusatkan dengan
     `inset-y-0 my-auto`, bukan `translate`. Properti `rotate` yang digabung dengan `translate` milik Tailwind
@@ -994,8 +1036,8 @@ Pengiriman) diteruskan ke Unggah Nilai di peramban, seperti `app/page.jsx`.
 
 ### Kerangka
 
-- **Menu samping putih** seperti panel Kemahasiswaan (`DosenLayout.jsx`, selebar 264px seperti panel super admin
-  dan mahasiswa) berisi Beranda, Unggah Nilai, dan Profil, tanpa lencana. Di atas menu ada kotak *Kelas Anda*
+- **Menu samping putih** seperti panel Kemahasiswaan (`DosenLayout.jsx`, `KerangkaKerja.jsx`; lihat Panel kerja)
+  berisi Beranda, Unggah Nilai, dan Profil, tanpa lencana. Di atas menu ada kotak *Kelas Anda*
   (unit penilai, semester, dan program studi).
 - **Bilah bawah berlabel di HP** (`BilahBawah.jsx`, label pendek "Unggah"), bukan tombol garis tiga.
 - **Bilah atas**: pemilih bahasa, tema, menu aksesibilitas, dan menu akun dalam ukuran bawaannya. Di HP logonya
@@ -1314,13 +1356,14 @@ disetujui. Tidak ada yang bisa menghapus.
   `src/server/dataMaster.js`; setiap perubahan dan log-nya dalam satu transaksi):
   - `/api/master/angkatan`: tambah `{ tahun, semester: 'Ganjil' | 'Genap' }`. Kode, label, dan periode
     dibentuk server (`2027`/`2027B`, `2027`/`2027 Genap`, `2027/2028`), tahunnya 2000 sampai satu tahun
-    di depan periode aktif, kembar 409. Ubah `{ id, label, alasan }`: hanya label, unik, dan bukan
-    angkatan terkunci (409). Periode masuk tidak bisa diubah karena semester setiap mahasiswanya
+    di depan periode aktif, kembar 409. Ubah `{ id, label, labelEn?, alasan }`: hanya label dan padanan
+    Inggrisnya, unik, dan bukan angkatan terkunci (409). Periode masuk tidak bisa diubah karena semester setiap mahasiswanya
     dihitung dari situ.
-  - `/api/master/prodi`: `jenis: 'fakultas'` (tambah `{ nama }`, ubah `{ nama, namaBaru, alasan }`) atau
-    `jenis: 'prodi'` (tambah `{ nama, jenjang: 'S1' | 'D3', fakultas }`, ubah `{ nama, namaBaru?,
-    jenjang?, fakultas?, alasan }`). Dikenali dari namanya; nama kembar 409. Ganti nama aman karena
-    mahasiswa dan dosen menyambung lewat id.
+  - `/api/master/prodi`: `jenis: 'fakultas'` (tambah `{ nama, namaEn? }`, ubah `{ nama, namaBaru, namaEn?,
+    alasan }`) atau `jenis: 'prodi'` (tambah `{ nama, namaEn?, jenjang: 'S1' | 'D3', fakultas }`, ubah `{ nama,
+    namaBaru?, namaEn?, jenjang?, fakultas?, alasan }`). Dikenali dari namanya; nama kembar 409. Ganti nama aman
+    karena mahasiswa dan dosen menyambung lewat id. `namaEn` dan `labelEn` paling panjang 191 karakter: tidak
+    dikirim berarti tetap, dikosongkan berarti kembali memakai kamus (lihat Kamus dan terjemahan).
   - `/api/master/mahasiswa`: tambah memakai `tambahAkun()` (isi sama dengan Akses Pengguna: email, sandi
     awal, NIM, nama, prodi, angkatan), jadi tercatat `TAMBAH_AKUN`. Ubah `{ nim, nama?, email?, prodi?,
     angkatanId?, alasan }`, dicatat `UBAH_AKUN` dengan sebelum/sesudah. **NIM tidak bisa diubah**:
@@ -1416,12 +1459,13 @@ yang komponennya tidak berbobot (bawaannya `null`) "dibagi otomatis" menurut mod
 Di Input Manual, tombol **Atur penilaian A.x** membuka penyunting untuk aspek yang sedang dipilih
 (`src/halaman/admin/EditorPenilaian.jsx`). Yang bisa diubah:
 
-- **Teks aspek**: nama, deskripsi, kegiatan PDP, mata kuliah, kegiatan Kemahasiswaan. Disimpan di
+- **Teks aspek**: nama, deskripsi, kegiatan PDP, mata kuliah, kegiatan Kemahasiswaan, beserta padanan Inggrisnya
+  (lihat Kamus dan terjemahan › Isi kurikulum). Disimpan di
   tabel `Aspek` (migrasi `aspek_dari_layar`) dan menimpa teks di `curriculum.js`. Struktur aspek
   (kode, cluster, semester) serta menambah dan mengarsipkan aspek diatur terpisah; lihat Mengelola
   aspek CPMK. Aspek yang diarsipkan tidak bisa diubah penilaiannya sampai dipulihkan (409).
 - **Komponen asesmen**: tambah (ID baru `<aspek>-<sumber>-B<n>`, mis. `A1-MK-B1`, tidak pernah
-  diganti), ubah nama, sumber, jenis MK, ranah, status resmi/draft, dan urutan. Komponen yang
+  diganti), ubah nama, nama Inggris, sumber, jenis MK, ranah, status resmi/draft, dan urutan. Komponen yang
   **sudah dinilai** (punya nilai atau pernah tercatat di riwayat) tidak bisa diganti sumbernya;
   arsipkan lalu buat yang baru.
 - **Hapus = arsip** (`Komponen.aktif = false`): tidak tampil dan tidak dihitung, nilainya tetap, dan
@@ -1555,7 +1599,9 @@ Setelah semester, sumber, dan angkatan dipilih, tersedia tiga cara kerja:
 
 - **Input manual** — tabel mahasiswa × komponen dengan sel angka 0–100. Sel yang diubah
   ditandai, sel di luar rentang ditolak, sel kosong tetap kosong (tidak pernah jadi nol).
-- **Import CSV** — menerima dua bentuk berkas, dan mengenalinya sendiri:
+- **Import Excel** (rapat 24 Okt 2026): `.xlsx` dibaca di peramban lalu masuk alur yang sama dengan CSV yang masih
+  diterima (`bacaBarisBerkas` dan `lembarKeTeks`; NIM yang tersimpan sebagai angka dikembalikan nol di depannya). Template
+  baku dan contoh rekap diunduh sebagai `.xlsx`. Menerima dua bentuk berkas, dan mengenalinya sendiri:
   - *Format baku* (`nim, komponen, nilai`) — divalidasi baris per baris.
   - *Rekap mentah* dari dosen (satu baris per mahasiswa, satu kolom per tugas) — sistem
     mendeteksi kolom NIM dan nama, menebak kolom mana memetakan ke komponen mana,
@@ -1699,7 +1745,7 @@ tersentuh. Perubahan yang tidak menyentuh data terkunci tidak membutuhkan alasan
 ini belum dikonfirmasi unit pengelola.
 
 Di layar Input Nilai, kolom **Alasan perubahan** ada di bawah tabel Input manual dan di atas tombol
-*Isi otomatis* pada Import CSV, sedangkan kolom **Alasan rollback** ada di atas daftar Riwayat batch.
+*Isi otomatis* pada Import Excel, sedangkan kolom **Alasan rollback** ada di atas daftar Riwayat batch.
 `simpanBatch()` dan `rollbackBatch()` di `src/lib/store.js` meneruskannya ke server. Kolom itu boleh
 dikosongkan; server baru menuntutnya bila penyimpanan atau rollback menyentuh data terkunci.
 
@@ -1867,6 +1913,10 @@ sungguhan: mahasiswa memilih komponen, menuliskan alasan, dan pengajuannya masuk
 ke antrean Kemahasiswaan. Ini tetap satu-satunya aksi tulis milik mahasiswa (R8)
 — pengajuan tidak mengubah nilai apa pun.
 
+Nama aspek dan keterangannya (Dashboard, Peta Perjalanan, lonceng, grafik nilai per aspek) turun ke baris kedua di layar
+sempit, tidak dipotong "…". Di HP 390px nama dulu hanya kebagian 166px dari 264px, dan keterangannya kehilangan nomor
+semesternya tanpa cara membacanya utuh.
+
 ## Rambatan nilai ke dashboard mahasiswa
 
 Nilai disimpan dengan memutakhirkan objek mahasiswa, membuang cache transkrip, lalu memberi
@@ -1979,7 +2029,8 @@ diputuskan, dengan aturan berikut:
   tampil sebagai kode mentah.
 - Kunci dirapikan sebelum dicocokkan (spasi dan baris baru dipadatkan), jadi penataan ulang kode
   tidak memutus terjemahan.
-- Urutannya: kamus `teks.js`, lalu penerjemah bawaan peramban, lalu bahasa Indonesia. Penerjemah
+- Urutannya: kolom Inggris basis data (lihat Isi kurikulum), kamus `teks.js`, pola pesan server (lihat Pesan
+  server), penerjemah bawaan peramban, lalu bahasa Indonesia. Penerjemah
   peramban hanya ada di Chromium versi baru dan berjalan di perangkat; ia hanya mengisi kalimat
   yang belum ada di kamus dan tidak pernah menimpanya. Hasil mesin yang kehilangan penanda `{n}`
   dibuang. `dumpOtomatis()` di konsol mencetak hasil mesin untuk ditempel ke `teks.js`.
@@ -1989,7 +2040,7 @@ diputuskan, dengan aturan berikut:
   memperingatkannya di konsol pengembangan dan memintanya ke penerjemah peramban. Nilai kosong berarti
   belum diterjemahkan; `npm run bahasa:sync` menulis kunci baru dengan nilai kosong.
 - **Sasaran log dari server** ditulis sebagai kalimat Indonesia jadi (`akun x@umn.ac.id`, `angkatan 2024`,
-  `penguncian (2 mahasiswa)`). `labelSasaran` di `admin/Log.jsx` menerjemahkannya menurut dua belas pola
+  `penguncian (2 mahasiswa)`). `labelSasaran` di `src/lib/labelLog.js` menerjemahkannya menurut dua belas pola
   awalannya, di halaman Log dan di Aktivitas terbaru Pusat Kendali; yang tidak dikenali tampil apa adanya.
 - Penanda `{dalamKurungKurawal}` wajib ada juga di sisi Inggris. Nama penanda tidak boleh memakai
   tanda hubung: `{ rata-rata: … }` dibaca sebagai pengurangan dan menggagalkan kompilasi.
@@ -2006,13 +2057,72 @@ diputuskan, dengan aturan berikut:
 - `KartuAngka` tidak memanggil `t()`; pemanggilnya mengirim teks yang sudah diterjemahkan. Dulu Overview
   menerjemahkan kalimat yang sudah diterjemahkan, dan kamus memperingatkan kalimat Inggris yang tidak
   dikenalnya.
-- Isi data (nama fakultas, program studi, angkatan) tidak dilewatkan ke `t()`. `FilterBar` hanya
-  menerjemahkan pilihan "Semua"; dulu seluruh pilihan dilewatkan ke `t()` dan memicu peringatan "belum ada
-  padanan Inggris" untuk nama fakultas seperti "Teknik & Informatika".
 - Pilihan dropdown ditampilkan dalam bahasa aktif, tetapi nilai yang dikirim tetap kalimat
   Indonesianya, karena penyaringnya membandingkan dengan data.
 - Menu admin memakai kata "Penilaian", bukan "Nilai": kunci `'Nilai'` sudah berarti kepala
   kolom tabel (satu angka), dan satu kunci tidak bisa melayani dua arti.
+- Nilai yang disisipkan ke penanda ikut diterjemahkan bila kalimatnya ada di kamus, jadi `t('komponen {komponen} pada
+  {kode} belum dinilai', { komponen: k.label })` memakai nama tugas berbahasa Inggris tanpa perlu `t()` kedua.
+
+#### Isi kurikulum
+
+Rapat 24 Okt 2026 memutuskan nama tugas dan deskripsi CPMK ikut diterjemahkan. Layar cukup memanggil `t(k.label)`,
+`t(a.nama)`, dan `t(a.deskripsi)`; padanannya datang dari dua tempat:
+
+- **Isi bawaan** dari `curriculum.js` (nama aspek, deskripsi, program, nama tugas, bukti indikator) ada di kamus
+  `teks.js`. `test:bahasa` membaca `curriculum.js` langsung, jadi tugas bawaan baru tanpa padanan langsung gagal.
+- **Isian dari layar** disimpan di kolom `Komponen.labelEn` dan `Aspek.namaEn`, `deskripsiEn`, `pdpEn`, `mkEn`,
+  `engagementEn` (migrasi `kolom_bahasa_inggris`). `isiKurikulum()` memasangnya ke `src/lib/kamusData.js` dengan
+  kalimat Indonesia sebagai kunci, dan kolom ini menang atas kamus. Kolom kosong berarti memakai kamus; kalimat yang
+  sudah diubah dan kolomnya kosong jatuh ke penerjemah peramban, lalu bahasa Indonesia.
+
+Kolomnya diisi dari editor penilaian (penyunting aspek, tiap baris komponen) dan formulir tambah aspek
+(`IsianInggris.jsx`). Contoh di dalam kolom adalah terjemahan bawaan yang berlaku selama kolomnya kosong. Mengubahnya
+mengikuti aturan yang sama dengan teks aspek: super admin langsung, admin biasa lewat persetujuan, tercatat di log,
+dan tidak mengubah hasil mahasiswa. Indikator tidak punya kolom karena belum bisa diubah dari layar.
+
+Templat Excel dosen mengikuti bahasa aktif. Kolomnya dikenali lewat kode tugas di judulnya (`cocokkanKolom`), jadi
+templat berbahasa apa pun tetap terbaca saat diunggah.
+
+#### Nama fakultas, program studi, dan angkatan
+
+Keputusan 3 Nov 2026: nama-nama ini ikut bahasa aktif, jadi layar memanggil `t(s.program)`, `t(s.faculty)`, dan
+`t(c.label)`. Padanannya datang dari tiga tempat:
+
+- **Nama bawaan** (`MASTER_AWAL` di `data.js`) ada di kamus `teks.js`, memakai nama di menu situs umn.ac.id/en. Situs
+  itu tidak seragam antarhalaman (misalnya Jurnalistik tertulis *Journalism & Content Creation*, *Digital Journalism*,
+  dan *Multimedia Journalism*), jadi nama yang resmi sebaiknya diisi dari layar. Fakultas ditulis tanpa "Faculty of",
+  karena `'Fakultas {nama}'` yang menambahkannya. `test:bahasa` membaca `MASTER_AWAL`, jadi nama bawaan baru tanpa
+  padanan langsung gagal.
+- **Label angkatan** dibentuk server (`2025`, `2025 Genap`), jadi diterjemahkan `POLA_EN`: `2025 Genap` menjadi
+  `2025 Even`, dan angka saja tetap angkanya.
+- **Isian dari layar** ada di kolom `Fakultas.namaEn`, `ProgramStudi.namaEn`, dan `Angkatan.labelEn` (migrasi
+  `nama_inggris_master`), diisi dari formulir di Data Master. `isiMaster()` memasangnya ke `kamusData.js`, dan kolom
+  ini menang atas kamus. Nama baru dengan kolom kosong jatuh ke penerjemah peramban, lalu bahasa Indonesia.
+
+Hanya tulisannya yang berganti. Yang dibandingkan dengan data tetap nama aslinya: nilai pilihan saringan, parameter
+tautan (`?angkatan=2025 Genap`), isi permintaan ke server, dan isi log. Dua hal yang mudah terlewat:
+
+- Konfirmasi pengesahan angkatan meminta label yang tertulis di layar (*Type 2025 Even to confirm*), menerima label
+  aslinya juga, dan selalu mengirim label asli, karena server membandingkan dengan `Angkatan.label`.
+- Pencarian prodi di Data Mahasiswa dan Cetak Sertifikat mencocokkan kedua bahasa, dan kolomnya diurutkan menurut yang
+  tertulis di layar. Ekspor CSV Data Mahasiswa dan rekap Program Studi ikut bahasa aktif.
+
+#### Pesan server
+
+Pesan `new GalatApi()` dan pesan aturan di `src/lib` ditulis dalam bahasa Indonesia. Layar menerjemahkannya saat
+menerimanya (`setGalat(t(e.message))`), bukan saat menampilkannya, supaya kalimat yang sudah diterjemahkan tidak
+diterjemahkan lagi. Tiga bentuk ditangani `terjemah()` di `bahasa.jsx`:
+
+- satu kalimat utuh ada di kamus. `test:bahasa` memindai `new GalatApi('...')` dan `pesan: '...'`, jadi pesan baru
+  tanpa padanan langsung gagal;
+- kalimat yang dirakit dengan angka atau nama dicocokkan dengan `POLA_EN` di `teks.js`, dan bagian yang ditangkap
+  diterjemahkan lagi bila dikenal (sebab di dalam pesan sertifikat, misalnya). Pola baru dipakai juga untuk ringkasan
+  permintaan kepada super admin. Pemindai tidak melihat pesan rakitan, jadi saat menambah pesan seperti itu, tambahkan
+  polanya dan contohnya di `ujiIsiInggris` (`scripts/smoke.jsx`);
+- gabungan beberapa pesan (spasi, `; `, koma, atau `dan`) dikenal bila setiap bagiannya dikenal.
+
+Yang ditulis pengguna (alasan, catatan) dan catatan lama di log tidak diterjemahkan.
 
 ### Pemilih bahasa
 
@@ -2237,14 +2347,17 @@ panah kiri/kanan). Bagian yang mudah rusak:
 | 4 | Peta Perjalanan, Riwayat | selesai |
 | 5 | Sertifikat | selesai: halaman mahasiswa, akses cetak dua lapis (rapat 24 Okt 2026), dan cetak dari panel Kemahasiswaan |
 | 6 | Admin: panel input nilai | selesai (lihat fase 7) |
-| 7 | Input & Import Nilai: gerbang semester, input manual, import CSV, rollback, koreksi | selesai |
+| 7 | Input & Import Nilai: gerbang semester, input manual, import Excel, rollback, koreksi | selesai |
 | 8 | Kurikulum, Angkatan & Sertifikat, Log | sebagian: halaman Angkatan, ubah bobot di halaman Kurikulum, aturan data terkunci, pencatatan dan pembacaan log, halaman Log Aktivitas, serta kurikulum yang dibaca dari basis data sudah ada |
 | 9 | Poles cetak, responsif, aksesibilitas | sebagian (cetak & reduced-motion sudah) |
 | — | Panel Kemahasiswaan lainnya: Overview, Data Mahasiswa beserta detailnya, Program Studi, Persetujuan Nilai Dosen | selesai |
 | — | Panel dosen: Beranda (pantau) dan Unggah Nilai (rekap Excel, langsung tersimpan) | selesai, sesuai rapat 24 Okt 2026; Penilaian tiga langkah dan Riwayat Pengiriman dihapus (lihat Panel Dosen) |
 | — | Hak peran rapat 24 Okt 2026: admin hanya melihat nilai, tanda final dan bobot dari admin diajukan, data master hanya super admin | selesai (lihat Hak peran) |
 | — | Persetujuan dua lapis rapat 24 Okt 2026: pengajuan ubah nilai dan akses cetak sertifikat, beserta pencabutan akses cetak dan catatan cetak | selesai (lihat Persetujuan dua lapis) |
-| — | Basis data MySQL: 24 tabel, 18 migrasi, 39 pintu API, sesi cookie | selesai |
+| — | Basis data MySQL: 24 tabel, 20 migrasi, 39 pintu API, sesi cookie | selesai |
+| — | Kerangka dan susunan panel dosen, Kemahasiswaan, dan Super Admin mengikuti video referensi; warnanya tetap navy dan toska (lihat Panel kerja) | selesai 3 Nov 2026 |
+| — | Cek ulang semua halaman rapat 24 Okt 2026: bahasa Inggris, tampilan HP 360px sampai 1536px, kontras terang dan gelap, papan ketik | selesai 3 Nov 2026 |
+| — | Bahasa Inggris untuk isi kurikulum, pesan server, serta nama fakultas, prodi, dan angkatan (rapat 24 Okt 2026, keputusan 3 Nov 2026) | selesai; draf terjemahan isi kurikulum dan nama prodi menunggu diperiksa tim (lihat Kamus dan terjemahan) |
 | — | Akses cetak sertifikat: admin meninjau di detail mahasiswa (mode tinjau) dan selalu meneruskan dengan rekomendasi disarankan/tidak disarankan beserta alasan; Super Admin yang menyetujui atau menolak (keputusan 26 Okt 2026, dikerjakan 2 Nov 2026) | selesai; lonceng untuk mahasiswa belum |
 | — | Pembaruan dari Super Admin di lonceng admin biasa, status dibaca per akun (rapat 24 Okt 2026) | selesai; sejak 31 Okt 2026 hanya yang berkaitan dengan admin itu (lihat Panel Kemahasiswaan › Lonceng) |
 | — | Log Aktivitas admin biasa tanpa tindakan Super Admin, kedua tab (31 Okt 2026) | selesai (lihat Log aktivitas); Log Aktivitas super admin tetap memuat semuanya |
@@ -2260,7 +2373,6 @@ Yang belum dikerjakan:
 - mengubah indikator perilaku dan pengaturan selain bobot (ambang sertifikat, mode penguncian,
   mode agregasi, dan lain-lain) dari layar; menambah cluster, area, atau fase baru. Aspek (tambah,
   kode, semester, cluster, arsip), teks aspek, komponen, dan bobot sudah bisa diubah;
-- sisa keputusan rapat 24 Okt 2026: kolom bahasa Inggris untuk nama tugas dan aspek;
 - penerbitan sertifikat yang membekukan nomor, tanggal, dan nilai — kini kelayakan dihitung
   langsung, jadi sertifikat ikut berubah bila nilai diubah sesudah angkatan dikunci;
 - ganti dan lupa kata sandi di aplikasi ini, masuk lewat SSO kampus, serta pembatasan percobaan

@@ -1323,6 +1323,70 @@ body {
   bottom: calc(var(--tinggi-bilah-bawah) + 20px);
 }
 
+/* ------------------------------- panel kerja -------------------------------- */
+/* Kerangka bersama panel dosen, Kemahasiswaan, dan Super Admin (KerangkaKerja.jsx): bilah atas kapsul dan bentuk kartu. Di sini
+   hanya bentuk dan jarak. Warnanya tetap token :root dan .dark yang sama dengan panel lain, jadi tidak ada token warna
+   baru. Di dalam @media screen supaya hasil cetak tidak berubah. Lihat README.md › Panel kerja. */
+@media screen {
+  /* Bilah atas setinggi 60px plus jarak: unsur yang difokus dengan Tab tidak tertutup (WCAG 2.4.11). */
+  html:has(.panel-kerja) {
+    scroll-padding-top: 100px;
+  }
+
+  /* Isi yang tergulir di celah atas bilah dikaburkan, seperti .bilah-kaca. */
+  .kepala-kerja {
+    padding: 8px 8px 6px;
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+  @media (min-width: 640px) {
+    .kepala-kerja {
+      padding: 12px 24px 8px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .kepala-kerja {
+      padding: 16px 20px 8px;
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .kepala-kerja {
+      background: var(--bg);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+  .bilah-kerja {
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: 0 1px 2px rgba(16, 20, 50, 0.04);
+  }
+  /* Tombol ikon di bilah atas seragam 12px; TombolTema dan menu aksesibilitas dipakai juga panel mahasiswa, jadi diatur
+     di sini, bukan di komponennya. */
+  .bilah-kerja button.grid {
+    border-radius: 12px;
+  }
+
+  /* Judul halaman lebih besar dan lebih tenang daripada isi: satu titik mulai yang jelas di tiap halaman. */
+  .panel-kerja main h1 {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+  @media (min-width: 1024px) {
+    .panel-kerja main h1 {
+      font-size: 32px;
+    }
+  }
+
+  .panel-kerja main :is(.card, .kartu) {
+    border-radius: 20px;
+  }
+}
+
 /* ---------------------------- menu aksesibilitas ----------------------------- */
 /* Berlaku di keempat panel (mahasiswa, dosen, Kemahasiswaan, super admin). Setelan dari src/lib/aksesibilitas.js;
    useAkarAksesibilitas() (MenuAksesibilitas.jsx) memasang penanda .akar-a11y dan kelas a11y-* di akar panel. Ukuran
@@ -1472,6 +1536,11 @@ body {
   }
   .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .teks-tunggu {
     color: var(--teks-tunggu);
+  }
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .kepala-kerja {
+    background: var(--bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
   /* Ubin menu yang tidak aktif hanya dibedakan dari latarnya oleh warna permukaan; di mode kontras diberi garis tepi. */
   .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .ubin-a11y[aria-pressed='false'] {

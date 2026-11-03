@@ -35,6 +35,29 @@ export function barisCSV(teks) {
   return semua
 }
 
+const BATAS_UKURAN = 5 * 1024 * 1024
+const salahBerkas = (teks) => new Error(teks)
+
+/**
+ * Baris mentah berkas unggahan, baris pertama judul; Excel dibaca dari lembar pertama, di peramban. Galatnya kalimat
+ * kamus, jadi pemanggil menampilkannya lewat t(e.message). Dipakai Unggah Nilai dosen dan Import Excel super admin.
+ */
+export async function bacaBarisBerkas(berkas) {
+  const nama = berkas.name.toLowerCase()
+  if (berkas.size > BATAS_UKURAN) throw salahBerkas('Berkasnya lebih dari 5 MB. Pastikan ini rekap nilai kelas Anda.')
+  if (nama.endsWith('.csv')) return barisCSV(await berkas.text())
+  if (nama.endsWith('.xls')) {
+    throw salahBerkas('Berkas .xls (Excel lama) belum bisa dibaca. Buka di Excel, simpan sebagai .xlsx, lalu unggah lagi.')
+  }
+  if (!nama.endsWith('.xlsx')) throw salahBerkas('Pilih berkas .xlsx atau .csv.')
+  const { readSheet } = await import('read-excel-file/browser')
+  try {
+    return await readSheet(berkas)
+  } catch {
+    throw salahBerkas('Berkas ini tidak terbaca sebagai Excel. Simpan ulang sebagai .xlsx lalu unggah lagi.')
+  }
+}
+
 export function uraiCSV(teks) {
   const semua = barisCSV(teks)
   if (!semua.length) return { kepala: [], baris: [] }

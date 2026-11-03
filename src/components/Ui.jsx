@@ -64,36 +64,42 @@ export function JudulHalaman({ judul, keterangan, aksi = null, children = null }
 /**
  * Kartu satu angka utama: judul, angka besar dengan satuannya, lalu (bila ada) satu persentase dengan bilah tipis
  * yang tumbuh saat tampil. Semua teks datang sudah diterjemahkan oleh pemanggil; komponen ini tidak memanggil t()
- * supaya kalimat berisian tidak diterjemahkan dua kali. `kaki` untuk isi tambahan di dasar kartu.
+ * supaya kalimat berisian tidak diterjemahkan dua kali. `kaki` untuk isi tambahan di dasar kartu. `ikon`: ikon kecil di
+ * samping judul. `tanda`: catatan singkat di ujung judul, misalnya "Saat ini" untuk angka yang tidak ikut pilihan periode.
+ * `warnaBilah`: warna bilah persentase bila artinya bukan sekadar isian data, misalnya hal yang menunggu.
  */
-export function KartuAngka({ nilai, satuan, judul, keterangan, persen, persenLabel, kaki }) {
+export function KartuAngka({ nilai, satuan, judul, keterangan, persen, persenLabel, kaki, ikon: Ikon = null, tanda = null, warnaBilah = 'var(--brand-ink)', className = '' }) {
   return (
-    <Card className="px-6 py-6">
-      <p className="text-[15px] font-semibold text-ink-2">{judul}</p>
-      <p className="mt-2 flex items-baseline gap-2">
-        <span className="text-[42px] font-extrabold leading-none tracking-tight text-ink tabular-nums">{nilai}</span>
-        {satuan ? <span className="text-[17px] font-semibold text-ink-2">{satuan}</span> : null}
+    <section className={'card flex flex-col px-5 py-4 ' + className}>
+      <p className="flex items-start gap-2 text-[14px] font-semibold leading-snug text-ink-2">
+        {Ikon ? <Ikon size={16} className="mt-px shrink-0" /> : null}
+        <span className="min-w-0 flex-1">{judul}</span>
+        {tanda ? <span className="shrink-0 text-[12px] font-bold text-ink-2">{tanda}</span> : null}
+      </p>
+      <p className="mt-2.5 flex flex-wrap items-baseline gap-x-2">
+        <span className="text-[34px] font-bold leading-none tracking-tight text-ink tabular-nums">{nilai}</span>
+        {satuan ? <span className="text-[15px] font-semibold text-ink-2">{satuan}</span> : null}
       </p>
 
       {typeof persen === 'number' ? (
-        <div className="mt-4">
+        <div className="mt-3">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-[14px] text-ink-2">{persenLabel}</span>
-            <span className="text-[17px] font-extrabold tabular-nums text-ink">{persen}%</span>
+            <span className="text-[13px] text-ink-2">{persenLabel}</span>
+            <span className="text-[14px] font-bold tabular-nums text-ink">{persen}%</span>
           </div>
           <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-[var(--grid)]">
             <div
-              className="bilah-tumbuh h-full rounded-full bg-brand-ink"
-              style={{ width: Math.max(2, Math.min(100, persen)) + '%' }}
+              className="bilah-tumbuh h-full rounded-full"
+              style={{ width: Math.min(100, persen) + '%', background: warnaBilah }}
             />
           </div>
         </div>
       ) : null}
 
-      {keterangan ? <p className="mt-3 text-[14.5px] leading-relaxed text-ink-2">{keterangan}</p> : null}
+      {keterangan ? <p className="mt-2.5 text-[13px] leading-snug text-ink-2">{keterangan}</p> : null}
 
       {kaki}
-    </Card>
+    </section>
   )
 }
 
@@ -363,34 +369,6 @@ export function Pill({ color, children }) {
 }
 
 /* -------------------------------- statistik ------------------------------- */
-
-export function StatTile({ label, value, unit, hint, icon: Icon, tone = 'brand', trend }) {
-  return (
-    <div className="card card-pad">
-      <div className="flex items-start justify-between gap-3">
-        <span className="label">{label}</span>
-        {Icon ? (
-          <span
-            className={
-              'grid h-8 w-8 place-items-center rounded-lg ' +
-              (tone === 'brand' ? 'bg-brand-soft text-brand-ink' : TONES[tone])
-            }
-          >
-            <Icon size={16} />
-          </span>
-        ) : null}
-      </div>
-      <p className="mt-3 flex items-baseline gap-1.5">
-        <span className="text-[30px] font-extrabold leading-none tracking-tight text-ink tabular-nums">{value}</span>
-        {unit ? <span className="text-sm font-bold text-ink-3">{unit}</span> : null}
-      </p>
-      {hint ? <p className="mt-2 text-[13px] leading-snug text-ink-2">{hint}</p> : null}
-      {trend ? (
-        <p className="mt-2 text-[13px] font-semibold text-[var(--good)]">{trend}</p>
-      ) : null}
-    </div>
-  )
-}
 
 export function ScoreBar({ value, color = 'var(--c1)', target, height = 10 }) {
   return (

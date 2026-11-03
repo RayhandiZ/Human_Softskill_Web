@@ -1,5 +1,5 @@
 import { getKomponenById } from './curriculum.js'
-import { uraiCSV } from './csv.js'
+import { susunCSV, uraiCSV } from './csv.js'
 
 /* Hanya mengusulkan; keputusan akhir ada di layar pemetaan; lihat README.md › Pengenalan berkas mentah. */
 
@@ -125,7 +125,7 @@ export const SKALA_PILIHAN = [
   { nilai: 4, label: '0–4 (dikali 25)' },
 ]
 
-/** `desimal`: Import CSV Kemahasiswaan membulatkan ke bilangan bulat (0); unggahan dosen menyimpan dua desimal, sama
+/** `desimal`: Import Excel Kemahasiswaan membulatkan ke bilangan bulat (0); unggahan dosen menyimpan dua desimal, sama
     dengan isian manualnya, supaya 92,5 tidak diam-diam menjadi 93. */
 export const konversi = (n, skala, desimal = 0) =>
   n == null ? null : Math.round((n / skala) * 100 * 10 ** desimal) / 10 ** desimal
@@ -142,6 +142,19 @@ function cariKolom(kepala, kandidat) {
     if (kandidat.some((c) => n.includes(normal(c)))) return k
   }
   return null
+}
+
+/**
+ * Baris lembar Excel (bacaBarisBerkas di csv.js) sebagai teks untuk analisaBerkas. Excel menyimpan NIM yang diketik
+ * sebagai angka tanpa nol di depannya, jadi dikembalikan dari `daftarNim` supaya tetap dikenali.
+ */
+export function lembarKeTeks(baris, daftarNim = []) {
+  const teksSel = (v) => (v == null ? '' : String(v))
+  const [kepala = [], ...isi] = baris
+  const judul = kepala.map(teksSel)
+  const iNim = judul.indexOf(cariKolom(judul, KATA_NIM))
+  const denganNol = new Map(daftarNim.map((n) => [n.replace(/^0+/, ''), n]))
+  return susunCSV(judul, isi.map((r) => r.map((v, i) => (i === iNim ? (denganNol.get(teksSel(v)) ?? teksSel(v)) : teksSel(v)))))
 }
 
 export function analisaBerkas(teks, { komponenList }) {

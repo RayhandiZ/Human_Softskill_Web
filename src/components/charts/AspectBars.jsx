@@ -22,7 +22,7 @@ export default function AspectBars({
         head: ['Kode', 'Aspek', 'Semester', 'Nilai'],
         rows: rows.map((r) => [
           r.aspek.kode,
-          r.aspek.nama,
+          t(r.aspek.nama),
           r.aspek.semester,
           r.terkunci ? 'Belum dibuka' : (r.nilai ?? 'Belum dinilai'),
         ]),
@@ -37,7 +37,7 @@ export default function AspectBars({
                 <span className="flex min-w-0 items-center gap-2 text-[13px]">
                   <span className="h-2.5 w-2.5 shrink-0 rounded-[3px]" style={{ background: warna }} />
                   <span className="font-bold text-ink">{r.aspek.kode}</span>
-                  <span className="truncate text-ink-2">{r.aspek.nama}</span>
+                  <span className="min-w-0 leading-snug text-ink-2">{t(r.aspek.nama)}</span>
                 </span>
                 <span className="shrink-0">
                   {r.terkunci ? (

@@ -70,7 +70,7 @@ function SebaranAspek({ t }) {
         {dinilai.map((a) => (
           <span
             key={a.aspekId}
-            title={a.aspek.kode + ' ' + a.aspek.nama + ' — ' + a.nilai}
+            title={a.aspek.kode + ' ' + teks(a.aspek.nama) + ' — ' + a.nilai}
             className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-ink ring-2 ring-[var(--surface)]"
             style={{ left: a.nilai + '%' }}
           />
@@ -465,17 +465,18 @@ function BarisAspek({ a, terbuka, onToggle }) {
         onClick={onToggle}
         aria-expanded={terbuka}
         aria-controls={idRinci}
-        className="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-surface-2 focus-visible:outline-offset-[-3px] sm:px-6"
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-surface-2 focus-visible:outline-offset-[-3px] sm:gap-4 sm:px-6"
       >
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-surface-2 text-[13px] font-bold text-ink">
           {a.aspek.kode}
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-bold text-ink">{a.aspek.nama}</span>
-          <span className="mt-0.5 flex items-center gap-1.5 text-[13px] text-ink-2">
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: area?.warna }} />
-            <span className="truncate">
+          {/* Nama dan keterangannya turun ke baris kedua, tidak dipotong "…": di HP 390px keterangannya dulu kehilangan semesternya. */}
+          <span className="block text-[15px] font-bold leading-snug text-ink">{t(a.aspek.nama)}</span>
+          <span className="mt-0.5 flex items-start gap-1.5 text-[13px] leading-snug text-ink-2">
+            <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full" style={{ background: area?.warna }} />
+            <span className="min-w-0">
               {area?.nama} · {t('Semester {n}', { n: a.aspek.semester })}
             </span>
           </span>
@@ -513,8 +514,8 @@ function BarisAspek({ a, terbuka, onToggle }) {
                 {a.komponen.map((k) => (
                   <li key={k.id} className="flex items-center gap-3 text-[14px]">
                     <span className="min-w-0 flex-1 text-ink">
-                      {k.label}
-                      <span className="text-ink-3"> · {SUMBER[k.sumber]?.label ?? k.sumber}</span>
+                      {t(k.label)}
+                      <span className="text-ink-3"> · {t(SUMBER[k.sumber]?.label ?? k.sumber)}</span>
                     </span>
                     <span className="shrink-0 font-bold text-ink">
                       {k.terisi ? k.nilai : <span className="font-semibold text-ink-3">{t('belum masuk')}</span>}
@@ -686,7 +687,7 @@ function PerjalananSemester({ t }) {
 
       <Link
         href="/mahasiswa/peta"
-        className="mt-5 inline-flex items-center gap-1.5 text-[14px] font-bold text-brand-ink hover:underline"
+        className="mt-5 inline-flex min-h-[44px] items-center gap-1.5 text-[14px] font-bold text-brand-ink hover:underline sm:min-h-0"
       >
         {teks('Buka Peta Perjalanan')}
         <IconChevronRight size={16} />
@@ -764,7 +765,7 @@ export default function Dashboard() {
             aria-controls="ubin-rinci"
             className="mt-auto flex w-full items-center gap-2 border-t border-line pt-3.5 text-left sm:hidden"
           >
-            <span className="min-w-0 flex-1 truncate text-[13.5px] text-ink-2">
+            <span className="min-w-0 flex-1 text-[13.5px] leading-snug text-ink-2">
               {teks('{n}/{total} dinilai · sertifikat {keadaan}', {
                 n: akhir.aspekDinilai,
                 total: akhir.aspekTotal,

@@ -1,4 +1,5 @@
 import { CONFIG, terapkanKonfigurasi } from './config.js'
+import { pasangPadananData } from './kamusData.js'
 
 /* Struktur enam lapis; lihat README.md › Struktur kurikulum enam lapis. */
 
@@ -234,6 +235,8 @@ function resolveSemester(aspek) {
 
 /** Teks aspek yang boleh diubah dari layar (tabel Aspek). */
 export const BIDANG_ASPEK = ['nama', 'deskripsi', 'pdp', 'mk', 'engagement']
+/** Padanan Inggris tiap teks aspek; kosong berarti memakai kamus teks.js. Lihat src/lib/kamusData.js. */
+export const BIDANG_ASPEK_EN = BIDANG_ASPEK.map((b) => b + 'En')
 /** Struktur aspek yang boleh diubah dari layar (tabel Aspek): kode tampilan, cluster (area dan fase ikut), semester. */
 export const BIDANG_STRUKTUR = ['kode', 'cluster', 'semester']
 
@@ -526,6 +529,10 @@ export function isiKurikulum({ versi, komponen, arsip, aspek, indikator, konfigu
   isiUlang(INDIKATOR, indikator ?? INDIKATOR_BAWAAN.map((x) => ({ ...x, sumber: [...x.sumber] })))
   terapkanKonfigurasi(konfigurasi ?? {})
   pasangCluster()
+  pasangPadananData('kurikulum', [
+    ...[...KOMPONEN, ...KOMPONEN_ARSIP].map((x) => [x.label, x.labelEn]),
+    ...Object.values(ASPEK_TIMPA).flatMap((a) => BIDANG_ASPEK.map((b) => [a[b], a[b + 'En']])),
+  ])
 }
 
 /* ------------------------------- pencarian -------------------------------- */

@@ -269,7 +269,8 @@ AKSI.UBAH_PENILAIAN = {
       ...r.baru.komponen.filter((k) => k.id == null).map((k) => '+ komponen baru: ' + k.label + ' (' + k.sumber + (k.jenis ? ', ' + k.jenis : '') + ')'),
       ...r.beda.diubah.map((id) => {
         const k = r.baru.komponen.find((x) => x.id === id)
-        return '~ ' + id + ': ' + dariId.get(id).label + ' → ' + k.label + ' (' + k.sumber + (k.jenis ? ', ' + k.jenis : '') + ', ' + k.ranah + ', ' + k.status + ')'
+        const en = (dariId.get(id).labelEn ?? null) !== (k.labelEn ?? null) ? ', EN: ' + (k.labelEn ?? '–') : ''
+        return '~ ' + id + ': ' + dariId.get(id).label + ' → ' + k.label + ' (' + k.sumber + (k.jenis ? ', ' + k.jenis : '') + ', ' + k.ranah + ', ' + k.status + en + ')'
       }),
       ...r.beda.diarsipkan.map((id) => '− ' + id + ' ' + dariId.get(id).label + ' → arsip'),
       ...r.beda.dipulihkan.map((id) => '↺ ' + id + ' ' + dariId.get(id).label + ' dipulihkan dari arsip'),

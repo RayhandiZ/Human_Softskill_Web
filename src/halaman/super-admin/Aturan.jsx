@@ -232,7 +232,7 @@ function KartuPeriode() {
       await ubahPeriode({ tahun: tujuan.tahun, semester: tujuan.semester, alasan: alasan.trim() })
       tutup()
     } catch (err) {
-      setGalat(err.message)
+      setGalat(t(err.message))
     } finally {
       setSibuk(false)
     }
@@ -248,7 +248,7 @@ function KartuPeriode() {
       <div className="card-pad space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div>
-            <p className="text-[24px] font-extrabold leading-tight text-ink">{labelPeriode(PERIODE_AKTIF)}</p>
+            <p className="text-[24px] font-extrabold leading-tight text-ink">{t(labelPeriode(PERIODE_AKTIF))}</p>
             <p className="mt-1 text-[12.5px] text-ink-2">
               {t(ASAL_PERIODE.basisData ? 'Tersimpan di basis data' : 'Bawaan kode, belum pernah dipindah')}
             </p>
@@ -288,7 +288,7 @@ function KartuPeriode() {
                       return (
                         <tr key={c.id} className="border-b border-line last:border-0">
                           <th scope="row" className="py-2 pr-3 text-[13.5px] font-semibold text-ink">
-                            {c.label}
+                            {t(c.label)}
                           </th>
                           <td className="px-3 py-2 text-[13.5px] text-ink-2">{keadaanSemester(sebelum, t)}</td>
                           <td className={'py-2 pl-3 text-[13.5px] ' + (lintas ? 'font-bold text-ink' : 'text-ink-2')}>

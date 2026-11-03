@@ -98,14 +98,16 @@ model Profil {                 // data milik pengguna sendiri (profil.js)
 }
 
 model Fakultas {
-  id    Int            @id @default(autoincrement())
-  nama  String         @unique
-  prodi ProgramStudi[]
+  id     Int            @id @default(autoincrement())
+  nama   String         @unique
+  namaEn String?        // padanan Inggris; kosong = kamus teks.js (src/lib/kamusData.js)
+  prodi  ProgramStudi[]
 }
 
 model ProgramStudi {
   id          Int         @id @default(autoincrement())
   nama        String      @unique
+  namaEn      String?                      // padanan Inggris; kosong = kamus teks.js (src/lib/kamusData.js)
   jenjang     String      @db.VarChar(2)   // S1 | D3
   fakultasId  Int
   fakultas    Fakultas    @relation(fields: [fakultasId], references: [id])
@@ -117,6 +119,7 @@ model Angkatan {
   id              String         @id          // '2026', '2025B', '2025', '2024'
   tahun           Int
   label           String
+  labelEn         String?                     // padanan Inggris; kosong = kamus dan POLA_EN teks.js (src/lib/kamusData.js)
   periodeTahun    String                      // '2025/2026'
   periodeSemester SemesterAkad
   status          StatusAngkatan @default(AKTIF)
@@ -187,6 +190,7 @@ model Komponen {                // sumber daftar tugas tiap aspek; isi awalnya d
   aspekId    String                           // 'A1' (tanpa FK, aspek hidup di kode)
   sumber     Sumber
   label      String
+  labelEn    String?                          // padanan Inggris; kosong = kamus teks.js (src/lib/kamusData.js)
   jenis      String?                          // TUGAS | SIKAP | UTS | UAS
   ranah      String    @default("kognitif") @db.VarChar(10)   // kognitif | afektif
   resmi      Boolean   @default(true)
@@ -205,6 +209,11 @@ model Aspek {                   // aspek CPMK yang diubah atau ditambah dari lay
   pdp        String?
   mk         String?
   engagement String?
+  namaEn       String?                       // padanan Inggris teks di atas; kosong = kamus teks.js (src/lib/kamusData.js)
+  deskripsiEn  String?   @db.Text
+  pdpEn        String?
+  mkEn         String?
+  engagementEn String?
   kode       String?   @db.VarChar(10)       // kode tampilan 'A.1.'; kosong = bawaan curriculum.js
   cluster    String?   @db.VarChar(10)       // 'CL1' ... 'CL6'; area dan fase ikut cluster; kosong = bawaan
   semester   Int?                            // 1 ... 3; kosong = bawaan (A3/C1 dari config.js)

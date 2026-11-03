@@ -59,11 +59,11 @@ export default function LembarCetak({ student, transkrip: t }) {
         <div className="grid grid-cols-[auto_auto_1fr] gap-x-2 gap-y-1">
           <Baris label={teks('Nama')} isi={student.name} />
           <Baris label={teks('NIM')} isi={student.nim} />
-          <Baris label={teks('Fakultas')} isi={student.faculty} />
-          <Baris label={teks('Program studi')} isi={student.program} />
+          <Baris label={teks('Fakultas')} isi={teks(student.faculty)} />
+          <Baris label={teks('Program studi')} isi={teks(student.program)} />
         </div>
         <div className="grid grid-cols-[auto_auto_1fr] gap-x-2 gap-y-1 self-start">
-          <Baris label={teks('Angkatan')} isi={student.angkatanLabel} />
+          <Baris label={teks('Angkatan')} isi={teks(student.angkatanLabel)} />
           <Baris
             label={teks('Semester berjalan')}
             isi={teks('{n} dari {total}', { n: student.semesterAktif, total: CONFIG.TOTAL_SEMESTER_PROGRAM })}
@@ -89,7 +89,7 @@ export default function LembarCetak({ student, transkrip: t }) {
             <tr key={a.aspekId} className={i % 2 ? 'bg-[#efefef]' : ''}>
               <td className="border-x border-black px-2 py-[3px] text-center">{i + 1}</td>
               <td className="border-x border-black px-2 py-[3px] text-center">{a.aspek.kode.replace(/\.$/, '')}</td>
-              <td className="border-x border-black px-2 py-[3px]">{a.aspek.nama}</td>
+              <td className="border-x border-black px-2 py-[3px]">{teks(a.aspek.nama)}</td>
               <td className="border-x border-black px-2 py-[3px] text-center">{a.aspek.semester}</td>
               <td className="border-x border-black px-2 py-[3px] text-center">{a.nilai ?? BELUM}</td>
               <td className="border-x border-black px-2 py-[3px] text-center">{predikat(a.nilai)}</td>
