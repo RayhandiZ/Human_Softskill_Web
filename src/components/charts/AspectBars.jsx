@@ -1,6 +1,6 @@
 import ChartFrame from './ChartFrame'
 import { ScoreBar, Terkunci } from '../Ui'
-import { getArea } from '../../lib/curriculum'
+import { AREA, getArea } from '../../lib/curriculum'
 import { CATATAN_BOBOT_SEMENTARA } from '../../lib/config'
 import { useTeks } from '../../lib/bahasa'
 
@@ -18,6 +18,7 @@ export default function AspectBars({
       title={title}
       subtitle={subtitle}
       height={height}
+      legend={AREA.map((a) => ({ label: a.nama, color: a.warna }))}
       table={{
         head: ['Kode', 'Aspek', 'Semester', 'Nilai'],
         rows: rows.map((r) => [

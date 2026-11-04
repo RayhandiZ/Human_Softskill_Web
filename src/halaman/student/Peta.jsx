@@ -101,6 +101,9 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
   }).filter((j) => j.adaProgram || j.kegiatan.length)
 
   const semuaFinal = aspek.length > 0 && aspek.every((a) => a.status === 'final')
+  const kegiatanTotal = jalur.reduce((n, j) => n + j.kegiatan.length, 0)
+  const kegiatanDinilai = jalur.reduce((n, j) => n + j.kegiatan.filter((x) => x.k.terisi).length, 0)
+  const labelRincian = t(terbuka ? 'Tutup rincian' : 'Lihat rincian')
   const keterangan =
     keadaan === 'selesai'
       ? t('{total} aspek', { total: s.total }) + (semuaFinal ? ' · ' + t('semua final') : '')
@@ -123,14 +126,17 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
         />
       ) : null}
 
+      {/* simpul-peta: cincin kaca menandai semester yang sedang dilihat. text-surface, bukan putih: di tema gelap
+          --brand-ink biru muda dan centang putih hanya 1,8:1. */}
       <span
         aria-hidden="true"
         className={
-          'absolute left-0 top-5 grid h-8 w-8 place-items-center rounded-full sm:h-10 sm:w-10 ' +
+          'simpul-peta absolute left-0 top-5 grid h-8 w-8 place-items-center rounded-full sm:h-10 sm:w-10 ' +
+          (terbuka ? 'simpul-terbuka ' : '') +
           (keadaan === 'selesai'
-            ? 'bg-brand-ink text-white'
+            ? 'bg-brand-ink text-surface'
             : keadaan === 'berjalan'
-              ? 'border-2 border-brand-ink bg-surface text-brand-ink ring-4 ring-brand-soft'
+              ? 'border-2 border-brand-ink bg-surface text-brand-ink'
               : 'border border-line bg-surface-2 text-ink-3')
         }
       >
@@ -150,7 +156,10 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
           aria-expanded={terbuka}
           aria-controls={idIsi}
           /* Cincin fokus ke dalam: tombol ini memenuhi kartu overflow-hidden, jadi cincin bawaan terpotong seluruhnya. */
-          className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-surface-2 focus-visible:outline-offset-[-3px] sm:px-6"
+          className={
+            'kepala-semester group flex w-full items-center gap-3 px-5 py-4 text-left focus-visible:outline-offset-[-3px] sm:px-6 ' +
+            (terbuka ? 'kepala-terbuka' : '')
+          }
         >
           <span className="min-w-0 flex-1">
             <span className="flex flex-wrap items-center gap-2">
@@ -168,6 +177,8 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
               )}
             </span>
             <span className="mt-0.5 block text-[13.5px] text-ink-2">{keterangan}</span>
+            {/* Di HP kalimatnya di sini, supaya angka nilai dan panahnya tetap punya tempat sampai lebar 360px. */}
+            <span className="mt-1 block text-[13px] font-bold text-brand-ink group-hover:underline sm:hidden">{labelRincian}</span>
           </span>
 
           {terkunci ? (
@@ -179,16 +190,20 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
             </span>
           )}
 
-          <IconChevronDown
-            size={19}
-            className={'shrink-0 text-ink-3 transition-transform ' + (terbuka ? 'rotate-180' : '')}
-          />
+          <span className="flex shrink-0 items-center gap-1 text-brand-ink">
+            {/* Lebar tetap, supaya angka nilai tidak bergeser saat "Lihat rincian" berganti "Tutup rincian". */}
+            <span className="hidden min-w-[88px] whitespace-nowrap text-right text-[13px] font-bold group-hover:underline sm:inline">{labelRincian}</span>
+            <IconChevronDown
+              size={19}
+              className={'shrink-0 transition-transform duration-300 ' + (terbuka ? 'rotate-180' : 'group-hover:translate-y-0.5')}
+            />
+          </span>
         </button>
 
         <Lipat buka={terbuka} id={idIsi}>
-          <div className="space-y-5 border-t border-line px-5 py-5 sm:px-6">
+          <div className="divide-y divide-line border-t border-line">
             {terkunci ? (
-              <p className="text-[14px] leading-relaxed text-ink-2">
+              <p className="px-5 py-4 text-[14px] leading-relaxed text-ink-2 sm:px-6">
                 {t(
                   'Semester ini belum dibuka. Berikut kegiatan yang akan Anda jalani. Nilainya baru muncul setelah Semester {n} dimulai dan penilai mengunggahnya.',
                   { n: s.semester },
@@ -196,8 +211,11 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
               </p>
             ) : null}
 
-            <section>
-              <h3 className="text-[14px] font-bold text-ink">{t('Aspek yang dibentuk')}</h3>
+            <section className="px-5 py-4 sm:px-6">
+              <h3 className="flex flex-wrap items-baseline justify-between gap-x-3 text-[15px] font-extrabold text-ink">
+                {t('Ringkasan aspek')}
+                <span className="text-[12.5px] font-semibold text-ink-2">{t('{total} aspek', { total: aspek.length })}</span>
+              </h3>
               {/* grid-cols-1, bukan kolom implisit: kolom implisit selebar isinya, jadi nama cluster yang panjang
                   (truncate) melebarkan baris sampai 377px di HP 360px dan terpotong kartu. */}
               <ul className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -223,32 +241,30 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
               </ul>
             </section>
 
-            <section>
-              <h3 className="text-[14px] font-bold text-ink">
-                {t(
-                  terkunci
-                    ? 'Kegiatan yang akan dijalani'
-                    : keadaan === 'selesai'
-                      ? 'Kegiatan yang sudah dijalani'
-                      : 'Kegiatan semester ini',
-                )}
+            <section className="px-5 py-4 sm:px-6">
+              <h3 className="flex flex-wrap items-baseline justify-between gap-x-3 text-[15px] font-extrabold text-ink">
+                {t('Rincian kegiatan')}
+                <span className="text-[12.5px] font-semibold text-ink-2">
+                  {terkunci
+                    ? t('{total} kegiatan akan dijalani', { total: kegiatanTotal })
+                    : t('{n} dari {total} dinilai', { n: kegiatanDinilai, total: kegiatanTotal })}
+                </span>
               </h3>
               <div className="mt-2.5 space-y-3">
                 {jalur.map((j) => (
                   <Jalur key={j.sumber.id} {...j} terkunci={terkunci} />
                 ))}
               </div>
+              {!terkunci ? (
+                <Link
+                  href="/mahasiswa/transkrip"
+                  className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 text-[14px] font-bold text-brand-ink hover:underline sm:min-h-[24px]"
+                >
+                  {t('Lihat rincian bobot di transkrip')}
+                  <IconChevronRight size={16} />
+                </Link>
+              ) : null}
             </section>
-
-            {!terkunci ? (
-              <Link
-                href="/mahasiswa/transkrip"
-                className="inline-flex items-center gap-1.5 text-[14px] font-bold text-brand-ink hover:underline"
-              >
-                {t('Lihat rincian bobot di transkrip')}
-                <IconChevronRight size={16} />
-              </Link>
-            ) : null}
           </div>
         </Lipat>
       </div>
@@ -287,7 +303,7 @@ export default function Peta() {
                   total: CONFIG.TOTAL_SEMESTER_PROGRAM,
                 })
               : teks('Program Anda belum dimulai.')}{' '}
-          {teks('Ketuk satu semester untuk melihat kegiatan dan nilainya.')}
+          {teks('Pilih semester untuk melihat kegiatan dan nilainya.')}
         </p>
       </header>
 

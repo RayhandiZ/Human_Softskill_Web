@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Footer from '../../components/Footer'
+import { RemahKerja } from '../../components/KerangkaKerja'
 import Laci from '../../components/Laci'
 import LogoPdp from '../../components/LogoPdp'
 import MenuAkun from '../../components/MenuAkun'
@@ -38,6 +39,15 @@ const KonteksMahasiswa = createContext(null)
 export const useStudent = () => useContext(KonteksMahasiswa)
 
 const DaftarMenu = (props) => <MenuSamping items={MENU} {...props} />
+
+const cocok = (m, jalur) => (m.end ? jalur === m.to : jalur === m.to || jalur.startsWith(m.to + '/'))
+
+/** Lokasi halaman di bilah atas. Profil tidak ada di menu samping, jadi namanya ditulis di sini. */
+function lapisRemah(jalur) {
+  if (jalur === '/mahasiswa/profil') return [{ label: 'Profil', ke: null }]
+  const butir = MENU.find((m) => cocok(m, jalur))
+  return butir && butir.to !== '/mahasiswa' ? [{ label: butir.label, ke: null }] : []
+}
 
 export default function StudentLayout({ children }) {
   const versi = useStore()
@@ -77,39 +87,47 @@ export default function StudentLayout({ children }) {
       <div className="flex min-h-screen flex-col">
         {/* ------------------------------ bilah atas ----------------------------- */}
         <header className="bilah-kaca sticky top-0 z-20 print:hidden">
-          <div className="mx-auto flex h-[72px] w-full max-w-[1200px] items-center gap-3 px-4 sm:px-6 lg:px-8">
-            <button
-              type="button"
-              onClick={() => setLaci(true)}
-              aria-label={teks('Buka menu navigasi')}
-              aria-expanded={laci}
-              className="-ml-1 grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-ink transition hover:bg-surface lg:hidden"
-            >
-              <IconMenu size={23} />
-            </button>
+          {/* Jarak sampingnya sama dengan <main>, jadi tepi kapsul segaris dengan tepi kartu. Mulai layar laptop puncaknya
+              segaris dengan menu samping (16px). */}
+          <div className="mx-auto w-full max-w-[1200px] px-4 pb-2 pt-2 sm:px-6 lg:px-8 lg:pt-4">
+            <div className="bilah-utilitas flex h-14 items-center gap-1.5 px-2 sm:gap-3 sm:px-3.5">
+              <button
+                type="button"
+                onClick={() => setLaci(true)}
+                aria-label={teks('Buka menu navigasi')}
+                aria-expanded={laci}
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-ink transition hover:bg-surface lg:hidden"
+              >
+                <IconMenu size={23} />
+              </button>
 
-            <Link href="/mahasiswa" className="flex items-center gap-2.5 lg:hidden">
-              <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
-              <span aria-hidden="true" className="hidden h-6 w-px shrink-0 bg-line sm:block" />
-              <span className="teks-vibe teks-vibe-terang hidden text-[14px] font-extrabold tracking-tight text-[var(--accent-ink)] sm:block">
-                VIBE
-              </span>
-            </Link>
+              <Link href="/mahasiswa" className="flex shrink-0 items-center gap-2.5 lg:hidden">
+                <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
+                <span aria-hidden="true" className="hidden h-6 w-px shrink-0 bg-line sm:block" />
+                <span className="teks-vibe teks-vibe-terang hidden text-[14px] font-extrabold tracking-tight text-[var(--accent-ink)] sm:block">
+                  VIBE
+                </span>
+              </Link>
 
-            <div className="ml-auto flex items-center gap-2">
-              <LoncengBelumDinilai t={t} />
-              {/* Di HP pemilih bahasa pindah ke laci, seperti panel Kemahasiswaan, supaya tombol menu aksesibilitas
-                  muat sampai lebar 360px. */}
-              <span className="hidden sm:block">
-                <TombolBahasa nada="terang" />
-              </span>
-              <TombolTema />
-              <MenuAksesibilitas />
-              <MenuAkun
-                foto={foto}
-                tone="terang"
-                rinci={{ judul: student.name, sub: student.nim + ' · ' + teks(student.program) }}
-              />
+              <RemahKerja akar={{ ke: '/mahasiswa', label: 'Dashboard' }} lapis={lapisRemah(jalurHalaman)} />
+
+              <div className="ml-auto flex items-center gap-1">
+                <LoncengBelumDinilai t={t} />
+                {/* Di HP pemilih bahasa pindah ke laci, seperti panel Kemahasiswaan, supaya tombol menu aksesibilitas
+                    muat sampai lebar 360px. */}
+                <span className="hidden sm:block">
+                  <TombolBahasa nada="terang" />
+                </span>
+                <TombolTema />
+                <MenuAksesibilitas />
+                {/* Nama dan NIM baru tampil mulai md: di layar 640 sampai 680px isi kapsul tidak muat bersama logo. */}
+                <MenuAkun
+                  foto={foto}
+                  tone="terang"
+                  rinci={{ judul: student.name, sub: student.nim + ' · ' + teks(student.program) }}
+                  rinciDari="md:block"
+                />
+              </div>
             </div>
           </div>
         </header>

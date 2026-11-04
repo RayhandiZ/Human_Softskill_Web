@@ -186,8 +186,8 @@ Membedakan keempatnya adalah aturan bisnis, bukan urusan tampilan.
 
 Komponen yang belum terisi **dikeluarkan dari pembagi**, tidak pernah dianggap nol.
 
-Di halaman Riwayat, kalimat *disetujui oleh …* hanya dipakai untuk aspek yang sudah final. Aspek
-yang masih sementara ditulis *dinilai oleh … (belum dikunci, masih bisa berubah)*, karena
+Di halaman Riwayat, kalimat *Ditetapkan oleh …* hanya dipakai untuk aspek yang sudah final. Aspek
+yang masih sementara ditulis *Dinilai oleh … (belum final, masih bisa berubah)*, karena
 menyebutnya "disetujui" akan menyesatkan.
 
 ## Peta berkas
@@ -236,6 +236,7 @@ src/lib/
   kurva.js        kurva monoton untuk grafik tren — lihat Grafik
   tunjuk.js       tooltip (WCAG 1.4.13)
   layanan.js      tautan lupa sandi SSO dan kontak layanan UMN
+  tanggal.js      tanggal pendek ("26 Okt 2026") mengikuti bahasa
 
 src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   db.js           satu PrismaClient untuk seluruh aplikasi
@@ -715,7 +716,7 @@ Seluruh panel memakai satu bahasa yang sama, mengikuti gaya E-Learning UMN:
   keterangan 15px; satu tingkat di bawahnya di bawah 1280px). Bloknya dilebarkan ke 640px dan jaraknya dirapatkan,
   jadi tidak perlu digulir sampai tinggi layar 640px; bila ukurannya diubah, ukur ulang di 1366×657.
   Pengecualian kedua: menu samping dan kartu navy panel super admin (`.kartu-aurora`, lihat Panel
-  Super Admin);
+  Super Admin). Ketiga: navigasi panel dosen yang berbahan kaca (lihat Panel Dosen › Kaca);
   kartu identitas hanya diberi garis merek setebal 1px di atasnya;
 - **bayangan nyaris tidak ada** — kartu cukup dibatasi garis rambut;
 - **menu aktif diisi penuh warna merek dengan teks putih**, bukan latar samar —
@@ -725,10 +726,10 @@ Seluruh panel memakai satu bahasa yang sama, mengikuti gaya E-Learning UMN:
   (kecuali lonceng admin biasa, yang juga menyimpan pembaruan dari Super Admin; lihat Panel
   Kemahasiswaan › Lonceng) dan menjadi tautan ke halaman yang menanganinya, blok "Akses Cepat" di footer
   dibuang karena keempat tombolnya mati, dan sakelar tema tidak lagi muncul dua
-  kali. Footer kemudian dibangun ulang mengikuti susunan E-Learning UMN —
-  pintasan berikon, helpdesk, kontak, identitas unit — tetapi **setiap pintasan
-  menunjuk ke halaman yang benar-benar ada** (di panel mahasiswa: Transkrip, Peta
-  Perjalanan, Riwayat, Sertifikat). Panel Kemahasiswaan tidak lagi memakai footer
+  kali. Footer kemudian dibangun ulang mengikuti susunan E-Learning UMN — pintasan berikon, helpdesk, kontak,
+  identitas unit — tetapi **setiap pintasan menunjuk ke halaman yang benar-benar ada** (di panel mahasiswa: Transkrip, Peta
+  Perjalanan, Riwayat, Sertifikat). Versi ringkas sekitar 150px sempat dicoba pada 4 Nov 2026 lalu dibatalkan atas permintaan
+  pemilik produk, karena susunan penuh ini lebih bagus untuk tampilan webnya. Panel Kemahasiswaan tidak lagi memakai footer
   sejak tampilannya diperbarui: semua tujuannya ada di menu samping (lihat Panel
   Kemahasiswaan › Tampilan). Panel dosen memakai footer melayang yang sama dengan
   panel mahasiswa (lihat Panel Dosen › Kerangka).
@@ -770,7 +771,8 @@ ini, jadi tidak ada pembanding yang jujur.
 - *Pusat Kendali* (`Kendali.jsx`): kartu keputusan, empat kartu ringkasan, grafik selebar halaman, lalu aktivitas dan
   rantai pengawasan. Angka yang tidak ikut pemilih periode ditandai "Saat ini" begitu periode lain dipilih.
 
-Kaca (`backdrop-filter`) hanya di `.kepala-kerja`, dan bayangan besar hanya untuk menu mengambang dan dialog.
+Kaca (`backdrop-filter`) hanya di `.kepala-kerja`, kecuali panel dosen yang punya bahan sendiri (lihat Panel Dosen › Kaca), dan
+bayangan besar hanya untuk menu mengambang dan dialog.
 
 ## Panel Kemahasiswaan
 
@@ -886,8 +888,8 @@ dengan lokasi halaman, dan tabel dengan alat saring di kepalanya. Kerangkanya me
     terlihat sebagian, jadi tautan yang separuh tersembunyi di tepi tetap terpotong. Wadah gulir tanpa isi
     yang bisa difokus dijadikan tempat berhenti Tab oleh Chrome, jadi cincin fokus wadah itu digambar ke
     dalam supaya tidak terpotong kartu.
-  - Bilah atas menempel (`sticky`), jadi `html` diberi `scroll-padding-top: 88px`; tanpanya unsur yang
-    difokus dengan Tab bisa berhenti di balik bilah itu. Kolom ⋯ yang menempel di kanan Data Mahasiswa
+  - Bilah atas menempel (`sticky`), jadi `html` diberi `scroll-padding-top: 88px` (96px di panel mahasiswa mulai layar
+    laptop, 100px di panel kerja); tanpanya unsur yang difokus dengan Tab bisa berhenti di balik bilah itu. Kolom ⋯ yang menempel di kanan Data Mahasiswa
     menutupi sel dengan cara yang sama, jadi wadah tabelnya diberi jarak gulir seukuran kolom itu
     (`scroll-pr-[72px]`, lewat prop `jarak` milik `GulirTabel`).
   - `<select>` cocok dengan `:focus-visible` bahkan saat diklik tetikus. Di `Select` ringkas, cincin fokus
@@ -1044,15 +1046,50 @@ Pengiriman) diteruskan ke Unggah Nilai di peramban, seperti `app/page.jsx`.
   hanya logo PDP, supaya semuanya muat sampai lebar 360px.
 - **Footer melayang seperti panel mahasiswa** (`<Footer pintasan melayang />`, komponen dan ukurannya sama):
   pintasan berikon ke tiga halaman dosen, alamat Helpdesk, telepon dan surel, identitas unit, dan baris hak
-  cipta. Mulai layar laptop ia menjadi kartu bersudut bulat berjarak 16px, sepasang dengan menu samping. Di HP
-  baris hak cipta diberi ruang 84px di bawahnya, supaya tidak tertutup tombol bantuan saat halaman digulir ke
-  ujung; ini berlaku juga di panel mahasiswa, yang sebelumnya tertutup.
+  cipta. Mulai layar laptop ia menjadi kartu bersudut bulat berjarak 16px, sepasang dengan menu samping.
 - **Kontras**: teks redup memakai warna panel admin (`--text-muted` #63677f, 5,6:1 di kartu putih; sebelumnya
   #8a8ea9, 3,2:1), begitu juga nada `Badge`, dan galat memakai `--teks-kritis`.
 - **Bilah bawah, footer, dan tombol bantuan tidak saling menutupi**: tinggi bilah bawah disimpan sebagai
   `--tinggi-bilah-bawah` (68px tautan + 1px garis atas). Kolom isi (`.kolom-dosen`) berakhir setinggi bilah bawah di
   atas dasar layar, supaya baris hak cipta footer tidak tertutup, dan tombol bantuan (`posisi="bantuan-dosen"`,
   prop `posisi` milik `LayananTambahan`) melayang 20px di atas bilah bawah.
+
+### Kaca
+
+Permintaan pemilik produk (4 Nov 2026), dengan satu prinsip: **navigasi dan kendali berbahan kaca, informasi nilai tetap
+padat**. Dosen datang untuk membaca angka dan status, jadi kartu, tabel, bilah kelengkapan, area unggah, formulir, dan tombol
+utama sengaja tidak disentuh. `scripts/smoke.run.cjs` memeriksa bahwa semua aturan di `index.css` › kaca panel dosen dan
+mahasiswa terikat ke kedua panel itu dan tidak menyasar `<main>`, jadi panel lain dan isi halaman tidak ikut berubah. Panel
+mahasiswa memakai bahan yang sama; lihat Panel mahasiswa › Kaca.
+
+| Unsur | Rupa |
+|---|---|
+| Bilah atas | Putih tembus 68% dengan blur 12px, garis terang, dan kilau di tepi atas. Tetap menempel saat digulir |
+| Menu aktif | Pil kebiruan tembus dengan kilau tepi. Ikon dan garis kiri tetap. Saat ditunjuk, pil butir lain lebih tipis, jadi halaman yang terbuka tetap jelas |
+| Bilah bawah HP | Bahan yang sama dengan bilah atas, karena di HP ia menggantikan menu samping |
+| Menu akun, panel bantuan | Lapisan melayang, lebih pekat (84%) karena isinya dibaca, dengan bayangan lembut |
+| Tombol bantuan | Kaca biru 78% dengan kilau tepi dan ikon putih |
+
+- **Letak blur.** Kaca bilah atas ada di `.bilah-kerja::before`, bukan di bilahnya. `backdrop-filter` pada induk membuat menu
+  akun di dalamnya hanya bisa mengaburkan isi induk itu, bukan halaman (Backdrop Root). Jangan pindahkan ke `.kepala-kerja`
+  atau `.bilah-kerja`.
+- **Cahaya latar.** Latarnya polos, jadi tanpa warna di belakangnya kaca tidak terlihat sebelum halaman digulir. Karena itu ada
+  cahaya biru dan toska sangat samar (`--kaca-cahaya`) yang hanya setinggi bilah atas, tidak sampai ke belakang data. Bukan
+  lavender: aksen ungu sudah ditolak pemilik produk.
+- **Kontras.** Tulisan di atas kaca bisa berlatar apa saja yang sedang tergulir, jadi kontrasnya diukur per piksel sepanjang
+  ketiga halaman, ditambah blok navy penuh di belakang kaca sebagai kasus terburuk. Tulisan redup di dalam kaca memakai
+  `--kaca-teks-2` (#43476a), karena #63677f turun ke 4,04:1 saat isi gelap lewat, dan "Keluar" di menu akun memakai
+  `--teks-kritis`, karena `--critical` turun ke 4,18:1. Bila isian atau warnanya diubah, ukur ulang.
+- **Jalan keluar.** Kurangi transparansi dari sistem, peramban tanpa `backdrop-filter`, dan mode kontras di menu aksesibilitas
+  membuat semua permukaan ini padat lewat token `--kaca-*`. Mode kontras juga melepas cahaya dan kilaunya. Semuanya di dalam
+  `@media screen`, jadi hasil cetak tidak berubah.
+- **Gerak.** Hanya saat ditunjuk, ditekan, atau pindah menu (`.menu-sorot`, sedikit memantul saat muncul). Tidak ada kilau yang
+  bergerak terus.
+- **Gulir.** Cahaya latar sengaja tanpa `background-attachment: fixed`: jejak compositor Chrome menunjukkan properti itu membuat
+  halaman dilukis ulang di setiap langkah gulir (Paint 50 kali per gestur di Riwayat, 120 sampai 140 di Beranda dosen, 0 tanpanya),
+  dan `scripts/smoke.run.cjs` menjaganya. Sesudah digulir cahaya tidak perlu ikut, karena kaca sudah berlatar isi halaman. Blur
+  hanya di kapsul dan tombol bantuan: lajur di belakang kapsul cukup gradasi (`--kaca-tirai`) tanpa blur dan mask, dan pil bahasa
+  di dalam kapsul tidak punya blur sendiri, karena blur ganda tidak terlihat dan hanya menambah kerja GPU.
 
 ### Kelas dosen
 
@@ -1831,9 +1868,22 @@ angkatannya sudah disahkan. Sejak rapat 24 Okt 2026 memenuhi syarat saja belum c
 4. Bila sesudah itu ada masalah (misalnya laporan sikap), admin atau Super Admin bisa **mencabut** aksesnya dari
    *Cetak Sertifikat* dengan alasan. Mahasiswa membaca alasannya dan boleh meminta lagi lewat kedua lapis.
 
-Halaman mahasiswa menyebut keadaannya (`keadaanSertifikat()` di `src/lib/duaLapis.js`): belum layak, bisa diminta,
-menunggu admin, menunggu Super Admin, siap dicetak, ditolak, atau dicabut, dua yang terakhir beserta alasan dan
-pemutusnya, lengkap dengan tiga langkah bernomor; ubin Sertifikat di Dashboard memakai keadaan yang sama. Kelayakan
+Halaman mahasiswa memisahkan dua hal (sejak 4 Nov 2026), karena akses yang dicabut dulu terbaca bertentangan dengan syarat
+yang semuanya tercentang:
+
+- **Izin cetak** (dikelola Kemahasiswaan) menyebut keadaannya (`keadaanSertifikat()` di `src/lib/duaLapis.js`): belum bisa
+  diminta, belum diminta, sedang ditinjau (admin atau Super Admin), disetujui, ditolak, atau dicabut.
+- **Kelayakan akademik** memuat kelima syarat beserta statusnya.
+
+Ditolak dan dicabut tampil sebagai peringatan padat, tanpa kaca: judul, *Alasan*, siapa dan kapan, *Yang perlu dilakukan*,
+lalu dua tindakan. Sistem hanya menyimpan alasan, jadi langkah penyelesaiannya tidak dikarang: tertulis bahwa rinciannya belum
+tersedia, dengan **Hubungi Kemahasiswaan** (WhatsApp dengan pesan awal berisi nama dan NIM) sebagai jalur meminta penjelasan.
+*Ajukan peninjauan akses* sama dengan meminta lagi: permintaannya masuk lewat kedua lapis (`POST /api/sertifikat`), jadi
+sesudahnya tampil *Sedang ditinjau*, tanggal pengajuan, langkah berikutnya, dan tiga langkah bernomor.
+
+Tombol **Cetak / Simpan PDF** hanya ada saat aksesnya disetujui; di keadaan lain catatannya bersyarat ("Setelah akses
+dipulihkan, tombol Cetak / Simpan PDF akan tersedia"). Ubin Sertifikat di Dashboard memakai keadaan yang sama dengan warna bawaan
+kartu, juga saat ditolak atau dicabut; peringatannya di halaman Sertifikat. Kelayakan
 selalu didahulukan: bila nilai berubah dan syaratnya gugur, akses yang sudah disetujui tidak bisa dipakai mencetak.
 Sertifikat dicetak, atau disimpan sebagai PDF lewat dialog cetak, dari tombol di website ini dan tidak dikirim lewat
 surel. Setiap pembukaan dialog cetak tercatat, dan lembarnya baru dipasang sesudah server mengizinkan, jadi Ctrl+P
@@ -1890,8 +1940,11 @@ Aturan tampilan dashboard mahasiswa:
 - **satu angka besar saja** (nilai akhir); angka lain lebih kecil supaya mata tahu harus mulai
   dari mana;
 - sejak 26 Okt 2026 ubin nilai akhir hanya memuat angkanya, "Grade C" di bawahnya (atau *Belum Memenuhi* di bawah
-  ambang huruf mutu terendah), dan grafik perkembangan, dan ubin *Aspek final* dihapus, atas permintaan pengguna;
-  status (sementara atau final) dan dasar hitungnya tetap ada di Transkrip (R3, diperiksa `npm run assert`);
+  ambang huruf mutu terendah), dan grafik perkembangan, atas permintaan pengguna; status (sementara atau final) dan
+  dasar hitungnya tetap ada di Transkrip (R3, diperiksa `npm run assert`). Sejak 4 Nov 2026 ada *Cara hitung*, tautan kecil
+  yang membuka penjelasan singkat nilai akhir, nilai semester, dan nilai aspek, bukan paragraf yang selalu tampil;
+- ubin *Aspek dinilai* berganti judul menjadi *Aspek final* begitu seluruh aspek final ("10 / 10", "Seluruh aspek sudah
+  selesai dinilai."). Sebelum itu keterangannya menyebut yang masih kurang: belum dibuka, belum dinilai, atau belum final;
 - kartu *Capaian per area* juga dihapus pada hari yang sama, karena rata-rata dan jumlah aspek dinilai per area
   sudah ada di Transkrip; kolom kanan tinggal *Perjalanan semester*;
 - aspek yang belum dibuka tampil dengan gembok dan semester pembukaannya, tidak pernah sebagai 0 (R2);
@@ -1900,10 +1953,12 @@ Aturan tampilan dashboard mahasiswa:
 Transkrip di layar menjelaskan kodenya sendiri, karena rapat 24 Okt 2026 menilai kode seperti CL1 atau PDP
 tidak dipahami orang awam:
 
-- **Arti kode di tabel** di bawah tabel utama: huruf area beserta namanya, CL1 sampai CL6, dan kepanjangan
-  PDP, MK Humaniora, dan Kemahasiswaan. Sel cluster dan pil sumber juga membawa nama lengkapnya lewat `title`
-  dan teks pembaca layar. Transkrip cetak tidak perlu bagian ini karena hanya memuat kode aspek, yang selalu
-  ditulis di samping namanya.
+- **Panduan kode dan penilaian** di bawah tabel utama, tertutup bawaannya (`<details>`): huruf area beserta namanya, CL1
+  sampai CL6, kepanjangan PDP, MK Humaniora, dan Kemahasiswaan, serta arti predikat. Sel cluster dan pil sumber juga membawa
+  nama lengkapnya lewat `title` dan teks pembaca layar, dan legenda kecil tetap ada dekat grafik. Transkrip cetak tidak perlu
+  bagian ini karena hanya memuat kode aspek, yang selalu ditulis di samping namanya.
+- **Nilai semester berlabel** di baris semester ("Nilai semester: 75"), dan predikat dipisah dari status final. Blok identitas
+  diringkas jadi dua baris empat kolom, supaya tabelnya lebih cepat terlihat.
 - **Paling menurunkan nilai** di rincian aspek: tugas yang selisih nilainya dari nilai aspek, dikali
   bobotnya, paling negatif, beserta tanda *paling menurunkan* di barisnya. Rubrik dan catatan dosen per
   tugas belum disimpan di basis data, jadi belum bisa ditampilkan.
@@ -1916,6 +1971,38 @@ ke antrean Kemahasiswaan. Ini tetap satu-satunya aksi tulis milik mahasiswa (R8)
 Nama aspek dan keterangannya (Dashboard, Peta Perjalanan, lonceng, grafik nilai per aspek) turun ke baris kedua di layar
 sempit, tidak dipotong "…". Di HP 390px nama dulu hanya kebagian 166px dari 264px, dan keterangannya kehilangan nomor
 semesternya tanpa cara membacanya utuh.
+
+**Peta Perjalanan.** Seluruh kepala kartu semester adalah area klik, dengan tulisan *Lihat rincian* di samping panahnya. Empat
+keadaannya berbeda: tertutup polos, ditunjuk berlatar, fokus papan ketik bercincin, dan terbuka berlatar kaca kebiruan dengan
+simpul lini masa bercincin. Isi yang terbuka dibagi dua bagian berjudul, *Ringkasan aspek* dan *Rincian kegiatan*.
+
+**Riwayat.** Bilah alatnya berisi pencarian tugas atau aspek, saringan semester dan sumber, dan urutan Terbaru atau Terlama,
+dengan jumlah hasil tertulis. Tab Semua, Final, dan Sementara hanya tampil bila final dan sementara sama-sama ada, karena kalau
+tidak, isinya sama. Tiap baris memakai susunan tetap: nama tugas, aspek, lalu sumber, penetap, dan tanggal. *Final* dijelaskan
+sebagai nilai yang sudah disahkan, dengan perubahan hanya lewat prosedur koreksi, bukan "tidak akan berubah lagi": koreksi resmi
+tetap bisa diajukan untuk aspek final.
+
+### Kaca
+
+Bahannya sama dengan panel dosen (lihat Panel Dosen › Kaca), dengan prinsip yang sama: navigasi seperti kaca, data seperti
+dokumen. Tabel, grafik, formulir, kartu, dan peringatan sertifikat tetap padat. Kartu nilai akhir yang di rincian bersifat
+opsional sengaja tidak ikut.
+
+| Unsur | Rupa |
+|---|---|
+| Bilah atas | Satu kapsul selebar kolom isi (`.bilah-utilitas`): tepinya segaris dengan tepi kartu, dan mulai layar laptop puncaknya segaris dengan menu samping. Isinya lokasi halaman (`RemahKerja`) atau tombol menu dan logo di layar kecil, lalu kendali dalam satu kaca, bukan satu gelembung per tombol |
+| Menu aktif | Pil kebiruan tembus, sama dengan panel dosen, dengan ikon dan garis kiri yang tetap |
+| Menu akun, lonceng, panel bantuan | Lapisan melayang (`.lapisan-kaca`, `.layanan-panel`) |
+| Bilah alat Riwayat | Menempel di bawah bilah atas mulai layar `sm`. Di HP ikut tergulir, karena tingginya akan memakan layar |
+| Peta Perjalanan | Simpul dan kepala semester yang terbuka; isi rinciannya tetap padat |
+| Tombol bantuan | Kaca biru 56px di sudut kanan bawah. Di layar pendek (HP miring) panelnya bisa digulir, jadi tidak keluar dari puncak layar |
+
+Bilah atasnya 72px, dan 80px mulai layar laptop, jadi bilah alat Riwayat menempel di 80px dan 88px, dan jarak gulir fokus naik ke
+96px mulai layar laptop. Lajur di belakang kapsul (`.bilah-kaca::before`) sama dengan panel dosen: hanya gradasi, lihat Panel Dosen ›
+Kaca › Gulir.
+
+Tombol bantuan yang letaknya sudah di sudut kanan ini menimpa ujung tulisan hak cipta di footer pada lebar di bawah 390px, hanya di
+ujung halaman (11px di 360px, 3px di 375px). Itu bawaan susunan footer yang dipertahankan, belum diubah.
 
 ## Rambatan nilai ke dashboard mahasiswa
 
@@ -2145,14 +2232,17 @@ panah kiri/kanan). Bagian yang mudah rusak:
 
 ### Grafik
 
-- **Kartu nilai akhir mahasiswa**: tren dua garis (*Nilai tiap semester* dan *Rata-rata*) baru
-  tampil bila ada minimal dua semester bernilai; selain itu tampil sebaran aspek.
-- **Rata-rata, bukan "kumulatif"** (rapat 24 Okt 2026; sebutan "Rata-rata gabungan" dipersingkat menjadi
-  "Rata-rata" di legenda, kotak info, dan catatan pada 26 Okt 2026): angkanya `nilaiKumulatif`, yaitu nilai akhir
-  bila hanya aspek sampai semester itu yang dihitung, jadi titik terakhirnya selalu sama dengan nilai akhir.
-  Kedua rumus `MODE_AGREGASI` yang masih menunggu konfirmasi sama-sama rata-rata, bukan jumlah, jadi labelnya
-  tetap benar apa pun yang dipilih. Catatan satu baris di bawah grafik menjelaskannya. Di bahasa Inggris
-  "Average". Kartu Program Studi (admin) tetap memakai "Rata-rata gabungan" ("Combined average").
+- **Kartu nilai akhir mahasiswa**: tren dua garis (*Nilai tiap semester* dan *Rata-rata Anda*) baru
+  tampil bila ada minimal dua semester bernilai; selain itu tampil sebaran aspek. Angka ditulis di awal dan ujung garis semester
+  (dasar kalimat "Nilai semester naik 20 poin sejak Semester 1.") dan di ujung garis rata-rata (sama dengan nilai akhir). Yang lebih
+  tinggi di atas titiknya, yang lebih rendah di bawahnya, jadi keduanya tidak bertumpuk.
+- **Rata-rata, bukan "kumulatif"** (rapat 24 Okt 2026: akumulasi berarti penjumlahan, sedangkan yang tampil rata-rata):
+  angkanya `nilaiKumulatif`, yaitu nilai akhir bila hanya aspek sampai semester itu yang dihitung, jadi titik terakhirnya selalu
+  sama dengan nilai akhir. Kedua rumus `MODE_AGREGASI` yang masih menunggu konfirmasi sama-sama rata-rata, bukan jumlah, jadi
+  labelnya tetap benar apa pun yang dipilih. Sejak 4 Nov 2026 labelnya *Rata-rata Anda* ("Your average"), supaya tidak terbaca
+  rata-rata kelas. Kartu Program Studi (admin) tetap memakai "Rata-rata gabungan" ("Combined average").
+- **Profil enam cluster**: label tiap sumbu menyertakan nilainya dan sumbu tegak diberi skala 25, 50, 75, karena bentuk poligon
+  saja tidak bisa dibaca sampai ke angkanya. Daftar di bawahnya dan tombol Tabel tetap menjadi cara membaca angka yang utuh.
 - **Dua garis dibedakan warna dan bentuk**: navy bertitik isi untuk nilai tiap semester, toska bercincin untuk
   garis Rata-rata, dua warna merek VIBE (sejak 26 Okt 2026; sebelumnya biru muda dan abu-abu). Cincinnya lebih
   besar dan digambar lebih dulu, jadi saat keduanya sama (selalu di semester pertama) titik navy duduk di
@@ -2235,6 +2325,10 @@ panah kiri/kanan). Bagian yang mudah rusak:
 
 ### Gerak
 
+- Lompatan gulir (jangkar, fokus) meluncur lewat `scroll-behavior: smooth` di `html`, kecuali kurangi gerak aktif di sistem atau
+  *Hentikan animasi* di menu aksesibilitas. Pindah halaman tetap langsung ke atas karena `data-scroll-behavior="smooth"` di
+  `app/layout.jsx`: dengan penanda itu Next mematikan gulir halus sesaat selama perpindahan. Gulir roda dan sentuh tetap milik
+  peramban, tanpa pustaka gulir: pembajakan gulir lewat JS menambah kerja di setiap bingkai dan mengganggu sentuh.
 - Isi halaman memudar singkat setiap pindah menu (pembungkusnya diberi `key` per jalur).
   `.animate-halaman` memakai `animation-fill-mode: backwards`, **bukan** `both`: dengan `both`,
   Chrome menahan `transform` sesudah animasi dan setiap elemen `fixed` di halaman ikut mengacu ke
@@ -2242,7 +2336,8 @@ panah kiri/kanan). Bagian yang mudah rusak:
 - Sorotan menu samping mahasiswa dan super admin (`.menu-sorot`, komponen `MenuSamping.jsx`)
   digambar tiap butir sendiri dengan `::before`/`::after` di bawah isinya (`isolation: isolate`).
   Warnanya dari variabel `--sorot-latar`, `--sorot-garis`, dan `--sorot-teks`; di menu berlatar
-  gelap (`.menu-sorot-gelap`, panel super admin) latarnya putih tembus pandang dan garisnya toska.
+  gelap (`.menu-sorot-gelap`, panel super admin) latarnya putih tembus pandang dan garisnya toska. Panel dosen menggantinya
+  dengan pil kaca (lihat Panel Dosen › Kaca).
   Butir aktif (`.menu-aktif`)
   menampilkannya penuh; butir lain memunculkannya saat ditunjuk atau difokus: latarnya memudar
   masuk sambil sedikit membesar, lalu garis kirinya tergambar dari tengah ke atas dan bawah
@@ -2305,7 +2400,7 @@ panah kiri/kanan). Bagian yang mudah rusak:
 - Latar belang tabel memakai `print-color-adjust: exact`; tanpa itu peramban membuang warna latar.
 - Alamat kampus di kaki lembar adalah `div` dengan posisi `fixed` (diulang di setiap halaman),
   bukan `<footer>`, karena aturan cetak global menyembunyikan semua `<footer>`.
-- Sertifikat dicetak A4 lanskap. Di halaman mahasiswa lembarnya baru dipasang sesudah tombol Cetak sertifikat
+- Sertifikat dicetak A4 lanskap. Di halaman mahasiswa lembarnya baru dipasang sesudah tombol Cetak / Simpan PDF
   ditekan dan `POST /api/sertifikat/cetak` mengizinkan, lalu dilepas pada `afterprint`. Jadi Ctrl+P biasa tidak
   pernah menghasilkan sertifikat (kertasnya hanya berisi petunjuk memakai tombol), setiap cetak tercatat, dan akses
   yang sudah dicabut tidak bisa dipakai dari halaman yang terbuka lama (lihat Sertifikat).

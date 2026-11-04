@@ -36,8 +36,9 @@ export const viewport = {
 export default async function RootLayout({ children }) {
   const master = await bacaMaster()
   return (
-    /* suppressHydrationWarning wajib: skrip tema mengubah kelas <html> sebelum hidrasi. */
-    <html lang="id" className={jakarta.variable} suppressHydrationWarning>
+    /* suppressHydrationWarning wajib: skrip tema mengubah kelas <html> sebelum hidrasi.
+       data-scroll-behavior: pindah halaman tetap langsung ke atas, tidak ikut meluncur (index.css › gulir halaman). */
+    <html lang="id" className={jakarta.variable} data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: SKRIP_TEMA }} />
       </head>

@@ -52,7 +52,7 @@ export default function LoncengBelumDinilai({ t }) {
         <div
           role="dialog"
           aria-label={teks('Komponen belum dinilai')}
-          className="fixed inset-x-4 top-[76px] z-50 overflow-hidden rounded-2xl border border-line bg-surface shadow-pop animate-rise sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[380px]"
+          className="lapisan-kaca fixed inset-x-4 top-[76px] z-50 overflow-hidden rounded-2xl border border-line bg-surface shadow-pop animate-rise sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[380px]"
         >
           <div className="border-b border-line px-4 py-3.5">
             <p className="flex items-baseline justify-between gap-3">

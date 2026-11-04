@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { flushSync } from 'react-dom'
-import { IconAlert, IconCheck, IconClock, IconPrint, IconX } from '../../components/Icons'
+import { IconAlert, IconChat, IconCheck, IconClock, IconPrint, IconX } from '../../components/Icons'
 import { CatatanKaki, StatusTeks } from '../../components/Ui'
 import { kelayakanSertifikat } from '../../lib/rules'
 import { hurufMutu } from '../../lib/scoring'
 import { catatCetakSertifikat, mintaSertifikat, segarkanData, sertifikatMilik, useStore } from '../../lib/store'
 import { LANGKAH_SERTIFIKAT, LABEL_SERTIFIKAT, keadaanSertifikat } from '../../lib/duaLapis'
 import { useBahasa } from '../../lib/bahasa'
+import { tautanWhatsapp } from '../../lib/layanan'
+import { tanggalPendek } from '../../lib/tanggal'
 import { useStudent } from './StudentLayout'
 import LembarSertifikat from './LembarSertifikat'
 
@@ -16,24 +18,48 @@ import LembarSertifikat from './LembarSertifikat'
    src/server/muat.js); yang terbaca di sini hanya keputusan akhirnya. Sertifikat tidak dikirim lewat surel. Akses yang sudah disetujui bisa dicabut Kemahasiswaan, dan
    setiap kali dibuka untuk dicetak tercatat. Lihat src/server/sertifikat.js dan README.md › Sertifikat. */
 
-const KALIMAT_KEADAAN = {
-  bisa_diminta: 'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.',
-  menunggu_admin: 'Permintaan akses cetak sedang ditinjau admin Kemahasiswaan.',
-  menunggu_superadmin: 'Admin Kemahasiswaan sudah meninjau. Menunggu keputusan Super Admin.',
-  siap_dicetak: 'Akses cetak sudah disetujui. Sertifikat siap dicetak.',
-  ditolak: 'Permintaan akses cetak ditolak. Periksa alasannya, lalu ajukan lagi bila sudah sesuai.',
-  dicabut: 'Akses cetak sertifikatmu dicabut. Baca alasannya, lalu minta lagi bila masalahnya sudah selesai.',
+/* Halaman ini memisahkan dua hal: izin cetak (dikelola Kemahasiswaan) dan kelayakan akademik (syarat nilai dan aspek).
+   Dulu keduanya bercampur, jadi akses yang dicabut terbaca bertentangan dengan syarat yang semuanya tercentang. */
+
+const JUDUL_IZIN = {
+  belum_layak: 'Belum bisa diminta',
+  bisa_diminta: 'Belum diminta',
+  menunggu_admin: 'Sedang ditinjau',
+  menunggu_superadmin: 'Sedang ditinjau',
+  siap_dicetak: 'Akses cetak disetujui',
+  ditolak: 'Permintaan akses cetak ditolak',
+  dicabut: 'Akses cetak dicabut',
 }
+
+const KALIMAT_IZIN = {
+  belum_layak: 'Akses cetak bisa diminta setelah seluruh syarat di bawah terpenuhi, tanpa terlewat satu pun.',
+  bisa_diminta: 'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.',
+  siap_dicetak: 'Sertifikat siap dicetak atau disimpan sebagai PDF.',
+}
+
+const LANGKAH_BERIKUTNYA = {
+  menunggu_admin: 'Admin Kemahasiswaan meninjau permintaanmu, lalu Super Admin memutuskannya.',
+  menunggu_superadmin: 'Admin Kemahasiswaan sudah meninjau. Super Admin akan memutuskannya.',
+}
+
+const CATATAN_CETAK = {
+  siap_dicetak:
+    'Sertifikat dicetak, atau disimpan sebagai PDF lewat dialog cetak, dari tombol di halaman ini, dan setiap pembukaan dialog cetak tercatat. Sertifikat tidak dikirim lewat surel.',
+  dicabut: 'Setelah akses dipulihkan, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.',
+}
+const CATATAN_CETAK_BAWAAN =
+  'Setelah akses disetujui, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.'
 
 export default function Sertifikat() {
   useStore()
-  const { t: teks } = useBahasa()
+  const { t: teks, bahasa } = useBahasa()
   const student = useStudent()
   const k = kelayakanSertifikat(student)
   const t = k.transkrip
   const permintaan = sertifikatMilik(student.nim)
   const keadaan = keadaanSertifikat(k.layak, permintaan)
   const bolehCetak = keadaan === 'siap_dicetak'
+  const peringatan = keadaan === 'ditolak' || keadaan === 'dicabut'
   const [sibuk, setSibuk] = useState(false)
   const [galat, setGalat] = useState('')
   const [mencetak, setMencetak] = useState(false)
@@ -73,55 +99,125 @@ export default function Sertifikat() {
 
   return (
     <>
-      {/* Lembar hanya dipasang selama dialog cetak yang dibuka tombol Cetak sertifikat, jadi Ctrl+P biasa tidak
+      {/* Lembar hanya dipasang selama dialog cetak yang dibuka tombol Cetak / Simpan PDF, jadi Ctrl+P biasa tidak
           menghasilkan sertifikat: setiap cetak tercatat, dan akses yang sudah dicabut tidak bisa dipakai. */}
       {bolehCetak && mencetak ? (
         <LembarSertifikat student={student} transkrip={t} />
       ) : (
         <p className="hidden p-8 text-[14px] text-black print:block">
-          {teks('Sertifikat hanya bisa dicetak lewat tombol Cetak sertifikat di halaman ini, setelah akses cetaknya disetujui.')}
+          {teks('Sertifikat hanya bisa dicetak lewat tombol Cetak / Simpan PDF di halaman ini, setelah akses cetaknya disetujui.')}
         </p>
       )}
 
       <div className="space-y-6 print:hidden">
-        <section className="kartu px-6 py-6 sm:px-7">
-          <p className="text-[13px] font-semibold text-ink-2">{teks('Sertifikat')}</p>
-          <h1 className="mt-1 text-[24px] font-extrabold tracking-tight text-ink">{teks('Sertifikat Pembinaan VIBE')}</h1>
+        <header className="pt-2">
+          <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-ink sm:text-[28px]">
+            {teks('Sertifikat Pembinaan VIBE')}
+          </h1>
+          <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-ink-2">
+            {teks('Sertifikat butuh dua hal: kelayakan akademik dari nilaimu, dan izin cetak dari Kemahasiswaan.')}
+          </p>
+        </header>
 
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-5">
-            {/* Lebar minimum supaya di HP tombolnya turun ke baris berikut, bukan menjepit kalimat jadi satu kata per baris. */}
-            <div className="min-w-[min(100%,18rem)] flex-1">
-              <p className="text-[15px] font-bold text-ink">
-                {keadaan === 'belum_layak'
-                  ? teks('{n} dari {total} syarat belum terpenuhi.', { n: k.gagal.length, total: k.syarat.length })
-                  : teks(KALIMAT_KEADAAN[keadaan])}
-              </p>
-              <p id="alasan-cetak" className="mt-1 text-[13px] text-ink-2">
-                {keadaan === 'belum_layak'
-                  ? teks('Akses cetak bisa diminta setelah seluruh syarat di bawah terpenuhi, tanpa terlewat satu pun.')
-                  : teks('Nilai akhir {nilai}, predikat {huruf}.', { nilai: t.akhir.nilai, huruf: hurufMutu(t.akhir.nilai)?.huruf })}
-              </p>
+        {/* ------------------------------- izin cetak ------------------------------ */}
+        {/* Peringatan memakai permukaan padat: statusnya harus terbaca sama di atas apa pun. */}
+        <section aria-labelledby="judul-izin" className={'kartu px-6 py-5 sm:px-7 ' + (peringatan ? 'kartu-peringatan' : '')}>
+          <p className="flex flex-wrap items-baseline gap-x-2 text-[13.5px]">
+            <span id="judul-izin" className="font-bold text-ink">
+              {teks('Izin cetak')}
+            </span>
+            <span className="text-ink-2">{teks('Dikelola Kemahasiswaan, terpisah dari kelayakan akademik.')}</span>
+          </p>
+
+          <div className="mt-3 flex items-start gap-3">
+            <TandaIzin keadaan={keadaan} />
+            <div className="min-w-0 flex-1">
+              <h2
+                className={
+                  'text-[20px] font-extrabold leading-tight tracking-tight ' +
+                  (peringatan ? 'text-[color:var(--teks-kritis)]' : 'text-ink')
+                }
+              >
+                {teks(JUDUL_IZIN[keadaan])}
+              </h2>
+              {KALIMAT_IZIN[keadaan] ? (
+                <p id="alasan-cetak" className="mt-1 text-[14px] leading-relaxed text-ink-2">
+                  {teks(KALIMAT_IZIN[keadaan])}
+                </p>
+              ) : null}
             </div>
+          </div>
 
-            {keadaan === 'bisa_diminta' || keadaan === 'ditolak' || keadaan === 'dicabut' ? (
+          {keadaan === 'dicabut' ? (
+            <RincianAkses
+              baris={[
+                ['Alasan', permintaan?.dicabut?.alasan || teks('Alasannya belum dicatat.')],
+                ['Dicabut oleh', jejak(permintaan?.dicabut, bahasa)],
+                [
+                  'Yang perlu dilakukan',
+                  teks('Rincian langkahnya belum tersedia. Hubungi Kemahasiswaan untuk meminta penjelasan. Bila masalahnya sudah selesai, ajukan peninjauan akses.'),
+                ],
+              ]}
+            />
+          ) : null}
+
+          {keadaan === 'ditolak' ? (
+            <RincianAkses
+              baris={[
+                ['Alasan', permintaan?.ditolak?.catatan || teks('Alasannya belum dicatat.')],
+                ['Ditolak oleh', jejak(permintaan?.ditolak, bahasa)],
+                [
+                  'Yang perlu dilakukan',
+                  teks('Rincian langkahnya belum tersedia. Hubungi Kemahasiswaan untuk meminta penjelasan. Bila sudah sesuai, minta akses cetak lagi.'),
+                ],
+              ]}
+            />
+          ) : null}
+
+          {LANGKAH_BERIKUTNYA[keadaan] ? (
+            <RincianAkses
+              baris={[
+                ['Diajukan', tanggalPendek(permintaan?.diajukan, bahasa)],
+                ['Langkah berikutnya', teks(LANGKAH_BERIKUTNYA[keadaan])],
+              ]}
+            />
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap items-center gap-2.5">
+            {keadaan === 'bisa_diminta' || peringatan ? (
               <button type="button" onClick={minta} disabled={sibuk} className="btn-primary inline-flex min-h-[44px] items-center gap-2">
                 <IconCheck size={17} />
-                {keadaan === 'bisa_diminta' ? teks('Minta akses cetak') : teks('Minta akses cetak lagi')}
+                {teks(
+                  keadaan === 'dicabut'
+                    ? 'Ajukan peninjauan akses'
+                    : keadaan === 'ditolak'
+                      ? 'Minta akses cetak lagi'
+                      : 'Minta akses cetak',
+                )}
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={cetak}
-                disabled={!bolehCetak || sibuk}
-                aria-describedby="alasan-cetak"
-                // Opasitas penuh: tulisan tombol mati ini status ("Menunggu persetujuan"), dan opacity-50 bawaan .btn
-                // menurunkan kontrasnya dari 6,5:1 menjadi 2,2:1. Rupa abunya tetap menandai tombol tidak bisa ditekan.
-                className="btn-primary inline-flex min-h-[44px] items-center gap-2 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-2 disabled:text-ink-2 disabled:opacity-100 disabled:shadow-none"
+            ) : null}
+            {bolehCetak ? (
+              <button type="button" onClick={cetak} disabled={sibuk} className="btn-primary inline-flex min-h-[44px] items-center gap-2">
+                <IconPrint size={17} />
+                {teks('Cetak / Simpan PDF')}
+              </button>
+            ) : null}
+            {peringatan ? (
+              <a
+                href={tautanWhatsapp(
+                  teks('Halo, saya {nama} (NIM {nim}). Saya ingin meminta penjelasan soal akses cetak sertifikat VIBE saya.', {
+                    nama: student.name,
+                    nim: student.nim,
+                  }),
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-ghost inline-flex min-h-[44px] items-center gap-2"
               >
-                {bolehCetak || keadaan === 'belum_layak' ? <IconPrint size={17} /> : <IconClock size={17} />}
-                {bolehCetak || keadaan === 'belum_layak' ? teks('Cetak sertifikat') : teks('Menunggu persetujuan')}
-              </button>
-            )}
+                <IconChat size={17} />
+                {teks('Hubungi Kemahasiswaan')}
+              </a>
+            ) : null}
           </div>
 
           {galat ? (
@@ -134,38 +230,26 @@ export default function Sertifikat() {
             </p>
           ) : null}
 
-          {keadaan === 'ditolak' && permintaan?.ditolak ? (
-            <p className="mt-4 rounded-xl bg-surface-2 px-4 py-3 text-[13.5px] leading-relaxed text-ink">
-              <span className="font-bold">{teks('Alasan penolakan')}:</span> {permintaan.ditolak.catatan}
-              <span className="mt-1 block text-[12.5px] text-ink-2">
-                {teks('{oleh}, {tanggal}', { oleh: permintaan.ditolak.oleh ?? '', tanggal: permintaan.ditolak.tanggal })}
-              </span>
-            </p>
-          ) : null}
+          {permintaan && LANGKAH_SERTIFIKAT.includes(keadaan) ? <LangkahAkses permintaan={permintaan} /> : null}
 
-          {keadaan === 'dicabut' && permintaan?.dicabut ? (
-            <p className="mt-4 rounded-xl bg-surface-2 px-4 py-3 text-[13.5px] leading-relaxed text-ink">
-              <span className="font-bold">{teks('Alasan pencabutan')}:</span> {permintaan.dicabut.alasan}
-              <span className="mt-1 block text-[12.5px] text-ink-2">
-                {teks('{oleh}, {tanggal}', { oleh: permintaan.dicabut.oleh ?? '', tanggal: permintaan.dicabut.tanggal })}
-              </span>
-            </p>
-          ) : null}
-
-          {permintaan && !['belum_layak', 'ditolak', 'dicabut'].includes(keadaan) ? (
-            <LangkahAkses permintaan={permintaan} />
-          ) : null}
-
-          <CatatanKaki>
-            {teks('Sertifikat dicetak, atau disimpan sebagai PDF lewat dialog cetak, dari tombol di halaman ini, dan setiap pembukaan dialog cetak tercatat. Sertifikat tidak dikirim lewat surel.')}
-          </CatatanKaki>
+          <CatatanKaki>{teks(CATATAN_CETAK[keadaan] ?? CATATAN_CETAK_BAWAAN)}</CatatanKaki>
         </section>
 
-        <section className="kartu px-6 py-5 sm:px-7">
-          <h2 className="text-[17px] font-extrabold text-ink">{teks('Syarat kelayakan')}</h2>
-          <ul className="mt-3 divide-y divide-line">
+        {/* --------------------------- kelayakan akademik --------------------------- */}
+        <section aria-labelledby="judul-kelayakan" className="kartu px-6 py-5 sm:px-7">
+          <h2 id="judul-kelayakan" className="text-[17px] font-extrabold text-ink">
+            {teks('Kelayakan akademik')}
+          </h2>
+          <p className="mt-1 text-[14px] leading-relaxed text-ink-2">
+            {k.layak
+              ? teks('Semua syarat nilai dan aspek terpenuhi.') +
+                ' ' +
+                teks('Nilai akhir {nilai}, predikat {huruf}.', { nilai: t.akhir.nilai, huruf: hurufMutu(t.akhir.nilai)?.huruf })
+              : teks('{n} dari {total} syarat belum terpenuhi.', { n: k.gagal.length, total: k.syarat.length })}
+          </p>
+          <ul className="mt-2 divide-y divide-line">
             {k.syarat.map((s) => (
-              <li key={s.id} className="flex items-start gap-3 py-3.5">
+              <li key={s.id} className="flex items-start gap-3 py-3">
                 <span className="mt-0.5 text-ink-2">{s.lolos ? <IconCheck size={18} /> : <IconX size={18} />}</span>
                 <div className="min-w-0 flex-1">
                   {/* labelT/alasanT, bukan label/alasan: kalimat jadi yang berisi angka tidak ada di kamus, jadi dulu
@@ -185,16 +269,60 @@ export default function Sertifikat() {
   )
 }
 
+/** "Biro Kemahasiswaan, 25 Okt 2026" dari jejak keputusan { oleh, tanggal }. */
+function jejak(keputusan, bahasa) {
+  return [keputusan?.oleh, tanggalPendek(keputusan?.tanggal, bahasa)].filter(Boolean).join(', ')
+}
+
+function TandaIzin({ keadaan }) {
+  const Ikon =
+    keadaan === 'ditolak' || keadaan === 'dicabut'
+      ? IconAlert
+      : keadaan === 'siap_dicetak'
+        ? IconCheck
+        : keadaan === 'menunggu_admin' || keadaan === 'menunggu_superadmin'
+          ? IconClock
+          : null
+  if (!Ikon) return null
+  return (
+    <span
+      className={
+        'grid h-9 w-9 shrink-0 place-items-center rounded-xl ' +
+        (Ikon === IconAlert ? 'tanda-peringatan' : 'bg-brand-soft text-brand-ink')
+      }
+    >
+      <Ikon size={19} />
+    </span>
+  )
+}
+
+/** Baris berlabel di bawah judul status: alasan, siapa, tanggal, dan apa yang perlu dilakukan. `baris`: [kunci kamus label, isi]. */
+function RincianAkses({ baris }) {
+  const { t: teks } = useBahasa()
+  return (
+    <dl className="mt-4 grid gap-x-6 gap-y-2.5 border-t border-line pt-4 sm:grid-cols-[170px_minmax(0,1fr)]">
+      {baris
+        .filter(([, isi]) => isi)
+        .map(([label, isi]) => (
+          <div key={label} className="contents">
+            <dt className="text-[14px] font-bold leading-relaxed text-ink">{teks(label)}</dt>
+            <dd className="-mt-2 text-[14px] leading-relaxed text-ink sm:mt-0">{isi}</dd>
+          </div>
+        ))}
+    </dl>
+  )
+}
+
 /** Tiga langkah akses cetak: Menunggu Admin, Menunggu Super Admin, Siap dicetak; yang sudah lewat bertanda centang. */
 function LangkahAkses({ permintaan }) {
-  const { t: teks } = useBahasa()
+  const { t: teks, bahasa } = useBahasa()
   const sekarang = LANGKAH_SERTIFIKAT.indexOf(permintaan.status)
   const keterangan = [
     permintaan.lapis1
-      ? teks('Ditinjau {tanggal}', { tanggal: permintaan.lapis1.tanggal })
-      : teks('Diajukan {tanggal}', { tanggal: permintaan.diajukan }),
+      ? teks('Ditinjau {tanggal}', { tanggal: tanggalPendek(permintaan.lapis1.tanggal, bahasa) })
+      : teks('Diajukan {tanggal}', { tanggal: tanggalPendek(permintaan.diajukan, bahasa) }),
     permintaan.lapis2
-      ? teks('Disetujui {tanggal}', { tanggal: permintaan.lapis2.tanggal })
+      ? teks('Disetujui {tanggal}', { tanggal: tanggalPendek(permintaan.lapis2.tanggal, bahasa) })
       : permintaan.status === 'menunggu_superadmin'
         ? teks('Sedang ditinjau')
         : teks('Belum'),

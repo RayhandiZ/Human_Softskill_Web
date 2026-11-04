@@ -4,6 +4,9 @@ export const SSO_LUPA_SANDI = 'https://sso.umn.ac.id/password/public/forgottenpa
 
 const NOMOR_WHATSAPP = '622154220808'
 
+/** Tautan WhatsApp UMN dengan pesan awal, yang masih bisa diubah pengirimnya sebelum dikirim. */
+export const tautanWhatsapp = (pesan) => 'https://wa.me/' + NOMOR_WHATSAPP + '?text=' + encodeURIComponent(pesan)
+
 export const KONTAK_UMN = {
   telepon: {
     tampil: '(021) 5422 0808 ext. 3902',

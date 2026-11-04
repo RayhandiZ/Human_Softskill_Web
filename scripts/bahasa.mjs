@@ -111,7 +111,7 @@ const DARI_DATA = [
   'Senin sampai Jumat, 08.00 hingga 17.00 WIB',
   /* Judul grafik: prop title/subtitle diterjemahkan di dalam ChartFrame. */
   'Grafik Sebaran Aspek', 'Dari {n} mahasiswa yang sudah punya nilai',
-  'Profil enam cluster', 'Rata-rata aspek CPMK di tiap cluster',
+  'Profil enam cluster', 'Rata-rata aspek CPMK di tiap cluster, skala 0 sampai 100',
   'Nilai per aspek CPMK', 'Aspek CPMK, dikelompokkan menurut area pengembangan',
   'Perkembangan nilai per semester',
   'Nilai tersimpan per bulan', 'Nilai tersimpan', 'Bulan',
@@ -133,18 +133,30 @@ const DARI_DATA = [
   /* Cara masuknya nilai satu batch (CARA_BATCH di admin/Nilai.jsx, lewat t(CARA_BATCH[b.cara])). */
   'input manual', 'unggahan dosen', 'pengajuan koreksi',
   /* Persetujuan dua lapis (src/lib/duaLapis.js): label status koreksi dan sertifikat, kalimat keadaan sertifikat
-     (KALIMAT_KEADAAN di student/Sertifikat.jsx), dan ubin Sertifikat di Dashboard (UBIN_SERTIFIKAT). */
+     (KALIMAT_IZIN di student/Sertifikat.jsx), dan ubin Sertifikat di Dashboard (UBIN_SERTIFIKAT). */
   'Menunggu Admin', 'Menunggu Super Admin', 'Disetujui', 'Ditolak', 'Siap dicetak',
   'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.',
-  'Permintaan akses cetak sedang ditinjau admin Kemahasiswaan.',
-  'Admin Kemahasiswaan sudah meninjau. Menunggu keputusan Super Admin.',
-  'Akses cetak sudah disetujui. Sertifikat siap dicetak.',
-  'Permintaan akses cetak ditolak. Periksa alasannya, lalu ajukan lagi bila sudah sesuai.',
-  'Belum tersedia', 'Bisa diminta', 'Minta akses cetak di halaman ini', 'Menunggu persetujuan',
-  'Sedang ditinjau admin Kemahasiswaan', 'Menunggu persetujuan Super Admin', 'Buka untuk mencetak',
+  'Belum tersedia', 'Bisa diminta', 'Minta akses cetak di halaman ini',
+  'Menunggu persetujuan Super Admin', 'Buka untuk mencetak',
   'Permintaan ditolak', 'Buka untuk melihat alasannya',
-  /* Akses cetak yang dicabut: label status, kalimat keadaan, dan ubin Dashboard. */
+  /* Akses cetak yang dicabut: label status dan ubin Dashboard. */
   'Dicabut', 'Akses dicabut',
+  /* Halaman sertifikat mahasiswa (JUDUL_IZIN, KALIMAT_IZIN, LANGKAH_BERIKUTNYA, CATATAN_CETAK, label RincianAkses) dan ubinnya. */
+  'Belum bisa diminta', 'Belum diminta', 'Akses cetak disetujui', 'Permintaan akses cetak ditolak', 'Akses cetak dicabut',
+  'Akses cetak bisa diminta setelah seluruh syarat di bawah terpenuhi, tanpa terlewat satu pun.',
+  'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.',
+  'Sertifikat siap dicetak atau disimpan sebagai PDF.',
+  'Admin Kemahasiswaan meninjau permintaanmu, lalu Super Admin memutuskannya.',
+  'Admin Kemahasiswaan sudah meninjau. Super Admin akan memutuskannya.',
+  'Sertifikat dicetak, atau disimpan sebagai PDF lewat dialog cetak, dari tombol di halaman ini, dan setiap pembukaan dialog cetak tercatat. Sertifikat tidak dikirim lewat surel.',
+  'Setelah akses dipulihkan, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.',
+  'Setelah akses disetujui, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.',
+  'Alasan', 'Dicabut oleh', 'Ditolak oleh', 'Yang perlu dilakukan', 'Diajukan', 'Langkah berikutnya',
+  'Ajukan peninjauan akses', 'Minta akses cetak lagi', 'Minta akses cetak', 'Oleh admin Kemahasiswaan', 'Sedang ditinjau',
+  /* Kartu nilai akhir mahasiswa: seri grafik dan label Cara hitung, lalu pilihan urutan Riwayat. */
+  'Rata-rata Anda', 'Nilai semester', 'Nilai aspek', 'Aspek final', 'Aspek dinilai',
+  'Terbaru', 'Terlama', 'Ditetapkan oleh {oleh}', 'Dinilai oleh {oleh}',
+  'Tidak ada catatan yang cocok dengan saringan ini.', 'Lihat rincian', 'Tutup rincian',
   /* Rekomendasi admin saat meneruskan akses cetak (LABEL_SARAN di duaLapis.js), kuncinya di Rincian Log Aktivitas, dan
      label tindakannya (LABEL_LOG). */
   'Disarankan', 'Tidak disarankan', 'Tidak tercatat', 'Rekomendasi', 'Teruskan akses cetak sertifikat',
@@ -153,7 +165,6 @@ const DARI_DATA = [
   'angkatan sudah disahkan', 'program sudah selesai', 'aspek sudah final',
   'Menunggu persetujuan Super Admin', 'Disetujui Super Admin', 'Ditolak Super Admin', 'Gagal dijalankan', 'Ditarik',
   'Perbaikan nilai dari dosen', 'Ubah kelas dosen',
-  'Akses cetak sertifikatmu dicabut. Baca alasannya, lalu minta lagi bila masalahnya sudah selesai.',
   /* Label menu panel dosen (DosenLayout, diterjemahkan MenuSamping dan BilahBawah); 'Riwayat' juga menu mahasiswa. */
   'Beranda', 'Unggah Nilai', 'Unggah', 'Riwayat', 'Profil',
   /* Unggahan nilai dosen: galat dan peringatan bacaRekap (src/lib/unggahDosen.js) dan galat bacaBarisBerkas

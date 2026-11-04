@@ -297,6 +297,20 @@ export async function ujiBilahBawah(rute) {
   return hasil
 }
 
+/** Kaca panel dosen: kelas yang dipakai index.css ada pada unsur yang berkaca, dan isi halaman tidak memakainya. */
+export async function ujiKacaDosen() {
+  const { el, lepas } = await pasang('/dosen')
+  await klik(el.querySelector('button[aria-label="Menu akun"]'))
+  const hasil = {
+    bilahAtas: Boolean(el.querySelector('.panel-dosen header.kepala-kerja .bilah-kerja')),
+    menuAkun: Boolean(el.querySelector('.panel-dosen .lapisan-kaca')),
+    tombolBantuan: Boolean(el.querySelector('.panel-dosen .layanan-tombol')),
+    isiTanpaKaca: !el.querySelector('main .kaca, main .lapisan-kaca, main .layanan-tombol, main .bilah-kerja'),
+  }
+  lepas()
+  return hasil
+}
+
 /**
  * Tab penyaring dan baris aspek yang bisa dibuka di dashboard mahasiswa.
  * Angka di tab harus sama dengan jumlah baris yang benar-benar tampil, dan
@@ -417,13 +431,40 @@ export async function ujiRiwayat(rute) {
 
   await klik(tab('Final'))
   hasil.barisFinal = baris().length
-  hasil.finalSelaluDisetujui = baris().every((li) => /disetujui oleh/.test(li.textContent))
+  hasil.finalSelaluDisetujui = baris().every((li) => /Ditetapkan oleh/.test(li.textContent))
 
   await klik(tab('Sementara'))
   hasil.barisSementara = baris().length
   hasil.sementaraTidakDisetujui = baris().every(
-    (li) => /belum final/.test(li.textContent) && !/disetujui oleh/.test(li.textContent),
+    (li) => /belum final/.test(li.textContent) && !/Ditetapkan oleh/.test(li.textContent),
   )
+
+  // Pencarian, saringan, dan urutan bekerja bersama tab Semua.
+  await klik(tab('Semua'))
+  const kotakCari = el.querySelector('input[type="search"]')
+  const pilihan = (label) => [...el.querySelectorAll('label.pilihan-ringkas')].find((l) => l.textContent.startsWith(label))?.querySelector('select')
+  const namaTugas = () => baris().map((li) => li.querySelector('span span')?.textContent)
+  const urutanAwal = namaTugas()
+  const dicari = urutanAwal[0] ?? ''
+  await ketik(kotakCari, dicari)
+  hasil.cariMenyaring = baris().length >= 1 && baris().length < hasil.barisSemua && namaTugas().every((n) => n === dicari)
+  hasil.cariRinci = baris().length + ' baris untuk ' + dicari
+  await ketik(kotakCari, 'tidak ada tugas seperti ini')
+  const tombolHapus = [...el.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Hapus saringan')
+  hasil.kosongBisaDihapus = baris().length === 0 && Boolean(tombolHapus)
+  await klik(tombolHapus)
+  hasil.kosongBisaDihapus = hasil.kosongBisaDihapus && baris().length === hasil.barisSemua
+  await pilih(pilihan('Semester'), '1')
+  const barisSemester1 = baris().length
+  await pilih(pilihan('Semester'), 'Semua')
+  await pilih(pilihan('Sumber'), 'PDP')
+  const barisPdp = baris().length
+  await pilih(pilihan('Sumber'), 'Semua')
+  hasil.saringMenyaring =
+    barisSemester1 > 0 && barisSemester1 < hasil.barisSemua && barisPdp > 0 && barisPdp < hasil.barisSemua && baris().length === hasil.barisSemua
+  await pilih(pilihan('Urutan'), 'Terlama')
+  hasil.urutanBalik = namaTugas()[0] !== urutanAwal[0] || hasil.barisSemua < 2
+  await pilih(pilihan('Urutan'), 'Terbaru')
 
   const lonceng = el.querySelector('button[aria-label$="komponen belum dinilai"]')
   hasil.lonceng = lonceng ? Number(lonceng.getAttribute('aria-label').match(/\d+/)[0]) : 0
@@ -1684,9 +1725,9 @@ export async function ujiTrenSemester(sem) {
       titikKumulatif.length > 0 &&
       titikKumulatif.every((n) => n.className.includes('bg-surface')) &&
       titikSemester.every((n) => !n.className.includes('bg-surface')),
-    catatanGabungan: /Rata-rata: dihitung dari semua aspek sejak Semester 1 sampai semester itu/.test(wadah?.textContent ?? ''),
-    // Catatan dan legenda memakai sebutan yang sama (permintaan 26 Okt 2026).
-    tanpaSebutanLama: !/Rata-rata gabungan/.test(wadah?.textContent ?? ''),
+    // Rapat 24 Okt 2026: bukan "kumulatif", karena akumulasi berarti penjumlahan dan angkanya rata-rata.
+    tanpaSebutanLama: !/Rata-rata gabungan|kumulatif/i.test(wadah?.textContent ?? ''),
+    angkaDiTitik: grafik ? [...grafik.querySelectorAll('span.font-extrabold.tabular-nums')].map((n) => n.textContent) : [],
     jumlahTitikSemester: titikSemester.length,
     jumlahTitikKumulatif: titikKumulatif.length,
     jumlahJalur: jalur.length,
@@ -1696,8 +1737,8 @@ export async function ujiTrenSemester(sem) {
     takMelampaui: takMelampauiSeri('tren-semester', titikSemester) && takMelampauiSeri('tren-gabungan', titikKumulatif),
     garisBantu: bantu.length,
     labelSecocokGaris: bantu.length > 0 && sumbu.length === bantu.length,
-    ringkasTetap: /Tetap sejak Semester/.test(judul),
-    ringkasNaik: /Naik \d+ sejak Semester/.test(judul),
+    ringkasTetap: /Nilai semester tetap sejak Semester/.test(judul),
+    ringkasNaik: /Nilai semester naik \d+ poin sejak Semester/.test(judul),
     labelSemuaSemester:
       labelSemester.length === 3 && ['Semester 1', 'Semester 2', 'Semester 3'].every((s) => labelSemester.some((n) => n.textContent === s)),
     // Semester terkunci bergembok, tidak diredupkan (redup menjatuhkan kontrasnya).
@@ -1709,6 +1750,15 @@ export async function ujiTrenSemester(sem) {
     // Hanya semester bernilai yang bisa dipilih.
     jumlahKolom: kolom.length,
     tanpaTipAwal: !tip() && garisTegak().length === 0,
+  }
+
+  // Cara hitung: tertutup bawaannya, dan isinya mengikat nilai akhir ke titik terakhir garis rata-rata.
+  const tombolCara = [...el.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Cara hitung')
+  if (tombolCara) {
+    const tertutup = tombolCara.getAttribute('aria-expanded') === 'false' && !el.querySelector('#cara-hitung')
+    await klik(tombolCara)
+    hasil.caraHitung = tertutup && /titik terakhir garis Rata-rata Anda/.test(el.querySelector('#cara-hitung')?.textContent ?? '')
+    await klik(tombolCara)
   }
 
   if (kolom.length) {
@@ -1725,7 +1775,7 @@ export async function ujiTrenSemester(sem) {
     hasil.titikTerpilihBesar = semuaTitik.filter((n) => /h-\[11px\]|h-5/.test(n.className)).length
     hasil.labelTerpilihTebal = labelSemester.some((n) => n.className.includes('font-bold'))
     // Rata-rata gabungan di semester terakhir harus sama persis dengan angka besar.
-    const m = isi.match(/Rata-rata:(\d+)/)
+    const m = isi.match(/Rata-rata Anda:(\d+)/)
     hasil.kumulatifSamaAngkaBesar = m ? Number(m[1]) === angkaBesar : false
     hasil.tipTersembunyiDariSR = tip()?.getAttribute('aria-hidden') === 'true'
 
@@ -1824,7 +1874,7 @@ export async function ujiSertifikat(studentId) {
     window.localStorage.setItem('sk5c.session', JSON.stringify({ role: 'student', email: 'x@student.umn.ac.id', name: 'X', initials: 'X', studentId }))
   }
   const { el, lepas } = await pasang('/mahasiswa/sertifikat')
-  const tombol = [...el.querySelectorAll('button')].find((b) => /Cetak sertifikat/.test(b.textContent))
+  const tombol = [...el.querySelectorAll('button')].find((b) => /Cetak \/ Simpan PDF/.test(b.textContent))
   let dicetak = 0
   const cetakAsli = window.print
   window.print = () => { dicetak++ }
@@ -1836,7 +1886,7 @@ export async function ujiSertifikat(studentId) {
     mati: Boolean(tombol?.disabled),
     dicetak,
     // Disaring ke bagian syarat; menu sidebar juga daftar ul > li.
-    jumlahSyarat: [...el.querySelectorAll('section')].find((n) => /Syarat kelayakan/.test(n.textContent))?.querySelectorAll('li').length ?? 0,
+    jumlahSyarat: [...el.querySelectorAll('section')].find((n) => /Kelayakan akademik/.test(n.textContent))?.querySelectorAll('li').length ?? 0,
     belum: (el.textContent.match(/Belum terpenuhi/g) ?? []).length,
     adaLembar: Boolean(lembar),
     isiLembar: lembar?.textContent ?? '',
@@ -1920,11 +1970,15 @@ export async function ujiAlurSertifikat() {
     // 1. Layak, belum meminta: hanya tombol minta, belum ada lembar.
     sesi(MAHASISWA)
     let { el, lepas } = await pasang('/mahasiswa/sertifikat')
-    hasil.awalBisaMinta = Boolean(tombol(el, 'Minta akses cetak')) && !tombol(el, 'Cetak sertifikat')
+    hasil.awalBisaMinta = Boolean(tombol(el, 'Minta akses cetak')) && !tombol(el, 'Cetak / Simpan PDF')
     hasil.awalTanpaLembar = !document.querySelector('.lembar-sertifikat')
     await klik(tombol(el, 'Minta akses cetak'))
     hasil.mintaTercatat = milik()?.status === 'menunggu_admin'
-    hasil.menungguMati = Boolean(tombol(el, 'Menunggu persetujuan')?.disabled)
+    hasil.menungguDitinjau =
+      /Sedang ditinjau/.test(el.textContent) &&
+      /Diajukan/.test(el.textContent) &&
+      /Langkah berikutnya/.test(el.textContent) &&
+      !tombol(el, 'Cetak / Simpan PDF')
     const langkahAktif = el.querySelector('ol[aria-label="Langkah akses cetak"] [aria-current="step"]')
     hasil.langkahPertamaAktif = /Menunggu Admin/.test(langkahAktif?.textContent ?? '')
     hasil.masihTanpaLembar = !document.querySelector('.lembar-sertifikat')
@@ -2017,7 +2071,7 @@ export async function ujiAlurSertifikat() {
 
     sesi(MAHASISWA)
     ;({ el, lepas } = await pasang('/mahasiswa/sertifikat'))
-    hasil.belumBisaCetak = Boolean(tombol(el, 'Menunggu persetujuan')?.disabled) && !document.querySelector('.lembar-sertifikat')
+    hasil.belumBisaCetak = /Sedang ditinjau/.test(el.textContent) && !tombol(el, 'Cetak / Simpan PDF') && !document.querySelector('.lembar-sertifikat')
     lepas()
 
     // 5. Lapis kedua dari halaman Persetujuan super admin, dengan rekomendasi admin yang terbaca.
@@ -2070,7 +2124,14 @@ export async function ujiAlurSertifikat() {
     sesi(MAHASISWA)
     ;({ el, lepas } = await pasang('/mahasiswa/sertifikat'))
     hasil.mahasiswaMelihatPencabutan =
-      el.textContent.includes('Ada laporan sikap dari dosen wali.') && Boolean(tombol(el, 'Minta akses cetak lagi'))
+      /Akses cetak dicabut/.test(el.textContent) &&
+      el.textContent.includes('Ada laporan sikap dari dosen wali.') &&
+      Boolean(tombol(el, 'Ajukan peninjauan akses'))
+    // Sistem hanya menyimpan alasan, jadi langkahnya tidak dikarang: tertulis belum tersedia, dengan jalur bertanya.
+    hasil.pencabutanJujur =
+      /Rincian langkahnya belum tersedia/.test(el.textContent) &&
+      /wa\.me/.test(tautan(el, 'Hubungi Kemahasiswaan')?.getAttribute('href') ?? '')
+    hasil.instruksiBersyarat = /Setelah akses dipulihkan, tombol Cetak \/ Simpan PDF akan tersedia/.test(el.textContent)
     hasil.tanpaLembarSesudahDicabut = !document.querySelector('.lembar-sertifikat')
     try {
       await catatCetakSertifikat(milik().id)
@@ -2078,7 +2139,7 @@ export async function ujiAlurSertifikat() {
     } catch {
       hasil.cetakSesudahDicabutDitolak = milik()?.cetak?.jumlah === 2
     }
-    await klik(tombol(el, 'Minta akses cetak lagi'))
+    await klik(tombol(el, 'Ajukan peninjauan akses'))
     hasil.mintaLagiSesudahDicabut = milik()?.status === 'menunggu_admin' && jumlahMilik() === 3
     lepas()
   } catch (e) {

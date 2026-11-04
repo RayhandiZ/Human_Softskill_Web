@@ -1,6 +1,7 @@
 import { Fragment, useLayoutEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { StatusTeks, Terkunci } from '../../components/Ui'
+import Lipat from '../../components/Lipat'
 import {
   IconCheck,
   IconChevronDown,
@@ -8,7 +9,7 @@ import {
   IconDocument,
   IconLock,
 } from '../../components/Icons'
-import { CONFIG } from '../../lib/config'
+import { CATATAN_BOBOT_SEMENTARA, CONFIG } from '../../lib/config'
 import { SUMBER, getArea } from '../../lib/curriculum'
 import { kelayakanSertifikat } from '../../lib/rules'
 import { PERIODE_AKTIF, labelPeriode, transkripOf } from '../../lib/data'
@@ -93,7 +94,7 @@ function SebaranAspek({ t }) {
 
 /* ------------------------ tren nilai per semester ------------------------- */
 
-const TINGGI_BAGAN = 116
+const TINGGI_BAGAN = 100
 
 /** Kunci legenda yang meniru tanda di grafik: garis bertitik isi (semester) atau bercincin (gabungan). Bentuknya
     ikut membedakan kedua seri, jadi tidak bergantung pada warna saja. */
@@ -116,9 +117,9 @@ function TrenSemester({ t }) {
   const teks = useTeks()
   const daftar = Object.values(t.semester)
   const dinilai = daftar.filter((s) => s.nilai != null)
-  // Garis Rata-rata = nilai akhir bila dihitung sampai semester itu, jadi titik terakhirnya sama dengan nilai akhir.
+  // Garis Rata-rata Anda = nilai akhir bila dihitung sampai semester itu, jadi titik terakhirnya sama dengan nilai akhir.
   // Kedua rumus yang masih menunggu konfirmasi (MODE_AGREGASI) sama-sama rata-rata, bukan jumlah; karena itu
-  // labelnya bukan lagi "kumulatif" (rapat 24 Okt 2026), dan sejak 26 Okt 2026 cukup "Rata-rata".
+  // labelnya bukan "kumulatif" (rapat 24 Okt 2026). "Anda" supaya tidak terbaca rata-rata kelas (4 Nov 2026).
   const gabungan = Object.fromEntries(dinilai.map((s) => [s.semester, nilaiKumulatif(t, s.semester)]))
 
   const { bawah, atas, garis: garisBantu } = jendelaNilai([
@@ -143,7 +144,7 @@ function TrenSemester({ t }) {
   // Warna dari --tren-*: pasangan biru dan abu-abu yang lolos uji beda warna di tiap tema; lihat index.css.
   const SERI = [
     { kunci: 'semester', label: 'Nilai tiap semester', warna: 'var(--tren-semester)', tebal: 2.5, cincin: false, ambil: (s) => s.nilai },
-    { kunci: 'gabungan', label: 'Rata-rata', warna: 'var(--tren-gabungan)', tebal: 2, cincin: true, ambil: (s) => gabungan[s.semester] },
+    { kunci: 'gabungan', label: 'Rata-rata Anda', warna: 'var(--tren-gabungan)', tebal: 2, cincin: true, ambil: (s) => gabungan[s.semester] },
   ]
 
   const mulai = dinilai[0]
@@ -151,10 +152,19 @@ function TrenSemester({ t }) {
   const selisih = kini.nilai - mulai.nilai
   const ringkas =
     selisih === 0
-      ? teks('Tetap sejak Semester {n}', { n: mulai.semester })
+      ? teks('Nilai semester tetap sejak Semester {n}.', { n: mulai.semester })
       : selisih > 0
-        ? teks('Naik {d} sejak Semester {n}', { d: selisih, n: mulai.semester })
-        : teks('Turun {d} sejak Semester {n}', { d: -selisih, n: mulai.semester })
+        ? teks('Nilai semester naik {d} poin sejak Semester {n}.', { d: selisih, n: mulai.semester })
+        : teks('Nilai semester turun {d} poin sejak Semester {n}.', { d: -selisih, n: mulai.semester })
+
+  // Angka di titik: awal dan ujung garis semester (dasar kalimat naik atau turun di atas) dan ujung garis rata-rata (sama
+  // dengan nilai akhir). Yang lebih tinggi ditulis di atas titiknya, yang lebih rendah di bawahnya, supaya tidak bertumpuk.
+  const akhirRata = gabungan[kini.semester]
+  const angkaTitik = [
+    ...(mulai !== kini ? [{ kunci: 'awal', sem: mulai.semester, nilai: mulai.nilai, atas: true }] : []),
+    { kunci: 'ujung', sem: kini.semester, nilai: kini.nilai, atas: kini.nilai >= akhirRata },
+    ...(akhirRata !== kini.nilai ? [{ kunci: 'rata', sem: kini.semester, nilai: akhirRata, atas: akhirRata > kini.nilai }] : []),
+  ]
 
   const ambang = CONFIG.AMBANG_SERTIFIKAT
   const ambangTampil = ambang > bawah && ambang < atas
@@ -189,11 +199,11 @@ function TrenSemester({ t }) {
 
   return (
     <div ref={wadah} className="relative">
-      <p className="flex items-baseline justify-between gap-3">
+      <p className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
         <span className="text-[13px] font-semibold text-ink-2">{teks('Perkembangan nilai')}</span>
-        <span className="shrink-0 text-[12.5px] font-bold text-ink-2">{ringkas}</span>
+        <span className="text-[12.5px] font-bold text-ink-2">{ringkas}</span>
       </p>
-      <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] font-semibold text-ink-2">
+      <p className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1 text-[13px] font-semibold text-ink-2">
         {SERI.map((r) => (
           <span key={r.kunci} className="inline-flex items-center gap-2">
             <KunciSeri seri={r} />
@@ -202,7 +212,8 @@ function TrenSemester({ t }) {
         ))}
       </p>
 
-      <div className="mt-3 flex gap-2">
+      {/* mt-5: ruang untuk angka titik yang bisa naik melewati garis teratas. */}
+      <div className="mt-5 flex gap-2">
         <div aria-hidden="true" className="relative w-[26px] shrink-0" style={{ height: TINGGI_BAGAN }}>
           {garisBantu.map((v) => (
             <span
@@ -305,6 +316,21 @@ function TrenSemester({ t }) {
             }),
           )}
 
+          {angkaTitik.map((a) => (
+            <span
+              key={a.kunci}
+              aria-hidden="true"
+              className="pointer-events-none absolute text-[12px] font-extrabold leading-none tabular-nums text-ink"
+              style={{
+                left: px(a.sem) + '%',
+                top: py(a.nilai) + '%',
+                transform: 'translate(-50%, ' + (a.atas ? 'calc(-100% - 10px)' : '10px') + ')',
+              }}
+            >
+              {a.nilai}
+            </span>
+          ))}
+
           <div role="list" aria-label={teks('Perkembangan nilai')} className="absolute inset-0">
             {kolom.map(({ s, kiri, lebar }, i) => (
               <div
@@ -341,12 +367,6 @@ function TrenSemester({ t }) {
           </span>
         ))}
       </div>
-
-      <p className="mt-3 text-[12.5px] leading-snug text-ink-2">
-        {teks(
-          'Rata-rata: dihitung dari semua aspek sejak Semester 1 sampai semester itu, sehingga titik terakhirnya sama dengan nilai akhir.',
-        )}
-      </p>
 
       {pilih ? (
         <div
@@ -420,6 +440,39 @@ function UbinRingkas({ judul, nilai, satuan, ke, children }) {
   )
 }
 
+/* Isi "Cara hitung" di kartu nilai akhir. Dua rumus MODE_AGREGASI sama-sama rata-rata, jadi kalimatnya mengikuti yang aktif. */
+function CaraHitung({ t }) {
+  const teks = useTeks()
+  const adaTren = Object.values(t.semester).filter((s) => s.nilai != null).length >= 2
+  const baris = [
+    [
+      'Nilai akhir',
+      (t.akhir.mode === 'per-semester'
+        ? teks('Rata-rata nilai tiap semester yang sudah dinilai.')
+        : teks('Rata-rata semua aspek yang sudah dinilai.')) +
+        (adaTren ? ' ' + teks('Angkanya sama dengan titik terakhir garis Rata-rata Anda.') : ''),
+    ],
+    ['Nilai semester', teks('Rata-rata aspek di semester itu saja, jadi bisa lebih tinggi atau lebih rendah daripada nilai akhir.')],
+    ['Nilai aspek', teks('Gabungan nilai tugasnya menurut bobot.') + ' ' + teks(CATATAN_BOBOT_SEMENTARA)],
+  ]
+  return (
+    <div className="mt-4 rounded-xl bg-surface-2 px-4 py-3">
+      <dl className="grid gap-x-5 gap-y-1.5 text-[13px] leading-snug sm:grid-cols-[110px_minmax(0,1fr)]">
+        {baris.map(([label, isi]) => (
+          <div key={label} className="contents">
+            <dt className="font-bold text-ink">{teks(label)}</dt>
+            <dd className="text-ink-2 max-sm:mb-1">{isi}</dd>
+          </div>
+        ))}
+      </dl>
+      <Link href="/mahasiswa/transkrip" className="mt-2 inline-flex min-h-[44px] items-center gap-1 text-[13px] font-bold text-brand-ink hover:underline sm:min-h-[24px]">
+        {teks('Lihat bobot tiap komponen di transkrip')}
+        <IconChevronRight size={15} />
+      </Link>
+    </div>
+  )
+}
+
 
 /* ------------------------------ status aspek ------------------------------ */
 
@@ -439,8 +492,8 @@ export const BATAS_BARIS_ASPEK = 5
 const UBIN_SERTIFIKAT = {
   belum_layak: ['Belum tersedia', null],
   bisa_diminta: ['Bisa diminta', 'Minta akses cetak di halaman ini'],
-  menunggu_admin: ['Menunggu persetujuan', 'Sedang ditinjau admin Kemahasiswaan'],
-  menunggu_superadmin: ['Menunggu persetujuan', 'Menunggu persetujuan Super Admin'],
+  menunggu_admin: ['Sedang ditinjau', 'Oleh admin Kemahasiswaan'],
+  menunggu_superadmin: ['Sedang ditinjau', 'Menunggu persetujuan Super Admin'],
   siap_dicetak: ['Siap dicetak', 'Buka untuk mencetak'],
   ditolak: ['Permintaan ditolak', 'Buka untuk melihat alasannya'],
   dicabut: ['Akses dicabut', 'Buka untuk melihat alasannya'],
@@ -465,9 +518,9 @@ function BarisAspek({ a, terbuka, onToggle }) {
         onClick={onToggle}
         aria-expanded={terbuka}
         aria-controls={idRinci}
-        className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-surface-2 focus-visible:outline-offset-[-3px] sm:gap-4 sm:px-6"
+        className="flex w-full items-center gap-3 px-5 py-3 text-left transition hover:bg-surface-2 focus-visible:outline-offset-[-3px] sm:gap-4 sm:px-6"
       >
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-surface-2 text-[13px] font-bold text-ink">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface-2 text-[13px] font-bold text-ink">
           {a.aspek.kode}
         </span>
 
@@ -546,13 +599,9 @@ function AspekSaya({ t }) {
 
   return (
     <section className="kartu overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-3 pt-5 sm:px-6">
-        <div>
-          <h2 className="text-[17px] font-extrabold text-ink">{teks('Aspek penilaian')}</h2>
-          <p className="mt-0.5 text-[13.5px] text-ink-2">
-            {teks('Ketuk salah satu untuk melihat komponen nilainya')}
-          </p>
-        </div>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 px-5 pb-2 pt-4 sm:px-6">
+        <h2 className="text-[17px] font-extrabold text-ink">{teks('Aspek penilaian')}</h2>
+        <p className="text-[13.5px] text-ink-2">{teks('Pilih salah satu untuk melihat komponen nilainya')}</p>
       </div>
 
       {/* overflow-y-hidden wajib: overflow-x-auto ikut membuat sumbu y auto dan memunculkan batang gulir 1 px. */}
@@ -644,8 +693,9 @@ function PerjalananSemester({ t }) {
               <span
                 className={
                   'relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full ' +
+                  // text-surface, bukan putih: di tema gelap --brand-ink biru muda dan centang putih hanya 1,8:1.
                   (keadaan === 'selesai'
-                    ? 'bg-brand-ink text-white'
+                    ? 'bg-brand-ink text-surface'
                     : keadaan === 'berjalan'
                       ? 'border-2 border-brand-ink bg-surface text-brand-ink'
                       : 'bg-surface-2 text-ink-3')
@@ -687,7 +737,7 @@ function PerjalananSemester({ t }) {
 
       <Link
         href="/mahasiswa/peta"
-        className="mt-5 inline-flex min-h-[44px] items-center gap-1.5 text-[14px] font-bold text-brand-ink hover:underline sm:min-h-0"
+        className="mt-5 inline-flex min-h-[44px] items-center gap-1.5 text-[14px] font-bold text-brand-ink hover:underline sm:min-h-[24px]"
       >
         {teks('Buka Peta Perjalanan')}
         <IconChevronRight size={16} />
@@ -712,12 +762,24 @@ export default function Dashboard() {
 
   const terkunci = t.aspek.filter((a) => a.terkunci).length
   const [rinciBuka, setRinciBuka] = useState(false)
-  const persenDinilai = akhir.aspekTotal ? Math.round((akhir.aspekDinilai / akhir.aspekTotal) * 100) : 0
+  const [caraBuka, setCaraBuka] = useState(false)
+  // Judul ubin mengikuti keadaannya: "10/10 aspek final" sekaligus berarti seluruhnya sudah dinilai.
+  const semuaFinal = akhir.aspekTotal > 0 && akhir.aspekFinal === akhir.aspekTotal
+  const jumlahUbin = semuaFinal ? akhir.aspekFinal : akhir.aspekDinilai
+  const persenDinilai = akhir.aspekTotal ? Math.round((jumlahUbin / akhir.aspekTotal) * 100) : 0
+  const belumDinilai = akhir.aspekTotal - akhir.aspekDinilai - terkunci
+  const keteranganAspek = semuaFinal
+    ? teks('Seluruh aspek sudah selesai dinilai.')
+    : terkunci
+      ? teks('{n} aspek belum dibuka', { n: terkunci })
+      : belumDinilai
+        ? teks('{n} aspek belum dinilai', { n: belumDinilai })
+        : teks('{n} aspek belum final', { n: akhir.aspekTotal - akhir.aspekFinal })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* -------------------------------- sapaan ------------------------------- */}
-      <header className="flex flex-wrap items-end justify-between gap-4 pt-2">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-ink sm:text-[28px]">
             {teks(sapaan())}, {student.name.split(' ')[0]}
@@ -737,26 +799,43 @@ export default function Dashboard() {
       </header>
 
       {/* --------------------------------- ubin -------------------------------- */}
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <div className="kartu flex flex-col px-6 py-6 sm:px-7 sm:py-7">
+      {/* Dua kolom baru mulai xl: di 1024px menu samping memakan tempatnya, grafik tinggal 160px, dan label sumbunya bertumpuk. */}
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <div className="kartu flex flex-col px-6 py-5 sm:px-7">
           <p className="text-[14px] font-semibold text-ink-2">{teks('Nilai akhir')}</p>
 
           {/* Angka dan grade-nya saja (permintaan 26 Okt 2026); status dan dasar hitungnya ada di Transkrip. Di bawah
               ambang huruf mutu terendah tidak ada huruf, jadi labelnya yang ditulis. */}
-          <div className="mt-2 flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
+          <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
             <div className="sm:shrink-0">
               <p className="text-[56px] font-extrabold leading-[0.9] tracking-tight text-ink sm:text-[64px]">
                 {akhir.nilai ?? '-'}
               </p>
               {mutu ? (
-                <p className="mt-2.5 text-[15px] font-bold text-ink">
+                <p className="mt-2 text-[15px] font-bold text-ink">
                   {mutu.huruf ? teks('Grade {huruf}', { huruf: mutu.huruf }) : teks(mutu.label)}
                 </p>
+              ) : null}
+              {akhir.nilai != null ? (
+                <button
+                  type="button"
+                  onClick={() => setCaraBuka((v) => !v)}
+                  aria-expanded={caraBuka}
+                  aria-controls="cara-hitung"
+                  className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[13px] font-bold text-brand-ink hover:underline sm:min-h-[28px]"
+                >
+                  {teks('Cara hitung')}
+                  <IconChevronDown size={15} className={'shrink-0 transition-transform ' + (caraBuka ? 'rotate-180' : '')} />
+                </button>
               ) : null}
             </div>
 
             <GrafikRingkas t={t} />
           </div>
+
+          <Lipat buka={caraBuka} id="cara-hitung">
+            <CaraHitung t={t} />
+          </Lipat>
 
           <button
             type="button"
@@ -782,10 +861,11 @@ export default function Dashboard() {
           </button>
         </div>
 
-        <div id="ubin-rinci" className={(rinciBuka ? 'grid' : 'hidden') + ' gap-4 sm:grid'}>
+        {/* content-start saat Cara hitung terbuka: kartu kiri memanjang, dan kedua ubin ini tidak perlu ikut kosong memanjang. */}
+        <div id="ubin-rinci" className={(rinciBuka ? 'grid' : 'hidden') + ' gap-4 sm:grid sm:grid-cols-2 xl:grid-cols-1 ' + (caraBuka ? 'xl:content-start' : '')}>
           <UbinRingkas
-            judul="Aspek dinilai"
-            nilai={akhir.aspekDinilai}
+            judul={semuaFinal ? 'Aspek final' : 'Aspek dinilai'}
+            nilai={jumlahUbin}
             satuan={' / ' + akhir.aspekTotal}
           >
             <div
@@ -793,16 +873,12 @@ export default function Dashboard() {
               role="meter"
               aria-valuemin={0}
               aria-valuemax={akhir.aspekTotal}
-              aria-valuenow={akhir.aspekDinilai}
-              aria-label={teks('Aspek yang sudah dinilai')}
+              aria-valuenow={jumlahUbin}
+              aria-label={teks(semuaFinal ? 'Aspek yang sudah final' : 'Aspek yang sudah dinilai')}
             >
               <div className="h-full rounded-full bg-brand-ink" style={{ width: persenDinilai + '%' }} />
             </div>
-            <p className="mt-2 text-[12.5px] leading-snug text-ink-2">
-              {terkunci
-                ? teks('{n} aspek belum dibuka', { n: terkunci })
-                : teks('Semua aspek sudah dibuka')}
-            </p>
+            <p className="mt-2 text-[12.5px] leading-snug text-ink-2">{keteranganAspek}</p>
           </UbinRingkas>
 
           <UbinRingkas
@@ -825,7 +901,7 @@ export default function Dashboard() {
       {/* ------------------------------- dua kolom ----------------------------- */}
       {/* grid-cols-1 wajib: tanpa kolom eksplisit, kolom di HP ikut melebar selebar baris tab Aspek penilaian
           dan halaman bisa tergeser ke samping. */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0">
           <AspekSaya t={t} />
         </div>

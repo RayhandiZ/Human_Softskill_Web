@@ -23,6 +23,7 @@ import {
 import { CATATAN_BOBOT_SEMENTARA, CONFIG } from '../../lib/config'
 import { AREA, CLUSTER, SUMBER, SUMBER_LIST, getArea, getCluster, getIndikator, getKomponen } from '../../lib/curriculum'
 import { labelNilaiAkhir, statusDokumenTranskrip } from '../../lib/rules'
+import { BELUM_MEMENUHI, RUBRIK } from '../../lib/scoring'
 import { PERIODE_AKTIF, labelPeriode, transkripOf } from '../../lib/data'
 import { ajukanKoreksi, koreksiMilik, useStore } from '../../lib/store'
 import { LABEL_KOREKSI } from '../../lib/duaLapis'
@@ -61,15 +62,15 @@ export default function Transkrip({ student, untukAdmin = false }) {
     <div className="space-y-6 print:hidden">
       {/* ------------------------------ kop dokumen ------------------------------ */}
       <Card className="overflow-hidden print:border-0 print:shadow-none">
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line px-6 py-5">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-line px-6 py-4">
           <div>
             <p className="text-[12px] font-bold uppercase tracking-[.14em] text-brand-ink">
               Universitas Multimedia Nusantara
             </p>
-            <h1 className="mt-1.5 text-[24px] font-extrabold tracking-tight text-ink">
+            <h1 className="mt-1 text-[24px] font-extrabold leading-tight tracking-tight text-ink">
               {teks('Transkrip Capaian VIBE')}
             </h1>
-            <p className="mt-1 text-[13px] text-ink-2">
+            <p className="mt-0.5 text-[13px] text-ink-2">
               {teks('Program pembinaan VIBE terintegrasi, Semester 1 sampai {total}', {
                 total: CONFIG.TOTAL_SEMESTER_PROGRAM,
               })}
@@ -84,7 +85,7 @@ export default function Transkrip({ student, untukAdmin = false }) {
           )}
         </div>
 
-        <dl className="grid gap-x-8 gap-y-3 px-6 py-5 sm:grid-cols-2 lg:grid-cols-3">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-2.5 px-6 py-3.5 lg:grid-cols-4">
           {[
             ['Nama', student.name],
             ['NIM', student.nim],
@@ -101,34 +102,40 @@ export default function Transkrip({ student, untukAdmin = false }) {
             ['Periode cetak', teks(labelPeriode(PERIODE_AKTIF))],
             ['Nomor dokumen', nomorDokumen(student)],
           ].map(([k, v]) => (
-            <div key={k}>
+            <div key={k} className="min-w-0">
               <dt className="text-[12px] font-semibold text-ink-3">{teks(k)}</dt>
-              <dd className="mt-0.5 text-[14px] font-bold text-ink">{v}</dd>
+              <dd className="text-[13.5px] font-bold leading-snug text-ink [overflow-wrap:anywhere]">{v}</dd>
             </div>
           ))}
         </dl>
 
         {/* ---------------------------- ringkasan nilai --------------------------- */}
-        <div className="flex flex-wrap items-center gap-6 border-t border-line bg-surface-2 px-6 py-5">
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line bg-surface-2 px-6 py-3.5">
           <div>
-            <p className="text-[52px] font-extrabold leading-none tabular-nums text-ink">
+            <p className="text-[44px] font-extrabold leading-none tabular-nums text-ink">
               {t.akhir.nilai ?? '-'}
             </p>
             <p className="mt-1 text-[12px] font-semibold text-ink-3">{teks('Nilai akhir')}</p>
           </div>
-          <div className="min-w-[220px] flex-1 print:min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <PredikatTeks nilai={t.akhir.nilai} panjang />
-              <StatusTeks kuat={t.akhir.status === 'final'}>{teks(label.teks)}</StatusTeks>
+          {/* Predikat dan status dipisah: "B · Emerging Professional" menyatakan mutu nilainya, "Final" menyatakan keadaan
+              penilaiannya, dan dulu keduanya terbaca sebagai satu label. */}
+          <dl className="grid min-w-[min(100%,220px)] flex-1 gap-x-8 gap-y-2 sm:grid-cols-[auto_minmax(0,1fr)] print:min-w-0">
+            <div>
+              <dt className="text-[12px] font-semibold text-ink-3">{teks('Predikat')}</dt>
+              <dd className="mt-0.5"><PredikatTeks nilai={t.akhir.nilai} panjang /></dd>
             </div>
-            <p className="mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-ink-2">
-              {teks(label.rinci, label.nilai)}
-            </p>
-          </div>
+            <div>
+              <dt className="text-[12px] font-semibold text-ink-3">{teks('Status')}</dt>
+              <dd className="mt-0.5 text-[13.5px] leading-snug text-ink-2">
+                <StatusTeks kuat={t.akhir.status === 'final'} className="mr-2 !text-[14px]">{teks(label.teks)}</StatusTeks>
+                {teks(label.rinci, label.nilai)}
+              </dd>
+            </div>
+          </dl>
           <div className="flex gap-2 print:hidden">
-            <button type="button" className="btn-ghost" onClick={() => window.print()}>
+            <button type="button" className="btn-ghost min-h-[44px]" onClick={() => window.print()}>
               <IconPrint size={17} />
-              {teks('Cetak / simpan PDF')}
+              {teks('Cetak / Simpan PDF')}
             </button>
           </div>
         </div>
@@ -165,7 +172,7 @@ export default function Transkrip({ student, untukAdmin = false }) {
             {Object.values(t.semester).map((sem) => (
               <tbody key={sem.semester}>
                 <tr className="border-b border-line bg-brand-soft/40">
-                  <th colSpan={6} className="px-4 py-2.5 text-left text-[12.5px] font-bold text-brand-ink">
+                  <th colSpan={4} className="px-4 py-2.5 text-left text-[12.5px] font-bold text-brand-ink">
                     {teks('Semester {n}', { n: sem.semester })}
                     <span className="ml-2 font-semibold text-ink-3">
                       ·{' '}
@@ -177,10 +184,9 @@ export default function Transkrip({ student, untukAdmin = false }) {
                           })}
                     </span>
                   </th>
-                  <th className="px-4 py-2.5 text-right text-[12.5px] font-bold tabular-nums text-brand-ink">
-                    {sem.nilai ?? '-'}
+                  <th colSpan={4} className="whitespace-nowrap px-4 py-2.5 text-right text-[13px] font-bold tabular-nums text-brand-ink">
+                    {teks('Nilai semester: {nilai}', { nilai: sem.nilai ?? '-' })}
                   </th>
-                  <th />
                 </tr>
 
                 {sem.aspek.map((a) => {
@@ -292,9 +298,9 @@ export default function Transkrip({ student, untukAdmin = false }) {
           </table>
         </GulirTabel>
 
-        <ArtiKode />
+        <PanduanKode />
 
-        <div className="px-6 py-4">
+        <div className="border-t border-line px-6 py-4">
           <CatatanKaki>
             {teks(
               'Aspek yang semesternya belum tiba ditandai gembok dan sengaja tidak diberi angka, bukan bernilai nol.',
@@ -370,19 +376,21 @@ export default function Transkrip({ student, untukAdmin = false }) {
   )
 }
 
-/* --------------------------------- arti kode -------------------------------- */
+/* ----------------------------- panduan kode dan penilaian ------------------------- */
 
-/* Arti kode yang dipakai tabel di atasnya: huruf area, cluster, dan singkatan sumber penilaian. Rapat 24 Okt 2026:
-   kode seperti CL1 atau PDP tidak dipahami orang awam. Nama area dan cluster memang istilah Inggris kerangka VIBE,
-   jadi tidak diterjemahkan. */
-function ArtiKode() {
+/* Arti kode yang dipakai tabel di atasnya: huruf area, cluster, dan singkatan sumber penilaian, ditambah arti predikat.
+   Rapat 24 Okt 2026: kode seperti CL1 atau PDP tidak dipahami orang awam. Tertutup bawaannya supaya tidak mendorong grafik
+   jauh ke bawah; sel tabelnya tetap membawa nama lengkap lewat title. Nama area dan cluster memang istilah Inggris
+   kerangka VIBE, jadi tidak diterjemahkan. */
+function PanduanKode() {
   const t = useTeks()
   return (
-    <section aria-labelledby="arti-kode" className="border-t border-line px-6 py-5">
-      <h3 id="arti-kode" className="text-[13.5px] font-bold text-ink">
-        {t('Arti kode di tabel')}
-      </h3>
-      <dl className="mt-3 grid gap-x-8 gap-y-4 text-[12.5px] leading-snug sm:grid-cols-2 xl:grid-cols-3">
+    <details className="group border-t border-line">
+      <summary className="flex min-h-[44px] cursor-pointer items-center gap-2 px-6 py-3 text-[13.5px] font-bold text-ink transition hover:bg-surface-2 focus-visible:outline-offset-[-3px]">
+        <IconChevronDown size={16} className="shrink-0 transition-transform group-open:rotate-180" />
+        {t('Panduan kode dan penilaian')}
+      </summary>
+      <dl className="grid gap-x-8 gap-y-4 px-6 pb-5 pt-1 text-[12.5px] leading-snug sm:grid-cols-2 xl:grid-cols-4">
         <div>
           <dt className="font-bold text-ink-2">{t('Kode aspek')}</dt>
           <dd className="mt-1.5 space-y-1 text-ink-2">
@@ -421,8 +429,20 @@ function ArtiKode() {
             ))}
           </dd>
         </div>
+        <div>
+          <dt className="font-bold text-ink-2">{t('Predikat')}</dt>
+          <dd className="mt-1.5 space-y-1 text-ink-2">
+            {[...RUBRIK, BELUM_MEMENUHI].map((r) => (
+              <p key={r.label}>
+                <span className="font-semibold text-ink">{r.huruf ?? t(r.label)}</span>{' '}
+                {r.huruf ? t(r.label) + ' ' : ''}
+                <span className="tabular-nums">{t('{min} sampai {max}', { min: r.min, max: r.max })}</span>
+              </p>
+            ))}
+          </dd>
+        </div>
       </dl>
-    </section>
+    </details>
   )
 }
 
@@ -457,7 +477,7 @@ function BarisRincian({ aspek }) {
                     tanggal: aspek.penguncian.tanggal,
                   })
                 : t('Final, seluruh komponen asesmen sudah dinilai.')}{' '}
-              {t('Nilai aspek ini tidak berubah lagi.')}
+              {t('Perubahan sesudahnya hanya lewat prosedur koreksi.')}
             </span>
           ) : (
             <span>

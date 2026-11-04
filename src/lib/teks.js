@@ -126,13 +126,10 @@ export const EN = {
   'Sebaran nilai {n} aspek pada skala 0 sampai 100, terendah {rendah}, tertinggi {tinggi}':
     'Spread of {n} aspect scores on a 0 to 100 scale, lowest {rendah}, highest {tinggi}',
   '{n} aspek belum dibuka': '{n} aspects not open yet',
-  'Semua aspek sudah dibuka': 'All aspects are open',
   'Belum tersedia': 'Not available yet',
   '{n} syarat belum terpenuhi': '{n} requirements not met',
 
   'Aspek penilaian': 'Assessment aspects',
-  'Ketuk salah satu untuk melihat komponen nilainya':
-    'Tap one to see the components behind its score',
   'Saring aspek': 'Filter aspects',
   'Belum ada aspek di kelompok ini.': 'No aspects in this group yet.',
   'Lihat Selengkapnya': 'See more',
@@ -163,8 +160,6 @@ export const EN = {
   'Seluruh {total} semester program sudah Anda selesaikan.':
     'You have completed all {total} semesters of the programme.',
   'Program Anda belum dimulai.': 'Your programme has not started yet.',
-  'Ketuk satu semester untuk melihat kegiatan dan nilainya.':
-    'Tap a semester to see its activities and scores.',
   'Anda di sini': 'You are here',
   'nilai semester': 'semester score',
   Selesai: 'Complete',
@@ -177,7 +172,6 @@ export const EN = {
   '{daftar} baru dinilai sebagian karena aspeknya melintasi dua semester.':
     '{daftar} is only partly graded because its aspects span two semesters.',
   /* Arti kode di bawah tabel transkrip dan tugas yang paling menurunkan nilai aspek (rincian aspek). */
-  'Arti kode di tabel': 'What the codes mean',
   'Kode aspek': 'Aspect codes',
   'A.1 berarti aspek pertama di area A, dan seterusnya.': 'A.1 is the first aspect in area A, and so on.',
   'Personal Development Program': 'Personal Development Program',
@@ -196,10 +190,6 @@ export const EN = {
     '{total} aspects · opens in Semester {semester}',
   'Semester ini belum dibuka. Berikut kegiatan yang akan Anda jalani. Nilainya baru muncul setelah Semester {n} dimulai dan penilai mengunggahnya.':
     'This semester has not opened yet. Below are the activities you will take. Scores appear only after Semester {n} begins and the assessor uploads them.',
-  'Aspek yang dibentuk': 'Aspects formed',
-  'Kegiatan yang akan dijalani': 'Activities to come',
-  'Kegiatan yang sudah dijalani': 'Activities completed',
-  'Kegiatan semester ini': 'Activities this semester',
   '{n} dari {total} dinilai': '{n} of {total} graded',
   'Program ini dijalani, tetapi tidak menghasilkan komponen nilai.':
     'This programme runs, but produces no graded component.',
@@ -214,16 +204,12 @@ export const EN = {
   '{n} komponen sudah dinilai': '{n} components have been graded',
   ' dan {n} masih ditunggu dari penilai': ' and {n} are still awaited from assessors',
   'Riwayat penilaian': 'Assessment history',
-  'berarti aspeknya sudah ditetapkan final oleh Kemahasiswaan dan nilainya tidak akan berubah lagi.':
-    'means Student Affairs has marked the aspect final and its score will not change again.',
   'Saring riwayat': 'Filter history',
   'Belum ada catatan pada kelompok ini.': 'No records in this group yet.',
   'Lihat bobot tiap komponen di transkrip': 'See each component weighting in the transcript',
   'Pengajuan koreksi saya': 'My correction requests',
   'Keberatan yang Anda kirim lewat transkrip, beserta keputusannya.':
     'Objections you submitted from the transcript, with their decisions.',
-  'disetujui oleh': 'approved by',
-  'dinilai oleh': 'graded by',
   'penilai tidak tercatat': 'assessor not recorded',
   ' (belum final, masih bisa berubah)': ' (not final yet, can still change)',
   'Anda ajukan {tanggal}': 'You submitted this on {tanggal}',
@@ -258,7 +244,6 @@ export const EN = {
   'Semester berjalan': 'Current semester',
   'Periode cetak': 'Print period',
   'Nomor dokumen': 'Document number',
-  'Cetak / simpan PDF': 'Print / save as PDF',
   'Rincian capaian per semester': 'Achievement detail by semester',
   'Klik baris aspek untuk melihat komponen asesmen yang membentuk nilainya':
     'Click an aspect row to see the assessment components behind its score',
@@ -286,7 +271,6 @@ export const EN = {
   'Final, ditetapkan oleh {oleh} pada {tanggal}.': 'Final, set by {oleh} on {tanggal}.',
   'Final, seluruh komponen asesmen sudah dinilai.':
     'Final, every assessment component has been graded.',
-  'Nilai aspek ini tidak berubah lagi.': 'This aspect score will not change again.',
   Sumber: 'Source',
   'Komponen asesmen': 'Assessment component',
   Ranah: 'Domain',
@@ -824,7 +808,6 @@ export const EN = {
     'This account is not registered as a course lecturer',
   'Hubungi Biro Kemahasiswaan untuk didaftarkan pada satu kelas.':
     'Contact the Student Affairs Bureau to be assigned to a class.',
-  'Menunggu persetujuan': 'Awaiting approval',
   Manual: 'Manual',
   Otomatis: 'Automatic',
   'Unduh templat': 'Download template',
@@ -846,8 +829,6 @@ export const EN = {
   'Perkembangan nilai': 'Score progress',
   'Nilai tiap semester': 'Score each semester',
   // Label garisnya 'Rata-rata' ('Average'), kunci yang sudah ada di bagian lain kamus.
-  'Rata-rata: dihitung dari semua aspek sejak Semester 1 sampai semester itu, sehingga titik terakhirnya sama dengan nilai akhir.':
-    'Average: calculated from every aspect from Semester 1 up to that semester, so its last point equals the final score.',
   'Tetap sejak Semester {n}': 'Unchanged since Semester {n}',
   'Turun {d} sejak Semester {n}': 'Down {d} since Semester {n}',
 
@@ -898,13 +879,11 @@ export const EN = {
   '{n} dari {total} syarat belum terpenuhi.': '{n} of {total} requirements not yet met.',
   'atas keberhasilannya menyelesaikan seluruh {n} aspek CPMK, Semester 1 sampai {total}, dengan nilai akhir {nilai} dan predikat {huruf} ({label}).': 'for successfully completing all {n} CPMK aspects, Semester 1 to {total}, with a final score of {nilai} and grade {huruf} ({label}).',
   'Belum terpenuhi': 'Not yet met',
-  'Cetak sertifikat': 'Print certificate',
   'diberikan kepada': 'awarded to',
   'Nilai akhir {nilai}, predikat {huruf}.': 'Final score {nilai}, grade {huruf}.',
   'Nomor': 'Number',
   'Program Pembinaan VIBE': 'VIBE Development Programme',
   'Sertifikat Pembinaan VIBE': 'VIBE Development Certificate',
-  'Syarat kelayakan': 'Eligibility requirements',
 
   /* ----------------------------- kurikulum: bobot ----------------------------- */
   'Atur bobot komponen asesmen di setiap aspek. Bobot berlaku untuk semua angkatan, dan nilai yang sudah masuk langsung dihitung ulang dengannya.':
@@ -1186,11 +1165,6 @@ export const EN = {
   'langsung, wajib beralasan': 'directly, with a required reason',
   // Pencabutan akses cetak dan catatan cetak (student/Sertifikat.jsx, admin/CetakSertifikat.jsx, Dashboard).
   Dicabut: 'Revoked',
-  'Akses cetak sertifikatmu dicabut. Baca alasannya, lalu minta lagi bila masalahnya sudah selesai.':
-    'Your certificate print access was revoked. Read the reason, then request it again once the issue is resolved.',
-  'Alasan pencabutan': 'Reason for revocation',
-  'Sertifikat hanya bisa dicetak lewat tombol Cetak sertifikat di halaman ini, setelah akses cetaknya disetujui.':
-    'The certificate can only be printed with the Print certificate button on this page, after its print access is approved.',
   'Sertifikat dicetak, atau disimpan sebagai PDF lewat dialog cetak, dari tombol di halaman ini, dan setiap pembukaan dialog cetak tercatat. Sertifikat tidak dikirim lewat surel.':
     'Print the certificate, or save it as a PDF through the print dialog, with the button on this page; every time the print dialog opens is recorded. Certificates are not sent by email.',
   'Tombol cetak hanya aktif untuk sertifikat yang akses cetaknya sudah ditinjau admin Kemahasiswaan dan disetujui Super Admin. Akses itu bisa dicabut lagi, dan setiap pembukaan dialog cetak tercatat. Sertifikat dicetak atau disimpan sebagai PDF dari website ini; jangan kirim lewat surel.':
@@ -1611,7 +1585,7 @@ export const EN = {
   'Waktu': 'Time',
   'Grafik Sebaran Aspek': 'Aspect Distribution Chart',
   'Profil enam cluster': 'Six-cluster profile',
-  'Rata-rata aspek CPMK di tiap cluster': 'Average CPMK aspect score in each cluster',
+  'Rata-rata aspek CPMK di tiap cluster, skala 0 sampai 100': 'Average CPMK aspect score in each cluster, on a 0 to 100 scale',
   'Yakin': 'Confident',
   'Perlu dicek': 'Needs checking',
   'Tebakan lemah': 'Weak guess',
@@ -1815,17 +1789,10 @@ export const EN = {
   // Halaman Sertifikat mahasiswa.
   'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.':
     'All requirements are met. Request print access to get your certificate.',
-  'Permintaan akses cetak sedang ditinjau admin Kemahasiswaan.': 'Your print access request is being reviewed by Student Affairs.',
-  'Admin Kemahasiswaan sudah meninjau. Menunggu keputusan Super Admin.':
-    'Student Affairs has reviewed it. Waiting for the Super Admin to decide.',
-  'Akses cetak sudah disetujui. Sertifikat siap dicetak.': 'Print access is approved. Your certificate is ready to print.',
-  'Permintaan akses cetak ditolak. Periksa alasannya, lalu ajukan lagi bila sudah sesuai.':
-    'Your print access request was rejected. Check the reason, then request again once it is resolved.',
   'Akses cetak bisa diminta setelah seluruh syarat di bawah terpenuhi, tanpa terlewat satu pun.':
     'You can request print access once every requirement below is met, without exception.',
   'Minta akses cetak': 'Request print access',
   'Minta akses cetak lagi': 'Request print access again',
-  'Alasan penolakan': 'Reason for rejection',
   '{oleh}, {tanggal}': '{oleh}, {tanggal}',
   'Langkah akses cetak': 'Print access steps',
   'Diajukan {tanggal}': 'Requested {tanggal}',
@@ -1836,7 +1803,6 @@ export const EN = {
   // Ubin Sertifikat di Dashboard mahasiswa.
   'Bisa diminta': 'Can be requested',
   'Minta akses cetak di halaman ini': 'Request print access on this page',
-  'Sedang ditinjau admin Kemahasiswaan': 'Being reviewed by Student Affairs',
   'Menunggu persetujuan Super Admin': 'Waiting for Super Admin approval',
   'Buka untuk mencetak': 'Open to print',
   'Permintaan ditolak': 'Request rejected',
@@ -2393,6 +2359,87 @@ export const EN = {
   'Aspek tidak tampil dan tidak dihitung lagi; nilainya tetap tersimpan.': 'The aspect is no longer shown or counted; its scores stay stored.',
   'Aspek kembali tampil dan dihitung.': 'The aspect is shown and counted again.',
   'Ubah cara membagi bobot otomatis': 'Change the automatic weight split',
+
+  // Panel mahasiswa (4 Nov 2026): dashboard.
+  'Rata-rata Anda': 'Your average',
+  'Nilai semester naik {d} poin sejak Semester {n}.': 'Semester score up {d} points since Semester {n}.',
+  'Nilai semester turun {d} poin sejak Semester {n}.': 'Semester score down {d} points since Semester {n}.',
+  'Nilai semester tetap sejak Semester {n}.': 'Semester score unchanged since Semester {n}.',
+  'Cara hitung': 'How it is calculated',
+  'Rata-rata semua aspek yang sudah dinilai.': 'The average of all aspects graded so far.',
+  'Rata-rata nilai tiap semester yang sudah dinilai.': 'The average of each graded semester.',
+  'Angkanya sama dengan titik terakhir garis Rata-rata Anda.': 'It equals the last point on the Your average line.',
+  'Nilai semester': 'Semester score',
+  'Rata-rata aspek di semester itu saja, jadi bisa lebih tinggi atau lebih rendah daripada nilai akhir.':
+    "The average of that semester's aspects only, so it can be higher or lower than the final score.",
+  'Nilai aspek': 'Aspect score',
+  'Gabungan nilai tugasnya menurut bobot.': 'Its assignment scores combined by weight.',
+  'Aspek yang sudah final': 'Aspects already final',
+  'Seluruh aspek sudah selesai dinilai.': 'All aspects have been fully graded.',
+  '{n} aspek belum dinilai': '{n} aspects not graded yet',
+  '{n} aspek belum final': '{n} aspects not final yet',
+  'Pilih salah satu untuk melihat komponen nilainya': 'Choose one to see its score components',
+  'Oleh admin Kemahasiswaan': 'By the Student Affairs admin',
+  // Panel mahasiswa: sertifikat.
+  'Sertifikat butuh dua hal: kelayakan akademik dari nilaimu, dan izin cetak dari Kemahasiswaan.':
+    'A certificate needs two things: academic eligibility from your scores, and print permission from Student Affairs.',
+  'Izin cetak': 'Print permission',
+  'Dikelola Kemahasiswaan, terpisah dari kelayakan akademik.': 'Managed by Student Affairs, separate from academic eligibility.',
+  'Belum bisa diminta': 'Cannot be requested yet',
+  'Belum diminta': 'Not requested yet',
+  'Akses cetak disetujui': 'Print access approved',
+  'Permintaan akses cetak ditolak': 'Print access request rejected',
+  'Akses cetak dicabut': 'Print access revoked',
+  'Sertifikat siap dicetak atau disimpan sebagai PDF.': 'The certificate is ready to print or save as a PDF.',
+  'Admin Kemahasiswaan meninjau permintaanmu, lalu Super Admin memutuskannya.':
+    'A Student Affairs admin reviews your request, then the Super Admin decides.',
+  'Admin Kemahasiswaan sudah meninjau. Super Admin akan memutuskannya.':
+    'A Student Affairs admin has reviewed it. The Super Admin will decide.',
+  'Setelah akses dipulihkan, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.':
+    'Once access is restored, the Print / save as PDF button will be available on this page. Certificates are not sent by email.',
+  'Setelah akses disetujui, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.':
+    'Once access is approved, the Print / save as PDF button will be available on this page. Certificates are not sent by email.',
+  'Sertifikat hanya bisa dicetak lewat tombol Cetak / Simpan PDF di halaman ini, setelah akses cetaknya disetujui.':
+    'The certificate can only be printed with the Print / save as PDF button on this page, after print access is approved.',
+  'Alasannya belum dicatat.': 'No reason has been recorded.',
+  'Dicabut oleh': 'Revoked by',
+  'Yang perlu dilakukan': 'What to do',
+  'Rincian langkahnya belum tersedia. Hubungi Kemahasiswaan untuk meminta penjelasan. Bila masalahnya sudah selesai, ajukan peninjauan akses.':
+    'The detailed steps are not available yet. Contact Student Affairs for an explanation. Once the issue is resolved, request an access review.',
+  'Rincian langkahnya belum tersedia. Hubungi Kemahasiswaan untuk meminta penjelasan. Bila sudah sesuai, minta akses cetak lagi.':
+    'The detailed steps are not available yet. Contact Student Affairs for an explanation. Once it is in order, request print access again.',
+  Diajukan: 'Submitted',
+  'Langkah berikutnya': 'Next step',
+  'Ajukan peninjauan akses': 'Request an access review',
+  'Cetak / Simpan PDF': 'Print / save as PDF',
+  'Hubungi Kemahasiswaan': 'Contact Student Affairs',
+  'Halo, saya {nama} (NIM {nim}). Saya ingin meminta penjelasan soal akses cetak sertifikat VIBE saya.':
+    'Hello, I am {nama} (student ID {nim}). I would like an explanation about my VIBE certificate print access.',
+  'Kelayakan akademik': 'Academic eligibility',
+  'Semua syarat nilai dan aspek terpenuhi.': 'All score and aspect requirements are met.',
+  // Panel mahasiswa: riwayat.
+  'Ditetapkan oleh {oleh}': 'Set by {oleh}',
+  'Dinilai oleh {oleh}': 'Graded by {oleh}',
+  'Cari tugas atau aspek': 'Search assignments or aspects',
+  Terbaru: 'Newest',
+  Terlama: 'Oldest',
+  'Menampilkan {n} dari {total} catatan': 'Showing {n} of {total} records',
+  'berarti nilainya sudah disahkan Kemahasiswaan. Perubahan sesudahnya hanya lewat prosedur koreksi.':
+    'means the score has been ratified by Student Affairs. Later changes only go through the correction procedure.',
+  'Tidak ada catatan yang cocok dengan saringan ini.': 'No records match these filters.',
+  'Hapus saringan': 'Clear filters',
+  // Panel mahasiswa: peta perjalanan.
+  'Lihat rincian': 'View details',
+  'Tutup rincian': 'Close details',
+  'Ringkasan aspek': 'Aspect summary',
+  'Rincian kegiatan': 'Activity details',
+  '{total} kegiatan akan dijalani': '{total} activities ahead',
+  'Pilih semester untuk melihat kegiatan dan nilainya.': 'Choose a semester to see its activities and scores.',
+  // Panel mahasiswa: transkrip.
+  'Nilai semester: {nilai}': 'Semester score: {nilai}',
+  'Panduan kode dan penilaian': 'Guide to codes and grading',
+  '{min} sampai {max}': '{min} to {max}',
+  'Perubahan sesudahnya hanya lewat prosedur koreksi.': 'Later changes only go through the correction procedure.',
 }
 
 /* Pesan yang dirakit server dan aturan dengan angka atau nama, jadi tidak bisa dicocokkan sebagai satu kalimat kamus.

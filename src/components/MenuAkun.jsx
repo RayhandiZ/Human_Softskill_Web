@@ -78,7 +78,7 @@ export default function MenuAkun({ foto = null, tone = 'onbrand', rinci = null, 
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-64 overflow-hidden rounded-2xl border border-line bg-surface shadow-pop animate-rise">
+        <div className="lapisan-kaca absolute right-0 top-[calc(100%+10px)] z-50 w-64 overflow-hidden rounded-2xl border border-line bg-surface shadow-pop animate-rise">
           <div className="border-b border-line px-4 py-3">
             <p className="truncate text-sm font-bold text-ink">{user?.name}</p>
             <p className="truncate text-[12.5px] text-ink-2">{user?.email}</p>

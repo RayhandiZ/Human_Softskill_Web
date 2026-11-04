@@ -27,7 +27,7 @@ const ISI = {
     [/Nilai akhir\s*[\d.,]+\s*(?:Grade [A-E][+-]?|Belum Memenuhi)/, 'nilai akhir disertai grade di bawah angkanya'],
     [/Nilai akhir\s*[\d.,-]+\s*(?:Grade [A-E][+-]?|Belum Memenuhi)?\s*(?:Sementara|Final)\b/, 'nilai akhir tanpa status', false],
     [/berdasarkan \d+ dari \d+ aspek/, 'nilai akhir tanpa keterangan dasar hitung', false],
-    [/Aspek final/, 'ubin Aspek final sudah tidak ada', false],
+    [/Aspek final/, 'judul ubin tetap Aspek dinilai selama belum semuanya final', false],
     [/dinilai, \d+ final/, 'ringkasan lipatan HP tanpa jumlah aspek final', false],
     [/Capaian per area/, 'kartu Capaian per area sudah tidak ada (rinciannya di Transkrip)', false],
     [/Aspek dinilai[\s\S]{0,80}\/ \d+/, 'ubin jumlah aspek dinilai'],
@@ -80,9 +80,14 @@ const ISI = {
   '/mahasiswa/riwayat': [
     [/FASE 4|Segera hadir/i, 'bukan lagi halaman segera hadir', false],
     [/Riwayat penilaian/, 'ada daftar riwayat penilaian'],
-    [/disetujui oleh/, 'komponen final menyebut siapa yang menyetujui'],
-    [/dari (PDP|MK Humaniora|Kemahasiswaan)/, 'tiap catatan menyebut jalur penilaiannya'],
-    [/Final berarti aspeknya sudah ditetapkan final/, 'arti Final dijelaskan'],
+    [/Ditetapkan oleh/, 'komponen final menyebut siapa yang menetapkan'],
+    [/(PDP|MK Humaniora|Kemahasiswaan) · (Ditetapkan|Dinilai) oleh/, 'tiap catatan menyebut jalur penilaiannya'],
+    /* Final tidak berarti mustahil berubah: koreksi resmi tetap bisa (lihat Ajukan koreksi nilai di Transkrip). */
+    [/Final berarti nilainya sudah disahkan/, 'arti Final dijelaskan'],
+    [/tidak akan berubah lagi|tidak berubah lagi/, 'tidak ada janji absolut bahwa nilai final tidak berubah', false],
+    [/<input[^>]*type="search"/, 'ada kotak cari tugas atau aspek', true, true],
+    [/Terbaru/, 'urutan riwayat tertulis'],
+    [/Menampilkan \d+ dari \d+ catatan/, 'jumlah hasil saringan tertulis'],
     /* Yang belum dinilai tempatnya di lonceng, bukan di riwayat. */
     [/belum masuk/, 'komponen yang belum dinilai tidak ikut masuk riwayat', false],
   ],
@@ -499,6 +504,37 @@ const RUTE = [
     }
   }
 
+  /* Kaca hanya untuk navigasi panel dosen dan mahasiswa: blok CSS-nya tidak boleh bocor ke panel lain atau ke seluruh isi
+     halaman. Lihat README.md › Panel Dosen › Kaca. */
+  {
+    w.localStorage.setItem('sk5c.session', SESI.dosen)
+    const k = await mod.ujiKacaDosen()
+    const css = require('fs').readFileSync(require('path').join(__dirname, '../src/index.css'), 'utf8')
+    const awalJudul = (judul) => css.lastIndexOf('/*', css.indexOf(judul))
+    const blok = css.slice(awalJudul('kaca panel dosen dan mahasiswa ---'), awalJudul('menu aksesibilitas ---')).replace(/\/\*[\s\S]*?\*\//g, '')
+    const pemilih = [...blok.matchAll(/([^{};]+)\{/g)]
+      .map((m) => m[1].trim())
+      .filter((p) => !p.startsWith('@'))
+      .flatMap((p) => p.split(/,(?![^(]*\))/).map((x) => x.trim()))
+    // Peringatan bukan kaca, jadi kelasnya boleh berdiri sendiri; yang lain harus terikat ke dua panel ini.
+    const bocor = pemilih.filter(
+      (p) => !/^(\.dark )?(:is\()?\.panel-(dosen|mahasiswa)\b|^\.(kartu|tanda)-peringatan$/.test(p) || /\bmain\b/.test(p),
+    )
+    const wajib = [
+      ['bilah atas, menu akun, dan tombol bantuan punya kelas kacanya', k.bilahAtas && k.menuAkun && k.tombolBantuan],
+      ['isi halaman tidak memakai kelas kaca', k.isiTanpaKaca],
+      ['aturan kaca terikat ke panel dosen dan mahasiswa dan tidak menyasar <main>', pemilih.length > 10 && !bocor.length, bocor.join(' | ')],
+      // fixed membuat halaman dilukis ulang di setiap langkah gulir; lihat README.md › Panel Dosen › Kaca.
+      ['latar panel tanpa background-attachment: fixed', !/background-attachment:\s*fixed/.test(blok)],
+    ]
+    const rusak = wajib.filter(([, ok]) => !ok)
+    if (rusak.length) gagal += rusak.length
+    console.log((rusak.length ? 'GAGAL  ' : 'OK     ') + 'kaca panel dosen')
+    for (const [ket, ok, rinci] of wajib) {
+      console.log('       ' + (ok ? 'v ' : 'x ') + ket + (ok || !rinci ? '' : '  → ' + rinci))
+    }
+  }
+
   /* ------------------------- aspek di dashboard mahasiswa ------------------ */
   console.log('')
   w.localStorage.setItem('sk5c.session', SESI.student)
@@ -563,12 +599,12 @@ const RUTE = [
   const cekPeta = [
     ['semester berjalan (2) terbuka lebih dulu', sama(hp.awal, [2]), JSON.stringify(hp.awal)],
     ['membuka Semester 1 menutup Semester 2', sama(hp.setelahSem1, [1]), JSON.stringify(hp.setelahSem1)],
-    ['Semester 1 memuat kegiatan yang sudah dijalani', /Kegiatan yang sudah dijalani/.test(hp.sem1) && /Religiositas/.test(hp.sem1)],
+    ['Semester 1 memuat ringkasan aspek dan rincian kegiatan', /Ringkasan aspek/.test(hp.sem1) && /Rincian kegiatan/.test(hp.sem1) && /Religiositas/.test(hp.sem1)],
     ['Semester 1: Mentoring 5C ada di jalur PDP', /PDP-1: Character & Mentoring 5C[\s\S]*Mentoring 5C: Kehadiran[\s\S]*Religiositas/.test(hp.sem1)],
     ['Semester 1: tanpa jalur Kemahasiswaan', !/Student Service & Engagement/.test(hp.sem1)],
     ['Semester 3: Effective Communication di jalur PDP, tanpa jalur Kemahasiswaan', /PDP-3: Effective Communication/.test(hp.sem3) && !/Student Service & Engagement/.test(hp.sem3)],
     ['Semester 3 (terkunci) tetap bisa dibuka', sama(hp.setelahSem3, [3]), JSON.stringify(hp.setelahSem3)],
-    ['Semester 3 memperlihatkan kegiatan yang akan datang', /Kegiatan yang akan dijalani/.test(hp.sem3) && /Civics/.test(hp.sem3)],
+    ['Semester 3 memperlihatkan kegiatan yang akan datang', /\d+ kegiatan akan dijalani/.test(hp.sem3) && /Civics/.test(hp.sem3)],
     /* R2: aspek yang belum dibuka tidak pernah punya angka, dan kegiatannya
        tidak boleh ditulis "belum masuk" seolah terlambat. */
     ['Semester 3 tanpa angka: tiap aspek bertanda gembok', (hp.sem3.match(/Dibuka pada Semester 3/g) || []).length === 3],
@@ -619,10 +655,14 @@ const RUTE = [
     ['tab Semua menampilkan semua catatan', hh.barisSemua === hh.jumlah.Semua, hh.barisSemua + ' baris'],
     ['tab Final menyaring dengan benar', hh.barisFinal === hh.jumlah.Final, hh.barisFinal + ' baris'],
     ['tab Sementara menyaring dengan benar', hh.barisSementara === hh.jumlah.Sementara, hh.barisSementara + ' baris'],
-    /* Kata "disetujui" hanya boleh dipakai untuk nilai yang sudah final;
+    /* Kata "ditetapkan" hanya boleh dipakai untuk nilai yang sudah final;
        nilai sementara masih bisa berubah. */
-    ['tiap catatan final menyebut siapa yang menyetujui', hh.finalSelaluDisetujui],
-    ['catatan sementara tidak pernah disebut disetujui', hh.sementaraTidakDisetujui],
+    ['tiap catatan final menyebut siapa yang menetapkan', hh.finalSelaluDisetujui],
+    ['catatan sementara tidak pernah disebut ditetapkan', hh.sementaraTidakDisetujui],
+    ['cari tugas menyaring catatan', hh.cariMenyaring, hh.cariRinci],
+    ['saringan semester dan sumber menyaring catatan', hh.saringMenyaring],
+    ['urutan Terlama membalik daftar', hh.urutanBalik],
+    ['saringan tanpa hasil memberi jalan menghapusnya', hh.kosongBisaDihapus],
     ['jumlah yang ditunggu sama dengan angka di lonceng', hh.kalimat && hh.kalimat.ditunggu === hh.lonceng,
       hh.kalimat ? hh.kalimat.ditunggu + ' vs lonceng ' + hh.lonceng : 'kalimat tidak ditemukan'],
     ['jumlah yang sudah dinilai sama dengan tab Semua', hh.kalimat && hh.kalimat.dinilai === hh.jumlah.Semua],
@@ -1129,8 +1169,9 @@ const RUTE = [
     ['tiga semester: tren yang tampil', tr3.adaTren && !tr3.adaSebaran],
     ['legenda menyebut kedua garis', tr3.legenda],
     ['nilai tiap semester bertitik isi, rata-rata gabungan bercincin', tr3.bentukBeda],
-    ['arti garis Rata-rata dijelaskan di bawah grafik', tr3.catatanGabungan],
-    ['catatan dan legenda sama-sama menyebut "Rata-rata"', tr3.tanpaSebutanLama],
+    ['Cara hitung tertutup dulu, dan terbuka menjelaskan hubungan nilai akhir dengan garis rata-rata', tr3.caraHitung],
+    ['tidak ada sebutan lama "Rata-rata gabungan" atau "kumulatif"', tr3.tanpaSebutanLama],
+    ['angka tertulis di titik terakhir kedua garis', tr3.angkaDiTitik?.includes('84') && tr3.angkaDiTitik?.includes('82'), String(tr3.angkaDiTitik)],
     ['satu titik per semester, di tiap garis', tr3.jumlahTitikSemester === 3 && tr3.jumlahTitikKumulatif === 3],
     ['satu jalur utuh per garis, tanpa putus', tr3.jumlahJalur === 2],
     ['dua ruas antar semester berurutan, di tiap garis', tr3.jumlahRuas === 4],
@@ -1145,13 +1186,13 @@ const RUTE = [
     ['nama semester ditulis lengkap, termasuk yang terkunci', tr3.labelSemuaSemester],
     ['label tidak diredupkan (kontras tetap terbaca)', tr3.tanpaRedup && tr2.tanpaRedup],
     ['belum ada kotak info sebelum titik dipilih', tr3.tanpaTipAwal],
-    ['fokus semester 3: kotak info seperti contoh', tr3.isiTip === 'Semester:3Nilai tiap semester:84Rata-rata:82'],
+    ['fokus semester 3: kotak info seperti contoh', tr3.isiTip === 'Semester:3Nilai tiap semester:84Rata-rata Anda:82'],
     ['garis tegak penanda semester muncul', tr3.garisTegak === 1],
     ['titik terpilih membesar, di kedua garis', tr3.titikTerpilihBesar === 2],
     ['nama semester terpilih ditebalkan', tr3.labelTerpilihTebal],
     ['rata-rata gabungan terakhir sama dengan angka besar di kartu', tr3.kumulatifSamaAngkaBesar],
     ['kotak info tidak dibaca dua kali oleh pembaca layar', tr3.tipTersembunyiDariSR],
-    ['pembaca layar mendapat kalimat lengkap per semester', tr3.kalimatKolom === 'Semester 3: Nilai tiap semester 84, Rata-rata 82'],
+    ['pembaca layar mendapat kalimat lengkap per semester', tr3.kalimatKolom === 'Semester 3: Nilai tiap semester 84, Rata-rata Anda 82'],
     ['Escape menyembunyikan kotak info, fokus tetap', tr3.escapeMenyembunyikan],
     ['tunjuk dengan tetikus menampilkan, pergi menyembunyikan', tr3.tunjukMenampilkan && tr3.lepasMenyembunyikan],
 
@@ -1162,7 +1203,7 @@ const RUTE = [
     ['semester terkunci tidak bisa dipilih', tr2.jumlahKolom === 2],
     ['semester terkunci bergembok', tr2.gembokTerkunci === 1],
     ['nama semester ditulis lengkap', tr2.labelSemuaSemester],
-    ['kotak info semester 2: 85 dan rata-rata gabungan 79', tr2.isiTip === 'Semester:2Nilai tiap semester:85Rata-rata:79'],
+    ['kotak info semester 2: 85 dan rata-rata gabungan 79', tr2.isiTip === 'Semester:2Nilai tiap semester:85Rata-rata Anda:79'],
     ['rata-rata gabungan terakhir sama dengan angka besar (79)', tr2.kumulatifSamaAngkaBesar],
 
     /* DEMO-1: satu semester saja. Tren belum punya arti di sana. */
@@ -1240,16 +1281,16 @@ const RUTE = [
   const alur = await ujiAlurSertifikat()
   const srLayak = alur.cetakMahasiswa ?? {}
   const cekSr = [
-    ['belum layak: tombol cetak ada tapi mati', srBelum.adaTombol && srBelum.mati],
-    ['belum layak: klik tidak mencetak apa pun', srBelum.dicetak === 0],
+    ['belum layak: tidak ada tombol cetak', !srBelum.adaTombol],
+    ['belum layak: tidak ada yang tercetak', srBelum.dicetak === 0],
     ['belum layak: tidak ada lembar sertifikat sama sekali', !srBelum.adaLembar],
     ['kelima syarat tercantum beserta statusnya', srBelum.jumlahSyarat === 5 && srBelum.belum === 4],
-    ['satu komponen kosong saja sudah mematikan tombol', srKosong.mati && !srKosong.adaLembar],
+    ['satu komponen kosong saja sudah menghilangkan tombol cetak', !srKosong.adaTombol && !srKosong.adaLembar],
     ['alur berjalan tanpa galat', !alur.galat, alur.galat],
     ['layak tanpa permintaan: hanya tombol Minta akses cetak', alur.awalBisaMinta],
     ['layak tanpa permintaan: belum ada lembar sertifikat', alur.awalTanpaLembar],
     ['meminta: tercatat Menunggu Admin', alur.mintaTercatat],
-    ['meminta: tombolnya menjadi Menunggu persetujuan dan mati', alur.menungguMati],
+    ['meminta: tertulis Sedang ditinjau, tanggal pengajuan, dan langkah berikutnya, tanpa tombol cetak', alur.menungguDitinjau],
     ['meminta: langkah pertama yang aktif', alur.langkahPertamaAktif],
     ['meminta: lembar sertifikat tetap tidak ada', alur.masihTanpaLembar],
     ['permintaan kedua selagi berjalan ditahan', alur.gandaDitahan],
@@ -1286,7 +1327,9 @@ const RUTE = [
     ['admin: mencabut tanpa alasan ditahan', alur.cabutTanpaAlasanDitahan],
     ['admin: mencabut dengan alasan tercatat atas namanya', alur.dicabut],
     ['admin: barisnya tertulis Dicabut, tombol Cetak mati, tombol Cabut hilang', alur.barisMenyebutDicabut],
-    ['mahasiswa: alasan pencabutan tampil dan bisa meminta lagi', alur.mahasiswaMelihatPencabutan],
+    ['mahasiswa: alasan pencabutan tampil dan bisa mengajukan peninjauan', alur.mahasiswaMelihatPencabutan],
+    ['mahasiswa: rincian langkah yang tidak tersimpan tidak dikarang, dan ada jalur menghubungi Kemahasiswaan', alur.pencabutanJujur],
+    ['mahasiswa: instruksi cetak sesudah dicabut bersyarat', alur.instruksiBersyarat],
     ['mahasiswa: sesudah dicabut tidak ada lembar sertifikat', alur.tanpaLembarSesudahDicabut],
     ['sesudah dicabut pencetakan ditolak dan tidak terhitung', alur.cetakSesudahDicabutDitolak],
     ['sesudah dicabut permintaan baru masuk lagi ke lapis pertama', alur.mintaLagiSesudahDicabut],

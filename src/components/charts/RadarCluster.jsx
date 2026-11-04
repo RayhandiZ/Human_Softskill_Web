@@ -3,10 +3,25 @@ import ChartFrame, { VizTooltip } from './ChartFrame'
 import { CLUSTER } from '../../lib/curriculum'
 import { useTeks } from '../../lib/bahasa'
 
+/* Label sumbu menyertakan nilainya: bentuk poligon saja tidak bisa dibaca sampai ke angkanya. */
+function TandaSumbu({ x, y, textAnchor, payload, baris }) {
+  const r = baris.find((b) => b.id === payload.value)
+  return (
+    <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="central" fontSize={12} fill="var(--text-secondary)">
+      <tspan fontWeight={700}>{payload.value}</tspan>
+      {r?.nilai != null ? (
+        <tspan dx={4} fontWeight={800} fill="var(--text-primary)">
+          {r.nilai}
+        </tspan>
+      ) : null}
+    </text>
+  )
+}
+
 export default function RadarCluster({
   data,
   title = 'Profil enam cluster',
-  subtitle = 'Rata-rata aspek CPMK di tiap cluster',
+  subtitle = 'Rata-rata aspek CPMK di tiap cluster, skala 0 sampai 100',
   seriesName = 'Capaian',
   color = 'var(--brand-ink)',
   height = 300,
@@ -42,10 +57,18 @@ export default function RadarCluster({
       }}
     >
       <ResponsiveContainer width="100%" height={height}>
-        <RadarChart data={rows} outerRadius="70%" margin={{ top: 8, right: 30, bottom: 8, left: 30 }}>
+        <RadarChart data={rows} outerRadius="68%" margin={{ top: 8, right: 40, bottom: 8, left: 40 }}>
           <PolarGrid stroke="var(--grid)" />
-          <PolarAngleAxis dataKey="sumbu" tick={{ fill: 'var(--text-secondary)', fontSize: 12, fontWeight: 700 }} />
-          <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+          <PolarAngleAxis dataKey="sumbu" tick={<TandaSumbu baris={rows} />} />
+          {/* Skala di sumbu tegak, supaya jarak titik dari tengah punya arti. 100 tidak ditulis: ia menimpa label CL1 di
+              ujung sumbu itu, dan batas skalanya sudah disebut di subjudul. */}
+          <PolarRadiusAxis
+            domain={[0, 100]}
+            ticks={[25, 50, 75]}
+            angle={90}
+            axisLine={false}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
+          />
           <Radar
             name={seriesName}
             dataKey="nilai"
