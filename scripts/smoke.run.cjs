@@ -299,7 +299,7 @@ const RUTE = [
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiBilahBawah, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiPembaruanAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiLayarUnggah, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAlurSertifikat,ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiRincianLog, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiBilahBawah, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiPembaruanAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiLayarUnggah, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAlurSertifikat,ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiRincianLog, ujiSakelarWewenang, ujiMatriksWewenang, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -1466,6 +1466,49 @@ const RUTE = [
   gagal += rusakRl.length
   console.log((rusakRl.length ? 'GAGAL  ' : 'OK     ') + 'Rincian Log Aktivitas')
   for (const [ket, ok] of cekRl) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
+
+  /* Sakelar wewenang (Peran & Wewenang): keadaan tertutup dipasang seperti jawaban server, lalu dibuka lagi. */
+  const sw = await ujiSakelarWewenang()
+  const cekSw = [
+    ['berjalan tanpa galat', !sw.galat, sw.galat],
+    ['bawaan terbuka: empat tombol Tutup sementara, tanpa sel yang ditutup', sw.bawaanTerbuka],
+    ['formulir: dampak tampil dan tombol simpan menunggu alasan', sw.formulirMuncul],
+    ['formulir: tombol simpan aktif setelah alasan cukup', sw.simpanAktifSetelahAlasan],
+    ['mode lokal: simpan ditolak dengan pesannya, matriks tidak berubah', sw.lokalDitolakDenganPesan && sw.lokalTidakMengubah],
+    ['ditutup: matriks menulis Ditutup sementara (termasuk sel perbaikan dosen) dengan tombol Buka lagi', sw.matriksDitutup],
+    ['ditutup: jumlah tindakan kartu Mahasiswa, Dosen, dan Kemahasiswaan turun; Super Admin tetap', sw.jumlahTurun],
+    ['ditutup: transkrip tanpa tombol Ajukan koreksi nilai, dengan keterangan', sw.koreksiDitutup],
+    ['ditutup: sertifikat tanpa tombol Minta akses cetak, dengan keterangan', sw.sertifikatDitutup],
+    ['ditutup: Unggah Nilai tanpa templat dan kotak unggah, riwayat tetap', sw.unggahDitutup],
+    ['ditutup: menu Log Aktivitas admin hilang, halamannya berketerangan', sw.logAdminDitutup],
+    ['ditutup: Log Aktivitas Super Admin tetap terbuka', sw.logSuperTetap],
+    ['dibuka lagi: tombol, menu, dan jumlah tindakan kembali', sw.dibukaKembali],
+    ['ringkasan log: Dibuka → Ditutup beserta alasannya', sw.ringkasanLog],
+  ]
+  const rusakSw = cekSw.filter(([, ok]) => !ok)
+  gagal += rusakSw.length
+  console.log((rusakSw.length ? 'GAGAL  ' : 'OK     ') + 'Sakelar wewenang (Peran & Wewenang)')
+  for (const [ket, ok, rinci] of cekSw) console.log('       ' + (ok ? 'v ' : 'x ') + ket + (!ok && rinci ? '  → ' + rinci : ''))
+
+  /* Matriks yang bisa diedit: keterangan per sel dan kebijakan tertulis (isi dipasang seperti jawaban server). */
+  const mw = await ujiMatriksWewenang()
+  const cekMw = [
+    ['berjalan tanpa galat', !mw.galat, mw.galat],
+    ['sebelum Ubah matriks: tidak ada tombol keterangan', mw.tanpaTombolUbahSebelumMode],
+    ['mode ubah: tombol keterangan di 108 sel, Tambah tindakan, dan Selesai mengubah', mw.modeUbah],
+    ['formulir keterangan menyebut isi sel dari aturan server', mw.formulirKeterangan],
+    ['formulir tambah tindakan: empat pilihan peran, tombol menunggu nama dan alasan', mw.formulirTambah],
+    ['formulir tambah tindakan: tombol aktif setelah nama dan alasan cukup', mw.tambahAktif],
+    ['mode lokal: simpan ditolak dengan pesannya', mw.lokalDitolak],
+    ['keterangan tampil sebagai Catatan di sel bawaan dan sel kebijakan', mw.catatanTampil],
+    ['kebijakan tertulis di kelompok sendiri, bertanda Tidak dijaga server; yang diarsipkan tidak tampil', mw.kelompokKebijakan],
+    ['jumlah tindakan di kartu peran tidak ikut berubah', mw.jumlahTetap],
+    ['mode ubah: daftar Diarsipkan, tombol Ubah dan Arsipkan di baris kebijakan', mw.arsipDanTombolBaris],
+  ]
+  const rusakMw = cekMw.filter(([, ok]) => !ok)
+  gagal += rusakMw.length
+  console.log((rusakMw.length ? 'GAGAL  ' : 'OK     ') + 'Matriks wewenang yang bisa diedit')
+  for (const [ket, ok, rinci] of cekMw) console.log('       ' + (ok ? 'v ' : 'x ') + ket + (!ok && rinci ? '  → ' + rinci : ''))
 
   const ms = await ujiMataSandi()
   const cekMs = [

@@ -399,3 +399,24 @@ model Konfigurasi {             // pengaturan yang menimpa bawaan CONFIG di conf
   kunci String @id              // 'AMBANG_SERTIFIKAT', 'VERSI_KURIKULUM'
   nilai Json
 }
+
+model TindakanWewenang {        // baris matriks Peran & Wewenang yang ditambah Super Admin: kebijakan tertulis, TIDAK dijaga
+                                // server (tidak ada pintu API yang membacanya); lihat src/server/wewenang.js
+  id         Int       @id @default(autoincrement())   // tampil sebagai 'T-<id>'
+  tindakan   String    @db.VarChar(150)
+  izin       Json                                     // { Mahasiswa: 'ya'|'syarat'|'minta'|'tidak', Dosen: ..., Kemahasiswaan: ..., 'Super Admin': ... }
+  aktif      Boolean   @default(true)                 // false = diarsipkan: tidak tampil di matriks, bisa dipulihkan
+  dibuatOleh Int
+  dibuatPada DateTime  @default(now())
+  diubahOleh Int?
+  diubahPada DateTime?
+}
+
+model KeteranganWewenang {      // keterangan Super Admin pada satu sel matriks (satu peran pada satu tindakan); hanya tulisan
+  baris      String    @db.VarChar(40)    // kode baris bawaan ('AJUKAN_KOREKSI', MATRIKS di src/lib/wewenang.js) atau 'T-<id>'
+  peran      String    @db.VarChar(20)    // 'Mahasiswa' | 'Dosen' | 'Kemahasiswaan' | 'Super Admin'
+  teks       String    @db.VarChar(300)
+  diubahOleh Int
+  diubahPada DateTime  @updatedAt
+  @@id([baris, peran])
+}

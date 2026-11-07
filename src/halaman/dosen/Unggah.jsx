@@ -10,6 +10,7 @@ import { bacaBarisBerkas } from '../../lib/csv'
 import { bacaRekap, judulKolom, lembarTemplat } from '../../lib/unggahDosen'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
+import { boleh } from '../../lib/wewenang'
 
 /* Unggah Nilai dosen (rapat 24 Okt 2026). Dosen mengunduh templat kelasnya, mengisinya di Excel, lalu mengunggahnya
    kembali. Berkas dibaca di peramban (bacaRekap di src/lib/unggahDosen.js) dan dosen memeriksa perubahannya sebelum
@@ -73,6 +74,9 @@ export default function Unggah() {
   const [galatTarik, setGalatTarik] = useState(null)
   const [sudahUnduh, setSudahUnduh] = useState(false)
   const masukan = useRef(null)
+  // Super Admin bisa menutup unggah nilai sementara (sakelar UNGGAH_NILAI_DOSEN di Peran & Wewenang): langkah unggah
+  // disembunyikan dan server menolak, tetapi riwayat dan penarikan perbaikan yang masih menunggu tetap jalan.
+  const unggahDitutup = !boleh('UNGGAH_NILAI_DOSEN')
 
   // Dibaca ulang setiap data termuat ulang, supaya "nilai lama" selalu yang tersimpan sekarang.
   const rekap = useMemo(
@@ -180,9 +184,16 @@ export default function Unggah() {
         </p>
       </header>
 
-      {komponen.length && mahasiswa.length ? <AlurUnggah kini={langkahKini} /> : null}
+      {komponen.length && mahasiswa.length && !unggahDitutup ? <AlurUnggah kini={langkahKini} /> : null}
 
-      {!komponen.length ? (
+      {unggahDitutup ? (
+        <Card>
+          <EmptyState title={t('Unggah nilai sedang ditutup sementara')}>
+            {t('Super Admin menutup unggahan nilai untuk sementara, termasuk perbaikan untuk angkatan yang sudah disahkan. Templat dan unggahan bisa dipakai lagi setelah dibuka.')}{' '}
+            {t('Riwayat di bawah tetap bisa dilihat, dan perbaikan yang masih menunggu tetap bisa Anda tarik.')}
+          </EmptyState>
+        </Card>
+      ) : !komponen.length ? (
         <Card>
           <EmptyState title={t('Belum ada tugas untuk kelas Anda')}>
             {t('Tugas kelas ditetapkan Super Admin lewat halaman Penilaian & Bobot.')}
@@ -300,7 +311,7 @@ export default function Unggah() {
         </div>
       ) : null}
 
-      {rekap ? (
+      {rekap && !unggahDitutup ? (
         <Card className="overflow-hidden">
           <div className="border-b border-line px-5 py-4 sm:px-6">
             <Langkah nomor={3} judul={t('Periksa sebelum menyimpan')}>

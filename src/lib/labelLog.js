@@ -15,6 +15,13 @@ export const LABEL_LOG = {
   // Dicatat /api/akses/ubah setelah dibuat di back-end; lihat README.md › Panel Super Admin › Akses Pengguna.
   UBAH_AKSES: 'Ubah akses akun',
   UBAH_PERIODE: 'Ubah periode akademik',
+  // Sakelar, keterangan per sel, dan kebijakan tertulis di halaman Peran & Wewenang (src/server/wewenang.js).
+  UBAH_WEWENANG: 'Ubah wewenang peran',
+  UBAH_KETERANGAN_WEWENANG: 'Ubah keterangan wewenang',
+  TAMBAH_TINDAKAN_WEWENANG: 'Tambah kebijakan wewenang',
+  UBAH_TINDAKAN_WEWENANG: 'Ubah kebijakan wewenang',
+  ARSIPKAN_TINDAKAN_WEWENANG: 'Arsipkan kebijakan wewenang',
+  PULIHKAN_TINDAKAN_WEWENANG: 'Pulihkan kebijakan wewenang',
   TAMBAH_AKUN: 'Tambah akun',
   UBAH_AKUN: 'Ubah akun',
   HAPUS_AKUN: 'Hapus akun',
@@ -69,6 +76,13 @@ const POLA_SASARAN = [
   [/^prodi (.+)$/, (m, t) => t('prodi {nama}', { nama: m[1] })],
   [/^mahasiswa (\S+)$/, (m, t) => t('mahasiswa {nim}', { nim: m[1] })],
   [/^permintaan (P-\d+)$/, (m, t) => t('permintaan {id}', { id: m[1] })],
+  // 'wewenang Mahasiswa: Mengajukan koreksi nilai' (src/server/wewenang.js): nama kolom dan baris matriks. Nama kolom
+  // disebut satu per satu karena 'Super Admin' berspasi. Nama kebijakan tertulis diketik Super Admin, jadi apa adanya.
+  [
+    /^wewenang (Mahasiswa|Dosen|Kemahasiswaan|Super Admin): (.+)$/,
+    (m, t) => t('wewenang {peran}: {tindakan}', { peran: t(m[1]), tindakan: t(m[2]) }),
+  ],
+  [/^kebijakan wewenang (.+)$/, (m, t) => t('kebijakan wewenang {tindakan}', { tindakan: m[1] })],
   [/^usulan (U-\d+)$/, (m, t) => t('usulan {id}', { id: m[1] })],
 ]
 

@@ -194,6 +194,25 @@ const DARI_DATA = [
   'Sorot judul', 'Sorot tautan', 'Huruf ramah disleksia', 'Jarak huruf', 'Jarak baris', 'Huruf tebal',
   'Kontras gelap', 'Kontras terang', 'Kontras tinggi', 'Saturasi tinggi', 'Saturasi rendah', 'Monokrom',
   'Pemandu baca', 'Hentikan animasi', 'Kursor besar',
+  /* Sakelar wewenang (SAKELAR di src/lib/wewenang.js): jawaban server saat tindakannya ditutup (lewat t(e.message)) dan
+     dampaknya di Peran & Wewenang (lewat t(s.dampak)); pesan mode lokal ubahWewenang (store.js); lalu label log
+     UBAH_WEWENANG (LABEL_LOG, BENAR_SALAH dan LABEL_RINCIAN di admin/Log.jsx). */
+  'Pengajuan koreksi nilai sedang ditutup Super Admin.',
+  'Mahasiswa tidak bisa mengirim pengajuan koreksi baru. Pengajuan yang sudah masuk tetap diproses admin dan Super Admin.',
+  'Permintaan akses cetak sertifikat sedang ditutup Super Admin.',
+  'Mahasiswa tidak bisa meminta akses cetak baru. Permintaan yang sedang berjalan tetap diproses, dan sertifikat yang aksesnya sudah disetujui tetap bisa dicetak.',
+  'Unggah nilai sedang ditutup Super Admin.',
+  'Dosen tidak bisa mengunggah nilai, termasuk perbaikan untuk angkatan yang sudah disahkan. Perbaikan yang sudah diajukan tetap bisa diputuskan Super Admin atau ditarik dosennya.',
+  'Log Aktivitas sedang ditutup untuk admin oleh Super Admin.',
+  'Admin biasa tidak bisa membuka Log Aktivitas, dan menunya ikut hilang. Lonceng pembaruan admin tetap jalan, dan Super Admin tetap bisa membaca seluruh log.',
+  'Mengubah wewenang hanya tersedia saat terhubung ke basis data.',
+  'Ubah wewenang peran', 'Ditutup', 'Dibuka', 'Kode sakelar',
+  /* Matriks yang bisa diedit: jenis isi sel (LABEL_JENIS di src/lib/wewenang.js, lewat t(LABEL_JENIS[j])), catatan sel
+     "Ya dengan syarat" di baris kebijakan tertulis, pesan mode lokal ubahMatriks (store.js), dan label lognya. */
+  'Ya dengan syarat', 'dengan syarat',
+  'Mengubah matriks hanya tersedia saat terhubung ke basis data.',
+  'Ubah keterangan wewenang', 'Tambah kebijakan wewenang', 'Ubah kebijakan wewenang', 'Arsipkan kebijakan wewenang',
+  'Pulihkan kebijakan wewenang', 'Kode baris',
 ]
 /* Sama, tetapi dari src/lib/rules.js: catatan kaki transkrip sementara, dan labelT/alasanT/ringkasT syarat
    sertifikat. */

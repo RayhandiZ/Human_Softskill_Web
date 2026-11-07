@@ -33,7 +33,13 @@
    supaya bagian lama tetap menguji alurnya. Bagian akses angkatan admin lalu menutup dan membukanya lagi lewat
    /api/akses/angkatan, menonaktifkan sebentar ANG_B dan angkatan mahasiswa uji utama (keduanya masih Semester 1–3),
    dan memeriksa penyaringannya; baris AdminAngkatan admin uji dikembalikan persis seperti semula dan catatan log
-   UBAH_AKSES_ANGKATAN yang dibuatnya dihapus. */
+   UBAH_AKSES_ANGKATAN yang dibuatnya dihapus.
+   Sakelar wewenang (Peran & Wewenang) dibuka semuanya sejak persiapan, supaya bagian lama menguji pintunya seperti
+   biasa; bagian sakelar wewenang lalu menutup dan membuka lagi keempatnya lewat /api/wewenang. Baris Konfigurasi
+   WEWENANG.* dikembalikan persis seperti sebelum uji, dan catatan log UBAH_WEWENANG yang dibuatnya dihapus.
+   Bagian matriks wewenang mengosongkan tabel KeteranganWewenang dan TindakanWewenang, lalu memberi keterangan dan
+   menambah, mengubah, mengarsipkan, dan memulihkan kebijakan tertulis lewat /api/wewenang/matriks; kedua tabel
+   dikembalikan persis seperti sebelum bagian itu dan catatan log-nya dihapus. */
 
 import 'dotenv/config'
 import bcrypt from 'bcryptjs'
@@ -77,6 +83,10 @@ import * as masterAkses from '../app/api/master/akses/route.js'
 import * as aspekRoute from '../app/api/kurikulum/aspek/route.js'
 import * as notifikasi from '../app/api/notifikasi/route.js'
 import * as notifikasiDibaca from '../app/api/notifikasi/dibaca/route.js'
+import * as wewenangRoute from '../app/api/wewenang/route.js'
+import * as matriksRoute from '../app/api/wewenang/matriks/route.js'
+import { AWALAN_WEWENANG, SAKELAR, sakelar } from '../src/lib/wewenang.js'
+import { ambilWewenang } from '../src/server/wewenang.js'
 import { idAspekBaru } from '../src/lib/aspek.js'
 import { hitungTranskrip } from '../src/lib/scoring.js'
 import { padananData } from '../src/lib/kamusData.js'
@@ -141,6 +151,8 @@ const PINTU = {
   '/api/kurikulum/aspek': aspekRoute,
   '/api/notifikasi': notifikasi,
   '/api/notifikasi/dibaca': notifikasiDibaca,
+  '/api/wewenang': wewenangRoute,
+  '/api/wewenang/matriks': matriksRoute,
 }
 
 /* Akun Kemahasiswaan untuk uji. Bawaannya akun dari npm run db:seed; basis data yang akunnya sudah diganti
@@ -235,6 +247,21 @@ const logNotifUji = []
    terakhir sebelum bagian itu; log UBAH_AKSES_ANGKATAN akun admin uji sesudahnya dibuat uji dan dihapus di akhir. */
 let aksesAngkatanAsli
 let logAksesAngkatanSejak
+/* Sakelar wewenang: baris Konfigurasi WEWENANG.* sebelum uji (undefined = belum disentuh), dan id log terakhir sebelum
+   bagian sakelar; log UBAH_WEWENANG sesudahnya dibuat uji dan dihapus di akhir. */
+let wewenangAsli
+let logWewenangSejak
+/* Matriks wewenang: isi kedua tabelnya sebelum bagian matriks (undefined = belum disentuh), dan id log terakhir sebelum
+   bagian itu; log keterangan dan kebijakan tertulis sesudahnya dibuat uji dan dihapus di akhir. */
+let matriksAsli
+let logMatriksSejak
+const AKSI_MATRIKS_UJI = [
+  'UBAH_KETERANGAN_WEWENANG',
+  'TAMBAH_TINDAKAN_WEWENANG',
+  'UBAH_TINDAKAN_WEWENANG',
+  'ARSIPKAN_TINDAKAN_WEWENANG',
+  'PULIHKAN_TINDAKAN_WEWENANG',
+]
 /** Target baris LogAktivitas yang dibuat uji ini; ditambah id batch begitu diketahui. */
 const targetLog = [
   'fakultas ' + FAK_UJI,
@@ -413,7 +440,35 @@ async function pulihkanAksesAngkatan() {
   }
 }
 
+/** Baris Konfigurasi WEWENANG.* dikembalikan persis seperti sebelum uji, lalu log UBAH_WEWENANG buatan uji dihapus. */
+async function pulihkanWewenang() {
+  if (wewenangAsli !== undefined) {
+    await db.konfigurasi.deleteMany({ where: { kunci: { startsWith: AWALAN_WEWENANG } } })
+    if (wewenangAsli.length) await db.konfigurasi.createMany({ data: wewenangAsli })
+    wewenangAsli = undefined
+  }
+  if (logWewenangSejak !== undefined) {
+    await db.logAktivitas.deleteMany({ where: { aksi: 'UBAH_WEWENANG', id: { gt: logWewenangSejak } } })
+  }
+}
+
+/** Kedua tabel matriks dikembalikan persis seperti sebelum bagian matriks, lalu log keterangan dan kebijakannya dihapus. */
+async function pulihkanMatriks() {
+  if (matriksAsli !== undefined) {
+    await db.keteranganWewenang.deleteMany()
+    await db.tindakanWewenang.deleteMany()
+    if (matriksAsli.tindakan.length) await db.tindakanWewenang.createMany({ data: matriksAsli.tindakan })
+    if (matriksAsli.keterangan.length) await db.keteranganWewenang.createMany({ data: matriksAsli.keterangan })
+    matriksAsli = undefined
+  }
+  if (logMatriksSejak !== undefined) {
+    await db.logAktivitas.deleteMany({ where: { aksi: { in: AKSI_MATRIKS_UJI }, id: { gt: logMatriksSejak } } })
+  }
+}
+
 async function bersihkan() {
+  await pulihkanMatriks()
+  await pulihkanWewenang()
   await pulihkanAksesAngkatan()
   await pulihkanNotifikasi()
   await pulihkanAspekUji()
@@ -454,6 +509,11 @@ try {
   })
   mahasiswaId = akunUji.mahasiswa.id
   console.log('angkatan', angkatan.id, '· prodi', prodi.nama)
+  // Sakelar wewenang dibuka semuanya selama uji, supaya pintu yang bisa ditutup Super Admin teruji seperti biasa;
+  // keadaan aslinya dikembalikan di akhir (pulihkanWewenang).
+  wewenangAsli = await db.konfigurasi.findMany({ where: { kunci: { startsWith: AWALAN_WEWENANG } } })
+  await db.konfigurasi.deleteMany({ where: { kunci: { startsWith: AWALAN_WEWENANG } } })
+  if (wewenangAsli.length) console.log('sakelar wewenang dibuka sementara:', wewenangAsli.map((b) => b.kunci).join(', '))
 
   const admin = peramban()
   const mhs = peramban()
@@ -2741,7 +2801,226 @@ try {
       dCabut.mahasiswa.some((m) => m.nim === NIM),
   )
 
-  garis('24. KELUAR')
+  /* ------------------------------ sakelar wewenang ------------------------------ */
+  garis('24. SAKELAR WEWENANG (PERAN & WEWENANG)')
+  logWewenangSejak = (await db.logAktivitas.findFirst({ orderBy: { id: 'desc' }, select: { id: true } }))?.id ?? 0
+  const ALASAN_WEWENANG = 'Uji otomatis sakelar wewenang'
+  const ubahSakelar = (pelaku, isi) => pelaku('/api/wewenang', { metode: 'POST', isi })
+  const tutupSakelar = (id) => ubahSakelar(sa, { id, boleh: false, alasan: ALASAN_WEWENANG })
+  const bukaSakelar = (id) => ubahSakelar(sa, { id, boleh: true, alasan: ALASAN_WEWENANG })
+  const barisSakelar = (id) => db.konfigurasi.findUnique({ where: { kunci: AWALAN_WEWENANG + id } })
+  const logWewenangUji = () => db.logAktivitas.findMany({ where: { aksi: 'UBAH_WEWENANG', id: { gt: logWewenangSejak } }, orderBy: { id: 'asc' } })
+  /** Ditolak karena sakelarnya, bukan karena sebab lain: 403 dengan pesan sakelar itu. */
+  const ditolakSakelar = (r, id) => r.status === 403 && r.isi.galat === sakelar(id).pesanTutup
+  // Permintaan yang tidak menulis apa pun bila lolos sakelar: masing-masing ditolak pemeriksaan pintunya sendiri.
+  const cobaKoreksi = () => mhs('/api/koreksi', { metode: 'POST', isi: { komponenId: 'TIDAK-ADA', alasan: 'uji sakelar' } })
+  const cobaSertifikat = () => mhs('/api/sertifikat', { metode: 'POST', isi: {} })
+  const cobaUnggah = () => dosen('/api/nilai/dosen', { metode: 'POST', isi: { entri: [{ nim: NIM, komponenId: 'A4-MK-UTS', nilai: 70 }] } })
+  const cobaLog = (pelaku) => pelaku('/api/log', { metode: 'POST', isi: { jenis: 'aktivitas', ukuran: 1 } })
+
+  cek('tanpa sesi ditolak 401', (await ubahSakelar(tamu, { id: 'AJUKAN_KOREKSI', boleh: false, alasan: ALASAN_WEWENANG })).status === 401)
+  cek('admin biasa tidak boleh mengubah sakelar (403)', (await ubahSakelar(admin, { id: 'AJUKAN_KOREKSI', boleh: false, alasan: ALASAN_WEWENANG })).status === 403)
+  cek('dosen tidak boleh mengubah sakelar (403)', (await ubahSakelar(dosen, { id: 'UNGGAH_NILAI_DOSEN', boleh: false, alasan: ALASAN_WEWENANG })).status === 403)
+  cek('mahasiswa tidak boleh mengubah sakelar (403)', (await ubahSakelar(mhs, { id: 'AJUKAN_KOREKSI', boleh: false, alasan: ALASAN_WEWENANG })).status === 403)
+  cek('sel yang bukan sakelar ditolak 400', (await ubahSakelar(sa, { id: 'KUNCI_ANGKATAN', boleh: false, alasan: ALASAN_WEWENANG })).status === 400)
+  cek('pilihan bukan true/false ditolak 400', (await ubahSakelar(sa, { id: 'AJUKAN_KOREKSI', boleh: 'false', alasan: ALASAN_WEWENANG })).status === 400)
+  cek('alasan kurang dari 10 karakter ditolak 400', (await ubahSakelar(sa, { id: 'AJUKAN_KOREKSI', boleh: false, alasan: 'pendek' })).status === 400)
+  cek('penolakan tidak menulis apa pun', !(await barisSakelar('AJUKAN_KOREKSI')) && !(await logWewenangUji()).length)
+  cek('bawaannya terbuka: pengajuan koreksi sampai ke pemeriksaannya sendiri (400)', (await cobaKoreksi()).status === 400)
+  cek('bawaannya terbuka: /api/data tanpa sakelar tertutup', JSON.stringify((await mhs('/api/data')).isi.wewenang) === '{}')
+
+  const rTutup = await tutupSakelar('AJUKAN_KOREKSI')
+  cek('super admin menutup pengajuan koreksi', rTutup.status === 200 && rTutup.isi.wewenang?.AJUKAN_KOREKSI === false, JSON.stringify(rTutup.isi))
+  cek('tersimpan di Konfigurasi WEWENANG.AJUKAN_KOREKSI = false', (await barisSakelar('AJUKAN_KOREKSI'))?.nilai === false)
+  const [logTutupW] = await logWewenangUji()
+  cek(
+    'log UBAH_WEWENANG mencatat pelaku, sasaran, sebelum, sesudah, dan alasan',
+    logTutupW?.aktorId === idSA &&
+      logTutupW.target === 'wewenang Mahasiswa: Mengajukan koreksi nilai' &&
+      logTutupW.rincian?.sakelar === 'AJUKAN_KOREKSI' &&
+      logTutupW.rincian.sebelum === true &&
+      logTutupW.rincian.sesudah === false &&
+      logTutupW.rincian.alasan === ALASAN_WEWENANG,
+    JSON.stringify(logTutupW ?? null),
+  )
+  cek('menutup yang sudah ditutup tidak menulis log lagi', (await tutupSakelar('AJUKAN_KOREKSI')).status === 200 && (await logWewenangUji()).length === 1)
+  const koreksiSebelumW = await db.pengajuanKoreksi.count({ where: { mahasiswaId } })
+  const rKoreksiW = await cobaKoreksi()
+  cek('mahasiswa ditolak 403 dengan pesan sakelarnya', ditolakSakelar(rKoreksiW, 'AJUKAN_KOREKSI'), JSON.stringify(rKoreksiW))
+  cek('tidak ada pengajuan koreksi yang tercatat', (await db.pengajuanKoreksi.count({ where: { mahasiswaId } })) === koreksiSebelumW)
+  cek('/api/data membawa sakelar yang ditutup', (await mhs('/api/data')).isi.wewenang?.AJUKAN_KOREKSI === false)
+  cek('data master (app/layout.jsx) membawa sakelar yang ditutup', (await ambilMaster()).wewenang?.AJUKAN_KOREKSI === false)
+
+  cek('super admin menutup permintaan akses cetak', (await tutupSakelar('MINTA_SERTIFIKAT')).status === 200)
+  cek('mahasiswa ditolak 403 saat meminta akses cetak', ditolakSakelar(await cobaSertifikat(), 'MINTA_SERTIFIKAT'))
+  cek('super admin menutup unggah nilai dosen', (await tutupSakelar('UNGGAH_NILAI_DOSEN')).status === 200)
+  cek('dosen ditolak 403 saat mengunggah', ditolakSakelar(await cobaUnggah(), 'UNGGAH_NILAI_DOSEN'))
+  cek('dosen tetap bisa memuat datanya (/api/data 200)', (await dosen('/api/data')).status === 200)
+  cek('super admin menutup Log Aktivitas untuk admin', (await tutupSakelar('BACA_LOG_ADMIN')).status === 200)
+  cek('admin biasa ditolak 403 saat membaca log', ditolakSakelar(await cobaLog(admin), 'BACA_LOG_ADMIN'))
+  cek('super admin tetap bisa membaca log (200)', (await cobaLog(sa)).status === 200)
+  cek('lonceng admin tetap jalan (/api/notifikasi 200)', (await admin('/api/notifikasi')).status === 200)
+  const semuaSakelar = await ambilWewenang()
+  cek('keempat sakelar terbaca tertutup', SAKELAR.every((s) => semuaSakelar[s.id] === false), JSON.stringify(semuaSakelar))
+  cek('setiap penutupan tercatat sekali', (await logWewenangUji()).length === SAKELAR.length)
+
+  for (const s of SAKELAR) await bukaSakelar(s.id)
+  const logBukaW = (await logWewenangUji()).slice(SAKELAR.length)
+  cek('keempat sakelar dibuka lagi', JSON.stringify(await ambilWewenang()) === '{}' && logBukaW.length === SAKELAR.length)
+  cek(
+    'log pembukaan mencatat sebelum ditutup, sesudah dibuka',
+    logBukaW.every((l) => l.rincian?.sebelum === false && l.rincian?.sesudah === true),
+    JSON.stringify(logBukaW.map((l) => l.rincian)),
+  )
+  const rKoreksiBuka = await cobaKoreksi()
+  cek('pengajuan koreksi tidak lagi ditolak sakelar (400 dari pemeriksaannya)', rKoreksiBuka.status === 400, JSON.stringify(rKoreksiBuka))
+  const rSertifikatBuka = await cobaSertifikat()
+  cek('permintaan akses cetak tidak lagi ditolak sakelar', rSertifikatBuka.status !== 403 && rSertifikatBuka.status !== 200, JSON.stringify(rSertifikatBuka))
+  const rUnggahBuka = await cobaUnggah()
+  cek('unggah nilai dosen tidak lagi ditolak sakelar (400 dari pemeriksaannya)', rUnggahBuka.status === 400, JSON.stringify(rUnggahBuka))
+  cek('admin biasa bisa membaca log lagi (200)', (await cobaLog(admin)).status === 200)
+
+  /* -------------------------- matriks: keterangan dan kebijakan tertulis -------------------------- */
+  garis('25. MATRIKS WEWENANG (KETERANGAN DAN KEBIJAKAN TERTULIS)')
+  matriksAsli = { keterangan: await db.keteranganWewenang.findMany(), tindakan: await db.tindakanWewenang.findMany() }
+  await db.keteranganWewenang.deleteMany()
+  await db.tindakanWewenang.deleteMany()
+  logMatriksSejak = (await db.logAktivitas.findFirst({ orderBy: { id: 'desc' }, select: { id: true } }))?.id ?? 0
+  const ALASAN_MATRIKS = 'Uji otomatis matriks wewenang'
+  const ubahM = (pelaku, isi) => pelaku('/api/wewenang/matriks', { metode: 'POST', isi: { alasan: ALASAN_MATRIKS, ...isi } })
+  const logMatriks = () =>
+    db.logAktivitas.findMany({ where: { aksi: { in: AKSI_MATRIKS_UJI }, id: { gt: logMatriksSejak } }, orderBy: { id: 'asc' } })
+  const ketSel = (baris, peran) => db.keteranganWewenang.findUnique({ where: { baris_peran: { baris, peran } } })
+  const IZIN_UJI = { Mahasiswa: 'ya', Dosen: 'syarat', Kemahasiswaan: 'tidak', 'Super Admin': 'ya' }
+  const NAMA_UJI = 'Uji kebijakan tertulis ' + SUF
+  const KET_UJI = { aksi: 'keterangan', baris: 'AJUKAN_KOREKSI', peran: 'Mahasiswa', teks: 'Berlaku sampai minggu ke-14.' }
+
+  cek('tanpa sesi ditolak 401', (await ubahM(tamu, KET_UJI)).status === 401)
+  cek('admin biasa ditolak 403', (await ubahM(admin, KET_UJI)).status === 403)
+  cek('dosen ditolak 403', (await ubahM(dosen, KET_UJI)).status === 403)
+  cek('mahasiswa ditolak 403', (await ubahM(mhs, KET_UJI)).status === 403)
+  cek('aksi asing ditolak 400', (await ubahM(sa, { ...KET_UJI, aksi: 'hapus' })).status === 400)
+  cek('alasan kurang dari 10 karakter ditolak 400', (await ubahM(sa, { ...KET_UJI, alasan: 'pendek' })).status === 400)
+  cek('baris asing ditolak 400', (await ubahM(sa, { ...KET_UJI, baris: 'TIDAK_ADA' })).status === 400)
+  cek('peran asing ditolak 400', (await ubahM(sa, { ...KET_UJI, peran: 'Tamu' })).status === 400)
+  cek('keterangan lebih dari 300 karakter ditolak 400', (await ubahM(sa, { ...KET_UJI, teks: 'x'.repeat(301) })).status === 400)
+  cek('penolakan tidak menulis apa pun', !(await ketSel('AJUKAN_KOREKSI', 'Mahasiswa')) && !(await logMatriks()).length)
+
+  const rKet = await ubahM(sa, KET_UJI)
+  cek(
+    'super admin menyimpan keterangan sel bawaan',
+    rKet.status === 200 && rKet.isi.matriks?.keterangan?.['AJUKAN_KOREKSI|Mahasiswa'] === KET_UJI.teks,
+    JSON.stringify(rKet.isi),
+  )
+  cek('tersimpan di KeteranganWewenang', (await ketSel('AJUKAN_KOREKSI', 'Mahasiswa'))?.teks === KET_UJI.teks)
+  const [logKet] = await logMatriks()
+  cek(
+    'log UBAH_KETERANGAN_WEWENANG mencatat pelaku, sasaran, sebelum, sesudah, dan alasan',
+    logKet?.aksi === 'UBAH_KETERANGAN_WEWENANG' &&
+      logKet.aktorId === idSA &&
+      logKet.target === 'wewenang Mahasiswa: Mengajukan koreksi nilai' &&
+      logKet.rincian?.sebelum === null &&
+      logKet.rincian.sesudah === KET_UJI.teks &&
+      logKet.rincian.alasan === ALASAN_MATRIKS,
+    JSON.stringify(logKet ?? null),
+  )
+  cek(
+    'keterangan yang sama (beda spasi saja) tidak menulis log lagi',
+    (await ubahM(sa, { ...KET_UJI, teks: '  ' + KET_UJI.teks + ' ' })).status === 200 && (await logMatriks()).length === 1,
+  )
+  const SEL_SA = { aksi: 'keterangan', baris: 'PINDAH_PERIODE', peran: 'Super Admin' }
+  cek('kolom Super Admin juga bisa diberi keterangan', (await ubahM(sa, { ...SEL_SA, teks: 'Hanya di awal semester.' })).status === 200)
+  const rHapusKet = await ubahM(sa, { ...SEL_SA, teks: '' })
+  const logHapusKet = (await logMatriks()).at(-1)
+  cek(
+    'teks kosong menghapus keterangan dan tercatat',
+    rHapusKet.status === 200 &&
+      !(await ketSel('PINDAH_PERIODE', 'Super Admin')) &&
+      logHapusKet?.rincian?.sesudah === null &&
+      logHapusKet.target === 'wewenang Super Admin: Memindahkan periode akademik',
+    JSON.stringify(logHapusKet ?? null),
+  )
+
+  cek('nama tindakan terlalu pendek ditolak 400', (await ubahM(sa, { aksi: 'tambah', tindakan: 'abc', izin: IZIN_UJI })).status === 400)
+  cek(
+    'nama sama dengan baris bawaan ditolak 409',
+    (await ubahM(sa, { aksi: 'tambah', tindakan: 'mengajukan koreksi NILAI', izin: IZIN_UJI })).status === 409,
+  )
+  cek('isi sel di luar empat pilihan ditolak 400', (await ubahM(sa, { aksi: 'tambah', tindakan: NAMA_UJI, izin: { ...IZIN_UJI, Dosen: 'kadang' } })).status === 400)
+  cek('peran tanpa isi sel ditolak 400', (await ubahM(sa, { aksi: 'tambah', tindakan: NAMA_UJI, izin: { Mahasiswa: 'ya' } })).status === 400)
+  const rTambah = await ubahM(sa, { aksi: 'tambah', tindakan: NAMA_UJI, izin: IZIN_UJI, keterangan: { Dosen: 'Hanya dosen wali.', Mahasiswa: '  ' } })
+  const idKebijakan = rTambah.isi.id
+  const barisUji = /^T-\d+$/.test(idKebijakan ?? '') ? await db.tindakanWewenang.findUnique({ where: { id: Number(idKebijakan.slice(2)) } }) : null
+  cek('super admin menambah kebijakan tertulis', rTambah.status === 200 && barisUji?.aktif === true && barisUji.tindakan === NAMA_UJI, JSON.stringify(rTambah.isi))
+  cek(
+    'isi selnya tersimpan per peran, keterangan kosong dilewati',
+    JSON.stringify(rTambah.isi.matriks?.tambahan?.find((b) => b.id === idKebijakan)?.izin) === JSON.stringify(IZIN_UJI) &&
+      (await ketSel(idKebijakan, 'Dosen'))?.teks === 'Hanya dosen wali.' &&
+      !(await ketSel(idKebijakan, 'Mahasiswa')),
+  )
+  const logTambah = (await logMatriks()).at(-1)
+  cek(
+    'log TAMBAH_TINDAKAN_WEWENANG mencatat nama, isi sel, keterangan, dan alasan',
+    logTambah?.aksi === 'TAMBAH_TINDAKAN_WEWENANG' &&
+      logTambah.target === 'kebijakan wewenang ' + NAMA_UJI &&
+      logTambah.rincian?.izin?.Dosen === 'syarat' &&
+      logTambah.rincian.keterangan?.Dosen === 'Hanya dosen wali.' &&
+      logTambah.rincian.alasan === ALASAN_MATRIKS,
+    JSON.stringify(logTambah ?? null),
+  )
+  cek('nama kembar dengan kebijakan aktif ditolak 409', (await ubahM(sa, { aksi: 'tambah', tindakan: NAMA_UJI.toUpperCase(), izin: IZIN_UJI })).status === 409)
+  const IZIN_UBAH = { ...IZIN_UJI, Kemahasiswaan: 'minta' }
+  const rUbah = await ubahM(sa, { aksi: 'ubah', id: idKebijakan, tindakan: NAMA_UJI, izin: IZIN_UBAH })
+  const logUbahKebijakan = (await logMatriks()).at(-1)
+  cek(
+    'kebijakan diubah, log mencatat sebelum dan sesudah per peran',
+    rUbah.status === 200 &&
+      logUbahKebijakan?.aksi === 'UBAH_TINDAKAN_WEWENANG' &&
+      logUbahKebijakan.rincian?.sebelum?.Kemahasiswaan === 'tidak' &&
+      logUbahKebijakan.rincian.sesudah?.Kemahasiswaan === 'minta',
+    JSON.stringify(logUbahKebijakan ?? null),
+  )
+  const jumlahLogM = (await logMatriks()).length
+  cek(
+    'ubah tanpa perbedaan tidak menulis log',
+    (await ubahM(sa, { aksi: 'ubah', id: idKebijakan, tindakan: NAMA_UJI, izin: IZIN_UBAH })).status === 200 && (await logMatriks()).length === jumlahLogM,
+  )
+  cek(
+    'sel kebijakan tertulis bisa diberi keterangan',
+    (await ubahM(sa, { aksi: 'keterangan', baris: idKebijakan, peran: 'Kemahasiswaan', teks: 'Lewat Permintaan Saya.' })).status === 200,
+  )
+
+  const rArsip = await ubahM(sa, { aksi: 'arsipkan', id: idKebijakan })
+  cek(
+    'kebijakan diarsipkan dan tetap terbaca sebagai arsip',
+    rArsip.status === 200 && rArsip.isi.matriks?.tambahan?.find((b) => b.id === idKebijakan)?.aktif === false,
+  )
+  cek('baris yang diarsipkan tidak bisa diberi keterangan (400)', (await ubahM(sa, { aksi: 'keterangan', baris: idKebijakan, peran: 'Dosen', teks: 'x' })).status === 400)
+  cek('baris yang diarsipkan tidak bisa diubah (400)', (await ubahM(sa, { aksi: 'ubah', id: idKebijakan, tindakan: NAMA_UJI, izin: IZIN_UJI })).status === 400)
+  const rPulih = await ubahM(sa, { aksi: 'pulihkan', id: idKebijakan })
+  cek(
+    'kebijakan dipulihkan beserta keterangannya',
+    rPulih.status === 200 &&
+      rPulih.isi.matriks?.tambahan?.find((b) => b.id === idKebijakan)?.aktif === true &&
+      rPulih.isi.matriks.keterangan?.[idKebijakan + '|Dosen'] === 'Hanya dosen wali.',
+  )
+  cek('arsip dan pemulihan tercatat', (await logMatriks()).filter((l) => /^(ARSIPKAN|PULIHKAN)_TINDAKAN_WEWENANG$/.test(l.aksi)).length === 2)
+
+  const dataSAM = (await sa('/api/data')).isi
+  cek('/api/data Super Admin membawa matriks', dataSAM.matriks?.siap === true && dataSAM.matriks.tambahan?.some((b) => b.id === idKebijakan))
+  cek('/api/data admin biasa tanpa matriks', !('matriks' in (await admin('/api/data')).isi))
+  // Kebijakan tertulis hanya tulisan: "Mahasiswa boleh menyimpan nilai" tidak membuka /api/nilai untuk mahasiswa.
+  const rKebijakanNilai = await ubahM(sa, {
+    aksi: 'tambah',
+    tindakan: 'Mahasiswa menyimpan nilainya sendiri ' + SUF,
+    izin: { Mahasiswa: 'ya', Dosen: 'tidak', Kemahasiswaan: 'tidak', 'Super Admin': 'ya' },
+  })
+  cek(
+    'kebijakan tertulis tidak dijalankan server: mahasiswa tetap ditolak menyimpan nilai (403)',
+    rKebijakanNilai.status === 200 && (await mhs('/api/nilai', { metode: 'POST', isi: {} })).status === 403,
+  )
+
+  garis('26. KELUAR')
   await sa('/api/keluar', { metode: 'POST' })
   await mhs('/api/keluar', { metode: 'POST' })
   cek('setelah keluar, sesi tidak berlaku', (await mhs('/api/sesi')).status === 401)

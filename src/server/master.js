@@ -1,5 +1,6 @@
 import { db } from './db.js'
 import { ambilKurikulum, ambilPeriode } from './kurikulum.js'
+import { ambilWewenang } from './wewenang.js'
 
 /* --------------------------------------------------------------------------
    Data master dari basis data — angkatan, fakultas, dan program studi —
@@ -38,7 +39,7 @@ export async function ambilAngkatanProdi() {
 }
 
 export async function ambilMaster() {
-  const [dasar, kurikulum, periode] = await Promise.all([
+  const [dasar, kurikulum, periode, wewenang] = await Promise.all([
     ambilAngkatanProdi(),
     // Kurikulum yang gagal dibaca tidak ikut menggagalkan angkatan dan prodi.
     ambilKurikulum().catch((e) => {
@@ -50,7 +51,13 @@ export async function ambilMaster() {
       console.warn('Periode aktif dibaca dari kode karena basis data tidak bisa dibaca:', e.message)
       return null
     }),
+    // Sakelar wewenang yang ditutup Super Admin (src/server/wewenang.js). null = gagal dibaca: semua tombol tampil,
+    // dan server tetap menolak tindakan yang ditutup.
+    ambilWewenang().catch((e) => {
+      console.warn('Sakelar wewenang tidak bisa dibaca dari basis data:', e.message)
+      return null
+    }),
   ])
 
-  return { ...dasar, kurikulum, periode }
+  return { ...dasar, kurikulum, periode, wewenang }
 }

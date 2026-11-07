@@ -29,6 +29,7 @@ import { ajukanKoreksi, koreksiMilik, useStore } from '../../lib/store'
 import { LABEL_KOREKSI } from '../../lib/duaLapis'
 import { bacaAngka } from '../../lib/ingest'
 import { useTeks } from '../../lib/bahasa'
+import { boleh } from '../../lib/wewenang'
 import LembarCetak from './LembarCetak'
 
 const STATUS_LABEL = {
@@ -53,6 +54,8 @@ export default function Transkrip({ student, untukAdmin = false }) {
   const [terbuka, setTerbuka] = useState(null)
   const [formKoreksi, setFormKoreksi] = useState(false)
   const milikSaya = koreksiMilik(student.nim)
+  // Super Admin bisa menutup pengajuan koreksi sementara (Peran & Wewenang); pengajuan lama tetap tampil di bawah.
+  const bukaKoreksi = boleh('AJUKAN_KOREKSI')
 
   const clusterRows = Object.values(t.cluster)
 
@@ -327,23 +330,33 @@ export default function Transkrip({ student, untukAdmin = false }) {
               {teks('Ada nilai yang menurutmu keliru?')}
             </h2>
             <p className="mt-1 max-w-xl text-[13.5px] leading-relaxed text-ink-2">
-              {teks(
-                'Kamu tidak bisa mengubah nilai sendiri. Ajukan koreksi dan Biro Kemahasiswaan akan menelusurinya bersama dosen atau unit yang memberi nilai.',
-              )}
+              {bukaKoreksi
+                ? teks(
+                    'Kamu tidak bisa mengubah nilai sendiri. Ajukan koreksi dan Biro Kemahasiswaan akan menelusurinya bersama dosen atau unit yang memberi nilai.',
+                  )
+                : teks('Pengajuan koreksi nilai sedang ditutup Super Admin untuk sementara. Pengajuan yang sudah kamu kirim tetap diproses.')}
             </p>
           </div>
-          <button
-            type="button"
-            className="btn-sorot"
-            aria-expanded={formKoreksi}
-            onClick={() => setFormKoreksi((v) => !v)}
-          >
-            <IconPencil size={17} />
-            {teks(formKoreksi ? 'Tutup formulir' : 'Ajukan koreksi nilai')}
-          </button>
+          {/* Sakelar AJUKAN_KOREKSI di Peran & Wewenang: selama ditutup, server menolak pengajuan baru. */}
+          {bukaKoreksi ? (
+            <button
+              type="button"
+              className="btn-sorot"
+              aria-expanded={formKoreksi}
+              onClick={() => setFormKoreksi((v) => !v)}
+            >
+              <IconPencil size={17} />
+              {teks(formKoreksi ? 'Tutup formulir' : 'Ajukan koreksi nilai')}
+            </button>
+          ) : (
+            <StatusTeks>
+              <IconLock size={15} className="mr-1.5 inline-block align-[-2px]" />
+              {teks('Ditutup sementara')}
+            </StatusTeks>
+          )}
         </div>
 
-        {formKoreksi ? <FormKoreksi student={student} transkrip={t} onSelesai={() => setFormKoreksi(false)} /> : null}
+        {formKoreksi && bukaKoreksi ? <FormKoreksi student={student} transkrip={t} onSelesai={() => setFormKoreksi(false)} /> : null}
 
         {milikSaya.length ? (
           <ul className="mt-5 space-y-2 border-t border-line pt-4">

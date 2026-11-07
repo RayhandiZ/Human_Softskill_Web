@@ -11,6 +11,7 @@ import { DATA_CONTOH, DOSEN, PERSONA_SEMESTER, getDosenByEmail, getStudentByEmai
 import {
   AKUN_LOKAL,
   BATCH_SESI,
+  MATRIKS_SA,
   NOTIFIKASI_LOKAL,
   PERMINTAAN,
   PERMINTAAN_SERTIFIKAT,
@@ -25,6 +26,7 @@ import {
 } from '../src/lib/store'
 import { aturJalur, rekamNavigasi } from './palsu-next-navigation'
 import { jalurMulus } from '../src/lib/kurva'
+import { SAKELAR, pasangWewenang } from '../src/lib/wewenang'
 
 import Login from '../src/halaman/Login'
 import Profil from '../src/halaman/Profil'
@@ -3506,6 +3508,212 @@ export async function ujiRincianLog() {
   hasil.ringkasanBaris = rk[0] === 'Label: A → B' && rk.includes('Alasan: Menyamakan dengan SK rektor.')
   const rkNilai = ringkasan({ aksi: 'SIMPAN_NILAI', rincian: { jumlahNilai: 3, sumber: 'PDP', semester: 2, cara: 'import' } }, t)
   hasil.ringkasanNilai = rkNilai[0] === '3 nilai · PDP · Semester 2 · import berkas'
+  return hasil
+}
+
+/**
+ * Sakelar wewenang di Peran & Wewenang (src/lib/wewenang.js). Mode lokal tidak bisa menyimpannya (butuh basis data),
+ * jadi keadaan tertutup dipasang langsung lewat pasangWewenang, persis yang dilakukan isiMaster dan muatDariServer
+ * dengan jawaban server. Selama ditutup: matriks menulis "Ditutup sementara" dengan tombol Buka lagi, jumlah tindakan di
+ * kartu perannya turun, dan tombolnya hilang dari panel peran itu. Sesudah dibuka lagi semuanya kembali.
+ */
+export async function ujiSakelarWewenang() {
+  const lama = window.localStorage.getItem('sk5c.session')
+  const sesi = (isi) => window.localStorage.setItem('sk5c.session', JSON.stringify(isi))
+  const SUPER = { role: 'admin', superAdmin: true, email: 'super.admin@umn.ac.id', name: 'Super Admin', initials: 'SA' }
+  const ADMIN = { role: 'admin', email: 'a@umn.ac.id', name: 'Y', initials: 'KH' }
+  const MAHASISWA = { role: 'student', email: 'x@student.umn.ac.id', name: 'X', initials: 'X', studentId: 'DEMO-LAYAK' }
+  const DOSEN = sesiLogin('simon.petrus@lecturer.umn.ac.id')
+  const tombol = (akar, pola) => [...(akar?.querySelectorAll('button') ?? [])].filter((b) => pola.test(b.textContent.trim()))
+  const jumlahBoleh = (el) => [...el.textContent.matchAll(/Boleh (\d+) dari \d+ tindakan/g)].map((m) => Number(m[1]))
+  const lihat = async (akun, rute) => {
+    sesi(akun)
+    return pasang(rute)
+  }
+  const hasil = {}
+
+  try {
+    // 1. Bawaan terbuka. Formulirnya muncul di bawah tabel; mode lokal menolak menyimpan dengan pesannya.
+    let h = await lihat(MAHASISWA, '/mahasiswa/sertifikat')
+    const adaTombolMinta = tombol(h.el, /^Minta akses cetak/).length > 0
+    h.lepas()
+    h = await lihat(SUPER, '/super/wewenang')
+    const awal = jumlahBoleh(h.el)
+    hasil.bawaanTerbuka = tombol(h.el, /^Tutup sementara$/).length === 4 && !/Ditutup sementara/.test(h.el.textContent)
+    await klik(tombol(h.el, /^Tutup sementara$/)[0])
+    const form = h.el.querySelector('form#ubah-sakelar')
+    const simpan = () => tombol(form, /^Tutup sekarang$/)[0]
+    hasil.formulirMuncul =
+      /Tutup sementara: Mengajukan koreksi nilai/.test(form?.textContent ?? '') &&
+      /tidak bisa mengirim pengajuan koreksi baru/.test(form?.textContent ?? '') &&
+      simpan()?.disabled === true
+    await ketik(form.querySelector('input'), 'Masa koreksi semester ini sudah berakhir')
+    hasil.simpanAktifSetelahAlasan = simpan()?.disabled === false
+    await act(async () => {
+      form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }))
+    })
+    await act(async () => { await new Promise((r) => setTimeout(r, 30)) })
+    hasil.lokalDitolakDenganPesan = /hanya tersedia saat terhubung ke basis data/.test(form.querySelector('[role="alert"]')?.textContent ?? '')
+    hasil.lokalTidakMengubah = !/Ditutup sementara/.test(h.el.textContent)
+    h.lepas()
+
+    // 2. Keempatnya ditutup, seperti jawaban server.
+    pasangWewenang(Object.fromEntries(SAKELAR.map((s) => [s.id, false])))
+    h = await lihat(SUPER, '/super/wewenang')
+    const tutup = jumlahBoleh(h.el)
+    hasil.matriksDitutup =
+      (h.el.textContent.match(/Ditutup sementara/g) ?? []).length === 5 &&
+      tombol(h.el, /^Buka lagi$/).length === 4 &&
+      /ikut tertutup bersama "Mengunggah nilai kelasnya dari Excel"/.test(h.el.textContent)
+    // Mahasiswa kehilangan dua tindakan, Dosen dan Kemahasiswaan masing-masing satu; Super Admin tidak berubah.
+    hasil.jumlahTurun =
+      awal.length === 4 && tutup[0] === awal[0] - 2 && tutup[1] === awal[1] - 1 && tutup[2] === awal[2] - 1 && tutup[3] === awal[3]
+    h.lepas()
+
+    h = await lihat(MAHASISWA, '/mahasiswa/transkrip')
+    hasil.koreksiDitutup =
+      !tombol(h.el, /Ajukan koreksi nilai/).length && /Pengajuan koreksi nilai sedang ditutup Super Admin/.test(h.el.textContent)
+    h.lepas()
+    h = await lihat(MAHASISWA, '/mahasiswa/sertifikat')
+    hasil.sertifikatDitutup =
+      adaTombolMinta &&
+      !tombol(h.el, /^Minta akses cetak/).length &&
+      /Permintaan akses cetak sedang ditutup Super Admin/.test(h.el.textContent) &&
+      !/Minta akses cetak untuk mendapatkan sertifikatmu/.test(h.el.textContent)
+    h.lepas()
+    h = await lihat(DOSEN, '/dosen/nilai')
+    hasil.unggahDitutup =
+      !h.el.querySelector('input[type="file"]') &&
+      !tombol(h.el, /Unduh templat/).length &&
+      /Unggah nilai sedang ditutup sementara/.test(h.el.textContent) &&
+      /Riwayat unggahan/.test(h.el.textContent)
+    h.lepas()
+    h = await lihat(ADMIN, '/admin/log')
+    hasil.logAdminDitutup =
+      !h.el.querySelector('a[href="/admin/log"]') &&
+      /Log Aktivitas sedang ditutup sementara/.test(h.el.textContent) &&
+      !/Jenis tindakan/.test(h.el.textContent)
+    h.lepas()
+    h = await lihat(SUPER, '/super/log')
+    hasil.logSuperTetap = /Jenis tindakan/.test(h.el.textContent) && !/sedang ditutup/.test(h.el.textContent)
+    h.lepas()
+
+    // 3. Dibuka lagi: semuanya kembali seperti bawaan.
+    pasangWewenang({})
+    h = await lihat(MAHASISWA, '/mahasiswa/transkrip')
+    const koreksiKembali = tombol(h.el, /Ajukan koreksi nilai/).length > 0
+    h.lepas()
+    h = await lihat(MAHASISWA, '/mahasiswa/sertifikat')
+    const sertifikatKembali = tombol(h.el, /^Minta akses cetak/).length > 0
+    h.lepas()
+    h = await lihat(DOSEN, '/dosen/nilai')
+    const unggahKembali = Boolean(h.el.querySelector('input[type="file"]'))
+    h.lepas()
+    h = await lihat(ADMIN, '/admin/log')
+    const logKembali = Boolean(h.el.querySelector('a[href="/admin/log"]')) && /Jenis tindakan/.test(h.el.textContent)
+    h.lepas()
+    h = await lihat(SUPER, '/super/wewenang')
+    const matriksKembali = jumlahBoleh(h.el).join() === awal.join() && tombol(h.el, /^Tutup sementara$/).length === 4
+    h.lepas()
+    hasil.dibukaKembali = koreksiKembali && sertifikatKembali && unggahKembali && logKembali && matriksKembali
+
+    // 4. Catatan lognya terbaca Dibuka → Ditutup beserta alasannya, bukan true/false.
+    const t = (s, isi) => Object.entries(isi ?? {}).reduce((a, [kunci, v]) => a.replaceAll('{' + kunci + '}', String(v)), s)
+    const rk = ringkasan(
+      {
+        aksi: 'UBAH_WEWENANG',
+        rincian: { sakelar: 'AJUKAN_KOREKSI', peran: 'Mahasiswa', tindakan: 'Mengajukan koreksi nilai', sebelum: true, sesudah: false, alasan: 'Masa koreksi berakhir.' },
+      },
+      t,
+    )
+    hasil.ringkasanLog = rk[0] === 'Dibuka → Ditutup' && rk.includes('Alasan: Masa koreksi berakhir.')
+  } catch (e) {
+    hasil.galat = e.message
+  } finally {
+    pasangWewenang({})
+    if (lama == null) window.localStorage.removeItem('sk5c.session')
+    else window.localStorage.setItem('sk5c.session', lama)
+  }
+  return hasil
+}
+
+/**
+ * Matriks Peran & Wewenang yang bisa diedit (pilihan 6 Nov 2026): keterangan per sel dan kebijakan tertulis. Isinya
+ * dipasang langsung ke MATRIKS_SA, persis jawaban /api/data milik Super Admin; mode lokal tidak bisa menyimpan, jadi
+ * formulir harus menolak dengan pesannya. Tombol ubah baru muncul sesudah "Ubah matriks", kebijakan tertulis tampil di
+ * kelompok sendiri bertanda "Tidak dijaga server", dan jumlah tindakan di kartu peran tidak ikut berubah.
+ */
+export async function ujiMatriksWewenang() {
+  const lama = window.localStorage.getItem('sk5c.session')
+  const matriksLama = { ...MATRIKS_SA }
+  window.localStorage.setItem(
+    'sk5c.session',
+    JSON.stringify({ role: 'admin', superAdmin: true, email: 'super.admin@umn.ac.id', name: 'Super Admin', initials: 'SA' }),
+  )
+  const tombol = (akar, pola) => [...(akar?.querySelectorAll('button') ?? [])].filter((b) => pola.test(b.textContent.trim()))
+  const jumlahBoleh = (el) => [...el.textContent.matchAll(/Boleh (\d+) dari \d+ tindakan/g)].map((m) => Number(m[1]))
+  const hasil = {}
+
+  try {
+    let h = await pasang('/super/wewenang')
+    const awal = jumlahBoleh(h.el)
+    hasil.tanpaTombolUbahSebelumMode = !tombol(h.el, /^Tambah keterangan$/).length && tombol(h.el, /^Ubah matriks$/).length === 1
+    await klik(tombol(h.el, /^Ubah matriks$/)[0])
+    hasil.modeUbah =
+      tombol(h.el, /^Tambah keterangan$/).length === 27 * 4 &&
+      tombol(h.el, /^Tambah tindakan$/).length === 1 &&
+      tombol(h.el, /^Selesai mengubah$/).length === 1
+    // Formulir keterangan sel pertama: isi sel dari server sebagai konteks.
+    await klik(tombol(h.el, /^Tambah keterangan$/)[0])
+    const formKet = h.el.querySelector('form#ubah-matriks')
+    hasil.formulirKeterangan =
+      /Keterangan: Melihat capaian mahasiswa/.test(formKet?.textContent ?? '') &&
+      /Isi sel dari aturan server: Ya, hanya miliknya/.test(formKet?.textContent ?? '') &&
+      Boolean(formKet?.querySelector('textarea'))
+    // Formulir tambah tindakan: empat pilihan peran, tombol menunggu nama dan alasan, mode lokal menolak menyimpan.
+    await klik(tombol(h.el, /^Tambah tindakan$/)[0])
+    const formTambah = h.el.querySelector('form#ubah-matriks')
+    const tambahkan = () => tombol(formTambah, /Tambahkan ke matriks/)[0]
+    hasil.formulirTambah = formTambah?.querySelectorAll('select').length === 4 && tambahkan()?.disabled === true
+    const isian = formTambah.querySelectorAll('input:not([type="hidden"])')
+    await ketik(isian[0], 'Mengisi survei kepuasan layanan')
+    await ketik(isian[isian.length - 1], 'Kebijakan baru dari rapat pimpinan')
+    hasil.tambahAktif = tambahkan()?.disabled === false
+    await act(async () => {
+      formTambah.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }))
+    })
+    await act(async () => { await new Promise((r) => setTimeout(r, 30)) })
+    hasil.lokalDitolak = /hanya tersedia saat terhubung ke basis data/.test(formTambah.querySelector('[role="alert"]')?.textContent ?? '')
+    h.lepas()
+
+    // Isi dari server: satu keterangan sel bawaan, satu kebijakan aktif dengan keterangan, satu yang diarsipkan.
+    MATRIKS_SA.siap = true
+    MATRIKS_SA.keterangan = { 'AJUKAN_KOREKSI|Mahasiswa': 'Berlaku sampai minggu ke-14.', 'T-1|Dosen': 'Hanya dosen wali.' }
+    MATRIKS_SA.tambahan = [
+      { id: 'T-1', tindakan: 'Mengisi survei kepuasan layanan', izin: { Mahasiswa: 'ya', Dosen: 'syarat', Kemahasiswaan: 'tidak', 'Super Admin': 'minta' }, aktif: true },
+      { id: 'T-2', tindakan: 'Kebijakan lama yang diarsipkan', izin: { Mahasiswa: 'ya', Dosen: 'ya', Kemahasiswaan: 'ya', 'Super Admin': 'ya' }, aktif: false },
+    ]
+    h = await pasang('/super/wewenang')
+    const teks = h.el.textContent.replace(/\s+/g, ' ')
+    hasil.catatanTampil = /Catatan: Berlaku sampai minggu ke-14\./.test(teks) && /Catatan: Hanya dosen wali\./.test(teks)
+    hasil.kelompokKebijakan =
+      /Kebijakan tertulis/.test(teks) &&
+      /Mengisi survei kepuasan layanan\s*Tidak dijaga server/.test(teks) &&
+      /Ya dengan syarat|Ya\s*dengan syarat/.test(teks) &&
+      !/Kebijakan lama yang diarsipkan/.test(teks)
+    hasil.jumlahTetap = jumlahBoleh(h.el).join() === awal.join()
+    await klik(tombol(h.el, /^Ubah matriks$/)[0])
+    hasil.arsipDanTombolBaris =
+      /Diarsipkan \(1\)/.test(h.el.textContent) && tombol(h.el, /^Ubah$/).length === 1 && tombol(h.el, /^Arsipkan$/).length === 1 &&
+      tombol(h.el, /^Ubah keterangan$/).length === 2
+    h.lepas()
+  } catch (e) {
+    hasil.galat = e.message
+  } finally {
+    Object.assign(MATRIKS_SA, matriksLama)
+    if (lama == null) window.localStorage.removeItem('sk5c.session')
+    else window.localStorage.setItem('sk5c.session', lama)
+  }
   return hasil
 }
 

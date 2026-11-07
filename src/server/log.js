@@ -36,6 +36,14 @@ export const AKSI_LOG = [
   'UBAH_PENILAIAN',
   'UBAH_AKSES',
   'UBAH_PERIODE',
+  // Sakelar wewenang yang ditutup atau dibuka lagi Super Admin di Peran & Wewenang (src/server/wewenang.js), lalu
+  // keterangan per sel dan baris kebijakan tertulis di matriksnya (ubahMatriks di file yang sama).
+  'UBAH_WEWENANG',
+  'UBAH_KETERANGAN_WEWENANG',
+  'TAMBAH_TINDAKAN_WEWENANG',
+  'UBAH_TINDAKAN_WEWENANG',
+  'ARSIPKAN_TINDAKAN_WEWENANG',
+  'PULIHKAN_TINDAKAN_WEWENANG',
   'TAMBAH_AKUN',
   'UBAH_AKUN',
   'HAPUS_AKUN',

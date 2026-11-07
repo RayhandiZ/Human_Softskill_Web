@@ -1137,8 +1137,8 @@ export const EN = {
   'Lihat matriks': 'View matrix',
   Anda: 'You',
   'Lihat matriks peran & wewenang': 'View the roles & permissions matrix',
-  'Siapa boleh melakukan apa di VIBE. Halaman ini hanya bacaan: peran diatur lewat basis data, bukan dari website.':
-    'Who may do what in VIBE. This page is read-only: roles are set in the database, not from the website.',
+  'Siapa boleh melakukan apa di VIBE. Empat tindakan bisa Anda tutup sementara lalu buka lagi, dan lewat Ubah matriks setiap sel bisa diberi keterangan serta kebijakan tertulis bisa ditambahkan. Isi Ya/Tidak lainnya ditetapkan server, dan peran akun diatur lewat basis data.':
+    'Who may do what in VIBE. You can temporarily close four actions and open them again, and with Edit matrix you can add a note to any cell and add written policies. The other Yes/No content is set by the server, and account roles are managed in the database.',
   /* Matriks wewenang sejak rapat 24 Okt 2026 (super-admin/Wewenang.jsx). */
   'Mengunggah nilai angkatan yang diampunya lewat Excel dan memantau hasilnya; perbaikan untuk angkatan yang sudah disahkan diajukan ke Super Admin.':
     'Uploads scores for the cohorts they teach through Excel and monitors the results; fixes for ratified cohorts go to the Super Admin for approval.',
@@ -1344,6 +1344,133 @@ export const EN = {
   '{n} lainnya lewat persetujuan Super Admin': '{n} more through Super Admin approval',
   'Mengikuti aturan yang dijaga server saat ini.': 'Follows the rules the server currently enforces.',
   'Prinsip yang dipakai': 'Principles applied',
+  /* Sakelar wewenang: sel matriks yang bisa ditutup Super Admin (super-admin/Wewenang.jsx, src/lib/wewenang.js), jawaban
+     server saat tindakannya ditutup, tampilan di panel lain, dan catatannya di Log Aktivitas. */
+  'Ditutup sementara': 'Temporarily closed',
+  'ikut tertutup bersama "{tindakan}"': 'closed together with "{tindakan}"',
+  'oleh Super Admin, bisa dibuka lagi': 'by the Super Admin, can be opened again',
+  'Tutup sementara': 'Close temporarily',
+  'Buka lagi': 'Open again',
+  'Tutup sementara: {tindakan} ({peran})': 'Close temporarily: {tindakan} ({peran})',
+  'Buka lagi: {tindakan} ({peran})': 'Open again: {tindakan} ({peran})',
+  'Tutup sementara: {tindakan}': 'Close temporarily: {tindakan}',
+  'Buka lagi: {tindakan}': 'Open again: {tindakan}',
+  'Tindakan ini kembali seperti semula dan langsung diterima server lagi. Pengguna yang halamannya sudah terbuka melihat tombolnya kembali setelah datanya dimuat ulang.':
+    'This action returns to normal and the server accepts it again right away. Users whose page is already open see the button again once their data reloads.',
+  'Tutup sekarang': 'Close now',
+  'Buka sekarang': 'Open now',
+  '"{tindakan}" untuk {peran} sudah dibuka lagi.': '"{tindakan}" for {peran} is open again.',
+  '"{tindakan}" untuk {peran} sekarang ditutup. Server menolaknya mulai permintaan berikutnya.':
+    '"{tindakan}" for {peran} is now closed. The server rejects it from the next request on.',
+  'Tindakan yang ditutup langsung ditolak server, dan tombolnya hilang dari layar pengguna setelah datanya dimuat ulang. Keterangan dan kebijakan tertulis hanya tulisan: server tidak menjalankannya. Setiap perubahan tercatat di Log Aktivitas beserta alasannya.':
+    'Closed actions are rejected by the server right away, and their buttons disappear from users’ screens once their data reloads. Notes and written policies are text only: the server does not enforce them. Every change is recorded in the Activity Log with its reason.',
+  'Pengajuan koreksi nilai sedang ditutup Super Admin.': 'Score correction requests are currently closed by the Super Admin.',
+  'Mahasiswa tidak bisa mengirim pengajuan koreksi baru. Pengajuan yang sudah masuk tetap diproses admin dan Super Admin.':
+    'Students cannot send new correction requests. Requests already submitted are still processed by the admin and the Super Admin.',
+  'Permintaan akses cetak sertifikat sedang ditutup Super Admin.':
+    'Certificate print access requests are currently closed by the Super Admin.',
+  'Mahasiswa tidak bisa meminta akses cetak baru. Permintaan yang sedang berjalan tetap diproses, dan sertifikat yang aksesnya sudah disetujui tetap bisa dicetak.':
+    'Students cannot request new print access. Requests in progress are still processed, and certificates whose access is already approved can still be printed.',
+  'Unggah nilai sedang ditutup Super Admin.': 'Score uploads are currently closed by the Super Admin.',
+  'Dosen tidak bisa mengunggah nilai, termasuk perbaikan untuk angkatan yang sudah disahkan. Perbaikan yang sudah diajukan tetap bisa diputuskan Super Admin atau ditarik dosennya.':
+    'Lecturers cannot upload scores, including fixes for ratified cohorts. Fixes already submitted can still be decided by the Super Admin or withdrawn by their lecturer.',
+  'Log Aktivitas sedang ditutup untuk admin oleh Super Admin.': 'The Activity Log is currently closed to admins by the Super Admin.',
+  'Admin biasa tidak bisa membuka Log Aktivitas, dan menunya ikut hilang. Lonceng pembaruan admin tetap jalan, dan Super Admin tetap bisa membaca seluruh log.':
+    'Regular admins cannot open the Activity Log, and its menu item disappears. The admin update bell keeps working, and the Super Admin can still read the whole log.',
+  'Mengubah wewenang hanya tersedia saat terhubung ke basis data.': 'Changing permissions is only available when connected to the database.',
+  'Tindakan ini tidak bisa dibuka atau ditutup dari halaman Peran & Wewenang.':
+    'This action cannot be opened or closed from the Roles & Permissions page.',
+  'Pilihan wewenang harus dibuka atau ditutup.': 'The permission choice must be open or closed.',
+  'Pengajuan koreksi nilai sedang ditutup Super Admin untuk sementara. Pengajuan yang sudah kamu kirim tetap diproses.':
+    'Score correction requests are temporarily closed by the Super Admin. Requests you already sent are still processed.',
+  'Permintaan akses cetak sedang ditutup Super Admin untuk sementara. Tombolnya muncul lagi setelah dibuka.':
+    'Print access requests are temporarily closed by the Super Admin. The button comes back once they reopen.',
+  'Unggah nilai sedang ditutup sementara': 'Score uploads are temporarily closed',
+  'Super Admin menutup unggahan nilai untuk sementara, termasuk perbaikan untuk angkatan yang sudah disahkan. Templat dan unggahan bisa dipakai lagi setelah dibuka.':
+    'The Super Admin has temporarily closed score uploads, including fixes for ratified cohorts. The template and uploads can be used again once they reopen.',
+  'Riwayat di bawah tetap bisa dilihat, dan perbaikan yang masih menunggu tetap bisa Anda tarik.':
+    'The history below is still available, and you can still withdraw fixes that are pending.',
+  'Log Aktivitas sedang ditutup sementara': 'The Activity Log is temporarily closed',
+  'Super Admin menutup Log Aktivitas untuk admin untuk sementara. Menunya muncul lagi setelah dibuka.':
+    'The Super Admin has temporarily closed the Activity Log to admins. Its menu item comes back once it reopens.',
+  'Ubah wewenang peran': 'Change role permission',
+  Ditutup: 'Closed',
+  Dibuka: 'Open',
+  'Kode sakelar': 'Switch code',
+  'wewenang {peran}: {tindakan}': 'permission {peran}: {tindakan}',
+  /* Matriks yang bisa diedit: keterangan per sel dan kebijakan tertulis (super-admin/Wewenang.jsx, UbahMatriks.jsx,
+     ubahMatriks di src/server/wewenang.js), dan catatannya di Log Aktivitas. */
+  'Ubah matriks': 'Edit matrix',
+  'Selesai mengubah': 'Done editing',
+  'Tambah keterangan': 'Add note',
+  'Ubah keterangan': 'Edit note',
+  'Tambah keterangan: {tindakan} ({peran})': 'Add note: {tindakan} ({peran})',
+  'Ubah keterangan: {tindakan} ({peran})': 'Edit note: {tindakan} ({peran})',
+  'Keterangan: {tindakan}': 'Note: {tindakan}',
+  'Simpan keterangan': 'Save note',
+  'Hapus keterangan': 'Delete note',
+  'Keterangan (tidak wajib)': 'Note (optional)',
+  'Keterangan untuk {peran} pada "{tindakan}" tersimpan.': 'The note for {peran} on "{tindakan}" was saved.',
+  'Keterangan untuk {peran} pada "{tindakan}" dihapus.': 'The note for {peran} on "{tindakan}" was deleted.',
+  'Isi sel dari aturan server: {isi}. Keterangan hanya menambah penjelasan; isinya tidak berubah.':
+    'Cell content from the server rules: {isi}. A note only adds an explanation; the content does not change.',
+  'Isi sel kebijakan tertulis: {isi}. Keterangan hanya tulisan dan tidak dijalankan server.':
+    'Written policy cell: {isi}. The note is text only and is not enforced by the server.',
+  'Keterangan tiap sel diubah lewat tombol keterangan di sel itu.': 'Each cell’s note is changed with the note button in that cell.',
+  'Kebijakan tertulis': 'Written policies',
+  'Ditambah Super Admin. Hanya tulisan: server tidak menjalankannya.': 'Added by the Super Admin. Text only: the server does not enforce them.',
+  'Tidak dijaga server': 'Not enforced by the server',
+  'Tambah tindakan': 'Add action',
+  'Tambah tindakan sebagai kebijakan tertulis': 'Add an action as a written policy',
+  'Ubah kebijakan tertulis': 'Edit written policy',
+  'Baris ini hanya tulisan di matriks. Server tidak menjalankannya, jadi peran yang diberi Ya tidak otomatis bisa melakukannya.':
+    'This row is only text in the matrix. The server does not enforce it, so a role marked Yes cannot automatically do it.',
+  'Nama tindakan ({min} sampai {maks} karakter)': 'Action name ({min} to {maks} characters)',
+  'Izin tiap peran': 'Permission per role',
+  'Ya dengan syarat': 'Yes with conditions',
+  'dengan syarat': 'with conditions',
+  'Tambahkan ke matriks': 'Add to matrix',
+  '"{tindakan}" ditambahkan ke kebijakan tertulis.': '"{tindakan}" added to the written policies.',
+  '"{tindakan}" diperbarui.': '"{tindakan}" updated.',
+  'Ubah kebijakan: {tindakan}': 'Edit policy: {tindakan}',
+  Arsipkan: 'Archive',
+  'Arsipkan kebijakan: {tindakan}': 'Archive policy: {tindakan}',
+  'Pulihkan kebijakan: {tindakan}': 'Restore policy: {tindakan}',
+  'Arsipkan sekarang': 'Archive now',
+  'Pulihkan sekarang': 'Restore now',
+  'Barisnya hilang dari matriks beserta keterangannya dan bisa dipulihkan dari daftar Diarsipkan. Riwayatnya tetap di Log Aktivitas.':
+    'The row and its notes disappear from the matrix and can be restored from the Archived list. Its history stays in the Activity Log.',
+  'Barisnya tampil lagi di matriks beserta keterangannya.': 'The row shows in the matrix again, with its notes.',
+  '"{tindakan}" diarsipkan.': '"{tindakan}" archived.',
+  '"{tindakan}" dipulihkan ke matriks.': '"{tindakan}" restored to the matrix.',
+  'Diarsipkan ({n})': 'Archived ({n})',
+  'Isi Ya/Tidak baris bawaan mengikuti server. Yang bisa diubah di sini: keterangan tiap sel dan baris kebijakan tertulis.':
+    'The Yes/No content of the built-in rows follows the server. What you can change here: each cell’s note and the written policy rows.',
+  'Kebijakan tertulis sudah {n} baris, batasnya. Arsipkan yang tidak dipakai lagi untuk menambah yang baru.':
+    'Written policies have reached the limit of {n} rows. Archive unused ones to add a new one.',
+  'Keterangan dan kebijakan tertulis belum bisa dimuat, jadi matriks belum bisa diubah. Muat ulang halaman; bila tetap begini, server perlu dinyalakan ulang sesudah migrasi basis data.':
+    'Notes and written policies could not be loaded, so the matrix cannot be edited yet. Reload the page; if it stays like this, the server needs a restart after the database migration.',
+  'Aksi matriks tidak dikenal.': 'Unknown matrix action.',
+  'Server belum mengenal tabel matriks wewenang. Matikan npm run dev, jalankan npx prisma generate, lalu nyalakan lagi.':
+    'The server does not know the permission matrix tables yet. Stop npm run dev, run npx prisma generate, then start it again.',
+  'Baris matriks tidak dikenal.': 'Unknown matrix row.',
+  'Baris kebijakan tidak dikenal atau sudah diarsipkan.': 'Unknown policy row, or it has been archived.',
+  'Peran tidak dikenal.': 'Unknown role.',
+  'Keterangan paling panjang 300 karakter.': 'A note can be at most 300 characters.',
+  'Nama tindakan harus 5 sampai 150 karakter.': 'The action name must be 5 to 150 characters.',
+  'Tindakan dengan nama itu sudah ada di matriks.': 'An action with that name is already in the matrix.',
+  'Pilih Ya, Ya dengan syarat, Selalu perlu persetujuan, atau Tidak untuk setiap peran.':
+    'Choose Yes, Yes with conditions, Always needs approval, or No for every role.',
+  'Kebijakan tertulis paling banyak 30 baris aktif. Arsipkan yang tidak dipakai lagi.':
+    'Written policies are limited to 30 active rows. Archive the ones no longer used.',
+  'Mengubah matriks hanya tersedia saat terhubung ke basis data.': 'Editing the matrix is only available when connected to the database.',
+  'Ubah keterangan wewenang': 'Change permission note',
+  'Tambah kebijakan wewenang': 'Add permission policy',
+  'Ubah kebijakan wewenang': 'Change permission policy',
+  'Arsipkan kebijakan wewenang': 'Archive permission policy',
+  'Pulihkan kebijakan wewenang': 'Restore permission policy',
+  'Kode baris': 'Row code',
+  'kebijakan wewenang {tindakan}': 'permission policy {tindakan}',
   'Aturan perhitungan yang sedang berlaku. Periode akademik dipindah dari halaman ini; aturan lainnya diubah lewat tabel Konfigurasi di basis data, sedangkan bobot dan penilaian aspek lewat halaman Penilaian & Bobot.':
     'The calculation rules currently in effect. The academic period is moved from this page; other rules are changed through the Konfigurasi table in the database, while weights and aspect assessments are changed on the Assessment & Weights page.',
   'Periode akademik': 'Academic period',

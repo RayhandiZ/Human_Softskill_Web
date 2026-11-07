@@ -30,6 +30,7 @@ import { PERMINTAAN_SERTIFIKAT, permintaanMenunggu, useStore, usulanMenunggu } f
 import { giliranSaya } from '../../lib/duaLapis'
 import { useTeks } from '../../lib/bahasa'
 import { kunciSesi, useProfil } from '../../lib/profil'
+import { boleh } from '../../lib/wewenang'
 import LoncengKemahasiswaan from './LoncengKemahasiswaan'
 import StatusData from './StatusData'
 
@@ -45,7 +46,9 @@ const RUJUKAN = 'Rujukan & catatan'
 // import, dan usulan dosen lama hanya diputuskan super admin (menunya tampil selama masih ada yang menunggu). Data
 // Master tampil untuk semua admin: yang belum diberi izin melihat kartu untuk memintanya; server tetap memeriksa.
 // Lencana koreksi dan sertifikat hanya menghitung yang menunggu lapis akun ini (admin lapis 1, super admin lapis 2).
-const menuAdmin = ({ koreksi, usulan, permintaan, sertifikat, superAdmin }) => [
+// Log Aktivitas hilang dari menu (dan pencarian cepat) selama Super Admin menutupnya untuk admin biasa (sakelar
+// BACA_LOG_ADMIN di Peran & Wewenang); server ikut menolak /api/log.
+const menuAdmin = ({ koreksi, usulan, permintaan, sertifikat, superAdmin, log }) => [
   { to: '/admin', label: 'Overview', icon: IconGauge, end: true, kelompok: KERJA },
   { to: '/admin/mahasiswa', label: 'Data Mahasiswa', icon: IconUsers, kelompok: KERJA },
   superAdmin
@@ -67,7 +70,7 @@ const menuAdmin = ({ koreksi, usulan, permintaan, sertifikat, superAdmin }) => [
   { to: '/admin/kurikulum', label: 'Kurikulum CPMK', icon: IconDocument, kelompok: RUJUKAN },
   { to: '/admin/program-studi', label: 'Program Studi', icon: IconBuilding, kelompok: RUJUKAN },
   { to: '/admin/data-master', label: 'Data Master', icon: IconGrid, kelompok: RUJUKAN },
-  { to: '/admin/log', label: 'Log Aktivitas', icon: IconList, kelompok: RUJUKAN },
+  ...(log ? [{ to: '/admin/log', label: 'Log Aktivitas', icon: IconList, kelompok: RUJUKAN }] : []),
 ]
 
 const cocok = (m, jalur) => (m.end ? jalur === m.to : jalur === m.to || jalur.startsWith(m.to + '/'))
@@ -122,6 +125,7 @@ export default function AdminLayout({ children }) {
     permintaan: permintaanMenunggu().length,
     sertifikat: giliranSaya(PERMINTAAN_SERTIFIKAT, user).length,
     superAdmin,
+    log: superAdmin || boleh('BACA_LOG_ADMIN'),
   })
 
   return (

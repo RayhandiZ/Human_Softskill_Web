@@ -7,6 +7,7 @@ import { hurufMutu } from '../../lib/scoring'
 import { catatCetakSertifikat, mintaSertifikat, segarkanData, sertifikatMilik, useStore } from '../../lib/store'
 import { LANGKAH_SERTIFIKAT, LABEL_SERTIFIKAT, keadaanSertifikat } from '../../lib/duaLapis'
 import { useBahasa } from '../../lib/bahasa'
+import { boleh } from '../../lib/wewenang'
 import { tautanWhatsapp } from '../../lib/layanan'
 import { tanggalPendek } from '../../lib/tanggal'
 import { useStudent } from './StudentLayout'
@@ -60,6 +61,13 @@ export default function Sertifikat() {
   const keadaan = keadaanSertifikat(k.layak, permintaan)
   const bolehCetak = keadaan === 'siap_dicetak'
   const peringatan = keadaan === 'ditolak' || keadaan === 'dicabut'
+  // Keadaan yang tombol permintaannya tampil, dan apakah Super Admin sedang menutup permintaan baru (sakelar
+  // MINTA_SERTIFIKAT di Peran & Wewenang). Permintaan yang berjalan dan akses yang sudah disetujui tidak terpengaruh.
+  const bisaMinta = keadaan === 'bisa_diminta' || peringatan
+  const permintaanDitutup = bisaMinta && !boleh('MINTA_SERTIFIKAT')
+  // Selama ditutup, kalimat "Minta akses cetak ..." tidak ditawarkan; syarat yang terpenuhi tetap disebut.
+  const kalimatIzin =
+    permintaanDitutup && keadaan === 'bisa_diminta' ? 'Semua syarat nilai dan aspek terpenuhi.' : KALIMAT_IZIN[keadaan]
   const [sibuk, setSibuk] = useState(false)
   const [galat, setGalat] = useState('')
   const [mencetak, setMencetak] = useState(false)
@@ -142,7 +150,7 @@ export default function Sertifikat() {
               </h2>
               {KALIMAT_IZIN[keadaan] ? (
                 <p id="alasan-cetak" className="mt-1 text-[14px] leading-relaxed text-ink-2">
-                  {teks(KALIMAT_IZIN[keadaan])}
+                  {teks(kalimatIzin)}
                 </p>
               ) : null}
             </div>
@@ -183,8 +191,15 @@ export default function Sertifikat() {
             />
           ) : null}
 
+          {permintaanDitutup ? (
+            <p className="mt-4 flex items-start gap-2 text-[14px] font-semibold leading-relaxed text-ink">
+              <IconClock size={17} className="mt-0.5 shrink-0 text-ink-2" />
+              {teks('Permintaan akses cetak sedang ditutup Super Admin untuk sementara. Tombolnya muncul lagi setelah dibuka.')}
+            </p>
+          ) : null}
+
           <div className="mt-4 flex flex-wrap items-center gap-2.5">
-            {keadaan === 'bisa_diminta' || peringatan ? (
+            {bisaMinta && !permintaanDitutup ? (
               <button type="button" onClick={minta} disabled={sibuk} className="btn-primary inline-flex min-h-[44px] items-center gap-2">
                 <IconCheck size={17} />
                 {teks(

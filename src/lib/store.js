@@ -22,6 +22,7 @@ import { kirim } from './kirim.js'
 import { sebabPersetujuan } from './unggahDosen.js'
 import { modeLokal } from './modeData.js'
 import { kunciAkun, pasangProfil } from './profil.js'
+import { pasangWewenang } from './wewenang.js'
 
 /* Setiap penulisan lewat batch (rollback, audit log); lihat README.md › Penyimpanan perubahan. */
 
@@ -726,6 +727,10 @@ export async function muatDariServer() {
     UNGGAHAN_DOSEN.splice(0, UNGGAHAN_DOSEN.length, ...(isi.unggahan ?? []))
     PERMINTAAN_SERTIFIKAT.splice(0, PERMINTAAN_SERTIFIKAT.length, ...(isi.sertifikat ?? []))
     pasangProfil(kunciAkun({ role: isi.peran, nim: isi.nim, nip: isi.nip }), isi.profil)
+    // Sakelar yang ditutup Super Admin sejak halaman ini dimuat (misalnya sebelum masuk) ikut terpasang.
+    if (isi.wewenang !== undefined) pasangWewenang(isi.wewenang)
+    // Hanya dikirim untuk Super Admin (halaman Peran & Wewenang).
+    if (isi.matriks !== undefined) pasangMatriks(isi.matriks)
     waktuSegar = new Date()
     muat = { keadaan: 'siap', pesan: null }
     berubah()
@@ -745,6 +750,7 @@ export function kosongkanDataServer() {
   PERMINTAAN.length = 0
   UNGGAHAN_DOSEN.length = 0
   PERMINTAAN_SERTIFIKAT.length = 0
+  pasangMatriks({})
   muat = { keadaan: 'belum', pesan: null }
   berubah()
 }
@@ -1127,6 +1133,46 @@ export async function ubahPeriode({ tahun, semester, alasan }) {
   const hasil = await kirim('/api/periode', { isi: { tahun, semester, alasan } })
   pasangPeriode(hasil.periode)
   await muatDariServer()
+  return hasil
+}
+
+/* ------------------------------ sakelar wewenang --------------------------- */
+
+/**
+ * Super admin menutup (`boleh` false) atau membuka lagi (`boleh` true) satu sakelar wewenang (src/server/wewenang.js).
+ * Keadaan barunya langsung dipasang di layar ini. Server menolak tindakan yang ditutup sejak permintaan berikutnya;
+ * layar pengguna lain mengikutinya saat datanya dimuat ulang. Jawabannya { wewenang }.
+ */
+export async function ubahWewenang({ id, boleh, alasan }) {
+  if (modeLokal()) throw new Error('Mengubah wewenang hanya tersedia saat terhubung ke basis data.')
+  const hasil = await kirim('/api/wewenang', { isi: { id, boleh, alasan } })
+  pasangWewenang(hasil.wewenang)
+  berubah()
+  return hasil
+}
+
+/* ------------------- matriks: keterangan dan kebijakan tertulis ------------------- */
+
+/* Keterangan per sel ({ 'KODE|Peran': teks }) dan baris kebijakan tertulis di Peran & Wewenang, dari /api/data milik
+   Super Admin (ambilMatriks di src/server/wewenang.js). `siap` false: server belum mengenal tabelnya atau gagal
+   membacanya; halaman lalu menyembunyikan tombol ubahnya. */
+export const MATRIKS_SA = { siap: true, keterangan: {}, tambahan: [] }
+
+function pasangMatriks(m) {
+  MATRIKS_SA.siap = Boolean(m) && m.siap !== false
+  MATRIKS_SA.keterangan = m?.keterangan ?? {}
+  MATRIKS_SA.tambahan = m?.tambahan ?? []
+}
+
+/**
+ * Super admin mengubah matriks: { aksi: 'keterangan' | 'tambah' | 'ubah' | 'arsipkan' | 'pulihkan', ...isinya, alasan }
+ * (lihat ubahMatriks di server). Matriks terbaru dari jawabannya langsung dipasang. Jawabannya { matriks, id? }.
+ */
+export async function ubahMatriks(isi) {
+  if (modeLokal()) throw new Error('Mengubah matriks hanya tersedia saat terhubung ke basis data.')
+  const hasil = await kirim('/api/wewenang/matriks', { isi })
+  pasangMatriks(hasil.matriks)
+  berubah()
   return hasil
 }
 

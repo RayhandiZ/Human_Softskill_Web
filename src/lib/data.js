@@ -2,6 +2,7 @@ import { CONFIG, subscribeConfig } from './config.js'
 import { AREA, CLUSTER, getAspekList, getKomponen, isiKurikulum } from './curriculum.js'
 import { pasangPadananData } from './kamusData.js'
 import { hitungTranskrip, hurufMutu } from './scoring.js'
+import { pasangWewenang } from './wewenang.js'
 
 /* Data master dari basis data, data isian mulai kosong; lihat README.md › Data dan store. */
 
@@ -209,9 +210,11 @@ export function programStudi(faculty = 'Semua') {
 
 export const MASTER_AWAL = { angkatan: ANGKATAN_AWAL, fakultas: FAKULTAS_AWAL }
 
-export function isiMaster({ angkatan, fakultas, kurikulum, periode } = {}) {
+export function isiMaster({ angkatan, fakultas, kurikulum, periode, wewenang } = {}) {
   // null = basis data belum menyimpan periode: kembali ke bawaan dari kode.
   if (periode !== undefined) pasangPeriode(periode)
+  // Sakelar wewenang yang ditutup Super Admin (src/lib/wewenang.js); null = tidak terbaca, semuanya terbuka di layar.
+  if (wewenang !== undefined) pasangWewenang(wewenang)
   if (angkatan) pasangAngkatan(angkatan)
   if (fakultas) pasangFakultas(fakultas)
   // Nama yang diketik dari layar, jadi layar cukup memanggil t(s.program); lihat kamusData.js.

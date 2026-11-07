@@ -1,11 +1,13 @@
 import { Fragment, useEffect, useState } from 'react'
 import { Badge, Card, EmptyState, GulirTabel, JUDUL_KOLOM, JudulHalaman, Paginasi, Select, Tabs } from '../../components/Ui'
 import { IconAlert, IconChevronDown, IconInfo, IconSearch } from '../../components/Icons'
-import { bacaLog } from '../../lib/store'
+import { bacaLog, useStore } from '../../lib/store'
 import { getAspek, getKomponenById } from '../../lib/curriculum'
 import { LABEL_SERTIFIKAT } from '../../lib/duaLapis'
 import { LABEL_LOG, labelSasaran } from '../../lib/labelLog'
+import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
+import { LABEL_JENIS, PERAN, boleh } from '../../lib/wewenang'
 import { LABEL_AKSI } from './PersetujuanAdmin'
 
 /* Jejak setiap tindakan dan perubahan nilai dari /api/log (src/server/log.js), satu halaman per permintaan.
@@ -25,6 +27,11 @@ const LABEL_PERAN = {
   admin: 'Admin',
   dosen: 'Dosen',
   mahasiswa: 'Mahasiswa',
+  // Nama kolom matriks Peran & Wewenang di rincian log src/server/wewenang.js.
+  Mahasiswa: 'Mahasiswa',
+  Dosen: 'Dosen',
+  Kemahasiswaan: 'Kemahasiswaan',
+  'Super Admin': 'Super Admin',
 }
 
 /* Asal nilai satu batch (Batch.cara), juga sebutan `cara` di rincian log data terkunci. */
@@ -46,6 +53,7 @@ const LABEL_TANDA = { FINAL: 'Final', SEMENTARA: 'Sementara' }
 const BENAR_SALAH = {
   UBAH_AKSES: ['Dicabut', 'Aktif'],
   UBAH_IZIN: ['Tidak ada', 'Diberi'],
+  UBAH_WEWENANG: ['Ditutup', 'Dibuka'],
 }
 
 /* Nama isian rincian (src/server/*) dalam bahasa layar. Yang tidak terdaftar tampil dengan huruf kecil apa adanya. */
@@ -103,6 +111,16 @@ const LABEL_RINCIAN = {
   keputusan: 'Keputusan',
   rekomendasi: 'Rekomendasi',
   aksi: 'Tindakan',
+  // Sakelar wewenang (UBAH_WEWENANG): kodenya dan baris matriks yang dibuka atau ditutup. Keterangan per sel dan
+  // kebijakan tertulis (*_WEWENANG lainnya): kode barisnya ('AJUKAN_KOREKSI' atau 'T-3'), dan isi sel per kolom peran.
+  sakelar: 'Kode sakelar',
+  tindakan: 'Tindakan',
+  baris: 'Kode baris',
+  keterangan: 'Keterangan',
+  Mahasiswa: 'Mahasiswa',
+  Dosen: 'Dosen',
+  Kemahasiswaan: 'Kemahasiswaan',
+  'Super Admin': 'Super Admin',
   judul: 'Judul',
   dampak: 'Dampak',
   contoh: 'Contoh',
@@ -204,6 +222,11 @@ function teksNilai(v, t, { kunci = null, aksi = null } = {}) {
   if (kunci === 'keputusan') return dari(LABEL_KEPUTUSAN)
   // Rekomendasi admin pada akses cetak sertifikat ('Disarankan' / 'Tidak disarankan', sertifikat.js).
   if (kunci === 'rekomendasi') return t(s)
+  // Baris matriks Peran & Wewenang (UBAH_WEWENANG, keterangan sel); nama kebijakan tertulis tidak ada di kamus, jadi
+  // tampil apa adanya.
+  if (kunci === 'tindakan') return t(s)
+  // Isi sel kebijakan tertulis per kolom peran: 'ya' → 'Ya', 'syarat' → 'Ya dengan syarat', dan seterusnya.
+  if (PERAN.includes(kunci) && LABEL_JENIS[s]) return t(LABEL_JENIS[s])
   // Nama fakultas, prodi, dan angkatan ikut bahasa aktif; nama lama yang sudah diganti tampil apa adanya.
   if (KUNCI_NAMA.includes(kunci) || (kunci === 'nama' && /_(FAKULTAS|PRODI)$/.test(aksi ?? ''))) return t(s)
   if (kunci === 'dari' || kunci === 'ke') return dari(LABEL_TANDA)
@@ -496,7 +519,12 @@ function TanggalRingkas({ label, value, onChange, min, max }) {
 }
 
 export default function Log() {
+  useStore()
   const t = useTeks()
+  const { user } = useAuth()
+  // Super Admin bisa menutup Log Aktivitas untuk admin biasa (sakelar BACA_LOG_ADMIN di Peran & Wewenang). Halaman ini
+  // juga dipakai /super/log, dan Super Admin tidak pernah tertahan.
+  const tertutup = !user?.superAdmin && !boleh('BACA_LOG_ADMIN')
   const [jenis, setJenis] = useState('aktivitas')
   const [saring, setSaring] = useState(KOSONG)
   const [nimKetik, setNimKetik] = useState('')
@@ -507,6 +535,8 @@ export default function Log() {
   const [terbuka, setTerbuka] = useState(null)
 
   useEffect(() => {
+    // Selagi ditutup, log tidak diminta sama sekali: server toh menolaknya.
+    if (tertutup) return
     let batal = false
     setMemuat(true)
     setGalat(null)
@@ -521,7 +551,7 @@ export default function Log() {
     return () => {
       batal = true
     }
-  }, [jenis, halaman, saring])
+  }, [jenis, halaman, saring, tertutup])
 
   const ubah = (patch) => {
     setSaring((s) => ({ ...s, ...patch }))
@@ -552,14 +582,31 @@ export default function Log() {
     { label: 'Semua waktu', dari: '', sampai: '' },
   ]
 
+  const kepala = (
+    <JudulHalaman
+      judul={t('Log Aktivitas')}
+      keterangan={t(
+        'Jejak setiap tindakan untuk menelusuri siapa mengubah apa dan kapan. Log hanya bisa dibaca, tidak bisa diubah atau dihapus dari website.',
+      )}
+    />
+  )
+
+  if (tertutup) {
+    return (
+      <div className="space-y-6">
+        {kepala}
+        <Card>
+          <EmptyState title={t('Log Aktivitas sedang ditutup sementara')}>
+            {t('Super Admin menutup Log Aktivitas untuk admin untuk sementara. Menunya muncul lagi setelah dibuka.')}
+          </EmptyState>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <JudulHalaman
-        judul={t('Log Aktivitas')}
-        keterangan={t(
-          'Jejak setiap tindakan untuk menelusuri siapa mengubah apa dan kapan. Log hanya bisa dibaca, tidak bisa diubah atau dihapus dari website.',
-        )}
-      />
+      {kepala}
 
       <Card className="overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">

@@ -268,6 +268,11 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   penilaian.js    menyimpan penilaian satu aspek (POST /api/kurikulum/penilaian)
   aspek.js        tambah, ubah struktur, arsipkan, pulihkan aspek CPMK (POST /api/kurikulum/aspek)
   periode.js      memindahkan periode akademik, hanya super admin (POST /api/periode)
+  wewenang.js     sakelar wewenang: denganWewenang() menjaga pintu yang bisa ditutup, ubahWewenang()
+                  menutup atau membuka lagi (POST /api/wewenang); matriks: ambilMatriks() dan
+                  ubahMatriks() untuk keterangan per sel dan kebijakan tertulis (POST
+                  /api/wewenang/matriks); semuanya hanya super admin; lihat Panel Super Admin › Peran &
+                  Wewenang
   akses.js        daftar akun, cabut/pulihkan akses, tambah akun, hapus akun, izin lihat data master,
                   kelas dosen (angkatan yang diampu), dan akses angkatan admin, hanya super admin (POST
                   /api/akses, /api/akses/ubah, /api/akses/tambah, /api/akses/hapus, /api/akses/izin,
@@ -282,7 +287,8 @@ app/api/          masuk, keluar, sesi, data, nilai, nilai/dosen, nilai/rollback,
                   angkatan/kunci, log, kurikulum/bobot, kurikulum/penilaian, persetujuan/keputusan,
                   persetujuan/batal, periode, akses, akses/ubah, akses/tambah, akses/hapus, akses/izin,
                   akses/kelas, akses/angkatan, master/akses, master/angkatan, master/prodi,
-                  master/mahasiswa, kurikulum/aspek, notifikasi, notifikasi/dibaca (39 pintu)
+                  master/mahasiswa, kurikulum/aspek, notifikasi, notifikasi/dibaca, wewenang,
+                  wewenang/matriks (41 pintu)
 src/components/PemuatData.jsx  memuat /api/data begitu ada yang masuk dan menahan panel
                   sampai datanya tiba
 prisma/           skema, migrasi, seed.js (isi dasar), seed-contoh.js (data contoh),
@@ -370,7 +376,9 @@ Matriks lengkapnya ada di halaman *Peran & Wewenang* (`super-admin/Wewenang.jsx`
 Pintu API menegakkannya: `/api/nilai`, `/api/nilai/rollback`, `/api/usulan/keputusan`, dan
 `/api/master/angkatan`, `/api/master/prodi`, `/api/master/mahasiswa` hanya untuk `['superadmin']`, sedangkan
 `/api/nilai/dosen` hanya untuk `['dosen']` dan `/api/koreksi`, `/api/sertifikat` hanya untuk `['student']`.
-Pintu `POST /api/usulan` (dosen mengusulkan nilai) dihapus.
+Pintu `POST /api/usulan` (dosen mengusulkan nilai) dihapus. Empat di antaranya bisa ditutup sementara oleh Super
+Admin dari halaman Peran & Wewenang (lihat Panel Super Admin › Peran & Wewenang): pengajuan koreksi dan permintaan
+akses cetak oleh mahasiswa, unggah nilai dosen, dan Log Aktivitas untuk admin biasa.
 
 #### Akses angkatan
 
@@ -541,14 +549,76 @@ admin biasa ke `/admin`; itu hanya penjaga tampilan, pintu API tetap memeriksa u
 | `/super/penilaian` | Penilaian & Bobot: tab *Aspek & komponen* (editor Input Manual, `EditorPenilaian`) dan tab *Bobot* (halaman `Kurikulum` tanpa judulnya); simpanan super admin langsung berlaku | `/api/kurikulum/penilaian`, `/api/kurikulum/bobot` |
 | `/super/akses` | Akses Pengguna: mencabut dan memulihkan akses mahasiswa, dosen, dan admin, menambah akun, dan menghapus akun yang aksesnya sudah dicabut (lihat di bawah) | `/api/akses`, `/api/akses/ubah`, `/api/akses/tambah`, `/api/akses/hapus` |
 | `/super/log` | Log Aktivitas (lihat di bawah) | `/api/log` |
-| `/super/wewenang` | kartu tiap peran beserta jumlah tindakan yang boleh dilakukannya, matriks siapa boleh melakukan apa (kolom Super Admin disorot), plus prinsip yang dipakai | konstanta di `Wewenang.jsx`, diturunkan dari aturan server |
+| `/super/wewenang` | kartu tiap peran beserta jumlah tindakan yang boleh dilakukannya, matriks siapa boleh melakukan apa (kolom Super Admin disorot), tombol *Tutup sementara* / *Buka lagi* di empat sel bersakelar dengan alasan wajib, dan tombol *Ubah matriks* untuk keterangan per sel serta kebijakan tertulis (lihat Peran & Wewenang di bawah), plus prinsip yang dipakai | `MATRIKS` dan sakelar di `src/lib/wewenang.js`, diturunkan dari aturan server; `/api/wewenang`, `/api/wewenang/matriks`, `matriks` di `/api/data` |
 | `/super/aturan` | kartu periode akademik (pindah satu semester maju atau mundur, dengan pratinjau semester tiap angkatan dan alasan; lihat Periode akademik), ringkasan berapa aturan yang masih menunggu konfirmasi, lalu aturan perhitungan yang berlaku, sumbernya (bawaan kode atau tabel Konfigurasi), dan statusnya; selain periode hanya bacaan, tautannya ke Penilaian & Bobot | `CONFIG`, `DARI_BASIS_DATA` di `src/lib/config.js`; `PERIODE_AKTIF`, `/api/periode` |
 
 Rancangannya mengikuti praktik umum panel admin: wewenang secukupnya dan pemisahan tugas (yang
 meminta tidak menyetujui) dari OWASP Authorization Cheat Sheet, pola maker-checker untuk antrean
 persetujuan, serta log audit yang bisa disaring per pelaku, tindakan, sasaran, dan rentang waktu.
 Matriks di `/super/wewenang` ditulis tangan: bila aturan di `src/server/persetujuan.js` berubah,
-ubah juga `MATRIKS` di sana.
+ubah juga `MATRIKS` di `src/lib/wewenang.js`.
+
+#### Peran & Wewenang
+
+Permintaan 6 Nov 2026: halaman Peran & Wewenang bisa diedit, dengan wewenang sungguhan (server ikut menolak), mulai
+dari empat sakelar. Sel lain di matriks tetap bacaan, dan peran akun tetap diatur lewat basis data.
+
+| Sakelar (`src/lib/wewenang.js`) | Peran | Pintu yang menolak (403) | Di layar selama ditutup | Yang tetap jalan |
+|---|---|---|---|---|
+| `AJUKAN_KOREKSI` | Mahasiswa | `POST /api/koreksi` | Transkrip: tombol *Ajukan koreksi nilai* diganti keterangan | pengajuan yang sudah masuk tetap diproses admin dan Super Admin |
+| `MINTA_SERTIFIKAT` | Mahasiswa | `POST /api/sertifikat` | Sertifikat: tombol *Minta akses cetak* (juga *lagi* dan *Ajukan peninjauan akses*) diganti keterangan | permintaan yang berjalan tetap diproses; akses yang sudah Siap dicetak tetap bisa dicetak |
+| `UNGGAH_NILAI_DOSEN` | Dosen | `POST /api/nilai/dosen`, termasuk perbaikan untuk angkatan yang sudah disahkan | Unggah Nilai: langkah unduh, unggah, dan periksa diganti keterangan; matriks juga menutup sel perbaikan dosen | riwayat dan tombol *Tarik*; perbaikan yang sudah diajukan tetap diputuskan Super Admin |
+| `BACA_LOG_ADMIN` | Kemahasiswaan | `POST /api/log` untuk admin biasa | menu Log Aktivitas (dan pencarian cepatnya) hilang; `/admin/log` menampilkan keterangan | lonceng pembaruan admin; Super Admin tetap membaca seluruh log |
+
+- **Basis data**: tanpa migrasi. Tabel `Konfigurasi`, satu baris per sakelar, kunci `WEWENANG.<id>` bernilai `false`
+  selama ditutup (`true` sesudah dibuka lagi). Tanpa baris, sakelarnya terbuka. `terapkanKonfigurasi()` mengabaikan
+  kunci ini karena bukan aturan perhitungan, jadi Aturan Sistem tidak terpengaruh.
+- **Server** (`src/server/wewenang.js`): `denganWewenang(id, kerja)` membungkus `kerja` di keempat pintu itu, polanya
+  sama dengan `denganPersetujuan`. Barisnya dibaca ulang setiap permintaan, jadi penutupan berlaku sejak permintaan
+  berikutnya. Super Admin tidak pernah tertahan sakelar.
+- **Mengubahnya**: `POST /api/wewenang` dengan isi `{ id, boleh, alasan }`, hanya `['superadmin']`. `id` harus salah
+  satu dari empat sakelar (lainnya 400, jadi kolom Super Admin dan sel lain tidak bisa ditutup lewat pintu ini),
+  `boleh` harus `true` atau `false`, alasan minimal 10 karakter. Perubahan dan log `UBAH_WEWENANG` (sasaran
+  `wewenang <peran>: <tindakan>`, rincian sakelar, peran, tindakan, sebelum, sesudah, alasan) ditulis dalam satu
+  transaksi; menutup yang sudah ditutup tidak dicatat lagi. Jawabannya `{ wewenang }`.
+- **Ke layar**: keadaannya ikut data master (`ambilMaster()`, dibaca `app/layout.jsx` setiap halaman dimuat) dan
+  jawaban `GET /api/data`, lalu dipasang `pasangWewenang()`; tombolnya disembunyikan lewat `boleh(id)`. Layar Super
+  Admin yang mengubah langsung berubah. Layar pengguna lain mengikutinya saat datanya dimuat ulang (memuat ulang
+  halaman, masuk, atau sesudah menyimpan); sampai saat itu, tombol yang masih terlihat dijawab server dengan pesan
+  sakelarnya.
+- **Di matriks**: sel yang ditutup tertulis *Ditutup sementara* dengan ikon gembok, dan jumlah "Boleh n dari 27
+  tindakan" di kartu perannya ikut turun. Formulirnya (dampak, alasan, *Tutup sekarang* / *Buka sekarang*) muncul di
+  bawah tabel.
+- **Belum**: sakelar untuk sel lainnya, jadwal buka-tutup otomatis, dan kabar di lonceng untuk peran yang terdampak.
+
+**Keterangan dan kebijakan tertulis** (permintaan 6 Nov 2026, sesudah sakelar): tombol *Ubah matriks* di kepala kartu
+matriks membuka mode ubah. Pilihan pengguna: keterangan **per sel**, dan tindakan tambahan sebagai **catatan kebijakan**
+yang tidak dijaga server. Isi Ya/Tidak 27 baris bawaan tetap dari kode.
+
+- **Basis data** (migrasi `matriks_wewenang`): `KeteranganWewenang` (kunci `baris` + `peran`; `baris` = kode baris
+  bawaan seperti `AJUKAN_KOREKSI`, atau `T-<id>`; teks paling panjang 300) dan `TindakanWewenang` (nama, `izin` JSON
+  per kolom peran `ya`/`syarat`/`minta`/`tidak`, `aktif` untuk arsip). Kode baris bawaan ada di `MATRIKS`
+  (`src/lib/wewenang.js`), jadi keterangan tidak hilang bila tulisan tindakannya diganti.
+- **Mengubahnya**: `POST /api/wewenang/matriks`, hanya `['superadmin']`, isi `{ aksi, ..., alasan }` (alasan minimal
+  10 karakter): `keterangan` (`baris`, `peran`, `teks`; teks kosong = dihapus), `tambah` (`tindakan`, `izin`,
+  `keterangan` per peran), `ubah` (`id`, `tindakan`, `izin`), `arsipkan` dan `pulihkan` (`id`). Nama tindakan 5 sampai
+  150 karakter dan tidak boleh kembar dengan baris bawaan atau kebijakan aktif lain (409); paling banyak 30 kebijakan
+  aktif. Baris yang diarsipkan tidak bisa diberi keterangan atau diubah sampai dipulihkan. Perubahan dan lognya satu
+  transaksi; yang tidak berubah tidak dicatat. Log: `UBAH_KETERANGAN_WEWENANG` (sasaran `wewenang <peran>: <tindakan>`)
+  dan `TAMBAH_`/`UBAH_`/`ARSIPKAN_`/`PULIHKAN_TINDAKAN_WEWENANG` (sasaran `kebijakan wewenang <nama>`).
+- **Ke layar**: `GET /api/data` milik Super Admin membawa `matriks` (`ambilMatriks()`; gagal dibaca = `null`, data
+  lain tetap terkirim), dipasang ke `MATRIKS_SA` di `src/lib/store.js`. Prisma Client lama (server belum dinyalakan
+  ulang sesudah migrasi) membuat `matriks.siap` false: halaman menyembunyikan tombol ubah dan memberi keterangan, dan
+  `/api/wewenang/matriks` menjawab 503.
+- **Di halaman**: keterangan tampil di bawah isi sel sebagai *Catatan* dengan ikon dan warna berbeda dari catatan
+  bawaan. Kebijakan tertulis tampil di kelompok sendiri di bawah 27 baris bawaan, berlencana *Tidak dijaga server*, dan
+  tidak ikut dihitung di "Boleh n dari 27 tindakan". Formulirnya (`UbahMatriks.jsx`) muncul di bawah tabel; yang
+  diarsipkan ada di daftar *Diarsipkan*.
+- **Tidak dijaga server**: tidak ada pintu API yang membaca kedua tabel itu. Kebijakan "Mahasiswa boleh menyimpan
+  nilai" tetap membuat `POST /api/nilai` oleh mahasiswa ditolak 403 (diuji di `npm run test:db`). Teks yang diketik
+  tampil apa adanya di kedua bahasa.
+- **Sesudah menarik perubahan ini**: matikan `npm run dev`, jalankan `npx prisma migrate deploy` lalu
+  `npx prisma generate` (Windows mengunci berkas engine Prisma selama server menyala), lalu nyalakan lagi.
 
 **Log Aktivitas** (`src/halaman/admin/Log.jsx`, dipakai `/super/log` dan `/admin/log`) membaca satu
 halaman (25 baris) dari `POST /api/log` lewat `bacaLog()` di `src/lib/store.js`, tanpa memuat ulang
@@ -2449,7 +2519,7 @@ panah kiri/kanan). Bagian yang mudah rusak:
 | — | Panel dosen: Beranda (pantau) dan Unggah Nilai (rekap Excel, langsung tersimpan) | selesai, sesuai rapat 24 Okt 2026; Penilaian tiga langkah dan Riwayat Pengiriman dihapus (lihat Panel Dosen) |
 | — | Hak peran rapat 24 Okt 2026: admin hanya melihat nilai, tanda final dan bobot dari admin diajukan, data master hanya super admin | selesai (lihat Hak peran) |
 | — | Persetujuan dua lapis rapat 24 Okt 2026: pengajuan ubah nilai dan akses cetak sertifikat, beserta pencabutan akses cetak dan catatan cetak | selesai (lihat Persetujuan dua lapis) |
-| — | Basis data MySQL: 24 tabel, 20 migrasi, 39 pintu API, sesi cookie | selesai |
+| — | Basis data MySQL: 26 tabel, 21 migrasi, 41 pintu API, sesi cookie | selesai |
 | — | Kerangka dan susunan panel dosen, Kemahasiswaan, dan Super Admin mengikuti video referensi; warnanya tetap navy dan toska (lihat Panel kerja) | selesai 3 Nov 2026 |
 | — | Cek ulang semua halaman rapat 24 Okt 2026: bahasa Inggris, tampilan HP 360px sampai 1536px, kontras terang dan gelap, papan ketik | selesai 3 Nov 2026 |
 | — | Bahasa Inggris untuk isi kurikulum, pesan server, serta nama fakultas, prodi, dan angkatan (rapat 24 Okt 2026, keputusan 3 Nov 2026) | selesai; draf terjemahan isi kurikulum dan nama prodi menunggu diperiksa tim (lihat Kamus dan terjemahan) |
