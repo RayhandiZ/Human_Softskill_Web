@@ -56,12 +56,25 @@ export function useAkarAksesibilitas() {
     }
   }, [saringan])
   const skala = setelan.skala / 100
-  const kelas = kelasAksesibilitas(setelan)
   return {
-    kelasAkar: 'akar-a11y ' + hurufDisleksia.variable + (kelas ? ' ' + kelas : ''),
+    kelasAkar: kelasAkarDari(setelan),
     gayaIsi: skala !== 1 ? { zoom: skala } : undefined,
     pemandu: setelan.pemandu,
   }
+}
+
+function kelasAkarDari(setelan) {
+  const kelas = kelasAksesibilitas(setelan)
+  return 'akar-a11y ' + hurufDisleksia.variable + (kelas ? ' ' + kelas : '')
+}
+
+/**
+ * Kelas akar yang sama untuk unsur di luar akar panel, misalnya portal ke <body> (pencarian cepat), supaya setelannya ikut
+ * berlaku di sana. Tanpa efek samping: filter <html> tetap dipasang useAkarAksesibilitas() di akar panel.
+ */
+export function useKelasAkarAksesibilitas() {
+  const { setelan } = useAksesibilitas()
+  return kelasAkarDari(setelan)
 }
 
 const KONTEN = [
@@ -183,7 +196,7 @@ export default function MenuAksesibilitas() {
           id={idPanel}
           role="dialog"
           aria-labelledby={idJudul}
-          className="fixed inset-x-2 top-[76px] z-50 flex max-h-[calc(100dvh-88px-var(--tinggi-bilah-bawah,0px))] animate-rise flex-col overflow-hidden rounded-3xl border border-line bg-surface-2 shadow-pop sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[440px] sm:max-h-[min(680px,calc(100dvh-96px-var(--tinggi-bilah-bawah,0px)))]"
+          className="lapisan-a11y fixed inset-x-2 top-[76px] z-50 flex max-h-[calc(100dvh-88px-var(--tinggi-bilah-bawah,0px))] animate-rise flex-col overflow-hidden rounded-3xl border border-line bg-surface-2 shadow-pop sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[440px] sm:max-h-[min(680px,calc(100dvh-96px-var(--tinggi-bilah-bawah,0px)))]"
         >
           <div className="flex items-center gap-1 bg-brand py-2 pl-5 pr-2 text-white">
             <h2 ref={judul} id={idJudul} tabIndex={-1} className="flex-1 text-[15px] font-bold">

@@ -34,20 +34,9 @@ import { boleh } from '../../lib/wewenang'
 import LoncengKemahasiswaan from './LoncengKemahasiswaan'
 import StatusData from './StatusData'
 
-/* Panel Kemahasiswaan: bilah atas dengan lokasi halaman, pencarian cepat, dan lonceng. Rupa kerangkanya bersama panel
-   dosen dan Super Admin (KerangkaKerja). Lihat README.md › Panel Kemahasiswaan › Tampilan dan › Panel kerja. */
-
 const KERJA = 'Kerja harian'
 const RUJUKAN = 'Rujukan & catatan'
 
-// Halaman tempat bekerja sehari-hari di atas, bahan rujukan yang lebih jarang dibuka di bawah. Lencana hanya
-// untuk pekerjaan yang menunggu; angka ringkasan tidak diulang di menu.
-// Sejak rapat 24 Okt 2026 admin hanya membaca nilai: halaman nilainya bernama "Nilai Mahasiswa" tanpa input dan
-// import, dan usulan dosen lama hanya diputuskan super admin (menunya tampil selama masih ada yang menunggu). Data
-// Master tampil untuk semua admin: yang belum diberi izin melihat kartu untuk memintanya; server tetap memeriksa.
-// Lencana koreksi dan sertifikat hanya menghitung yang menunggu lapis akun ini (admin lapis 1, super admin lapis 2).
-// Log Aktivitas hilang dari menu (dan pencarian cepat) selama Super Admin menutupnya untuk admin biasa (sakelar
-// BACA_LOG_ADMIN di Peran & Wewenang); server ikut menolak /api/log.
 const menuAdmin = ({ koreksi, usulan, permintaan, sertifikat, superAdmin, log }) => [
   { to: '/admin', label: 'Overview', icon: IconGauge, end: true, kelompok: KERJA },
   { to: '/admin/mahasiswa', label: 'Data Mahasiswa', icon: IconUsers, kelompok: KERJA },
@@ -153,7 +142,8 @@ export default function AdminLayout({ children }) {
       }
       kananAtas={
         <>
-          <CariCepat halaman={menu} mahasiswa={STUDENTS} keMahasiswa={(s) => '/admin/mahasiswa/' + s.id} />
+          {/* portal-admin: portalnya di <body>, jadi token kaca panel ini dibawa lewat penanda sendiri. */}
+          <CariCepat halaman={menu} mahasiswa={STUDENTS} keMahasiswa={(s) => '/admin/mahasiswa/' + s.id} lingkup="portal-admin" />
           <LoncengKemahasiswaan nada="terang" />
           {/* Di HP pemilih bahasa dan tombol tema pindah ke laci supaya bilah atas tidak melebar: sejak tombol
               aksesibilitas ditambahkan, lonceng yang muncul membuat bilah 382px di layar 360px. */}

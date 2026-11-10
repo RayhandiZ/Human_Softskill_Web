@@ -1165,8 +1165,6 @@ export const EN = {
   'langsung, wajib beralasan': 'directly, with a required reason',
   // Pencabutan akses cetak dan catatan cetak (student/Sertifikat.jsx, admin/CetakSertifikat.jsx, Dashboard).
   Dicabut: 'Revoked',
-  'Sertifikat dicetak, atau disimpan sebagai PDF lewat dialog cetak, dari tombol di halaman ini, dan setiap pembukaan dialog cetak tercatat. Sertifikat tidak dikirim lewat surel.':
-    'Print the certificate, or save it as a PDF through the print dialog, with the button on this page; every time the print dialog opens is recorded. Certificates are not sent by email.',
   'Tombol cetak hanya aktif untuk sertifikat yang akses cetaknya sudah ditinjau admin Kemahasiswaan dan disetujui Super Admin. Akses itu bisa dicabut lagi, dan setiap pembukaan dialog cetak tercatat. Sertifikat dicetak atau disimpan sebagai PDF dari website ini; jangan kirim lewat surel.':
     'The print button is only active for certificates whose print access was reviewed by the Student Affairs admin and approved by the Super Admin. That access can be revoked again, and every time the print dialog opens is recorded. Certificates are printed or saved as PDF from this website; do not send them by email.',
   'dicabut {tanggal}': 'revoked {tanggal}',
@@ -1730,6 +1728,8 @@ export const EN = {
   'Cluster': 'Cluster',
   'Final': 'Final',
   'final': 'final',
+  // Label status final di panel mahasiswa (permintaan pemilik produk, 9 Nov 2026). Panel lain tetap memakai "Final".
+  'Sudah lengkap': 'Completed',
   'Status': 'Status',
   'Semester {n}': 'Semester {n}',
   'Sudah menempuh Semester {n}': 'Has completed Semester {n}',
@@ -1921,12 +1921,7 @@ export const EN = {
   'Minta akses cetak': 'Request print access',
   'Minta akses cetak lagi': 'Request print access again',
   '{oleh}, {tanggal}': '{oleh}, {tanggal}',
-  'Langkah akses cetak': 'Print access steps',
-  'Diajukan {tanggal}': 'Requested {tanggal}',
-  'Disetujui {tanggal}': 'Approved {tanggal}',
-  'Ditinjau {tanggal}': 'Reviewed {tanggal}',
   'Sedang ditinjau': 'Under review',
-  'Bisa dicetak sekarang': 'Can be printed now',
   // Ubin Sertifikat di Dashboard mahasiswa.
   'Bisa diminta': 'Can be requested',
   'Minta akses cetak di halaman ini': 'Request print access on this page',
@@ -2511,17 +2506,10 @@ export const EN = {
   'Sertifikat butuh dua hal: kelayakan akademik dari nilaimu, dan izin cetak dari Kemahasiswaan.':
     'A certificate needs two things: academic eligibility from your scores, and print permission from Student Affairs.',
   'Izin cetak': 'Print permission',
-  'Dikelola Kemahasiswaan, terpisah dari kelayakan akademik.': 'Managed by Student Affairs, separate from academic eligibility.',
   'Belum bisa diminta': 'Cannot be requested yet',
   'Belum diminta': 'Not requested yet',
-  'Akses cetak disetujui': 'Print access approved',
   'Permintaan akses cetak ditolak': 'Print access request rejected',
   'Akses cetak dicabut': 'Print access revoked',
-  'Sertifikat siap dicetak atau disimpan sebagai PDF.': 'The certificate is ready to print or save as a PDF.',
-  'Admin Kemahasiswaan meninjau permintaanmu, lalu Super Admin memutuskannya.':
-    'A Student Affairs admin reviews your request, then the Super Admin decides.',
-  'Admin Kemahasiswaan sudah meninjau. Super Admin akan memutuskannya.':
-    'A Student Affairs admin has reviewed it. The Super Admin will decide.',
   'Setelah akses dipulihkan, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.':
     'Once access is restored, the Print / save as PDF button will be available on this page. Certificates are not sent by email.',
   'Setelah akses disetujui, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.':
@@ -2535,8 +2523,6 @@ export const EN = {
     'The detailed steps are not available yet. Contact Student Affairs for an explanation. Once the issue is resolved, request an access review.',
   'Rincian langkahnya belum tersedia. Hubungi Kemahasiswaan untuk meminta penjelasan. Bila sudah sesuai, minta akses cetak lagi.':
     'The detailed steps are not available yet. Contact Student Affairs for an explanation. Once it is in order, request print access again.',
-  Diajukan: 'Submitted',
-  'Langkah berikutnya': 'Next step',
   'Ajukan peninjauan akses': 'Request an access review',
   'Cetak / Simpan PDF': 'Print / save as PDF',
   'Hubungi Kemahasiswaan': 'Contact Student Affairs',

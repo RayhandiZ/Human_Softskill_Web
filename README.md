@@ -786,7 +786,7 @@ Seluruh panel memakai satu bahasa yang sama, mengikuti gaya E-Learning UMN:
   keterangan 15px; satu tingkat di bawahnya di bawah 1280px). Bloknya dilebarkan ke 640px dan jaraknya dirapatkan,
   jadi tidak perlu digulir sampai tinggi layar 640px; bila ukurannya diubah, ukur ulang di 1366×657.
   Pengecualian kedua: menu samping dan kartu navy panel super admin (`.kartu-aurora`, lihat Panel
-  Super Admin). Ketiga: navigasi panel dosen yang berbahan kaca (lihat Panel Dosen › Kaca);
+  Super Admin). Ketiga: navigasi panel dosen, mahasiswa, dan Kemahasiswaan yang berbahan kaca (lihat Panel Dosen › Kaca);
   kartu identitas hanya diberi garis merek setebal 1px di atasnya;
 - **bayangan nyaris tidak ada** — kartu cukup dibatasi garis rambut;
 - **menu aktif diisi penuh warna merek dengan teks putih**, bukan latar samar —
@@ -841,8 +841,9 @@ ini, jadi tidak ada pembanding yang jujur.
 - *Pusat Kendali* (`Kendali.jsx`): kartu keputusan, empat kartu ringkasan, grafik selebar halaman, lalu aktivitas dan
   rantai pengawasan. Angka yang tidak ikut pemilih periode ditandai "Saat ini" begitu periode lain dipilih.
 
-Kaca (`backdrop-filter`) hanya di `.kepala-kerja`, kecuali panel dosen yang punya bahan sendiri (lihat Panel Dosen › Kaca), dan
-bayangan besar hanya untuk menu mengambang dan dialog.
+Di panel Super Admin kaca (`backdrop-filter`) hanya di `.kepala-kerja`. Panel dosen dan Kemahasiswaan memakai bahan kaca sendiri
+di kapsul dan lapisannya (lihat Panel Dosen › Kaca dan Panel Kemahasiswaan › Kaca). Bayangan besar hanya untuk menu mengambang dan
+dialog.
 
 ## Panel Kemahasiswaan
 
@@ -1082,6 +1083,45 @@ hanya `transform` dan `opacity`, dan sekali jalan saat sesuatu muncul atau ditek
   cukup dipendekkan blok global, dan kartu hanya terangkat bila gerak diizinkan (`motion-safe:`). Saat
   mencetak, bagian halaman tidak dianimasikan.
 
+### Kaca
+
+Permintaan pemilik produk (10 Nov 2026): penyempurnaan, bukan desain ulang. Prinsipnya sama dengan panel dosen, **navigasi dan
+kendali berbahan kaca, data tetap padat**, dengan bahan yang sama (token `--kaca-*`, lihat Panel Dosen › Kaca). Kartu angka,
+grafik, panel Perlu dikerjakan, tabel, formulir, area unggah, tombol utama, pesan galat dan status, sertifikat, dan hasil cetak
+tidak disentuh. `scripts/smoke.run.cjs` menolak aturan kaca yang menyasar `<main>`, tabel, formulir, atau kartu, juga yang tidak
+terikat ke panel dosen, mahasiswa, atau Kemahasiswaan (Super Admin tidak berubah).
+
+| Unsur | Rupa |
+|---|---|
+| Bilah atas | Kapsul putih tembus 74% dengan blur 12px (tanpa saturasi, lihat di bawah), garis terang, kilau tepi, dan bayangan lembut. Sudutnya tetap 20px. Tombol tema, aksesibilitas, bahasa, lonceng, dan cari menyatu dengan kapsul, bukan gelembung masing-masing; kolom cari tetap kolom padat |
+| Menu samping | Wadahnya tetap kartu padat. Butir aktif berpil kaca kebiruan dengan garis kiri, ikon, dan `aria-current` yang sama; butir yang ditunjuk lebih tipis. Laci HP tetap padat, menu aktifnya sama |
+| Menu akun, lonceng | Lapisan melayang 90% (`.lapisan-kaca`) |
+| Menu aksesibilitas | 92% di atas dasar abu-abunya (`.lapisan-a11y`); kepala biru dan ubinnya tetap padat |
+| Pencarian cepat (Ctrl+K) | 94% (`.lapisan-cari`), paling pekat karena hasilnya dibaca cepat; butir terpilih dan kolom ketik tetap padat |
+| Tab (`Tabs`) | Tab terpilih berpil kebiruan tipis dengan garis tepi (`.tab-pil`), tanpa blur. `TabSaring` tetap bergaris bawah |
+
+- **Blur kepala bilah dilepas.** Dulu `.kepala-kerja` memakai `backdrop-filter: blur(10px)`. Terukur sebelum perubahan: ia
+  menjadi Backdrop Root bagi menu akun, lonceng, dan menu aksesibilitas (kaca di sana hanya bisa mengaburkan isi bilah atas,
+  bukan halaman), sekaligus containing block bagi panel lonceng dan aksesibilitas yang `fixed` di HP. Kini kepalanya hanya
+  gradasi `--kaca-tirai`, blurnya di `.bilah-kerja::before`, dan kedua panel HP itu mengacu ke layar. Panel Super Admin masih
+  memakai blur lama di `.kepala-kerja`.
+- **Tanpa saturasi.** `backdrop-filter` yang memakai `saturate()` membuat Chrome melepas penghalusan subpiksel (ClearType) di
+  seluruh isi halaman di bawahnya, jadi tulisan tabel dan angka sedikit lebih tipis dan pucat. Terukur di Overview 390px:
+  tepi huruf berwarna 73,8% sebelum kaca, 14,2% dengan `blur(12px) saturate(165%)`, 73,7% dengan `blur(12px)` saja. Panel ini
+  memakai `--kaca-kabur: blur(12px)`. Panel dosen dan mahasiswa masih memakai saturasi dan terkena efek yang sama (61,6% lawan
+  85,8% di Beranda dosen, 29,9% lawan 63,9% di Dashboard mahasiswa); belum diubah karena menunggu keputusan pemilik produk.
+- **Portal pencarian cepat.** `CariCepat` dipasang di `<body>`, di luar `.panel-admin`, jadi `AdminLayout` memberinya penanda
+  `lingkup="portal-admin"` yang membawa token kaca dan teks redup panel ini. Kelas setelan aksesibilitas ikut dipasang di
+  portal lewat `useKelasAkarAksesibilitas()` (tanpa efek samping), jadi huruf disleksia, mode kontras, dan Hentikan animasi
+  kini juga berlaku di dialog itu. Tidak ada perubahan pada `<body>`.
+- **Jalan keluar.** Kurangi transparansi, peramban tanpa `backdrop-filter`, mode kontras gelap, terang, dan tinggi, serta warna
+  paksa sistem (`forced-colors`) membuat semua permukaan ini padat dan melepas cahaya serta kilaunya. Kontras tinggi tetap
+  `filter: contrast(1.35)` di `<html>`; kelas `a11y-kontras-tinggi` hanya penanda untuk melepas kaca. Semuanya di dalam
+  `@media screen`, jadi hasil cetak tidak berubah.
+- **Kontras.** Diukur per piksel saat isi halaman lewat di belakang kaca (Overview, Data Mahasiswa, Nilai Mahasiswa, Cetak
+  Sertifikat, Log Aktivitas, dan blok navy penuh sebagai kasus terburuk), juga di setiap lapisan. Bila isian atau warnanya
+  diubah, ukur ulang.
+
 ## Panel Dosen
 
 Penggunanya dosen yang datang sesekali untuk menilai, banyak di antaranya berusia 40 tahun ke atas. Ukuran
@@ -1129,8 +1169,9 @@ Pengiriman) diteruskan ke Unggah Nilai di peramban, seperti `app/page.jsx`.
 Permintaan pemilik produk (4 Nov 2026), dengan satu prinsip: **navigasi dan kendali berbahan kaca, informasi nilai tetap
 padat**. Dosen datang untuk membaca angka dan status, jadi kartu, tabel, bilah kelengkapan, area unggah, formulir, dan tombol
 utama sengaja tidak disentuh. `scripts/smoke.run.cjs` memeriksa bahwa semua aturan di `index.css` › kaca panel dosen dan
-mahasiswa terikat ke kedua panel itu dan tidak menyasar `<main>`, jadi panel lain dan isi halaman tidak ikut berubah. Panel
-mahasiswa memakai bahan yang sama; lihat Panel mahasiswa › Kaca.
+mahasiswa (dan bagian Kemahasiswaan sesudahnya) terikat ke panel dosen, mahasiswa, atau Kemahasiswaan dan tidak menyasar
+`<main>`, tabel, formulir, atau kartu, jadi panel lain dan isi halaman tidak ikut berubah. Panel mahasiswa dan Kemahasiswaan
+memakai bahan yang sama; lihat Panel mahasiswa › Kaca dan Panel Kemahasiswaan › Kaca.
 
 | Unsur | Rupa |
 |---|---|
@@ -1156,10 +1197,11 @@ mahasiswa memakai bahan yang sama; lihat Panel mahasiswa › Kaca.
 - **Gerak.** Hanya saat ditunjuk, ditekan, atau pindah menu (`.menu-sorot`, sedikit memantul saat muncul). Tidak ada kilau yang
   bergerak terus.
 - **Gulir.** Cahaya latar sengaja tanpa `background-attachment: fixed`: jejak compositor Chrome menunjukkan properti itu membuat
-  halaman dilukis ulang di setiap langkah gulir (Paint 50 kali per gestur di Riwayat, 120 sampai 140 di Beranda dosen, 0 tanpanya),
-  dan `scripts/smoke.run.cjs` menjaganya. Sesudah digulir cahaya tidak perlu ikut, karena kaca sudah berlatar isi halaman. Blur
-  hanya di kapsul dan tombol bantuan: lajur di belakang kapsul cukup gradasi (`--kaca-tirai`) tanpa blur dan mask, dan pil bahasa
-  di dalam kapsul tidak punya blur sendiri, karena blur ganda tidak terlihat dan hanya menambah kerja GPU.
+  halaman dilukis ulang di setiap langkah gulir (Paint 50 kali per gestur di panel mahasiswa, 120 sampai 140 di Beranda dosen, 0
+  tanpanya), dan `scripts/smoke.run.cjs` menjaganya. Sesudah digulir cahaya tidak perlu ikut, karena kaca sudah berlatar isi
+  halaman. Yang berblur selama digulir hanya kapsul, tombol bantuan, bilah bawah HP dosen, dan bilah alat Riwayat: lajur di
+  belakang kapsul cukup gradasi (`--kaca-tirai`) tanpa blur dan mask, dan pil bahasa di dalam kapsul tidak punya blur sendiri,
+  karena blur ganda tidak terlihat dan hanya menambah kerja GPU.
 
 ### Kelas dosen
 
@@ -1268,6 +1310,9 @@ Setiap kerangka panel memakai `useAkarAksesibilitas()` dari komponen yang sama, 
   mahasiswa dan dosen.
 - `pemandu` untuk memasang `<PemanduBaca />`. Filter warna dipasang di `<html>` dan dilepas lagi saat panel
   ditutup, misalnya saat keluar ke halaman masuk.
+
+Unsur yang dipasang di luar akar panel (portal ke `<body>`, misalnya pencarian cepat Kemahasiswaan) memakai
+`useKelasAkarAksesibilitas()`: kelas akar yang sama, tanpa memasang filter `<html>` untuk kedua kalinya.
 
 Di HP, panel berlaci (Kemahasiswaan, super admin, mahasiswa) memindahkan pemilih bahasa ke laci di bawah 640px,
 supaya tombol menu aksesibilitas muat sampai lebar 360px. Panel Kemahasiswaan sudah begitu sejak awal; panel dosen
@@ -1942,17 +1987,19 @@ Halaman mahasiswa memisahkan dua hal (sejak 4 Nov 2026), karena akses yang dicab
 yang semuanya tercentang:
 
 - **Izin cetak** (dikelola Kemahasiswaan) menyebut keadaannya (`keadaanSertifikat()` di `src/lib/duaLapis.js`): belum bisa
-  diminta, belum diminta, sedang ditinjau (admin atau Super Admin), disetujui, ditolak, atau dicabut.
+  diminta, belum diminta, sedang ditinjau (admin atau Super Admin), siap dicetak, ditolak, atau dicabut.
 - **Kelayakan akademik** memuat kelima syarat beserta statusnya.
 
 Ditolak dan dicabut tampil sebagai peringatan padat, tanpa kaca: judul, *Alasan*, siapa dan kapan, *Yang perlu dilakukan*,
 lalu dua tindakan. Sistem hanya menyimpan alasan, jadi langkah penyelesaiannya tidak dikarang: tertulis bahwa rinciannya belum
 tersedia, dengan **Hubungi Kemahasiswaan** (WhatsApp dengan pesan awal berisi nama dan NIM) sebagai jalur meminta penjelasan.
 *Ajukan peninjauan akses* sama dengan meminta lagi: permintaannya masuk lewat kedua lapis (`POST /api/sertifikat`), jadi
-sesudahnya tampil *Sedang ditinjau*, tanggal pengajuan, langkah berikutnya, dan tiga langkah bernomor.
+sesudahnya tampil *Sedang ditinjau*.
 
-Tombol **Cetak / Simpan PDF** hanya ada saat aksesnya disetujui; di keadaan lain catatannya bersyarat ("Setelah akses
-dipulihkan, tombol Cetak / Simpan PDF akan tersedia"). Ubin Sertifikat di Dashboard memakai keadaan yang sama dengan warna bawaan
+Selama ditinjau dan sesudah disetujui, kartu izin hanya memuat statusnya (permintaan pemilik produk, 9 Nov 2026): *Sedang
+ditinjau*, tanpa tanggal, langkah berikutnya, deretan langkah, catatan, atau tombol, lalu *Siap dicetak* beserta tombol
+**Cetak / Simpan PDF**. Tombol itu hanya ada saat aksesnya disetujui. Saat belum diminta, ditolak, atau dicabut, catatan di
+bawah kartu tetap bersyarat ("Setelah akses dipulihkan, tombol Cetak / Simpan PDF akan tersedia"). Ubin Sertifikat di Dashboard memakai keadaan yang sama dengan warna bawaan
 kartu, juga saat ditolak atau dicabut; peringatannya di halaman Sertifikat. Kelayakan
 selalu didahulukan: bila nilai berubah dan syaratnya gugur, akses yang sudah disetujui tidak bisa dipakai mencetak.
 Sertifikat dicetak, atau disimpan sebagai PDF lewat dialog cetak, dari tombol di website ini dan tidak dikirim lewat
@@ -2047,10 +2094,15 @@ keadaannya berbeda: tertutup polos, ditunjuk berlatar, fokus papan ketik bercinc
 simpul lini masa bercincin. Isi yang terbuka dibagi dua bagian berjudul, *Ringkasan aspek* dan *Rincian kegiatan*.
 
 **Riwayat.** Bilah alatnya berisi pencarian tugas atau aspek, saringan semester dan sumber, dan urutan Terbaru atau Terlama,
-dengan jumlah hasil tertulis. Tab Semua, Final, dan Sementara hanya tampil bila final dan sementara sama-sama ada, karena kalau
-tidak, isinya sama. Tiap baris memakai susunan tetap: nama tugas, aspek, lalu sumber, penetap, dan tanggal. *Final* dijelaskan
-sebagai nilai yang sudah disahkan, dengan perubahan hanya lewat prosedur koreksi, bukan "tidak akan berubah lagi": koreksi resmi
-tetap bisa diajukan untuk aspek final.
+dengan jumlah hasil tertulis. Tab Semua, Sudah lengkap, dan Sementara hanya tampil bila final dan sementara sama-sama ada, karena
+kalau tidak, isinya sama. Tiap baris memakai susunan tetap: nama tugas, aspek, lalu sumber, penetap, dan tanggal. *Sudah lengkap*
+dijelaskan sebagai nilai yang sudah disahkan, dengan perubahan hanya lewat prosedur koreksi, bukan "tidak akan berubah lagi":
+koreksi resmi tetap bisa diajukan untuk aspek final.
+
+**Label status final.** Sejak 9 Nov 2026 (permintaan pemilik produk) status final di panel mahasiswa tertulis *Sudah lengkap*
+("Completed"): label aspek dan tabnya di Dashboard, Peta Perjalanan, Riwayat, dan Transkrip, termasuk status nilai akhir. Nilai
+statusnya di data tetap `final`, dan panel Kemahasiswaan, dosen, serta Super Admin tetap menulis *Final*, karena di sana kata itu
+juga nama tindakan (menandai final).
 
 ### Kaca
 

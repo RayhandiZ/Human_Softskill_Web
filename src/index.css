@@ -1410,9 +1410,13 @@ body {
 /* Navigasi dan kendali berbahan kaca, informasi nilai tetap padat (permintaan pemilik produk, 4 Nov 2026). Yang berkaca: bilah
    atas, menu aktif, bilah bawah HP, menu akun, panel dan tombol bantuan; di panel mahasiswa juga bilah alat Riwayat dan aksen
    Peta Perjalanan. Kartu, tabel, grafik, bilah kelengkapan, area unggah, formulir, peringatan, dan tombol utama sengaja tidak
-   disentuh. Di dalam @media screen, jadi hasil cetak tidak berubah. Lihat README.md › Panel Dosen › Kaca. */
+   disentuh. Di dalam @media screen, jadi hasil cetak tidak berubah. Lihat README.md › Panel Dosen › Kaca.
+   Panel Kemahasiswaan (.panel-admin) memakai token dan aturan bilah atas, menu aktif, dan menu akun yang sama sejak 10 Nov 2026;
+   aturan khususnya di bagian kaca panel Kemahasiswaan di bawah. */
 @media screen {
-  :is(.panel-dosen, .panel-mahasiswa) {
+  /* .portal-admin: portal pencarian cepat panel Kemahasiswaan. Ia dipasang di <body>, di luar akar panel, jadi tokennya dibawa
+     lewat penanda sendiri (AdminLayout.jsx). */
+  :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin) {
     --kaca-isi: color-mix(in srgb, var(--surface) 68%, transparent);
     --kaca-isi-lapis: color-mix(in srgb, var(--surface) 84%, transparent);
     --kaca-kendali: color-mix(in srgb, var(--surface) 45%, transparent);
@@ -1439,10 +1443,13 @@ body {
     --kaca-cahaya:
       radial-gradient(560px 190px at 24% -30px, rgb(60 130 220 / 0.16), transparent 72%),
       radial-gradient(620px 170px at 82% -20px, rgb(94 234 212 / 0.16), transparent 72%);
+  }
+  /* Cahaya latar hanya di akar panel, bukan di tirai portal. */
+  :is(.panel-dosen, .panel-mahasiswa, .panel-admin) {
     background-image: var(--kaca-cahaya);
     background-repeat: no-repeat;
   }
-  .dark :is(.panel-dosen, .panel-mahasiswa) {
+  .dark :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin) {
     --kaca-isi: color-mix(in srgb, var(--surface) 70%, transparent);
     --kaca-isi-lapis: color-mix(in srgb, var(--surface) 86%, transparent);
     --kaca-kendali: color-mix(in srgb, var(--surface-2) 50%, transparent);
@@ -1460,17 +1467,37 @@ body {
       radial-gradient(560px 190px at 24% -30px, rgb(60 130 220 / 0.22), transparent 72%),
       radial-gradient(620px 170px at 82% -20px, rgb(94 234 212 / 0.07), transparent 72%);
   }
+  /* Panel Kemahasiswaan sedikit lebih pekat daripada panel dosen: bilahnya memuat kolom cari dan lokasi halaman, dan lapisannya
+     berisi teks panjang (pemberitahuan, hasil pencarian). --kaca-isi-panel untuk menu aksesibilitas yang dasarnya abu-abu,
+     --kaca-isi-cari untuk pencarian cepat. */
+  /* Tanpa saturate(): backdrop-filter bersaturasi membuat Chrome melepas penghalusan subpiksel (ClearType) di seluruh isi halaman
+     di bawahnya. Terukur di Overview 390px: tepi huruf berwarna 73,8% sebelum kaca, 14,2% dengan blur dan saturasi, 73,7% dengan
+     blur saja. Tabel dan angka di panel ini harus tetap setajam sebelumnya. */
+  :is(.panel-admin, .portal-admin) {
+    --kaca-kabur: blur(12px);
+    --kaca-isi: color-mix(in srgb, var(--surface) 74%, transparent);
+    --kaca-isi-lapis: color-mix(in srgb, var(--surface) 90%, transparent);
+    --kaca-isi-panel: color-mix(in srgb, var(--surface-2) 92%, transparent);
+    --kaca-isi-cari: color-mix(in srgb, var(--surface) 94%, transparent);
+  }
+  .dark :is(.panel-admin, .portal-admin) {
+    --kaca-isi: color-mix(in srgb, var(--surface) 76%, transparent);
+    --kaca-isi-lapis: color-mix(in srgb, var(--surface) 92%, transparent);
+    --kaca-isi-panel: color-mix(in srgb, var(--surface-2) 94%, transparent);
+    --kaca-isi-cari: color-mix(in srgb, var(--surface) 95%, transparent);
+  }
 
   /* Kaca bilah atas ada di ::before, bukan di bilah atau kepalanya: backdrop-filter pada induk membuat menu akun di dalamnya
-     hanya bisa mengaburkan isi induk itu, bukan halaman (Backdrop Root). */
-  :is(.panel-dosen .kepala-kerja, .panel-mahasiswa .bilah-kaca) {
+     hanya bisa mengaburkan isi induk itu, bukan halaman (Backdrop Root), dan menjadi containing block bagi panel fixed di
+     dalamnya (lonceng dan menu aksesibilitas di HP). */
+  :is(.panel-dosen .kepala-kerja, .panel-admin .kepala-kerja, .panel-mahasiswa .bilah-kaca) {
     background: var(--kaca-jalur);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
   /* Celah di atas kapsul: isi yang tergulir memudar, tidak terpotong tajam di tepi layar. Hanya gradasi, tanpa blur dan mask:
      lajur selebar layar ini tidak perlu ikut menambah kerja GPU di setiap bingkai gulir. */
-  :is(.panel-dosen .kepala-kerja, .panel-mahasiswa .bilah-kaca)::before {
+  :is(.panel-dosen .kepala-kerja, .panel-admin .kepala-kerja, .panel-mahasiswa .bilah-kaca)::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -1481,14 +1508,14 @@ body {
   /* Mulai layar laptop lajurnya disambung ke bawah menu samping: kalau berhenti di tepi kolom isi, ujungnya terbaca sebagai garis
      tegak di atas cahaya latar. */
   @media (min-width: 1024px) {
-    .panel-dosen .kepala-kerja::before {
+    :is(.panel-dosen, .panel-admin) .kepala-kerja::before {
       left: -272px;
     }
     .panel-mahasiswa .bilah-kaca::before {
       left: -264px;
     }
   }
-  .panel-dosen .bilah-kerja {
+  :is(.panel-dosen, .panel-admin) .bilah-kerja {
     --text-secondary: var(--kaca-teks-2);
     --text-muted: var(--kaca-teks-2);
     position: relative;
@@ -1497,7 +1524,7 @@ body {
     background: transparent;
     box-shadow: var(--kaca-bayang);
   }
-  :is(.panel-dosen .bilah-kerja, .panel-mahasiswa .bilah-utilitas, .panel-mahasiswa .alat-riwayat)::before {
+  :is(.panel-dosen .bilah-kerja, .panel-admin .bilah-kerja, .panel-mahasiswa .bilah-utilitas, .panel-mahasiswa .alat-riwayat)::before {
     content: '';
     position: absolute;
     inset: -1px;
@@ -1517,13 +1544,13 @@ body {
     background: var(--kaca-isi-lapis);
   }
   /* Pil pemilih bahasa sudah duduk di atas kaca kapsul; blur keduanya tidak terlihat dan hanya menambah kerja GPU. */
-  :is(.panel-dosen .bilah-kerja, .panel-mahasiswa .bilah-utilitas) .pil-kaca {
+  :is(.panel-dosen .bilah-kerja, .panel-admin .bilah-kerja, .panel-mahasiswa .bilah-utilitas) .pil-kaca {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
   /* Tema gelap: dasar pil pemilih bahasa dibuat padat dan kilaunya ditipiskan. Di atas kaca, tulisan "ID" turun ke 4,42:1
      saat baris terang lewat di belakangnya. */
-  .dark :is(.panel-dosen .bilah-kerja, .panel-mahasiswa .bilah-utilitas) .pil-kaca {
+  .dark :is(.panel-dosen .bilah-kerja, .panel-admin .bilah-kerja, .panel-mahasiswa .bilah-utilitas) .pil-kaca {
     background:
       linear-gradient(145deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.02)),
       var(--brand-soft);
@@ -1531,23 +1558,23 @@ body {
 
   /* Menu aktif: pil kaca kebiruan. Ikon dan garis kiri (::after) tetap, jadi posisi halaman tetap jelas. Latarnya kartu
      putih yang padat, jadi kesan kacanya dari warna tembus, kilau tepi, dan bayangan, bukan dari blur. */
-  :is(.panel-dosen, .panel-mahasiswa) .menu-sorot {
+  :is(.panel-dosen, .panel-mahasiswa, .panel-admin) .menu-sorot {
     --sorot-latar: var(--kaca-pil);
   }
-  :is(.panel-dosen, .panel-mahasiswa) .menu-sorot::before {
+  :is(.panel-dosen, .panel-mahasiswa, .panel-admin) .menu-sorot::before {
     border: 1px solid var(--kaca-pil-tepi);
     box-shadow: var(--kaca-pil-bayang);
     transition:
       opacity 0.25s ease,
       transform 0.42s cubic-bezier(0.22, 1.2, 0.36, 1);
   }
-  :is(.panel-dosen, .panel-mahasiswa) .menu-sorot:active::before {
+  :is(.panel-dosen, .panel-mahasiswa, .panel-admin) .menu-sorot:active::before {
     transform: scale(0.975);
     transition-duration: 0.12s;
   }
   @media (hover: hover) {
     /* Butir yang ditunjuk lebih tipis daripada butir aktif, supaya halaman yang sedang terbuka tetap jelas. */
-    :is(.panel-dosen, .panel-mahasiswa) .menu-sorot:not(.menu-aktif):hover::before {
+    :is(.panel-dosen, .panel-mahasiswa, .panel-admin) .menu-sorot:not(.menu-aktif):hover::before {
       opacity: 0.6;
     }
   }
@@ -1568,8 +1595,9 @@ body {
     box-shadow: var(--kaca-pil-bayang);
   }
 
-  /* Lapisan melayang: isiannya lebih pekat daripada bilah, karena isinya dibaca dan yang di belakangnya bisa apa saja. */
-  :is(.panel-dosen, .panel-mahasiswa) .lapisan-kaca {
+  /* Lapisan melayang: isiannya lebih pekat daripada bilah, karena isinya dibaca dan yang di belakangnya bisa apa saja. Di panel
+     Kemahasiswaan kaitnya ada di menu akun dan panel lonceng. */
+  :is(.panel-dosen, .panel-mahasiswa, .panel-admin) .lapisan-kaca {
     /* Merah "Keluar" lebih tua: --critical turun ke 4,18:1 saat isi gelap lewat di belakangnya. */
     --critical: var(--teks-kritis);
     border-color: var(--kaca-tepi);
@@ -1688,12 +1716,55 @@ body {
     color: var(--teks-kritis);
   }
 }
+
+/* ------------------------- kaca panel Kemahasiswaan ------------------------- */
+/* Permintaan pemilik produk (10 Nov 2026): penyempurnaan, bukan desain ulang. Bilah atas, menu aktif, dan menu akun memakai
+   aturan bersama di atas; di sini yang khusus panel ini. Yang tidak disentuh: kartu angka, grafik, panel Perlu dikerjakan, tabel,
+   formulir, area unggah, tombol utama, pesan galat dan status, serta TabSaring (tetap bergaris bawah). Lihat README.md › Panel
+   Kemahasiswaan › Kaca. */
+@media screen {
+  /* Kendali di kapsul menyatu dengan kacanya, bukan gelembung masing-masing. Kolom cari tetap berupa kolom padat. */
+  .panel-admin .bilah-kerja :is(button.grid, [role='group']) {
+    border-color: transparent;
+    background: transparent;
+  }
+  .panel-admin .bilah-kerja button.grid:hover {
+    background: var(--kaca-isi-lapis);
+  }
+  /* Menu aksesibilitas: kaca pekat di atas dasar abu-abunya. Kepala biru, ubin, dan kendalinya tetap padat. */
+  .panel-admin .lapisan-a11y {
+    border-color: var(--kaca-tepi);
+    background: var(--kaca-isi-panel);
+    -webkit-backdrop-filter: var(--kaca-kabur);
+    backdrop-filter: var(--kaca-kabur);
+    box-shadow: var(--kaca-bayang-lapis), var(--kaca-kilau);
+  }
+  /* Pencarian cepat: lapisan paling pekat, karena hasilnya dibaca cepat. Butir terpilih dan kolom ketiknya tetap padat. */
+  .portal-admin .lapisan-cari {
+    border-color: var(--kaca-tepi);
+    background: var(--kaca-isi-cari);
+    -webkit-backdrop-filter: var(--kaca-kabur);
+    backdrop-filter: var(--kaca-kabur);
+    box-shadow: var(--kaca-bayang-lapis), var(--kaca-kilau);
+  }
+  /* Tab terpilih (komponen Tabs): pil kebiruan tipis dengan garis tepi, tanpa blur per tab. */
+  .panel-admin .tab-pil[aria-selected='true'] {
+    background-color: var(--surface);
+    background-image: var(--kaca-pil);
+    box-shadow:
+      inset 0 0 0 1px var(--kaca-pil-tepi),
+      var(--kaca-pil-bayang);
+  }
+}
+
 /* Tanpa backdrop-filter, atau efek tembus pandang dimatikan sistem: semua permukaan kaca padat. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  :is(.panel-dosen, .panel-mahasiswa),
-  .dark :is(.panel-dosen, .panel-mahasiswa) {
+  :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin),
+  .dark :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin) {
     --kaca-isi: var(--surface);
     --kaca-isi-lapis: var(--surface);
+    --kaca-isi-panel: var(--surface-2);
+    --kaca-isi-cari: var(--surface);
     --kaca-kendali: var(--surface);
     --kaca-tombol: var(--brand);
     --kaca-jalur: var(--bg);
@@ -1701,15 +1772,32 @@ body {
   }
 }
 @media (prefers-reduced-transparency: reduce) {
-  :is(.panel-dosen, .panel-mahasiswa),
-  .dark :is(.panel-dosen, .panel-mahasiswa) {
+  :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin),
+  .dark :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin) {
     --kaca-isi: var(--surface);
     --kaca-isi-lapis: var(--surface);
+    --kaca-isi-panel: var(--surface-2);
+    --kaca-isi-cari: var(--surface);
     --kaca-kendali: var(--surface);
     --kaca-tombol: var(--brand);
     --kaca-kabur: none;
     --kaca-jalur: var(--bg);
     --kaca-tirai: transparent;
+  }
+}
+/* Warna paksa sistem (Windows High Contrast): latar tembus tetap tembus karena alfanya dipertahankan, jadi panel Kemahasiswaan
+   dibuat padat dan cahaya latarnya dilepas. */
+@media (forced-colors: active) {
+  :is(.panel-admin, .portal-admin),
+  .dark :is(.panel-admin, .portal-admin) {
+    --kaca-isi: var(--surface);
+    --kaca-isi-lapis: var(--surface);
+    --kaca-isi-panel: var(--surface-2);
+    --kaca-isi-cari: var(--surface);
+    --kaca-kabur: none;
+    --kaca-jalur: var(--bg);
+    --kaca-tirai: transparent;
+    --kaca-cahaya: none;
   }
 }
 
@@ -1868,13 +1956,18 @@ body {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
-  /* Kaca panel dosen dan mahasiswa dilepas seluruhnya, termasuk cahaya dan kilaunya. */
-  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang):is(.panel-dosen, .panel-mahasiswa) {
+  /* Kaca panel dosen, mahasiswa, dan Kemahasiswaan dilepas seluruhnya, termasuk cahaya dan kilaunya. Di panel Kemahasiswaan
+     (dan portal pencarian cepatnya) juga saat Kontras tinggi, yang memakai filter <html> tanpa palet sendiri. */
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang):is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin),
+  .akar-a11y.a11y-kontras-tinggi:is(.panel-admin, .portal-admin) {
     --kaca-isi: var(--surface);
     --kaca-isi-lapis: var(--surface);
+    --kaca-isi-panel: var(--surface-2);
+    --kaca-isi-cari: var(--surface);
     --kaca-kendali: var(--surface);
     --kaca-tombol: var(--brand);
     --kaca-kabur: none;
+    --kaca-jalur: var(--bg);
     --kaca-tepi: var(--border-strong);
     --kaca-kilau: 0 0 #0000;
     --kaca-bayang: 0 0 #0000;

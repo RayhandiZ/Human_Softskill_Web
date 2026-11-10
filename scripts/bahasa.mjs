@@ -141,17 +141,13 @@ const DARI_DATA = [
   'Permintaan ditolak', 'Buka untuk melihat alasannya',
   /* Akses cetak yang dicabut: label status dan ubin Dashboard. */
   'Dicabut', 'Akses dicabut',
-  /* Halaman sertifikat mahasiswa (JUDUL_IZIN, KALIMAT_IZIN, LANGKAH_BERIKUTNYA, CATATAN_CETAK, label RincianAkses) dan ubinnya. */
-  'Belum bisa diminta', 'Belum diminta', 'Akses cetak disetujui', 'Permintaan akses cetak ditolak', 'Akses cetak dicabut',
+  /* Halaman sertifikat mahasiswa (JUDUL_IZIN, KALIMAT_IZIN, CATATAN_CETAK, label RincianAkses) dan ubinnya. */
+  'Belum bisa diminta', 'Belum diminta', 'Siap dicetak', 'Permintaan akses cetak ditolak', 'Akses cetak dicabut',
   'Akses cetak bisa diminta setelah seluruh syarat di bawah terpenuhi, tanpa terlewat satu pun.',
   'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.',
-  'Sertifikat siap dicetak atau disimpan sebagai PDF.',
-  'Admin Kemahasiswaan meninjau permintaanmu, lalu Super Admin memutuskannya.',
-  'Admin Kemahasiswaan sudah meninjau. Super Admin akan memutuskannya.',
-  'Sertifikat dicetak, atau disimpan sebagai PDF lewat dialog cetak, dari tombol di halaman ini, dan setiap pembukaan dialog cetak tercatat. Sertifikat tidak dikirim lewat surel.',
   'Setelah akses dipulihkan, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.',
   'Setelah akses disetujui, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.',
-  'Alasan', 'Dicabut oleh', 'Ditolak oleh', 'Yang perlu dilakukan', 'Diajukan', 'Langkah berikutnya',
+  'Alasan', 'Dicabut oleh', 'Ditolak oleh', 'Yang perlu dilakukan',
   'Ajukan peninjauan akses', 'Minta akses cetak lagi', 'Minta akses cetak', 'Oleh admin Kemahasiswaan', 'Sedang ditinjau',
   /* Kartu nilai akhir mahasiswa: seri grafik dan label Cara hitung, lalu pilihan urutan Riwayat. */
   'Rata-rata Anda', 'Nilai semester', 'Nilai aspek', 'Aspek final', 'Aspek dinilai',

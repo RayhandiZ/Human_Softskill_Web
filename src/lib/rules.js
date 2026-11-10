@@ -29,7 +29,7 @@ export function aspekBolehDilihat(student, aspekId) {
 export function labelNilaiAkhir(akhir) {
   if (akhir.status === 'final') {
     return {
-      teks: 'Final',
+      teks: 'Sudah lengkap',
       rinci: 'Seluruh {total} aspek sudah dinilai dan final.',
       nilai: { total: akhir.aspekTotal },
     }

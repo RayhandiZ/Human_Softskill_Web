@@ -4,16 +4,20 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { usePathname, useRouter } from 'next/navigation'
 import { IconChevronRight, IconSearch } from './Icons'
+import { useKelasAkarAksesibilitas } from './MenuAksesibilitas'
 import { useTeks } from '../lib/bahasa'
 
 /* Pencarian cepat panel Kemahasiswaan: mahasiswa (nama, NIM, email) dan halaman menu. Dibuka dari tombol di
    bilah atas atau Ctrl+K / ⌘K di halaman mana pun. Pola combobox: fokus tetap di kolom ketik, panah memindah
-   sorotan (aria-activedescendant), Enter membuka, Esc menutup dan fokus kembali ke tombol pembukanya. */
+   sorotan (aria-activedescendant), Enter membuka, Esc menutup dan fokus kembali ke tombol pembukanya.
+   `lingkup`: kelas penanda panel untuk portalnya, yang dipasang di <body> di luar akar panel (index.css › kaca panel
+   Kemahasiswaan). Kelas setelan aksesibilitas ikut dipasang di sana, karena akar panel tidak menaunginya. */
 
 const MAKS_MAHASISWA = 6
 
-export default function CariCepat({ halaman, mahasiswa, keMahasiswa }) {
+export default function CariCepat({ halaman, mahasiswa, keMahasiswa, lingkup = '' }) {
   const t = useTeks()
+  const kelasA11y = useKelasAkarAksesibilitas()
   const router = useRouter()
   const jalur = usePathname()
   const awalan = useId()
@@ -166,7 +170,11 @@ export default function CariCepat({ halaman, mahasiswa, keMahasiswa }) {
           jadi tanpa portal menu samping tidak ikut tertutup tirai dan masih bisa diklik. */}
       {buka ? createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-[rgb(8_14_30/0.45)] px-4 pt-[min(14vh,120px)] animate-[pudar_.15s_ease-out]"
+          className={
+            'fixed inset-0 z-50 flex items-start justify-center bg-[rgb(8_14_30/0.45)] px-4 pt-[min(14vh,120px)] animate-[pudar_.15s_ease-out] ' +
+            kelasA11y +
+            (lingkup ? ' ' + lingkup : '')
+          }
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) tutup()
           }}
@@ -175,7 +183,7 @@ export default function CariCepat({ halaman, mahasiswa, keMahasiswa }) {
             role="dialog"
             aria-modal="true"
             aria-label={t('Pencarian cepat')}
-            className="w-full max-w-[600px] overflow-hidden rounded-2xl border border-line bg-surface shadow-pop animate-rise"
+            className="lapisan-cari w-full max-w-[600px] overflow-hidden rounded-2xl border border-line bg-surface shadow-pop animate-rise"
           >
             {/* Garis bawah berubah warna saat kolom difokus; itu penanda fokusnya, pengganti cincin bawaan. */}
             <div className="flex items-center gap-3 border-b-2 border-line px-4 transition-colors focus-within:border-brand-ink">

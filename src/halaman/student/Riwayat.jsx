@@ -31,7 +31,7 @@ const bulanTahun = (t, iso) => {
 
 const TAB = [
   { id: 'semua', label: 'Semua', cocok: () => true },
-  { id: 'final', label: 'Final', cocok: (e) => e.final },
+  { id: 'final', label: 'Sudah lengkap', cocok: (e) => e.final },
   { id: 'sementara', label: 'Sementara', cocok: (e) => !e.final },
 ]
 
@@ -67,7 +67,7 @@ function Catatan({ e }) {
       <span className="shrink-0 text-right">
         <span className="block text-[18px] font-extrabold leading-none tabular-nums text-ink">{e.k.nilai}</span>
         <span className="mt-1.5 block">
-          <StatusTeks kuat={e.final}>{t(e.final ? 'Final' : 'Sementara')}</StatusTeks>
+          <StatusTeks kuat={e.final}>{t(e.final ? 'Sudah lengkap' : 'Sementara')}</StatusTeks>
         </span>
       </span>
     </li>
@@ -260,7 +260,7 @@ export default function Riwayat() {
             ) : null}
           </div>
           <p className="mt-0.5 text-[13.5px] leading-relaxed text-ink-2">
-            <span className="font-semibold text-ink">{t('Final')}</span>{' '}
+            <span className="font-semibold text-ink">{t('Sudah lengkap')}</span>{' '}
             {t('berarti nilainya sudah disahkan Kemahasiswaan. Perubahan sesudahnya hanya lewat prosedur koreksi.')}
           </p>
         </div>

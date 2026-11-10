@@ -31,7 +31,7 @@ const ISI = {
     [/dinilai, \d+ final/, 'ringkasan lipatan HP tanpa jumlah aspek final', false],
     [/Capaian per area/, 'kartu Capaian per area sudah tidak ada (rinciannya di Transkrip)', false],
     [/Aspek dinilai[\s\S]{0,80}\/ \d+/, 'ubin jumlah aspek dinilai'],
-    [/Semua \d+[\s\S]{0,60}Final \d+[\s\S]{0,60}Berjalan \d+[\s\S]{0,60}Belum dibuka \d+/, 'tab aspek lengkap dengan jumlahnya'],
+    [/Semua \d+[\s\S]{0,60}Sudah lengkap \d+[\s\S]{0,60}Berjalan \d+[\s\S]{0,60}Belum dibuka \d+/, 'tab aspek lengkap dengan jumlahnya'],
     [/Perjalanan semester/, 'perjalanan semester ada'],
     /* Komponen yang belum dinilai pindah ke lonceng bilah atas — kartunya
        tidak boleh tertinggal di badan halaman. */
@@ -82,8 +82,9 @@ const ISI = {
     [/Riwayat penilaian/, 'ada daftar riwayat penilaian'],
     [/Ditetapkan oleh/, 'komponen final menyebut siapa yang menetapkan'],
     [/(PDP|MK Humaniora|Kemahasiswaan) · (Ditetapkan|Dinilai) oleh/, 'tiap catatan menyebut jalur penilaiannya'],
-    /* Final tidak berarti mustahil berubah: koreksi resmi tetap bisa (lihat Ajukan koreksi nilai di Transkrip). */
-    [/Final berarti nilainya sudah disahkan/, 'arti Final dijelaskan'],
+    /* "Sudah lengkap" (status final) tidak berarti mustahil berubah: koreksi resmi tetap bisa (lihat Ajukan koreksi nilai
+       di Transkrip). */
+    [/Sudah lengkap<\/span> berarti nilainya sudah disahkan/, 'arti Sudah lengkap dijelaskan', true, true],
     [/tidak akan berubah lagi|tidak berubah lagi/, 'tidak ada janji absolut bahwa nilai final tidak berubah', false],
     [/<input[^>]*type="search"/, 'ada kotak cari tugas atau aspek', true, true],
     [/Terbaru/, 'urutan riwayat tertulis'],
@@ -504,8 +505,9 @@ const RUTE = [
     }
   }
 
-  /* Kaca hanya untuk navigasi panel dosen dan mahasiswa: blok CSS-nya tidak boleh bocor ke panel lain atau ke seluruh isi
-     halaman. Lihat README.md › Panel Dosen › Kaca. */
+  /* Kaca hanya untuk navigasi panel dosen, mahasiswa, dan Kemahasiswaan (termasuk portal pencarian cepatnya, .portal-admin):
+     blok CSS-nya tidak boleh bocor ke panel lain (Super Admin) atau ke seluruh isi halaman. Lihat README.md › Panel Dosen ›
+     Kaca dan › Panel Kemahasiswaan › Kaca. */
   {
     w.localStorage.setItem('sk5c.session', SESI.dosen)
     const k = await mod.ujiKacaDosen()
@@ -516,14 +518,19 @@ const RUTE = [
       .map((m) => m[1].trim())
       .filter((p) => !p.startsWith('@'))
       .flatMap((p) => p.split(/,(?![^(]*\))/).map((x) => x.trim()))
-    // Peringatan bukan kaca, jadi kelasnya boleh berdiri sendiri; yang lain harus terikat ke dua panel ini.
+    // Peringatan bukan kaca, jadi kelasnya boleh berdiri sendiri; yang lain harus terikat ke panel-panel ini.
     const bocor = pemilih.filter(
-      (p) => !/^(\.dark )?(:is\()?\.panel-(dosen|mahasiswa)\b|^\.(kartu|tanda)-peringatan$/.test(p) || /\bmain\b/.test(p),
+      (p) =>
+        !/^(\.dark )?(:is\()?\.(panel-(dosen|mahasiswa|admin)|portal-admin)\b|^\.(kartu|tanda)-peringatan$/.test(p) ||
+        /\bmain\b/.test(p),
     )
+    // Data tetap padat: tidak ada aturan kaca yang menyasar tabel, formulir, atau kartu (kecuali kartu peringatan yang padat).
+    const kenaData = pemilih.filter((p) => /\b(table|thead|tbody|tr|td|th|form|input|select|textarea)\b|\.card\b|\.kartu(?![-\w])/.test(p))
     const wajib = [
       ['bilah atas, menu akun, dan tombol bantuan punya kelas kacanya', k.bilahAtas && k.menuAkun && k.tombolBantuan],
       ['isi halaman tidak memakai kelas kaca', k.isiTanpaKaca],
-      ['aturan kaca terikat ke panel dosen dan mahasiswa dan tidak menyasar <main>', pemilih.length > 10 && !bocor.length, bocor.join(' | ')],
+      ['aturan kaca terikat ke panel dosen, mahasiswa, dan Kemahasiswaan dan tidak menyasar <main>', pemilih.length > 10 && !bocor.length, bocor.join(' | ')],
+      ['aturan kaca tidak menyasar tabel, formulir, atau kartu data', !kenaData.length, kenaData.join(' | ')],
       // fixed membuat halaman dilukis ulang di setiap langkah gulir; lihat README.md › Panel Dosen › Kaca.
       ['latar panel tanpa background-attachment: fixed', !/background-attachment:\s*fixed/.test(blok)],
     ]
@@ -1290,8 +1297,8 @@ const RUTE = [
     ['layak tanpa permintaan: hanya tombol Minta akses cetak', alur.awalBisaMinta],
     ['layak tanpa permintaan: belum ada lembar sertifikat', alur.awalTanpaLembar],
     ['meminta: tercatat Menunggu Admin', alur.mintaTercatat],
-    ['meminta: tertulis Sedang ditinjau, tanggal pengajuan, dan langkah berikutnya, tanpa tombol cetak', alur.menungguDitinjau],
-    ['meminta: langkah pertama yang aktif', alur.langkahPertamaAktif],
+    ['meminta: kartu izin hanya tertulis Sedang ditinjau, tanpa rincian dan tanpa tombol', alur.menungguDitinjau],
+    ['meminta: tanpa deretan langkah', alur.tanpaLangkah],
     ['meminta: lembar sertifikat tetap tidak ada', alur.masihTanpaLembar],
     ['permintaan kedua selagi berjalan ditahan', alur.gandaDitahan],
     ['admin: tab Menunggu Anda memuat permintaannya dengan tautan Tinjau ke detail mahasiswa', alur.adminAdaTinjau],
@@ -1316,7 +1323,7 @@ const RUTE = [
     ['super admin: permintaannya ada di halaman Persetujuan dengan rekomendasi Disarankan', alur.superMelihat],
     ['super admin: menyetujui membuat sertifikat Siap dicetak', alur.siap],
     ['super admin: permintaannya hilang dari daftar menunggu', alur.hilangDariDaftar],
-    ['mahasiswa: ketiga langkah selesai', alur.langkahSelesai],
+    ['mahasiswa: tertulis Siap dicetak dan tombol cetak muncul, tanpa rincian', alur.langkahSelesai],
     ['siap dicetak: lembar belum terpasang sebelum tombol Cetak ditekan', alur.lembarBelumDipasang],
     ['siap dicetak: tombol hidup dan klik mencetak', srLayak.adaTombol && !srLayak.mati && srLayak.dicetak === 1],
     ['siap dicetak: lembar sertifikat memuat nama dan nilai', /Kirana Wulandari/.test(srLayak.isiLembar ?? '') && /nilai akhir [0-9]+ dan predikat [A-D]/.test(srLayak.isiLembar ?? '')],

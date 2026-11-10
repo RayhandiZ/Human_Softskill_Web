@@ -36,7 +36,7 @@ const STATUS_LABEL = {
   terkunci: { teks: 'Belum dibuka' },
   menunggu: { teks: 'Menunggu nilai' },
   berjalan: { teks: 'Sementara' },
-  final: { teks: 'Final' },
+  final: { teks: 'Sudah lengkap' },
 }
 
 const nomorDokumen = (student) =>
@@ -136,7 +136,7 @@ export default function Transkrip({ student, untukAdmin = false }) {
             </div>
           </dl>
           <div className="flex gap-2 print:hidden">
-            <button type="button" className="btn-ghost min-h-[44px]" onClick={() => window.print()}>
+            <button type="button" className="btn-primary min-h-[44px]" onClick={() => window.print()}>
               <IconPrint size={17} />
               {teks('Cetak / Simpan PDF')}
             </button>

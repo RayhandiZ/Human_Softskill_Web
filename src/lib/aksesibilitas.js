@@ -92,6 +92,8 @@ export function kelasAksesibilitas(s) {
     s.tebal && 'a11y-tebal',
     s.kontras === 'gelap' && 'a11y-kontras-gelap',
     s.kontras === 'terang' && 'a11y-kontras-terang',
+    // Kontras tinggi tetap lewat filter <html>; kelas ini hanya penanda untuk melepas kaca (index.css › kaca).
+    s.kontras === 'tinggi' && 'a11y-kontras-tinggi',
     s.diam && 'a11y-diam',
     s.kursor && 'a11y-kursor',
   ]

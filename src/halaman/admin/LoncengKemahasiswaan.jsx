@@ -378,7 +378,7 @@ export default function LoncengKemahasiswaan({ nada = 'onbrand' }) {
         <div
           role="dialog"
           aria-label={adminBiasa ? t('Pemberitahuan') : t('Pekerjaan yang menunggu')}
-          className="fixed inset-x-4 top-[72px] z-50 overflow-hidden rounded-2xl border border-line bg-surface text-left shadow-pop animate-rise sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[420px]"
+          className="lapisan-kaca fixed inset-x-4 top-[72px] z-50 overflow-hidden rounded-2xl border border-line bg-surface text-left shadow-pop animate-rise sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[420px]"
         >
           {adminBiasa ? (
             <div className="border-b border-line px-3 py-2.5">

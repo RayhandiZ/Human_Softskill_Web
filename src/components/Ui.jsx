@@ -539,8 +539,9 @@ export function Tabs({ items, value, onChange, label }) {
             tabIndex={masuk ? 0 : -1}
             onKeyDown={(e) => pindah(e, i)}
             onClick={() => onChange(it.value)}
+            // tab-pil: kait gaya pil terpilih di panel Kemahasiswaan (index.css › kaca panel Kemahasiswaan).
             className={
-              'rounded-lg px-3.5 py-2 text-[13px] font-bold transition ' +
+              'tab-pil rounded-lg px-3.5 py-2 text-[13px] font-bold transition ' +
               (active ? 'bg-surface text-ink shadow-card' : 'text-ink-2 hover:text-ink')
             }
           >

@@ -478,7 +478,7 @@ function CaraHitung({ t }) {
 
 function StatusAspek({ a }) {
   const t = useTeks()
-  if (a.status === 'final') return <StatusTeks kuat>{t('Final')}</StatusTeks>
+  if (a.status === 'final') return <StatusTeks kuat>{t('Sudah lengkap')}</StatusTeks>
   if (a.status === 'terkunci') {
     return <StatusTeks>{t('Dibuka Semester {n}', { n: a.aspek.semester })}</StatusTeks>
   }
@@ -501,7 +501,7 @@ const UBIN_SERTIFIKAT = {
 
 const TAB = [
   { id: 'semua', label: 'Semua', cocok: () => true },
-  { id: 'final', label: 'Final', cocok: (a) => a.status === 'final' },
+  { id: 'final', label: 'Sudah lengkap', cocok: (a) => a.status === 'final' },
   { id: 'berjalan', label: 'Berjalan', cocok: (a) => a.status === 'berjalan' || a.status === 'menunggu' },
   { id: 'terkunci', label: 'Belum dibuka', cocok: (a) => a.status === 'terkunci' },
 ]

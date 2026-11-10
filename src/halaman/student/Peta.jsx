@@ -20,7 +20,7 @@ const RINGKAS_KEADAAN = {
 
 function StatusSingkat({ a }) {
   const t = useTeks()
-  if (a.status === 'final') return <StatusTeks kuat>{t('Final')}</StatusTeks>
+  if (a.status === 'final') return <StatusTeks kuat>{t('Sudah lengkap')}</StatusTeks>
   if (a.status === 'terkunci') return <Terkunci semester={a.aspek.semester} />
   return <StatusTeks>{t(a.status === 'menunggu' ? 'Belum dinilai' : 'Sementara')}</StatusTeks>
 }

@@ -325,8 +325,9 @@ export async function ujiAspek(rute) {
   const baris = () => [...el.querySelectorAll('button[aria-controls^="rinci-"]')]
 
   const hasil = { tabSesuai: {} }
-  for (const nama of ['Semua', 'Final', 'Berjalan', 'Belum dibuka']) {
-    const t = tab(nama)
+  // Kunci hasilnya tetap 'Final'; di panel mahasiswa tabnya bertuliskan "Sudah lengkap" sejak 9 Nov 2026.
+  for (const [nama, label] of [['Semua', 'Semua'], ['Final', 'Sudah lengkap'], ['Berjalan', 'Berjalan'], ['Belum dibuka', 'Belum dibuka']]) {
+    const t = tab(label)
     await klik(t)
     const tautan = [...el.querySelectorAll('a[href="/mahasiswa/transkrip"]')].map((a) => a.textContent)
     hasil.tabSesuai[nama] = {
@@ -426,12 +427,14 @@ export async function ujiRiwayat(rute) {
   const baris = () => [...kartu.querySelectorAll('ul > li')]
 
   const hasil = { jumlah: {} }
-  for (const nama of ['Semua', 'Final', 'Sementara']) hasil.jumlah[nama] = angka(tab(nama))
+  // Kunci hasilnya tetap 'Final'; tabnya bertuliskan "Sudah lengkap" sejak 9 Nov 2026.
+  const LABEL_TAB = { Semua: 'Semua', Final: 'Sudah lengkap', Sementara: 'Sementara' }
+  for (const nama of Object.keys(LABEL_TAB)) hasil.jumlah[nama] = angka(tab(LABEL_TAB[nama]))
 
   await klik(tab('Semua'))
   hasil.barisSemua = baris().length
 
-  await klik(tab('Final'))
+  await klik(tab('Sudah lengkap'))
   hasil.barisFinal = baris().length
   hasil.finalSelaluDisetujui = baris().every((li) => /Ditetapkan oleh/.test(li.textContent))
 
@@ -1326,7 +1329,7 @@ export async function teksInggris(rute, bahasa = 'en') {
    Sekalian dijaga: grafik tidak ikut tercetak. Transkrip yang dicetak adalah
    dokumen resmi berisi angka, bukan laporan analitik.
    -------------------------------------------------------------------------- */
-const KATA_STATUS = ['Final', 'Sementara', 'Belum dinilai', 'Menunggu nilai', 'Belum dibuka']
+const KATA_STATUS = ['Final', 'Sudah lengkap', 'Sementara', 'Belum dinilai', 'Menunggu nilai', 'Belum dibuka']
 
 /* Kelas yang menandakan sebuah unsur memakai warna status. */
 const BERWARNA = /--good|--warning|--critical|--serious/
@@ -1819,7 +1822,7 @@ export async function ujiStatusPolos(rute) {
     tanpaIkon: penanda.every((n) => !n.querySelector('svg')),
     /* Kata statusnya tetap terbaca — menghapus warna tidak boleh ikut
        menghapus keterangannya. */
-    tetapTerbaca: /Final/.test(el.textContent) || /Sementara/.test(el.textContent),
+    tetapTerbaca: /Final|Sudah lengkap/.test(el.textContent) || /Sementara/.test(el.textContent),
   }
 
   lepas()
@@ -1976,13 +1979,14 @@ export async function ujiAlurSertifikat() {
     hasil.awalTanpaLembar = !document.querySelector('.lembar-sertifikat')
     await klik(tombol(el, 'Minta akses cetak'))
     hasil.mintaTercatat = milik()?.status === 'menunggu_admin'
+    // Selama ditinjau kartu izin hanya memuat statusnya (permintaan pemilik produk, 9 Nov 2026): tanpa rincian,
+    // langkah, catatan, atau tombol apa pun.
+    const izin = el.querySelector('section[aria-labelledby="judul-izin"]')
     hasil.menungguDitinjau =
-      /Sedang ditinjau/.test(el.textContent) &&
-      /Diajukan/.test(el.textContent) &&
-      /Langkah berikutnya/.test(el.textContent) &&
-      !tombol(el, 'Cetak / Simpan PDF')
-    const langkahAktif = el.querySelector('ol[aria-label="Langkah akses cetak"] [aria-current="step"]')
-    hasil.langkahPertamaAktif = /Menunggu Admin/.test(langkahAktif?.textContent ?? '')
+      /Sedang ditinjau/.test(izin?.textContent ?? '') &&
+      !/Diajukan|Langkah berikutnya|Setelah akses disetujui/.test(izin?.textContent ?? '') &&
+      !izin?.querySelector('button, ol, dl')
+    hasil.tanpaLangkah = !el.querySelector('ol[aria-label="Langkah akses cetak"]')
     hasil.masihTanpaLembar = !document.querySelector('.lembar-sertifikat')
     lepas()
     try {
@@ -2089,8 +2093,11 @@ export async function ujiAlurSertifikat() {
     // 6. Langkahnya selesai, lalu uji cetak selagi aksesnya terbuka.
     sesi(MAHASISWA)
     ;({ el, lepas } = await pasang('/mahasiswa/sertifikat'))
-    const langkah = el.querySelector('ol[aria-label="Langkah akses cetak"]')
-    hasil.langkahSelesai = langkah?.querySelectorAll('li').length === 3 && !langkah.querySelector('[aria-current]')
+    const izinSiap = el.querySelector('section[aria-labelledby="judul-izin"]')
+    hasil.langkahSelesai =
+      /Siap dicetak/.test(izinSiap?.textContent ?? '') &&
+      Boolean(tombol(el, 'Cetak / Simpan PDF')) &&
+      !izinSiap.querySelector('ol, dl')
     // Lembar baru dipasang sesudah tombol Cetak ditekan dan tercatat, jadi Ctrl+P biasa tidak mencetak sertifikat.
     hasil.lembarBelumDipasang = !document.querySelector('.lembar-sertifikat')
     lepas()
