@@ -35,7 +35,8 @@ w.localStorage.setItem('sk5c.session', JSON.stringify({ role:'student', studentI
     console.log((ok ? 'LULUS ' : 'GAGAL ') + nama)
   }
   // Larangan keras nomor 1: aspek terkunci tidak boleh punya angka nol di barisnya
-  const barisTerkunci = teks.match(/B\.3\. Empathic Exchange[^|]{0,120}/)
+  // & di HTML hasil render tertulis &amp;, karena tag dibuang tanpa mengurai entitas.
+  const barisTerkunci = teks.match(/B\.3\. Communication (?:&amp;|&) Interpersonal Skills[^|]{0,120}/)
   console.log('\nBaris aspek terkunci B.3:', barisTerkunci ? barisTerkunci[0].trim().slice(0, 110) : '(tidak ditemukan)')
   console.log(gagal ? '\n' + gagal + ' pemeriksaan gagal' : '\nSemua pemeriksaan isi lulus')
   process.exit(0)

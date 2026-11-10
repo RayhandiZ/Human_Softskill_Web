@@ -140,6 +140,42 @@ semester 2 + C.2 di semester 3); satu aspek selalu milik tepat satu semester.
 
 Distribusi aspek per semester: **3 / 4 / 3**.
 
+### Nama aspek dan cluster
+
+Nama sepuluh aspek mengikuti revisi kampus November 2026. Nama area tidak berubah. Nama cluster disusun ulang dari
+nama aspek baru dengan pola yang sama seperti sebelumnya; CL2 dan CL3 berisi satu aspek, jadi namanya sama dengan
+aspeknya.
+
+| Kode | Nama lama | Nama sekarang |
+| --- | --- | --- |
+| A.1 | UMN Character & Ethical Foundation | Integrity & Ethical Responsibility |
+| A.2 | Emotional Self-Regulation | Emotional Resilience & Self-Management |
+| A.3 | Self-Direction & Discipline | Self-Leadership & Professional Discipline |
+| A.4 | Cognitive Judgment | Critical Thinking & Decision-Making |
+| B.1 | Collaborative Execution | Teamwork & Collaboration |
+| B.2 | Trust & Respect Building | Trust, Respect & Inclusion |
+| B.3 | Empathic Exchange | Communication & Interpersonal Skills |
+| B.4 | Conflict Navigation | Conflict Management & Negotiation |
+| C.1 | Influential Leadership | Leadership & Influence |
+| C.2 | Organizational Citizenship | Professional Citizenship & Social Responsibility |
+| CL1 | Ethical Foundation & Self-Discipline | Integrity & Professional Discipline |
+| CL2 | Emotional Self-Regulation | Emotional Resilience & Self-Management |
+| CL3 | Cognitive Judgment & Analysis | Critical Thinking & Decision-Making |
+| CL4 | Collaborative Execution & Trust | Teamwork & Trust |
+| CL5 | Empathic Communication & Conflict Navigation | Communication & Conflict Management |
+| CL6 | Influential Leadership & Citizenship | Leadership & Professional Citizenship |
+
+- Namanya ada di `ASPEK_DASAR` dan `CLUSTER` (`curriculum.js`), padanannya di `teks.js` (Isi kurikulum).
+- Ringkasan area B dan C di halaman masuk (`AREA[].ringkas`) ikut berubah: "empati" menjadi "komunikasi", "penanganan
+  konflik" menjadi "resolusi konflik", dan "kewargaan organisasi" menjadi "tanggung jawab sosial". Tiap ringkasan
+  dijaga tetap **satu baris** di kolom teksnya (586px, huruf 15px, mulai 1280px). Di laptop 1366×768 (ruang halaman
+  sekitar 1366×657) halaman masuk hanya menyisakan 9px, jadi satu baris tambahan sudah membuatnya harus digulir.
+- Nama di kode hanya bawaan. Aspek yang pernah diubah dari layar punya baris di tabel `Aspek` berisi salinan namanya,
+  dan salinan itu yang tampil (lihat Mengelola aspek CPMK). Pada 10 Nov 2026 tabel itu kosong di basis data dev. Di
+  basis data yang sudah punya barisnya, ganti namanya lewat Edit aspek.
+- Transkrip, termasuk milik angkatan yang sudah disahkan, menyimpan ID aspek, bukan namanya, jadi ikut tampil dengan
+  nama baru. Rincian Log Aktivitas yang dicatat sebelum revisi tetap memuat nama saat itu.
+
 ## Kurikulum dari basis data
 
 Sejak `npm run db:seed`, daftar komponen (tabel `Komponen`), indikator perilaku (tabel `Indikator`),

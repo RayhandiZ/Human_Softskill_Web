@@ -54,10 +54,10 @@ export const EN = {
   'Memverifikasi…': 'Verifying…',
   'Pengembangan diri: etika, pengendalian emosi, kemandirian, dan penalaran.':
     'Personal growth: ethics, emotional regulation, independence, and reasoning.',
-  'Pengembangan relasi: kolaborasi, kepercayaan, empati, dan penanganan konflik.':
-    'Relational growth: collaboration, trust, empathy, and conflict handling.',
-  'Pengembangan peran profesional: kepemimpinan dan kewargaan organisasi.':
-    'Professional growth: leadership and organisational citizenship.',
+  'Pengembangan relasi: kolaborasi, kepercayaan, komunikasi, dan resolusi konflik.':
+    'Relational growth: collaboration, trust, communication, and conflict resolution.',
+  'Pengembangan peran profesional: kepemimpinan dan tanggung jawab sosial.':
+    'Professional growth: leadership and social responsibility.',
   'Apa sih VIBE itu?': 'What is VIBE?',
   'VIBE (Values, Intelligence, Behavior & Excellence) merupakan sistem penilaian yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:':
     'VIBE (Values, Intelligence, Behavior & Excellence) is an assessment system designed to evaluate and develop the interpersonal abilities, technical skills, and other competencies of Universitas Multimedia Nusantara students. It covers the three assessment areas below:',
@@ -2212,16 +2212,16 @@ export const EN = {
   // Isi bawaan curriculum.js: nama aspek, deskripsi CPMK, program, nama tugas, dan bukti indikator. Yang diketik dari layar
   // ada di kolom *En basis data (kamusData.js). Nama yang sudah berbahasa Inggris tetap punya entri supaya t() tidak
   // memintakan mesin penerjemah. Lihat README.md › Kamus dan terjemahan › Isi kurikulum.
-  'UMN Character & Ethical Foundation': 'UMN Character & Ethical Foundation',
-  'Emotional Self-Regulation': 'Emotional Self-Regulation',
-  'Self-Direction & Discipline': 'Self-Direction & Discipline',
-  'Cognitive Judgment': 'Cognitive Judgment',
-  'Collaborative Execution': 'Collaborative Execution',
-  'Trust & Respect Building': 'Trust & Respect Building',
-  'Empathic Exchange': 'Empathic Exchange',
-  'Conflict Navigation': 'Conflict Navigation',
-  'Influential Leadership': 'Influential Leadership',
-  'Organizational Citizenship': 'Organizational Citizenship',
+  'Integrity & Ethical Responsibility': 'Integrity & Ethical Responsibility',
+  'Emotional Resilience & Self-Management': 'Emotional Resilience & Self-Management',
+  'Self-Leadership & Professional Discipline': 'Self-Leadership & Professional Discipline',
+  'Critical Thinking & Decision-Making': 'Critical Thinking & Decision-Making',
+  'Teamwork & Collaboration': 'Teamwork & Collaboration',
+  'Trust, Respect & Inclusion': 'Trust, Respect & Inclusion',
+  'Communication & Interpersonal Skills': 'Communication & Interpersonal Skills',
+  'Conflict Management & Negotiation': 'Conflict Management & Negotiation',
+  'Leadership & Influence': 'Leadership & Influence',
+  'Professional Citizenship & Social Responsibility': 'Professional Citizenship & Social Responsibility',
   'Menerapkan prinsip integritas, kejujuran, tanggung jawab, dan etika profesional dalam pengambilan keputusan serta pelaksanaan tanggung jawab akademik dan profesional.':
     'Applies the principles of integrity, honesty, responsibility, and professional ethics in decision-making and in carrying out academic and professional duties.',
   'Mengelola emosi, stres, dan tekanan secara adaptif serta menunjukkan ketangguhan dan pengendalian diri dalam menghadapi perubahan dan tantangan.':

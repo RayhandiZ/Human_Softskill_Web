@@ -52,14 +52,14 @@ export const AREA = [
     nama: 'Interpersonal Development',
     fase: 'F2',
     warna: 'var(--c2)',
-    ringkas: 'Pengembangan relasi: kolaborasi, kepercayaan, empati, dan penanganan konflik.',
+    ringkas: 'Pengembangan relasi: kolaborasi, kepercayaan, komunikasi, dan resolusi konflik.',
   },
   {
     id: 'C',
     nama: 'Professional Career Development',
     fase: 'F2',
     warna: 'var(--c3)',
-    ringkas: 'Pengembangan peran profesional: kepemimpinan dan kewargaan organisasi.',
+    ringkas: 'Pengembangan peran profesional: kepemimpinan dan tanggung jawab sosial.',
   },
 ]
 
@@ -68,12 +68,12 @@ export const AREA = [
 /* `aspek` = aspek aktif di cluster itu. Isi di bawah adalah bawaan; pasangCluster() mengisinya ulang dari
    aspek.cluster setiap kali susunan aspek berubah (aspek ditambah, dipindah cluster, atau diarsipkan). */
 export const CLUSTER = [
-  { id: 'CL1', nama: 'Ethical Foundation & Self-Discipline', area: 'A', aspek: ['A1', 'A3'] },
-  { id: 'CL2', nama: 'Emotional Self-Regulation', area: 'A', aspek: ['A2'] },
-  { id: 'CL3', nama: 'Cognitive Judgment & Analysis', area: 'A', aspek: ['A4'] },
-  { id: 'CL4', nama: 'Collaborative Execution & Trust', area: 'B', aspek: ['B1', 'B2'] },
-  { id: 'CL5', nama: 'Empathic Communication & Conflict Navigation', area: 'B', aspek: ['B3', 'B4'] },
-  { id: 'CL6', nama: 'Influential Leadership & Citizenship', area: 'C', aspek: ['C1', 'C2'] },
+  { id: 'CL1', nama: 'Integrity & Professional Discipline', area: 'A', aspek: ['A1', 'A3'] },
+  { id: 'CL2', nama: 'Emotional Resilience & Self-Management', area: 'A', aspek: ['A2'] },
+  { id: 'CL3', nama: 'Critical Thinking & Decision-Making', area: 'A', aspek: ['A4'] },
+  { id: 'CL4', nama: 'Teamwork & Trust', area: 'B', aspek: ['B1', 'B2'] },
+  { id: 'CL5', nama: 'Communication & Conflict Management', area: 'B', aspek: ['B3', 'B4'] },
+  { id: 'CL6', nama: 'Leadership & Professional Citizenship', area: 'C', aspek: ['C1', 'C2'] },
 ]
 
 /* ------------------------------- aspek CPMK ------------------------------- */
@@ -84,7 +84,7 @@ const ASPEK_DASAR = [
   {
     id: 'A1',
     kode: 'A.1.',
-    nama: 'UMN Character & Ethical Foundation',
+    nama: 'Integrity & Ethical Responsibility',
     fase: 'F1',
     area: 'A',
     cluster: 'CL1',
@@ -98,7 +98,7 @@ const ASPEK_DASAR = [
   {
     id: 'A2',
     kode: 'A.2.',
-    nama: 'Emotional Self-Regulation',
+    nama: 'Emotional Resilience & Self-Management',
     fase: 'F1',
     area: 'A',
     cluster: 'CL2',
@@ -112,7 +112,7 @@ const ASPEK_DASAR = [
   {
     id: 'A3',
     kode: 'A.3.',
-    nama: 'Self-Direction & Discipline',
+    nama: 'Self-Leadership & Professional Discipline',
     fase: 'F1',
     area: 'A',
     cluster: 'CL1',
@@ -126,7 +126,7 @@ const ASPEK_DASAR = [
   {
     id: 'A4',
     kode: 'A.4.',
-    nama: 'Cognitive Judgment',
+    nama: 'Critical Thinking & Decision-Making',
     fase: 'F1',
     area: 'A',
     cluster: 'CL3',
@@ -140,7 +140,7 @@ const ASPEK_DASAR = [
   {
     id: 'B1',
     kode: 'B.1.',
-    nama: 'Collaborative Execution',
+    nama: 'Teamwork & Collaboration',
     fase: 'F2',
     area: 'B',
     cluster: 'CL4',
@@ -154,7 +154,7 @@ const ASPEK_DASAR = [
   {
     id: 'B2',
     kode: 'B.2.',
-    nama: 'Trust & Respect Building',
+    nama: 'Trust, Respect & Inclusion',
     fase: 'F2',
     area: 'B',
     cluster: 'CL4',
@@ -168,7 +168,7 @@ const ASPEK_DASAR = [
   {
     id: 'B3',
     kode: 'B.3.',
-    nama: 'Empathic Exchange',
+    nama: 'Communication & Interpersonal Skills',
     fase: 'F2',
     area: 'B',
     cluster: 'CL5',
@@ -182,7 +182,7 @@ const ASPEK_DASAR = [
   {
     id: 'B4',
     kode: 'B.4.',
-    nama: 'Conflict Navigation',
+    nama: 'Conflict Management & Negotiation',
     fase: 'F2',
     area: 'B',
     cluster: 'CL5',
@@ -196,7 +196,7 @@ const ASPEK_DASAR = [
   {
     id: 'C1',
     kode: 'C.1.',
-    nama: 'Influential Leadership',
+    nama: 'Leadership & Influence',
     fase: 'F2',
     area: 'C',
     cluster: 'CL6',
@@ -210,7 +210,7 @@ const ASPEK_DASAR = [
   {
     id: 'C2',
     kode: 'C.2.',
-    nama: 'Organizational Citizenship',
+    nama: 'Professional Citizenship & Social Responsibility',
     fase: 'F2',
     area: 'C',
     cluster: 'CL6',
