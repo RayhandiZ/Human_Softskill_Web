@@ -1,4 +1,6 @@
 import { Plus_Jakarta_Sans } from 'next/font/google'
+/* Dimuat sebelum index.css supaya warna VIBE untuk pemilih bahasa (index.css › pemilih bahasa) yang menang. */
+import '@zakisheriff/liquid-glass/styles.css'
 import '../src/index.css'
 import { SKRIP_TEMA } from '../src/lib/theme'
 
@@ -24,7 +26,7 @@ async function bacaMaster() {
 }
 
 export const metadata = {
-  title: 'Dashboard Monitoring VIBE',
+  title: 'VIBE',
   description:
     'Pemantauan capaian VIBE (Values, Intelligence, Behavior & Excellence) mahasiswa Universitas Multimedia Nusantara berbasis CPMK terintegrasi.',
 }

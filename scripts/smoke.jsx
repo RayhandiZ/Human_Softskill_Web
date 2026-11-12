@@ -3031,11 +3031,13 @@ export async function ujiLayanan(rute = '/mahasiswa') {
 }
 
 /* --------------------------------------------------------------------------
-   Menyeret pil pemilih bahasa.
+   Menyeret lensa pemilih bahasa (GlassSegmented dari @zakisheriff/liquid-glass).
 
-   Yang diuji di sini perilakunya, bukan rupanya: pil boleh ditahan lalu
+   Yang diuji di sini perilakunya, bukan rupanya: lensa boleh ditahan lalu
    diseret, seretan yang tidak sampai separuh jalan kembali ke tempat semula,
-   dan seretan tidak boleh terhitung dua kali oleh klik yang menyusul.
+   seretan tidak boleh terhitung dua kali oleh klik yang menyusul, dan yang
+   ditambahkan TombolBahasa di atas pustaka (aria-pressed, nama bahasa,
+   "bahasa yang sama tetap diingat") tetap ada. Rupa kacanya diperiksa di peramban.
    -------------------------------------------------------------------------- */
 export async function ujiSeretBahasa() {
   try {
@@ -3048,65 +3050,84 @@ export async function ujiSeretBahasa() {
   const hasil = {}
 
   const grup = el.querySelector('[role="group"][aria-label]')
-  const pil = grup?.querySelector('[aria-hidden="true"]')
+  const lintasan = grup?.querySelector(':scope > .lg-track')
+  const lensa = lintasan?.querySelector(':scope > .lg-track__lens')
+  const tombol = () => [...lintasan.querySelectorAll(':scope > [data-lg-item]')]
   const inggris = () => /Final score/.test(el.textContent)
 
-  /* jsdom tidak menata letak, jadi getBoundingClientRect-nya selalu nol.
-     Kendalinya dipalsukan berada di x = 100 selebar 74 px, supaya perhitungan
-     "jari dilepas di segmen mana" benar-benar diuji, bukan dilewati. */
-  grup.getBoundingClientRect = () => ({
-    left: 100, right: 174, top: 0, bottom: 34, width: 74, height: 34, x: 100, y: 0,
+  /* jsdom tidak menata letak, jadi semua ukurannya nol. Lintasannya dipalsukan berada di x = 100 selebar 74 px (dua
+     segmen 37 px), supaya perhitungan "jari dilepas di segmen mana" milik pustaka benar-benar dijalankan. */
+  for (const [nama, nilai] of [['clientWidth', 74], ['offsetWidth', 74], ['clientHeight', 32], ['offsetHeight', 32]]) {
+    Object.defineProperty(lintasan, nama, { configurable: true, get: () => nilai })
+  }
+  lintasan.getBoundingClientRect = () => ({
+    left: 100, right: 174, top: 0, bottom: 32, width: 74, height: 32, x: 100, y: 0,
   })
   const KIRI = 118 // di dalam segmen ID
   const KANAN = 155 // di dalam segmen EN
 
-  hasil.adaPil = Boolean(pil)
-  hasil.pilBerkaca = Boolean(pil && pil.className.split(' ').includes('pil-kaca'))
-  hasil.mulaiDiKiri = Boolean(pil && pil.style.transform.includes('translateX(0px)'))
-
-  /* Satu ketukan tetikus utuh: turun dan naik di titik yang sama. */
-  const ketuk = async (x) => {
-    await tunjuk(grup, 'pointerdown', x)
-    await tunjuk(grup, 'pointerup', x)
+  /* Pustaka hanya melayani penunjuk utama, dan menyelesaikan gesturnya di window. Jeda pendek sesudahnya memberi
+     giliran pada setTimeout di TombolBahasa yang mencatat "bahasa yang sama ditekan lagi". */
+  const tunjukUtama = async (node, jenis, clientX) => {
+    await act(async () => {
+      const ev = new window.MouseEvent(jenis, { bubbles: true, cancelable: true, clientX, clientY: 16, button: 0 })
+      ev.pointerId = 1
+      ev.isPrimary = true
+      node?.dispatchEvent(ev)
+      await new Promise((r) => setTimeout(r, 5))
+    })
+  }
+  /* Satu ketukan utuh di sebuah tombol: turun dan naik di titik yang sama. */
+  const ketuk = async (i, x) => {
+    await tunjukUtama(tombol()[i], 'pointerdown', x)
+    await tunjukUtama(tombol()[i], 'pointerup', x)
   }
 
-  /* ---- 1. KLIK BIASA, lalu klik susulan dari peramban. ---- */
-  await ketuk(KANAN)
-  hasil.klikBiasaMengganti = inggris()
-  await klik(grup, 1)
+  hasil.adaLensa = Boolean(lensa)
+  hasil.lensaKaca = Boolean(lensa && lensa.classList.contains('lg-glass'))
+  hasil.mulaiDiKiri = tombol()[0]?.getAttribute('aria-pressed') === 'true' && tombol()[1]?.getAttribute('aria-pressed') === 'false'
+  hasil.tanpaPeranTab = !grup.querySelector('[role="tablist"], [role="tab"], [aria-selected]')
+  hasil.namaBahasa = tombol()[0]?.getAttribute('aria-label') === 'Bahasa Indonesia' && tombol()[1]?.getAttribute('aria-label') === 'English'
+
+  /* ---- 1. KETUKAN BIASA, lalu klik susulan dari peramban. ---- */
+  await ketuk(1, KANAN)
+  hasil.klikBiasaMengganti = inggris() && tombol()[1].getAttribute('aria-pressed') === 'true'
+  await klik(tombol()[1], 1)
   hasil.klikSusulanDiabaikan = inggris()
 
-  /* ---- 2. Klik biasa kembali ke segmen kiri. ---- */
-  await ketuk(KIRI)
+  /* ---- 2. Ketukan biasa kembali ke segmen kiri. ---- */
+  await ketuk(0, KIRI)
   hasil.klikBiasaBisaKembali = !inggris()
 
-  /* ---- 3. PAPAN KETIK. Klik ber-detail 0 datang dari Enter atau Spasi, dan
-     harus tetap dilayani onClick tombolnya. Diuji di sini, setelah ketukan
-     biasa — bukan setelah seretan, karena seretan memang sengaja menelan satu
-     klik susulan dan itu perilaku yang benar. ---- */
-  await klik(grup.querySelectorAll('button')[1], 0)
+  /* ---- 3. Bahasa yang sedang tampil ditekan lagi: pustaka tidak melapor, tetapi pilihannya tetap dicatat. ---- */
+  localStorage.removeItem('sk5c.bahasa.pilihan')
+  await ketuk(0, KIRI)
+  hasil.tekanSamaDiingat = localStorage.getItem('sk5c.bahasa.pilihan') === 'id' && !inggris()
+
+  /* ---- 4. PAPAN KETIK. Klik ber-detail 0 datang dari Enter atau Spasi; panah kiri dan kanan memindahkan pilihan. ---- */
+  await klik(tombol()[1], 0)
   hasil.papanKetikJalan = inggris()
+  await act(async () => {
+    tombol()[1].dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }))
+  })
+  hasil.panahJalan = !inggris() && tombol()[0].getAttribute('aria-pressed') === 'true'
 
-  await ketuk(KIRI)
-
-  /* ---- 4. SERET penuh ke kanan lalu lepas. ---- */
-  await tunjuk(grup, 'pointerdown', KIRI)
-  await tunjuk(grup, 'pointermove', KIRI + 40)
-  hasil.pilIkutJari = Boolean(pil && !pil.style.transform.includes('translateX(0px)'))
-  hasil.transisiMatiSaatDiseret = Boolean(pil && pil.style.transition.includes('.12s'))
-  await tunjuk(grup, 'pointerup', KIRI + 40)
+  /* ---- 5. SERET penuh ke kanan lalu lepas. ---- */
+  await tunjukUtama(tombol()[0], 'pointerdown', KIRI)
+  hasil.lensaTerangkat = lintasan.hasAttribute('data-lifted')
+  await tunjukUtama(tombol()[0], 'pointermove', KIRI + 40)
+  hasil.belumBergantiSaatDiseret = !inggris()
+  await tunjukUtama(tombol()[0], 'pointerup', KIRI + 40)
   hasil.seretMengganti = inggris()
-  hasil.transisiPulih = Boolean(pil && pil.style.transition.includes('.42s'))
 
-  /* ---- 5. Klik susulan sesudah SERETAN mendarat di tombol asal, dan harus
-     diabaikan walau detail-nya 0 (perilaku peramban ponsel). ---- */
-  await klik(grup.querySelector('button'), 0)
-  hasil.seretTakDibalikSentuhan = inggris()
+  /* ---- 6. Klik susulan sesudah seretan (detail 1, dari peramban) tidak boleh membalikkannya. ---- */
+  await klik(tombol()[0], 1)
+  hasil.seretTakDibalikKlik = inggris()
 
-  /* ---- 6. Seret pendek dari EN: belum melewati separuh, tetap di EN. ---- */
-  await tunjuk(grup, 'pointerdown', KANAN)
-  await tunjuk(grup, 'pointermove', KANAN - 10)
-  await tunjuk(grup, 'pointerup', KANAN - 10)
+  /* ---- 7. Seret pendek dari EN: belum melewati separuh, tetap di EN. ---- */
+  await tunjukUtama(tombol()[1], 'pointerdown', KANAN)
+  await tunjukUtama(tombol()[1], 'pointermove', KANAN - 10)
+  await tunjukUtama(tombol()[1], 'pointerup', KANAN - 10)
   hasil.seretPendekKembali = inggris()
 
   lepas()

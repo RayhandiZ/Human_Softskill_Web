@@ -209,6 +209,10 @@ const DARI_DATA = [
   'Mengubah matriks hanya tersedia saat terhubung ke basis data.',
   'Ubah keterangan wewenang', 'Tambah kebijakan wewenang', 'Ubah kebijakan wewenang', 'Arsipkan kebijakan wewenang',
   'Pulihkan kebijakan wewenang', 'Kode baris',
+  /* Rincian HAPUS_AKUN: id akun dan id data, lalu data mahasiswa yang ikut terhapus (LABEL_RINCIAN di admin/Log.jsx,
+     lewat labelKunci). */
+  'ID akun', 'ID data dosen', 'ID data mahasiswa', 'Data yang ikut terhapus', 'Nilai', 'Status final aspek', 'Pengajuan koreksi',
+  'Permintaan sertifikat', 'Pengumpulan',
 ]
 /* Sama, tetapi dari src/lib/rules.js: catatan kaki transkrip sementara, dan labelT/alasanT/ringkasT syarat
    sertifikat. */

@@ -524,64 +524,89 @@ body {
   }
 }
 
-/* ------------------------ pil kaca pemilih bahasa ------------------------- */
-.pil-kaca {
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.35)),
-    color-mix(in srgb, var(--brand-soft) 85%, transparent);
-  -webkit-backdrop-filter: blur(14px) saturate(190%);
-  backdrop-filter: blur(14px) saturate(190%);
-  border: 1px solid rgb(255 255 255 / 0.72);
-  box-shadow:
-    0 6px 14px -6px rgba(16, 20, 50, 0.4),
-    inset 0 1px 0 rgb(255 255 255 / 0.92),
-    inset 0 -1px 0 rgb(255 255 255 / 0.3);
+/* ------------------------ pemilih bahasa (liquid glass) ------------------------- */
+/* Bentuk dan gerak lensanya dari @zakisheriff/liquid-glass (GlassSegmented). Pustaka itu memilih terang atau gelap dari
+   data-theme atau setelan sistem, sedangkan aplikasi ini memakai kelas .dark. Karena itu semua warna yang dipakai
+   lintasannya dipatok di sini dari token VIBE; tanpa ini tema gelap sistem mewarnai pemilih di halaman yang terang. */
+.tombol-bahasa {
+  display: inline-flex;
+  flex: none;
+  border-radius: 999px;
+  --lg-fg: var(--text-muted);
+  /* Warna pilihan aktif. Diteruskan ke --lg-track-active di lintasannya, karena pustaka memasangnya di sana. */
+  --bahasa-aktif: var(--brand-ink);
+  --lg-navigation-fill: color-mix(in srgb, var(--surface) 72%, transparent);
+  --lg-segment-selection: var(--brand-soft);
+  --lg-edge: var(--border);
+  --lg-shadow: 0 1px 2px rgb(16 20 50 / 0.06);
+  --lg-blur: 6px;
+  /* saturate() di backdrop-filter membuat tulisan di atasnya kehilangan penghalusan sub-piksel. */
+  --lg-saturate: 1;
+  --lg-brightness: 1;
+  --lg-rim-opacity: 1;
+  --lg-glow: rgb(255 255 255 / 0.55);
+  --lg-selection-lens-fill: rgb(255 255 255 / 0.14);
+  --lg-selection-lens-edge: rgb(45 48 53 / 0.28);
+  --lg-selection-lens-brightness: 1;
+  --lg-ring: var(--brand);
 }
 
-.dark .pil-kaca {
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.03)),
-    color-mix(in srgb, var(--brand-soft) 88%, transparent);
-  border-color: rgb(255 255 255 / 0.16);
-  box-shadow:
-    0 6px 16px -6px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgb(255 255 255 / 0.2);
+/* Ukuran lama dipertahankan (74 x 32 px) supaya bilah atas di HP tidak bergeser. */
+.tombol-bahasa .lg-track.lg-track--segmented {
+  --lg-item-w: 34px;
+  --lg-item-h: 26px;
+  --lg-pad: 3px;
+  --lg-track-selection: var(--lg-segment-selection);
+  --lg-track-active: var(--bahasa-aktif);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
-.pil-kaca-putih {
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 0.98), rgb(255 255 255 / 0.82)),
-    rgb(255 255 255 / 0.9);
-  -webkit-backdrop-filter: blur(14px) saturate(190%);
-  backdrop-filter: blur(14px) saturate(190%);
-  border: 1px solid rgb(255 255 255 / 0.9);
-  box-shadow:
-    0 6px 14px -6px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgb(255 255 255 / 0.95);
+.tombol-bahasa .lg-track__item {
+  padding: 0;
 }
 
-/* Tanpa backdrop-filter: pil diisi penuh. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .pil-kaca {
-    background: var(--brand-soft);
-  }
-  .pil-kaca-putih {
-    background: #ffffff;
-  }
+/* Pustaka mewarnai pilihan aktif lewat aria-selected, yang di sini diganti aria-pressed (TombolBahasa.jsx). */
+.tombol-bahasa .lg-track:not([data-previewing]) > .lg-track__item[aria-pressed='true'] {
+  color: var(--lg-track-active);
 }
 
-/* Efek tembus pandang dimatikan sistem: blur dilepas. */
+.dark .tombol-bahasa {
+  --lg-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+  --lg-rim-opacity: 0.62;
+  --lg-glow: rgb(255 255 255 / 0.16);
+  --lg-selection-lens-fill: rgb(255 255 255 / 0.09);
+  --lg-selection-lens-edge: rgb(255 255 255 / 0.25);
+  --lg-selection-lens-brightness: 1.06;
+}
+
+/* Di atas biru brand (bilah mahasiswa, halaman masuk): pilihan aktif kaca putih tipis dengan tulisan putih. Tulisan
+   navy tidak dipakai karena saat lensa terangkat alas putihnya hilang dan tulisan itu tenggelam di latar navy. */
+.tombol-bahasa--onbrand,
+.dark .tombol-bahasa--onbrand {
+  --lg-fg: rgb(255 255 255 / 0.78);
+  --bahasa-aktif: #ffffff;
+  --lg-navigation-fill: rgb(255 255 255 / 0.1);
+  --lg-segment-selection: rgb(255 255 255 / 0.2);
+  --lg-edge: rgb(255 255 255 / 0.16);
+  --lg-shadow: none;
+  --lg-rim-opacity: 0.62;
+  --lg-glow: rgb(255 255 255 / 0.16);
+  --lg-selection-lens-fill: rgb(255 255 255 / 0.09);
+  --lg-selection-lens-edge: rgb(255 255 255 / 0.3);
+  --lg-selection-lens-brightness: 1.06;
+  --lg-ring: #ffffff;
+}
+
+/* Efek tembus pandang dimatikan sistem: lintasan dibuat padat. */
 @media (prefers-reduced-transparency: reduce) {
-  .pil-kaca,
-  .pil-kaca-putih {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  .pil-kaca {
-    background: var(--brand-soft);
-  }
-  .pil-kaca-putih {
-    background: #ffffff;
+  .tombol-bahasa--terang {
+    --lg-navigation-fill: var(--surface);
+    --lg-fill: var(--surface);
+    --lg-blur: 0px;
   }
 }
 
@@ -1505,16 +1530,6 @@ body {
     pointer-events: none;
     background: linear-gradient(to bottom, var(--kaca-tirai) 10px, transparent 40px);
   }
-  /* Mulai layar laptop lajurnya disambung ke bawah menu samping: kalau berhenti di tepi kolom isi, ujungnya terbaca sebagai garis
-     tegak di atas cahaya latar. */
-  @media (min-width: 1024px) {
-    :is(.panel-dosen, .panel-admin) .kepala-kerja::before {
-      left: -272px;
-    }
-    .panel-mahasiswa .bilah-kaca::before {
-      left: -264px;
-    }
-  }
   :is(.panel-dosen, .panel-admin) .bilah-kerja {
     --text-secondary: var(--kaca-teks-2);
     --text-muted: var(--kaca-teks-2);
@@ -1542,18 +1557,6 @@ body {
   }
   .panel-dosen .bilah-kerja button.grid:hover {
     background: var(--kaca-isi-lapis);
-  }
-  /* Pil pemilih bahasa sudah duduk di atas kaca kapsul; blur keduanya tidak terlihat dan hanya menambah kerja GPU. */
-  :is(.panel-dosen .bilah-kerja, .panel-admin .bilah-kerja, .panel-mahasiswa .bilah-utilitas) .pil-kaca {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  /* Tema gelap: dasar pil pemilih bahasa dibuat padat dan kilaunya ditipiskan. Di atas kaca, tulisan "ID" turun ke 4,42:1
-     saat baris terang lewat di belakangnya. */
-  .dark :is(.panel-dosen .bilah-kerja, .panel-admin .bilah-kerja, .panel-mahasiswa .bilah-utilitas) .pil-kaca {
-    background:
-      linear-gradient(145deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.02)),
-      var(--brand-soft);
   }
 
   /* Menu aktif: pil kaca kebiruan. Ikon dan garis kiri (::after) tetap, jadi posisi halaman tetap jelas. Latarnya kartu
@@ -1923,7 +1926,7 @@ body {
     --tren-semester: #0a3a75;
     --tren-gabungan: #00726a;
   }
-  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) :is(.bilah-kaca, .kaca, .layanan-panel, .pil-kaca) {
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) :is(.bilah-kaca, .kaca, .layanan-panel) {
     background: var(--surface);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -1932,9 +1935,17 @@ body {
   .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .bilah-kaca {
     border-bottom: 1px solid var(--border-strong);
   }
-  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .pil-kaca {
-    background: var(--brand-soft);
-    border: 2px solid var(--brand-ink);
+  /* Mode kontras: lintasan pemilih bahasa padat, pilihan aktif diberi garis tepi tegas. */
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .tombol-bahasa {
+    --lg-fg: var(--text);
+    --bahasa-aktif: var(--brand-ink);
+    --lg-navigation-fill: var(--surface);
+    --lg-segment-selection: var(--brand-soft);
+    --lg-edge: var(--border-strong);
+    --lg-blur: 0px;
+  }
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .tombol-bahasa .lg-track__select {
+    box-shadow: inset 0 0 0 2px var(--brand-ink);
   }
   .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang) .teks-vibe {
     background-image: none;

@@ -3,7 +3,7 @@ const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http:
 const w = dom.window
 w.matchMedia = (q) => ({ matches: false, media: q, addEventListener(){}, removeEventListener(){}, addListener(){}, removeListener(){} })
 w.scrollTo = () => {}
-for (const k of ['document','navigator','localStorage','HTMLElement','Element','Node','MutationObserver','requestAnimationFrame','cancelAnimationFrame','SVGElement','HTMLInputElement','HTMLSelectElement','Image','FileReader','File','Blob','Event','MouseEvent','KeyboardEvent']) global[k] = w[k]
+for (const k of ['document','navigator','localStorage','HTMLElement','Element','Node','MutationObserver','requestAnimationFrame','cancelAnimationFrame','SVGElement','HTMLInputElement','HTMLSelectElement','HTMLImageElement','getComputedStyle','matchMedia','Image','FileReader','File','Blob','Event','MouseEvent','KeyboardEvent']) global[k] = w[k]
 global.window = w
 global.IS_REACT_ACT_ENVIRONMENT = true
 w.IS_REACT_ACT_ENVIRONMENT = true

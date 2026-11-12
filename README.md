@@ -716,18 +716,33 @@ di `src/server/akses.js`. Bila server menjawab 404, halaman menyatakan fiturnya 
   - Tolak (403) akun milik sendiri dan akun `SUPER_ADMIN`.
   - Tolak (400) alasan yang kurang dari 10 karakter, dan beri 404 bila akun tidak ada.
   - Tolak (409) akun yang aksesnya belum dicabut.
-  - Tolak (409) akun yang masih punya data. Pesannya menyebut jumlahnya, misalnya "masih punya 12
-    nilai dan 3 riwayat tindakan". Yang dihitung sebagai data:
-    - milik mahasiswa: nilai, pengumpulan, pengajuan koreksi, penguncian aspek, riwayat perubahan
-      nilai, dan entri usulan dosen;
-    - milik dosen: usulan nilai dan pengumpulan yang diterima;
-    - milik siapa pun: jejak sebagai pelaku di `AuditLog`, `LogAktivitas`, `Batch`, `Nilai.penilaiId`,
-      `Penguncian`, `Angkatan`, `Komponen`/`Aspek`/`Indikator`, keputusan koreksi dan usulan, serta
-      `PermintaanAdmin`. Kolom-kolom itu menyimpan id akun tanpa relasi, dan Log Aktivitas membaca
-      nama pelakunya dari akun (`petaNama()`), jadi akun seperti itu cukup dibiarkan dicabut.
-  - Penghapusan dan catatan `HAPUS_AKUN` (email, peran, nama, NIM/NIP, prodi, angkatan, alasan) ada
-    dalam satu transaksi. Bila data baru masuk di antara pemeriksaan dan penghapusan, relasi basis data
-    menolaknya dan pintunya menjawab 409.
+  - Akun mahasiswa boleh dihapus walaupun sudah punya data, misalnya mahasiswa yang keluar di Semester 1
+    dengan nilai yang belum lengkap (keputusan pemilik produk, 11 Nov 2026; berlaku sementara sampai aturan
+    finalnya ditetapkan bersama back-end). `Nilai`, `Penguncian` (status final aspek), `PengajuanKoreksi`,
+    `PermintaanSertifikat`, dan `Pengumpulan` miliknya ikut terhapus dalam transaksi yang sama
+    (`hapusDataMahasiswa()`); kelima relasi itu tanpa `onDelete`, jadi barisnya dihapus sebelum `Mahasiswa`.
+    `AuditLog`, `LogAktivitas` (termasuk tindakan akun itu), dan `UsulanEntri` tetap. Dua akibat yang belum
+    ditangani: riwayat perubahan nilai mahasiswa itu tampil tanpa NIM dan nama di Log Aktivitas (`log.js` mencari
+    namanya lewat `mahasiswaId`; id itu tercatat di log `HAPUS_AKUN`), dan admin biasa ikut melihat riwayat itu
+    walaupun angkatannya tersembunyi baginya, karena saringan angkatan hanya mengenal mahasiswa yang masih ada.
+  - Akun dosen juga boleh dihapus walaupun sudah punya data (permintaan yang sama, 12 Nov 2026). Yang terhapus
+    hanya `Pengguna`, `Profil`, dan `Dosen`; `DosenAngkatan` (kelas yang diampu) ikut lewat `onDelete: Cascade`.
+    Nilai yang pernah ia masukkan milik mahasiswa, jadi tetap, begitu juga `Usulan`, `Batch` (unggahan),
+    `Pengumpulan`, `AuditLog`, dan `LogAktivitas`: kolom `dosenId`, `penilaiId`, dan `aktorId` di sana tanpa relasi,
+    jadi tidak menahan penghapusan. Usulan yang masih menunggu dari dosen yang sudah dihapus tetap bisa ditolak;
+    menyetujuinya dijawab "Dosen pengusul tidak ditemukan.".
+  - Tolak (409) akun admin yang masih punya data. Pesannya menyebut jumlahnya, misalnya "masih punya 3 riwayat
+    tindakan": jejak sebagai pelaku di `AuditLog`, `LogAktivitas`, `Batch`, `Nilai.penilaiId`, `Penguncian`,
+    `Angkatan`, `Komponen`/`Aspek`/`Indikator`, keputusan koreksi dan usulan, serta `PermintaanAdmin`. Akun
+    seperti itu cukup dibiarkan dicabut.
+  - Penghapusan dan catatan `HAPUS_AKUN` (email, peran, nama, NIM/NIP, prodi, angkatan, alasan, `penggunaId`; untuk
+    mahasiswa juga `mahasiswaId` dan `dataIkutTerhapus`, jumlah tiap jenis data yang ikut terhapus; untuk dosen juga
+    `dosenId`) ada dalam satu transaksi.
+  - Nama akun yang sudah dihapus tetap tampil. Kolom pelaku dan penilai hanya menyimpan id akun, dan namanya dibaca
+    `petaAkun()` di `muat.js`; untuk id yang akunnya sudah tidak ada, nama, peran, dan emailnya diambil dari catatan
+    `HAPUS_AKUN` dengan `penggunaId` yang sama. Jadi "Dinilai oleh" di Riwayat mahasiswa dan pelaku di Log Aktivitas
+    tetap bernama. Catatan `HAPUS_AKUN` sebelum 12 Nov 2026 belum menyimpan `penggunaId`, jadi akun yang dihapus
+    sebelum itu tetap tanpa nama.
   - Jawaban: `{ id }`.
 
   Di layar, tombol "Hapus akun" hanya muncul di baris yang aksesnya sudah dicabut, di samping "Pulihkan
@@ -837,13 +852,22 @@ Seluruh panel memakai satu bahasa yang sama, mengikuti gaya E-Learning UMN:
   Perjalanan, Riwayat, Sertifikat). Versi ringkas sekitar 150px sempat dicoba pada 4 Nov 2026 lalu dibatalkan atas permintaan
   pemilik produk, karena susunan penuh ini lebih bagus untuk tampilan webnya. Panel Kemahasiswaan tidak lagi memakai footer
   sejak tampilannya diperbarui: semua tujuannya ada di menu samping (lihat Panel
-  Kemahasiswaan › Tampilan). Panel dosen memakai footer melayang yang sama dengan
-  panel mahasiswa (lihat Panel Dosen › Kerangka).
+  Kemahasiswaan › Tampilan). Panel dosen memakai footer yang sama dengan
+  panel mahasiswa (lihat Panel Dosen › Kerangka). Sejak 11 Nov 2026 footer itu menempel di dasar kolom isi, selebar kolom,
+  tanpa sudut bulat (sebelumnya kartu melayang berjarak 16px); lihat Panel kerja › Bentuk. Hari yang sama ukurannya
+  diperkecil atas permintaan pemilik produk ("masih terlalu besar"), tanpa mengubah susunan: jarak dalam 28px (sebelumnya
+  40px), tombol pintasan 76px berikon 26px (84px, 30px), huruf 13px (13,5px), logo 32px (40px), dan baris hak cipta berjarak
+  12px (16px). Tinggi footer di layar 1440px ke atas turun dari sekitar 300px ke 233px, di HP 390px dari 709px ke 586px.
+  Empat kolomnya berjajar mulai 1280px. Di 1024 sampai 1279px susunannya 2 x 2 (pintasan dan identitas di atas, alamat dan
+  kontak di bawah), karena empat kolom di sana menjepit alamat Helpdesk sampai 74px dan footer menjadi 591px (sekarang 373px).
+  Di 1280 sampai sekitar 1400px alamatnya masih pecah menjadi 5 sampai 8 baris di panel mahasiswa; susunan tiga kolom
+  (kontak di bawah alamat) bisa menghapusnya, tetapi itu mengubah susunan, jadi belum dipakai.
 
 ## Panel kerja
 
 Kerangka dan susunan bersama panel dosen, Kemahasiswaan, dan Super Admin sejak 3 Nov 2026, mengikuti tata letak video
-dasbor yang dipilih pemilik produk: menu samping mengambang, bilah atas kapsul, kartu angka di atas, dan grafik lebar. Isi
+dasbor yang dipilih pemilik produk: menu samping mengambang (sejak 11 Nov 2026 menempel, lihat Bentuk), bilah atas kapsul,
+kartu angka di atas, dan grafik lebar. Isi
 referensi (data, foto, metrik penonton) tidak disalin. Panel mahasiswa, halaman masuk, dan lembar cetak tidak termasuk.
 
 **Warna tidak ikut berubah.** Redesign pertama memakai aksen peach dan menu samping arang; pemilik produk menolaknya pada
@@ -862,6 +886,29 @@ dosen tetap memakai bilah bawah di HP. `sampingGelap` memilih menu samping navy 
 judul halaman, dan sudut kartu. Semuanya di dalam `@media screen`, jadi lembar cetak tidak berubah, dan `.card` serta
 `.kartu` di luar panel ini tetap. Mode kontras membuat `.kepala-kerja` tidak tembus pandang.
 
+**Menu samping dan footer menempel** (permintaan pemilik produk, 11 Nov 2026; berlaku juga di panel mahasiswa). Sebelumnya
+keduanya kartu melayang berjarak 16px dari tepi layar dengan sudut 24px. Sekarang:
+
+- Menu samping setinggi layar, menempel di tepi kiri, tanpa sudut bulat dan bayangan, dipisah dari isi oleh garis tepi kanan
+  `border-line` (menu putih). Menu navy Super Admin tidak bergaris di tema terang karena warnanya sudah memisahkan; di tema
+  gelap diberi `border-white/10`. Lebarnya tetap (264px mahasiswa, 272px panel kerja), jarak dalamnya 16px.
+- Tengah logo di menu samping segaris dengan tengah bilah atas kapsul: `pt-8` di panel kerja (16px + 60px / 2) dan
+  `pt-[30px]` di panel mahasiswa (16px + 56px / 2). Kalau tinggi atau jarak atas bilah atas diubah, angka ini ikut diubah.
+- Footer menempel di dasar kolom isi, selebar kolom. `Footer` tidak lagi punya `melayang`; `kelasIsi` menyamakan lebar
+  maksimum dan jarak samping isinya dengan `<main>` panel pemakainya, jadi kolom footer segaris dengan tepi isi halaman.
+- Bilah atas tetap kapsul (tidak diminta diubah). Lajur di belakangnya tidak lagi disambung ke bawah menu samping
+  (`left: -272px` dihapus), karena menu samping kini padat sampai puncak layar dan menutupinya.
+- Panel Kemahasiswaan dan Super Admin tetap tanpa footer. `npm run smoke` memeriksa bahwa `<aside>` tidak lagi berjarak
+  `p-4` dan `<footer>` tidak lagi bersudut atau berjarak tepi.
+
+**Lebar isi panel mahasiswa** (11 Nov 2026, permintaan pemilik produk). Bilah atas, `<main>`, dan isi footer panel mahasiswa
+memakai batas 1600px dan jarak samping 32px mulai layar laptop (`lg:px-8`). Sebelumnya batasnya 1200px: di layar 1536px isinya
+diletakkan di tengah dan celah kiri-kanannya sekitar 68px, yang ditandai terlalu kosong. Jarak 20px yang sempat dipakai
+kemudian ditandai terlalu rapat, jadi dinaikkan ke 32px. Panel kerja tetap 1320px dan 20px (`lg:px-5`).
+
+Tombol untuk menciutkan menu samping menjadi deret ikon sempat dibuat pada hari yang sama, lalu dibatalkan pemilik produk
+("tombol hide gajadi di pake") dan dihapus seluruhnya. Jangan dipasang lagi tanpa diminta.
+
 **Kartu angka.** `KartuAngka` di `Ui.jsx` menerima `ikon` dan `tanda` ("Saat ini"), dan `warnaBilah` hanya untuk bilah yang
 artinya bukan sekadar isian, misalnya hal yang menunggu. Tidak ada delta, panah naik, atau grafik mini: datanya keadaan saat
 ini, jadi tidak ada pembanding yang jujur.
@@ -872,8 +919,10 @@ ini, jadi tidak ada pembanding yang jujur.
   angka, bilah kelengkapan per tugas (0 berarti lintasan kosong), lalu daftar mahasiswa.
 - *Unggah Nilai* (`Unggah.jsx`): penunjuk lima langkah. Ia hanya penunjuk arah, jadi dosen yang sudah punya berkas tetap
   boleh langsung mengunggah. Aturan simpan langsung dan ajukan ke Super Admin tidak berubah.
-- *Overview* (`Overview.jsx`): di HP pekerjaan paling atas. Di layar lebar empat kartu angka di atas, grafik di kiri, dan
-  pekerjaan menempel di kanan selama halaman digulir. Antrean tetap dari `usePekerjaanKemahasiswaan`, sumber lonceng.
+- *Overview* (`Overview.jsx`): empat kartu angka di atas, lalu dua grafik selebar halaman (perkembangan nilai per semester
+  dan sebaran huruf mutu). Kartu *Perlu dikerjakan* yang dulu menempel di kanan grafik dihapus pada 11 Nov 2026 atas permintaan
+  pemilik produk: isinya sama dengan lonceng (`usePekerjaanKemahasiswaan`) dan dirasa mengganggu. Keterangan halaman
+  menunjuk ke lonceng.
 - *Pusat Kendali* (`Kendali.jsx`): kartu keputusan, empat kartu ringkasan, grafik selebar halaman, lalu aktivitas dan
   rantai pengawasan. Angka yang tidak ikut pemilih periode ditandai "Saat ini" begitu periode lain dipilih.
 
@@ -1013,7 +1062,7 @@ Lonceng di bilah atas (`LoncengKemahasiswaan.jsx`) berisi dua hal:
 
 - **Perlu dikerjakan**: pekerjaan yang menunggu akun ini (usulan dosen lama bagi super admin, pengajuan koreksi
   dan akses cetak sertifikat pada lapisnya, hal yang perlu ditinjau, dan nilai yang belum masuk). Isinya dihitung
-  dari data yang sudah termuat, sama dengan blok Perlu dikerjakan di Overview.
+  dari data yang sudah termuat. Sejak 11 Nov 2026 inilah satu-satunya tempatnya: blok Perlu dikerjakan di Overview dihapus.
 - **Pembaruan**, hanya untuk admin biasa: tindakan Super Admin dari Log Aktivitas lewat `GET /api/notifikasi`
   (`src/server/notifikasi.js`). Rapat 24 Okt 2026 memasukkan semua tindakan Super Admin; sejak 31 Okt 2026 hanya
   yang **berkaitan dengan admin itu sendiri**:
@@ -1190,9 +1239,10 @@ Pengiriman) diteruskan ke Unggah Nilai di peramban, seperti `app/page.jsx`.
 - **Bilah bawah berlabel di HP** (`BilahBawah.jsx`, label pendek "Unggah"), bukan tombol garis tiga.
 - **Bilah atas**: pemilih bahasa, tema, menu aksesibilitas, dan menu akun dalam ukuran bawaannya. Di HP logonya
   hanya logo PDP, supaya semuanya muat sampai lebar 360px.
-- **Footer melayang seperti panel mahasiswa** (`<Footer pintasan melayang />`, komponen dan ukurannya sama):
+- **Footer seperti panel mahasiswa** (`<Footer pintasan kelasIsi />`, komponen dan ukurannya sama):
   pintasan berikon ke tiga halaman dosen, alamat Helpdesk, telepon dan surel, identitas unit, dan baris hak
-  cipta. Mulai layar laptop ia menjadi kartu bersudut bulat berjarak 16px, sepasang dengan menu samping.
+  cipta. Menempel di dasar kolom isi, selebar kolom, dan isinya segaris dengan isi halaman (lihat Panel kerja ›
+  Menu samping dan footer menempel). Sampai 11 Nov 2026 ia kartu bersudut bulat berjarak 16px mulai layar laptop.
 - **Kontras**: teks redup memakai warna panel admin (`--text-muted` #63677f, 5,6:1 di kartu putih; sebelumnya
   #8a8ea9, 3,2:1), begitu juga nada `Badge`, dan galat memakai `--teks-kritis`.
 - **Bilah bawah, footer, dan tombol bantuan tidak saling menutupi**: tinggi bilah bawah disimpan sebagai
@@ -1235,9 +1285,12 @@ memakai bahan yang sama; lihat Panel mahasiswa › Kaca dan Panel Kemahasiswaan 
 - **Gulir.** Cahaya latar sengaja tanpa `background-attachment: fixed`: jejak compositor Chrome menunjukkan properti itu membuat
   halaman dilukis ulang di setiap langkah gulir (Paint 50 kali per gestur di panel mahasiswa, 120 sampai 140 di Beranda dosen, 0
   tanpanya), dan `scripts/smoke.run.cjs` menjaganya. Sesudah digulir cahaya tidak perlu ikut, karena kaca sudah berlatar isi
-  halaman. Yang berblur selama digulir hanya kapsul, tombol bantuan, bilah bawah HP dosen, dan bilah alat Riwayat: lajur di
-  belakang kapsul cukup gradasi (`--kaca-tirai`) tanpa blur dan mask, dan pil bahasa di dalam kapsul tidak punya blur sendiri,
-  karena blur ganda tidak terlihat dan hanya menambah kerja GPU.
+  halaman. Yang berblur selama digulir hanya kapsul, tombol bantuan, bilah bawah HP dosen, bilah alat Riwayat, dan lintasan
+  pemilih bahasa: lajur di belakang kapsul cukup gradasi (`--kaca-tirai`) tanpa blur dan mask. Pemilih bahasa sejak 11 Nov 2026
+  memakai kaca pustaka liquid glass (blur 6px plus pembiasan; pembiasannya dimatikan pustaka selama digulir lewat
+  `html[data-lg-scrolling]`), jadi di dalam kapsul ia blur ganda. Sebelumnya pil bahasa sengaja tanpa blur sendiri karena blur
+  ganda tidak terlihat; kalau kerja GPU saat menggulir perlu ditekan lagi, `--lg-blur: 0px` di `.tombol-bahasa--terang` adalah
+  tempatnya (lihat Pemilih bahasa).
 
 ### Kelas dosen
 
@@ -1387,16 +1440,14 @@ tidak berlaci dan tetap memuat semuanya di bilah atas.
 Penggunanya dosen dan staf dengan rentang usia dan kebiasaan digital yang lebar, jadi halaman
 `/admin` **bukan** dashboard padat. Aturan yang dipegang:
 
-- **pekerjaan dulu, angka kemudian** — blok **Perlu dikerjakan** ada paling atas;
+- **pekerjaan di lonceng, bukan di halaman** — sejak 11 Nov 2026 blok **Perlu dikerjakan** tidak lagi di Overview
+  (permintaan pemilik produk: isinya sama dengan lonceng dan mengganggu). Keterangan halaman menunjuk ke lonceng, dan dua
+  grafik di bawah kartu angka kini selebar halaman;
 - **tiga angka saja** — mahasiswa terpantau, rata-rata nilai, dan nilai yang sudah final;
 - **dua grafik saja** — perkembangan nilai per semester dan donat sebaran huruf mutu — dan
   **tidak ada filter bertingkat**; grafik lainnya tinggal di halaman rinciannya;
 - setiap angka besar disertai **satu persentase** dengan bilah tipis; persentasenya selalu
   tertulis angkanya, bilah hanya membantu membandingkan sekilas;
-- blok **Perlu dikerjakan** menuliskan tugas sebagai kalimat utuh, bukan istilah teknis: usulan
-  dosen dan koreksi mahasiswa lebih dulu, lalu paling banyak tiga kelompok nilai yang belum diisi
-  (sisanya disebut jumlahnya dan ada di lonceng). Kalau tidak ada yang tertunda, blok itu menjadi
-  satu baris tenang "Tidak ada pekerjaan yang menunggu";
 - kartu **Halaman lain** dibuang: semua halaman sudah ada di menu samping;
 - setiap tautan menyebut tujuannya (**Lihat selengkapnya**, *Masukkan nilai*, *Tinjau
   pengajuan*), digarisbawahi, dan bidang kliknya besar;
@@ -1967,7 +2018,7 @@ karena `AuditLog` tidak mendapat baris baru saat batch dibatalkan.
 | `TAMBAH_ASPEK`, `UBAH_ASPEK`, `ARSIPKAN_ASPEK`, `PULIHKAN_ASPEK` | aspek CPMK ditambah, diubah strukturnya, diarsipkan, atau dipulihkan (lihat Mengelola aspek CPMK) | alasan, ID, kode, nama, struktur sebelum/sesudah (kode, cluster, semester, aktif), komponen yang ditambah, ringkasan dampak |
 | `UBAH_PERIODE` | super admin memindahkan periode akademik (lihat Periode akademik) | periode sebelum/sesudah, alasan |
 | `UBAH_AKSES` | super admin mencabut atau memulihkan akses akun (lihat Panel Super Admin › Akses Pengguna) | email, peran, aktif sebelum/sesudah, alasan |
-| `HAPUS_AKUN` | super admin menghapus permanen akun yang aksesnya sudah dicabut dan belum punya data | email, peran, nama, NIM/NIP, prodi, angkatan, alasan |
+| `HAPUS_AKUN` | super admin menghapus permanen akun yang aksesnya sudah dicabut: akun mahasiswa beserta datanya, akun dosen tanpa menghapus nilai yang pernah ia masukkan, akun admin hanya bila belum punya data | email, peran, nama, NIM/NIP, prodi, angkatan, alasan, ID akun; akun mahasiswa juga ID data mahasiswa dan jumlah data yang ikut terhapus; akun dosen juga ID data dosen |
 | `TAMBAH_AKUN` | akun baru dibuat dari Akses Pengguna atau Data Master | email, peran, nama, NIM/NIP, prodi, angkatan (tanpa sandi) |
 | `UBAH_AKUN` | data mahasiswa diubah dari Data Master | NIM, nama/email/prodi/angkatan sebelum dan sesudah (hanya yang berubah), alasan |
 | `UBAH_IZIN` | super admin memberi atau mencabut izin lihat data master (lihat Data master) | email, izin, sebelum/sesudah, alasan |
@@ -2086,6 +2137,10 @@ dan perjalanan program dua kali. Sekarang masing-masing punya satu rumah:
 
 Halaman Ringkasan mahasiswa turun dari 29.802 menjadi 21.186 karakter.
 
+**Judul halaman** sejajar dengan tepi kiri kapsul bilah atas dan tepi kartu, tidak menjorok. Judul yang menjorok 28px
+(sejajar tulisan di dalam kartu) sempat dicoba pada 11 Nov 2026, lalu pemilik produk menandai tepi kapsul dan kartu sebagai
+garis sejajarnya, jadi dikembalikan.
+
 Aturan tampilan dashboard mahasiswa:
 
 - urutannya mengikuti pertanyaan mahasiswa: berapa nilai saya, sudah sejauh mana, aspek mana
@@ -2148,7 +2203,7 @@ opsional sengaja tidak ikut.
 
 | Unsur | Rupa |
 |---|---|
-| Bilah atas | Satu kapsul selebar kolom isi (`.bilah-utilitas`): tepinya segaris dengan tepi kartu, dan mulai layar laptop puncaknya segaris dengan menu samping. Isinya lokasi halaman (`RemahKerja`) atau tombol menu dan logo di layar kecil, lalu kendali dalam satu kaca, bukan satu gelembung per tombol |
+| Bilah atas | Satu kapsul selebar kolom isi (`.bilah-utilitas`): tepinya segaris dengan tepi kartu, dan mulai layar laptop ia berjarak 16px dari atas, dengan tengah yang segaris dengan logo di menu samping (menu samping menempel sejak 11 Nov 2026, lihat Panel kerja). Isinya lokasi halaman (`RemahKerja`) atau tombol menu dan logo di layar kecil, lalu kendali dalam satu kaca, bukan satu gelembung per tombol |
 | Menu aktif | Pil kebiruan tembus, sama dengan panel dosen, dengan ikon dan garis kiri yang tetap |
 | Menu akun, lonceng, panel bantuan | Lapisan melayang (`.lapisan-kaca`, `.layanan-panel`) |
 | Bilah alat Riwayat | Menempel di bawah bilah atas mulai layar `sm`. Di HP ikut tergulir, karena tingginya akan memakan layar |
@@ -2371,22 +2426,35 @@ Yang ditulis pengguna (alasan, catatan) dan catatan lama di log tidak diterjemah
 
 ### Pemilih bahasa
 
-`src/components/TombolBahasa.jsx` bisa diklik, diseret, dan dipakai dengan papan ketik (Tab lalu
-panah kiri/kanan). Bagian yang mudah rusak:
+Sejak 11 Nov 2026 `src/components/TombolBahasa.jsx` membungkus `GlassSegmented` dari
+`@zakisheriff/liquid-glass` (4.0.0, MIT): pilihan aktif terangkat menjadi lensa kaca yang membiaskan
+isi di bawahnya, bisa diklik, diseret, dan dipakai dengan papan ketik (Tab lalu panah kiri/kanan).
+Klik, seret, dan gerak lensanya milik pustaka. Yang ditambahkan di sini, dan mudah rusak:
 
-- Pemilihan lewat penunjuk diselesaikan di **`pointerup`**, bukan di `onClick` tombolnya.
-  Karena `setPointerCapture`, peramban mengirim `click` ke wadah, bukan ke tombol tempat jari
-  turun, sehingga `onClick` tombol tidak pernah menyala. Penangkapan penunjuk tetap dipakai
-  karena tanpanya seretan berhenti begitu jari keluar dari kendali selebar 74 px.
-- `onClick` tombol hanya melayani klik yang bukan dari penunjuk (papan ketik dan `.click()` dari
-  kode), dikenali dari `event.detail === 0`.
-- Sesudah seretan, peramban ponsel mengirim klik kesesuaian (detail-nya bisa 0) ke tombol tempat
-  jari turun. Klik itu diabaikan supaya tidak membalikkan pilihan yang baru diseret.
-- Selama diseret, transisi pil dimatikan, dan `touch-none` wajib supaya seretan di ponsel tidak
-  ikut menggulir halaman.
+- **Peran tombol.** Pustaka menulis kendalinya sebagai `tablist`/`tab`. Pemilih bahasa tidak punya
+  panel tab, jadi `TombolBahasa` menggantinya menjadi grup tombol `aria-pressed` bernama bahasa
+  ("Bahasa Indonesia", "English"). Sebuah `MutationObserver` menjaganya, karena React menulis ulang
+  `aria-selected` tiap ganti bahasa dan pustaka menyalin lintasannya ke dalam lensa. Salinan itu
+  `aria-hidden`, tetapi tanpa dibersihkan peran tab-nya tertangkap pencarian `[role="tab"]` di
+  halaman (uji Riwayat sempat gagal karenanya).
+- **Bahasa yang sama ditekan lagi.** Pustaka hanya melapor kalau pilihan berubah. Menekan bahasa
+  yang sedang tampil tetap dicatat sebagai pilihan (`sk5c.bahasa.pilihan`) lewat `onPointerUp`
+  pembungkusnya, ditunda satu giliran karena pustaka menyelesaikan gesturnya di `window`.
+- **Warna.** Pustaka memilih terang/gelap dari `data-theme` atau setelan sistem, aplikasi ini dari
+  kelas `.dark`. Semua token `--lg-*` yang dipakai lintasan dipatok dari token VIBE di
+  `src/index.css` › pemilih bahasa, termasuk mode kontras dan "kurangi tembus pandang".
+  `--lg-saturate` sengaja 1. Warna pilihan aktif lewat `--bahasa-aktif`, bukan `--lg-track-active`
+  langsung, karena pustaka memasang token itu di lintasannya sendiri.
+- **Urutan CSS.** `app/layout.jsx` mengimpor `@zakisheriff/liquid-glass/styles.css` sebelum
+  `src/index.css`. Kalau dibalik, ukuran 74 x 32 px dan warnanya kalah oleh bawaan pustaka.
+- **Efek penuh hanya di Chrome dan Edge** (`backdrop-filter: url()`). Di Safari dan Firefox pustaka
+  membiaskan salinan isi di bawah lensa.
+- **Uji smoke** berjalan di jsdom: `scripts/smoke.run.cjs` dan `scripts/assert.run.cjs` meneruskan
+  `HTMLImageElement`, `getComputedStyle`, dan `matchMedia` ke global karena pustaka memakainya.
 - Pemilih juga ada di pojok kanan atas halaman masuk (`nada="onbrand"`), di atas alas gelap
-  `--surface` 62% supaya label yang tidak aktif tetap minimal 4,5:1 saat cahaya sian aurora lewat
-  di belakangnya (terukur paling rendah 5,98:1; tanpa alas hanya 4,50:1 di HP).
+  `--surface` 62%. Pilihan aktifnya kaca putih 20% dengan tulisan putih, bukan pil putih bertulisan
+  navy: saat lensa terangkat alasnya hilang dan tulisan navy tenggelam. Kontras terukur paling
+  rendah 5,86:1 (aktif, HP) dan 7,00:1 (tidak aktif).
 
 ### Grafik
 

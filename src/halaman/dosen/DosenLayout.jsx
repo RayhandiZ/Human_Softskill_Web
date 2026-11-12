@@ -18,7 +18,7 @@ import StatusData from '../admin/StatusData'
 
 /* Panel dosen. Kebutuhan tulisan yang lebih besar, kontras, dan alat bantu lain dinyalakan sendiri lewat menu
    aksesibilitas di bilah atas. Menu samping berlabel di layar lebar, bilah bawah berlabel di HP (bukan tombol garis
-   tiga), dan footer melayang seperti panel mahasiswa. Sejak rapat 24 Okt 2026 menunya tinggal tiga: Beranda memantau,
+   tiga), dan footer yang sama dengan panel mahasiswa. Sejak rapat 24 Okt 2026 menunya tinggal tiga: Beranda memantau,
    Unggah Nilai menerima rekap Excel. Lihat README.md › Panel Dosen dan › Panel kerja. */
 
 const MENU = [
@@ -95,8 +95,8 @@ export default function DosenLayout({ children }) {
       kunci={jalur}
       // kolom-dosen: di HP kolom ini berakhir di atas bilah bawah, supaya footer tidak tertutup.
       kelasKolom="kolom-dosen"
-      // Seperti panel mahasiswa: mulai layar laptop, kartu melayang sepasang dengan sidebar.
-      kakiIsi={<Footer pintasan={PINTASAN} melayang />}
+      // Seperti panel mahasiswa: menempel di dasar kolom isi, dan isinya segaris dengan <main> KerangkaKerja.
+      kakiIsi={<Footer pintasan={PINTASAN} kelasIsi="max-w-[1320px] px-5 sm:px-6 lg:px-5" />}
       lapisan={
         <>
           <BilahBawah items={MENU} label={t('Menu dosen')} />

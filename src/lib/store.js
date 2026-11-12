@@ -902,9 +902,9 @@ export async function ubahKelasDosen(isi) {
 }
 
 /**
- * Menghapus permanen akun yang aksesnya sudah dicabut; jawabannya { id }. Server menolak akun yang masih punya
- * data (nilai, pengumpulan, riwayat tindakan) dengan pesan yang menyebut datanya; lihat hapusAkun() di
- * src/server/akses.js.
+ * Menghapus permanen akun yang aksesnya sudah dicabut; jawabannya { id }. Akun mahasiswa terhapus beserta nilai dan
+ * datanya; akun dosen terhapus tanpa menghapus nilai, usulan, dan unggahannya; akun admin yang masih punya riwayat
+ * tindakan ditolak server dengan pesan yang menyebut datanya. Lihat hapusAkun() di src/server/akses.js.
  */
 export async function hapusAkun({ id, alasan }) {
   if (!modeLokal()) return kirim('/api/akses/hapus', { isi: { id, alasan } })

@@ -1,149 +1,80 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import { GlassSegmented } from '@zakisheriff/liquid-glass'
 import { BAHASA, useBahasa } from '../lib/bahasa'
 
-/* Pemilihan lewat penunjuk diselesaikan di pointerup, bukan onClick; lihat README.md › Pemilih bahasa. */
+/* Rupa dan gerak lensanya dari GlassSegmented (@zakisheriff/liquid-glass). Yang diurus di sini hanya tiga hal yang
+   tidak disediakan pustaka itu; lihat README.md › Pemilih bahasa. */
 
-const SEGMEN = 34
-const SELA = 3
-
-const LENGKUNG = 'cubic-bezier(.34,1.42,.44,1)'
+const KODE = BAHASA.map((b) => b.kode)
 
 export default function TombolBahasa({ nada = 'terang' }) {
   const { bahasa, setBahasa, t } = useBahasa()
-  const terang = nada === 'terang'
-
-  const [seretX, setSeretX] = useState(null)
-  const [menekan, setMenekan] = useState(false)
-
-  const awal = useRef({ x: 0, dasar: 0 })
-  const bergerak = useRef(false)
-  const abaikanKlik = useRef(false)
-
+  const akar = useRef(null)
+  const berganti = useRef(false)
   const indeks = Math.max(0, BAHASA.findIndex((b) => b.id === bahasa))
-  const dasar = indeks * SEGMEN
-  const posisi = seretX ?? dasar
 
-  function mulaiSeret(e) {
-    if (e.button != null && e.button !== 0) return
-    awal.current = { x: e.clientX, dasar }
-    bergerak.current = false
-    abaikanKlik.current = false
-    setMenekan(true)
-    try {
-      e.currentTarget.setPointerCapture?.(e.pointerId)
-    } catch {
+  /* Pustaka menulis kendalinya sebagai tablist/tab. Pemilih bahasa tidak punya panel tab, jadi peran itu diganti menjadi
+     tombol tekan biasa (aria-pressed) di dalam satu grup, dan nama tombolnya nama bahasa, bukan kodenya. */
+  useEffect(() => {
+    const wadah = akar.current
+    if (!wadah) return
+    const rapikan = () => {
+      /* Termasuk salinan lintasan yang dibuat pustaka di dalam lensa: salinan itu aria-hidden, tetapi peran tab-nya
+         ikut tertangkap pencarian [role="tab"] di halaman. */
+      wadah.querySelectorAll('[role="tablist"], [role="tab"], [aria-selected]').forEach((el) => {
+        el.removeAttribute('role')
+        el.removeAttribute('aria-selected')
+      })
+      const lintasan = wadah.querySelector(':scope > .lg-track')
+      lintasan?.removeAttribute('aria-label')
+      lintasan?.querySelectorAll(':scope > [data-lg-item]').forEach((tombol, i) => {
+        const tekan = String(i === indeks)
+        if (tombol.getAttribute('aria-pressed') !== tekan) tombol.setAttribute('aria-pressed', tekan)
+        if (tombol.getAttribute('aria-label') !== BAHASA[i].nama) tombol.setAttribute('aria-label', BAHASA[i].nama)
+        if (tombol.title !== BAHASA[i].nama) tombol.title = BAHASA[i].nama
+      })
     }
-  }
-
-  function seret(e) {
-    if (!menekan) return
-    const beda = e.clientX - awal.current.x
-    if (Math.abs(beda) > 3) bergerak.current = true
-    setSeretX(Math.min(SEGMEN, Math.max(0, awal.current.dasar + beda)))
-  }
-
-  function selesaiSeret(e) {
-    if (!menekan) return
-    setMenekan(false)
-    try {
-      e.currentTarget.releasePointerCapture?.(e.pointerId)
-    } catch {
-    }
-
-    let tujuan
-    if (bergerak.current) {
-      tujuan = (seretX ?? dasar) > SEGMEN / 2 ? BAHASA[1].id : BAHASA[0].id
-    } else {
-      const kotak = e.currentTarget.getBoundingClientRect?.()
-      const relatif = kotak ? e.clientX - kotak.left : awal.current.dasar
-      tujuan = relatif > SELA + SEGMEN ? BAHASA[1].id : BAHASA[0].id
-    }
-
-    /* Tetap dipanggil walau sama: menekan bahasa yang sedang tampil juga pilihan yang diingat. */
-    setBahasa(tujuan)
-    setSeretX(null)
-
-    if (bergerak.current) {
-      abaikanKlik.current = true
-      setTimeout(() => {
-        abaikanKlik.current = false
-      }, 400)
-    }
-  }
-
-  function lewatTombol(e) {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      e.preventDefault()
-      setBahasa(e.key === 'ArrowLeft' ? BAHASA[0].id : BAHASA[1].id)
-    }
-  }
+    rapikan()
+    /* React menulis ulang aria-selected tiap ganti bahasa, dan pustaka menyalin lintasan saat lensa terangkat. */
+    const pengamat = new MutationObserver(rapikan)
+    pengamat.observe(wadah, { subtree: true, childList: true, attributes: true, attributeFilter: ['role', 'aria-selected'] })
+    return () => pengamat.disconnect()
+  }, [indeks])
 
   return (
-    <div
+    <span
+      ref={akar}
       role="group"
       aria-label={t('Pilih bahasa')}
-      onPointerDown={mulaiSeret}
-      onPointerMove={seret}
-      onPointerUp={selesaiSeret}
-      onPointerCancel={selesaiSeret}
-      onKeyDown={lewatTombol}
-      /* touch-none wajib: tanpa ini seretan di ponsel ikut menggulir halaman. */
-      className={
-        'relative flex shrink-0 touch-none select-none items-center rounded-2xl ' +
-        (terang ? 'border border-line bg-surface' : 'bg-white/10')
-      }
-      style={{ padding: SELA }}
+      className={'tombol-bahasa ' + (nada === 'terang' ? 'tombol-bahasa--terang' : 'tombol-bahasa--onbrand')}
+      onPointerDown={() => {
+        berganti.current = false
+      }}
+      /* Pustaka hanya melapor kalau pilihannya berubah. Menekan bahasa yang sedang tampil juga pilihan yang diingat,
+         jadi itu dicatat di sini. Ditunda satu giliran karena pustaka menyelesaikan gesturnya di window, sesudah ini. */
+      onPointerUp={(e) => {
+        if (e.button !== 0) return
+        setTimeout(() => {
+          if (!berganti.current) setBahasa(bahasa)
+        }, 0)
+      }}
+      onClick={(e) => {
+        /* detail 0: Enter atau Spasi di tombol yang sudah aktif. */
+        const tombol = e.detail === 0 ? e.target.closest?.('[data-lg-item]') : null
+        if (tombol) setBahasa(BAHASA[Number(tombol.dataset.lgItem)].id)
+      }}
     >
-      <span
-        aria-hidden="true"
-        className={'absolute rounded-[14px] ' + (terang ? 'pil-kaca' : 'pil-kaca-putih')}
-        style={{
-          width: SEGMEN,
-          top: SELA,
-          bottom: SELA,
-          left: SELA,
-          transform: 'translateX(' + posisi + 'px) scale(' + (menekan ? 0.93 : 1) + ')',
-          transition: menekan
-            ? 'transform .12s ease-out'
-            : 'transform .42s ' + LENGKUNG,
+      <GlassSegmented
+        size="sm"
+        options={KODE}
+        value={indeks}
+        onChange={(i) => {
+          berganti.current = true
+          setBahasa(BAHASA[i].id)
         }}
       />
-
-      {BAHASA.map((b) => {
-        const aktif = b.id === bahasa
-        return (
-          <button
-            key={b.id}
-            type="button"
-            onClick={(e) => {
-              if (abaikanKlik.current) {
-                abaikanKlik.current = false
-                return
-              }
-              if (e.detail !== 0) return
-              setBahasa(b.id)
-            }}
-            aria-pressed={aktif}
-            aria-label={b.nama}
-            title={b.nama}
-            className={
-              'relative z-10 rounded-[14px] py-1.5 text-[12px] font-extrabold leading-none transition-colors duration-300 ' +
-              (aktif
-                ? terang
-                  ? 'text-brand-ink'
-                  : 'text-brand'
-                : terang
-                  ? 'text-ink-3 hover:text-ink'
-                  : 'text-white/70 hover:text-white')
-            }
-            style={{ width: SEGMEN }}
-          >
-            {b.kode}
-          </button>
-        )
-      })}
-    </div>
+    </span>
   )
 }

@@ -1,34 +1,17 @@
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
 import { JudulHalaman, KartuAngka } from '../../components/Ui'
 import MutuDonut from '../../components/charts/MutuDonut'
 import PerkembanganAngkatan from '../../components/charts/PerkembanganAngkatan'
-import {
-  IconCertificate,
-  IconCheck,
-  IconCheckShield,
-  IconChevronDown,
-  IconChevronRight,
-  IconEye,
-  IconList,
-  IconPencil,
-  IconTarget,
-  IconUndo,
-  IconUsers,
-} from '../../components/Icons'
+import { IconCheck, IconChevronDown, IconList, IconTarget, IconUsers } from '../../components/Icons'
 import { CONFIG } from '../../lib/config'
-import { SUMBER } from '../../lib/curriculum'
 import { useTeks } from '../../lib/bahasa'
 import { STUDENTS, kelengkapanMatriks, ringkas } from '../../lib/data'
 import { useStore } from '../../lib/store'
-import { daftarKode, tautanInput, tautanKoreksi, usePekerjaanKemahasiswaan } from './LoncengKemahasiswaan'
 
-/* Sengaja tenang; lihat README.md › Ringkasan admin sengaja dibuat tenang. Di HP pekerjaan yang menunggu dibuka paling
-   atas, lalu angka dan grafik. Di layar lebar angka di baris atas, grafik di kiri, dan pekerjaan menempel di kanan
-   grafik, jadi tetap terlihat selama halaman digulir. Navigasi ada di menu samping, jadi tidak ada lagi kartu "Halaman
-   lain". */
-
-const PEKERJAAN_TAMPIL = 3
+/* Sengaja tenang; lihat README.md › Ringkasan admin sengaja dibuat tenang. Empat kartu angka di atas, lalu dua grafik
+   selebar halaman. Pekerjaan yang menunggu ada di lonceng bilah atas (LoncengKemahasiswaan.jsx): kartu "Perlu dikerjakan"
+   yang dulu menempel di kanan grafik dihapus pada 11 Nov 2026 atas permintaan pemilik produk, karena isinya sama dengan
+   lonceng dan mengganggu. Navigasi ada di menu samping, jadi tidak ada kartu "Halaman lain". */
 
 // Kartu angka kini KartuAngka di components/Ui.jsx, dipakai juga Program Studi dan Persetujuan Nilai Dosen.
 const Angka = KartuAngka
@@ -52,149 +35,6 @@ function KakiLipat({ buka, onToggle, idIsi, ringkas }) {
         className={'shrink-0 text-brand-ink transition-transform ' + (buka ? 'rotate-180' : '')}
       />
     </button>
-  )
-}
-
-/** Nama pertama dan kedua, lalu "dan n lainnya". */
-function namaRingkas(t, nama) {
-  if (nama.length <= 2) return nama.join(', ')
-  return nama.slice(0, 2).join(', ') + ' ' + t('dan {n} lainnya', { n: nama.length - 2 })
-}
-
-/* Pekerjaan yang menunggu, ditulis sebagai kalimat utuh dengan tautan yang menyebut tujuannya. Sumbernya sama
-   dengan lonceng di bilah atas (usePekerjaanKemahasiswaan); bila tidak ada apa-apa, satu baris tenang saja. */
-function PerluDikerjakan() {
-  const t = useTeks()
-  const { usulan, koreksi, sertifikat, pekerjaan, tinjauan, bacaSaja } = usePekerjaanKemahasiswaan()
-
-  const baris = [
-    sertifikat.length
-      ? {
-          id: 'sertifikat',
-          ikon: IconCertificate,
-          ke: '/admin/sertifikat?tab=permintaan',
-          judul: t('{n} permintaan akses cetak sertifikat menunggu keputusan Anda', { n: sertifikat.length }),
-          rinci: namaRingkas(t, sertifikat.map((p) => p.nama)),
-          aksi: t('Tinjau permintaan'),
-        }
-      : null,
-    usulan.length
-      ? {
-          id: 'usulan',
-          ikon: IconCheckShield,
-          ke: '/admin/usulan',
-          judul: t('{n} usulan nilai dari dosen menunggu persetujuan', { n: usulan.length }),
-          rinci: namaRingkas(t, usulan.map((u) => u.dosenNama)),
-          aksi: t('Tinjau usulan'),
-        }
-      : null,
-    koreksi.length
-      ? {
-          id: 'koreksi',
-          ikon: IconUndo,
-          ke: tautanKoreksi(koreksi[0]),
-          judul: t('{n} pengajuan koreksi nilai dari mahasiswa belum diputuskan', { n: koreksi.length }),
-          rinci: namaRingkas(t, koreksi.map((k) => k.nama)),
-          aksi: t('Tinjau koreksi'),
-        }
-      : null,
-    ...tinjauan.map((x) => ({
-      id: x.id,
-      ikon: x.ikon,
-      ke: x.href,
-      judul: x.judul,
-      rinci: x.rinci,
-      aksi: t(x.id === 'kunci' ? 'Buka Angkatan' : 'Lihat mahasiswa'),
-    })),
-    // Admin biasa hanya membaca nilai: baris ini untuk menagih dosen, bukan untuk diisi.
-    ...pekerjaan.slice(0, PEKERJAAN_TAMPIL).map((p) => ({
-      id: p.id,
-      ikon: bacaSaja ? IconEye : IconPencil,
-      ke: tautanInput({
-        semester: p.semester,
-        sumber: p.sumber,
-        angkatanId: p.angkatan.id,
-        aspekId: p.aspek[0]?.id,
-        nim: p.nimTunggal,
-      }),
-      judul: t('{n} nilai {sumber} Semester {semester} belum diisi', {
-        n: p.kosong.toLocaleString('id-ID'),
-        sumber: SUMBER[p.sumber]?.label ?? p.sumber,
-        semester: p.semester,
-      }),
-      rinci:
-        t('Angkatan {label}', { label: p.angkatan.label }) +
-        ', ' +
-        t('{n} mahasiswa', { n: p.mahasiswa }) +
-        ' · ' +
-        daftarKode(p.aspek),
-      aksi: t(bacaSaja ? 'Lihat nilai' : 'Masukkan nilai'),
-    })),
-  ].filter(Boolean)
-  const sisa = Math.max(0, pekerjaan.length - PEKERJAAN_TAMPIL)
-
-  if (!baris.length) {
-    return (
-      <section aria-labelledby="judul-perlu" className="kartu flex items-center gap-4 px-5 py-4">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand-ink">
-          <IconCheck size={20} />
-        </span>
-        <div>
-          <h2 id="judul-perlu" className="text-[15px] font-bold text-ink">
-            {t('Tidak ada pekerjaan yang menunggu')}
-          </h2>
-          <p className="mt-0.5 text-[13.5px] text-ink-2">
-            {t('Koreksi mahasiswa dan nilai yang wajib diisi sudah tertangani.')}
-          </p>
-        </div>
-      </section>
-    )
-  }
-
-  return (
-    <section aria-labelledby="judul-perlu" className="kartu overflow-hidden">
-      <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
-        <div className="min-w-0">
-          <h2 id="judul-perlu" className="text-[16px] font-bold text-ink">
-            {t('Perlu dikerjakan')}
-          </h2>
-          <p className="mt-0.5 text-[13px] leading-snug text-ink-2">
-            {t('Urut dari yang menunggu keputusan Anda, lalu nilai yang belum diisi.')}
-          </p>
-        </div>
-        <span className="shrink-0 rounded-full bg-brand-soft px-2.5 py-1 text-[12.5px] font-bold text-brand-ink">
-          {t('{n} hal', { n: baris.length + sisa })}
-        </span>
-      </div>
-      <ul className="divide-y divide-line">
-        {baris.map((b) => (
-          <li key={b.id}>
-            {/* Tindakannya di bawah teks, supaya baris tetap terbaca di kolom sempit samping grafik. */}
-            <Link
-              href={b.ke}
-              className="group flex items-start gap-3 px-5 py-3.5 transition hover:bg-surface-2 focus-visible:outline-offset-[-3px]"
-            >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand-ink">
-                <b.ikon size={18} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[14px] font-bold leading-snug text-ink">{b.judul}</span>
-                {b.rinci ? <span className="mt-0.5 block text-[13px] leading-snug text-ink-2">{b.rinci}</span> : null}
-                <span className="mt-1.5 inline-flex items-center gap-1 text-[13.5px] font-bold text-brand-ink underline underline-offset-4">
-                  {b.aksi}
-                  <IconChevronRight size={15} className="transition-transform group-hover:translate-x-0.5" />
-                </span>
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-      {sisa ? (
-        <p className="border-t border-line bg-surface-2 px-5 py-3 text-[13px] leading-snug text-ink-2">
-          {t('{n} kelompok nilai lain juga belum lengkap; semuanya ada di lonceng di kanan atas.', { n: sisa })}
-        </p>
-      ) : null}
-    </section>
   )
 }
 
@@ -223,69 +63,62 @@ export default function Overview() {
   return (
     <div className="space-y-5">
       {/* --------------------------------- kepala -------------------------------- */}
-      <JudulHalaman judul="Overview" keterangan={teks('Pekerjaan yang menunggu Anda dan capaian mahasiswa periode ini.')} />
+      <JudulHalaman
+        judul="Overview"
+        keterangan={teks('Capaian mahasiswa periode ini. Pekerjaan yang menunggu Anda ada di lonceng di kanan atas.')}
+      />
 
-      {/* Urutan kode mengikuti HP dan papan ketik: pekerjaan lebih dulu. Di layar lebar penempatannya diatur grid. */}
-      <div className="grid gap-5 xl:grid-cols-12">
-        <div className="xl:sticky xl:top-[92px] xl:col-span-4 xl:col-start-9 xl:row-start-2 xl:self-start">
-          <PerluDikerjakan />
-        </div>
+      {/* --------------------------------- angka --------------------------------- */}
+      <section aria-label={teks('Ringkasan angka')} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Angka
+          ikon={IconUsers}
+          judul={teks('Mahasiswa terpantau')}
+          nilai={angka.total.toLocaleString('id-ID')}
+          keterangan={teks('Mahasiswa pada angkatan yang bisa Anda lihat.')}
+          kaki={
+            <KakiLipat
+              buka={bukaAngka}
+              onToggle={() => setBukaAngka((v) => !v)}
+              idIsi="angka-lain"
+              ringkas={
+                teks('rata-rata {n}', { n: angka.rata ?? '-' }) +
+                ' · ' +
+                teks('{n} final', { n: angka.final.toLocaleString('id-ID') })
+              }
+            />
+          }
+        />
 
-        {/* --------------------------------- angka --------------------------------- */}
-        <section aria-label={teks('Ringkasan angka')} className="grid gap-4 sm:grid-cols-2 xl:col-span-12 xl:row-start-1 xl:grid-cols-4">
+        {/* sm:contents melebur pembungkus ini di layar lebar. */}
+        <div id="angka-lain" className={(bukaAngka ? 'grid ' : 'hidden ') + 'gap-4 sm:contents'}>
           <Angka
-            ikon={IconUsers}
-            judul={teks('Mahasiswa terpantau')}
-            nilai={angka.total.toLocaleString('id-ID')}
-            keterangan={teks('Mahasiswa pada angkatan yang bisa Anda lihat.')}
-            kaki={
-              <KakiLipat
-                buka={bukaAngka}
-                onToggle={() => setBukaAngka((v) => !v)}
-                idIsi="angka-lain"
-                ringkas={
-                  teks('rata-rata {n}', { n: angka.rata ?? '-' }) +
-                  ' · ' +
-                  teks('{n} final', { n: angka.final.toLocaleString('id-ID') })
-                }
-              />
-            }
+            ikon={IconTarget}
+            judul={teks('Rata-rata nilai')}
+            nilai={angka.rata ?? '-'}
+            satuan={teks('dari 100')}
+            persen={bagi(angka.diAtasAmbang)}
+            persenLabel={teks('Di atas batas {ambang}', { ambang: CONFIG.AMBANG_SERTIFIKAT })}
           />
-
-          {/* sm:contents melebur pembungkus ini di layar lebar. */}
-          <div id="angka-lain" className={(bukaAngka ? 'grid ' : 'hidden ') + 'gap-4 sm:contents'}>
-            <Angka
-              ikon={IconTarget}
-              judul={teks('Rata-rata nilai')}
-              nilai={angka.rata ?? '-'}
-              satuan={teks('dari 100')}
-              persen={bagi(angka.diAtasAmbang)}
-              persenLabel={teks('Di atas batas {ambang}', { ambang: CONFIG.AMBANG_SERTIFIKAT })}
-            />
-            <Angka
-              ikon={IconCheck}
-              judul={teks('Nilai sudah final')}
-              nilai={angka.final.toLocaleString('id-ID')}
-              satuan={teks('dari {n}', { n: angka.total.toLocaleString('id-ID') })}
-              persen={bagi(angka.final)}
-              persenLabel={teks('Sudah final')}
-            />
-            <Angka
-              ikon={IconList}
-              judul={teks('Kelengkapan nilai')}
-              nilai={persenLengkap == null ? '–' : persenLengkap + '%'}
-              keterangan={teks('Nilai yang sudah masuk') + '. ' + teks('Dihitung dari tugas sampai semester berjalan tiap mahasiswa.')}
-            />
-          </div>
-        </section>
-
-        <div className="min-w-0 space-y-5 xl:col-span-8 xl:col-start-1 xl:row-start-2">
-          <PerkembanganAngkatan rows={rows} />
-
-          {/* -------------------------------- sebaran -------------------------------- */}
-          <MutuDonut huruf={angka.huruf} totalMahasiswa={angka.total} />
+          <Angka
+            ikon={IconCheck}
+            judul={teks('Nilai sudah final')}
+            nilai={angka.final.toLocaleString('id-ID')}
+            satuan={teks('dari {n}', { n: angka.total.toLocaleString('id-ID') })}
+            persen={bagi(angka.final)}
+            persenLabel={teks('Sudah final')}
+          />
+          <Angka
+            ikon={IconList}
+            judul={teks('Kelengkapan nilai')}
+            nilai={persenLengkap == null ? '–' : persenLengkap + '%'}
+            keterangan={teks('Nilai yang sudah masuk') + '. ' + teks('Dihitung dari tugas sampai semester berjalan tiap mahasiswa.')}
+          />
         </div>
-      </div>
+      </section>
+
+      {/* ------------------------- grafik, selebar halaman ------------------------- */}
+      <PerkembanganAngkatan rows={rows} />
+      <MutuDonut huruf={angka.huruf} totalMahasiswa={angka.total} />
     </div>
   )
 }

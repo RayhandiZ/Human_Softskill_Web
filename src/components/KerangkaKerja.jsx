@@ -5,7 +5,8 @@ import MenuSamping from './MenuSamping'
 import { PemanduBaca, useAkarAksesibilitas } from './MenuAksesibilitas'
 import { useTeks } from '../lib/bahasa'
 
-/* Kerangka bersama panel dosen, Kemahasiswaan, dan Super Admin: menu samping yang mengambang dan bilah atas kapsul.
+/* Kerangka bersama panel dosen, Kemahasiswaan, dan Super Admin: menu samping yang menempel di tepi kiri setinggi layar, dan
+   bilah atas kapsul.
    Hanya tampilan. Daftar menu, lencana, dan isi bilah atas tetap ditentukan tiap panel (DosenLayout, AdminLayout,
    SuperLayout), jadi hak akses dan tindakan per peran tidak berubah di sini. Lihat README.md › Panel kerja. */
 
@@ -117,11 +118,15 @@ export default function KerangkaKerja({
     // kelasAkar: setelan menu aksesibilitas; lihat index.css › menu aksesibilitas.
     <div className={'panel-kerja ' + panel + ' min-h-screen bg-bg lg:pl-[272px] print:pl-0 ' + a11y.kelasAkar}>
       {/* -------------------------------- sidebar ------------------------------- */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[272px] p-4 pr-0 lg:block print:hidden">
+      {/* Menempel, tidak mengambang (permintaan pemilik produk, 11 Nov 2026): tanpa jarak ke tepi layar dan tanpa sudut bulat,
+          dipisah dari isi oleh garis tepi kanan. pt-8: tengah logo segaris dengan tengah bilah atas (16px + 60px / 2). */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[272px] lg:block print:hidden">
         <div
           className={
-            'flex h-full flex-col overflow-y-auto px-3 py-5 ' +
-            (sampingGelap ? 'kartu-aurora kartu-aurora-tegak relative rounded-3xl text-white dark:ring-1 dark:ring-white/10' : 'kartu')
+            'flex h-full flex-col overflow-y-auto px-4 pb-5 pt-8 ' +
+            (sampingGelap
+              ? 'kartu-aurora kartu-aurora-tegak relative text-white dark:border-r dark:border-white/10'
+              : 'border-r border-line bg-surface')
           }
         >
           <MerekSamping beranda={beranda} gelap={sampingGelap} />

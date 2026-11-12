@@ -141,7 +141,7 @@ export default function Login() {
         {/* Bawaan halaman ini Inggris, panel tetap Indonesia; bahasa yang dipilih di sini diingat dan ikut
             dipakai di panel. Di layar sempit sejajar dengan logo PDP. Alas gelapnya menjaga label yang tidak
             aktif tetap terbaca saat cahaya sian lewat di belakangnya. Lihat README.md › Hidrasi. */}
-        <div className="absolute right-5 top-6 z-10 rounded-2xl bg-[color-mix(in_srgb,var(--surface)_62%,transparent)] sm:right-10">
+        <div className="absolute right-5 top-6 z-10 rounded-full bg-[color-mix(in_srgb,var(--surface)_62%,transparent)] sm:right-10">
           <TombolBahasa nada="onbrand" />
         </div>
         <JudulAplikasi className="mx-auto mt-8 hidden w-full max-w-[400px] lg:block" />

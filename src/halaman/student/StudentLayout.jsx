@@ -68,8 +68,10 @@ export default function StudentLayout({ children }) {
     <div className={'panel-mahasiswa min-h-screen bg-bg lg:pl-[264px] print:pl-0 ' + a11y.kelasAkar}>
       {/* print:pl-0 wajib: sidebar disembunyikan saat mencetak. */}
       {/* -------------------------------- sidebar ------------------------------- */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] p-4 pr-0 lg:block print:hidden">
-        <div className="kartu flex h-full flex-col px-3 py-5">
+      {/* Menempel di tepi kiri setinggi layar, seperti panel dosen (KerangkaKerja.jsx). pt-[30px]: tengah logo segaris dengan
+          tengah bilah atas (16px + 56px / 2). */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] lg:block print:hidden">
+        <div className="flex h-full flex-col border-r border-line bg-surface px-4 pb-5 pt-[30px]">
           <Link href="/mahasiswa" className="mb-7 flex items-center gap-2.5 px-2.5">
             <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
             <span aria-hidden="true" className="h-6 w-px shrink-0 bg-line" />
@@ -87,9 +89,12 @@ export default function StudentLayout({ children }) {
       <div className="flex min-h-screen flex-col">
         {/* ------------------------------ bilah atas ----------------------------- */}
         <header className="bilah-kaca sticky top-0 z-20 print:hidden">
-          {/* Jarak sampingnya sama dengan <main>, jadi tepi kapsul segaris dengan tepi kartu. Mulai layar laptop puncaknya
-              segaris dengan menu samping (16px). */}
-          <div className="mx-auto w-full max-w-[1200px] px-4 pb-2 pt-2 sm:px-6 lg:px-8 lg:pt-4">
+          {/* Jarak sampingnya sama dengan <main>, jadi tepi kapsul segaris dengan tepi kartu. Mulai layar laptop kapsul berjarak
+              16px dari atas, dan logo di menu samping segaris dengan tengahnya. */}
+          {/* Batas 1600px dan jarak samping 32px sejak 11 Nov 2026 (permintaan pemilik produk). Sebelumnya 1200px: di layar
+              1536px isinya diletakkan di tengah dan celah kiri-kanannya 68px, terlalu kosong; 20px kemudian terlalu rapat.
+              Bilah atas, <main>, dan isi footer memakai angka yang sama supaya tepinya segaris. */}
+          <div className="mx-auto w-full max-w-[1600px] px-4 pb-2 pt-2 sm:px-6 lg:px-8 lg:pt-4">
             <div className="bilah-utilitas flex h-14 items-center gap-1.5 px-2 sm:gap-3 sm:px-3.5">
               <button
                 type="button"
@@ -135,7 +140,7 @@ export default function StudentLayout({ children }) {
         {/* isi-zoom: "Ukuran tulisan" di menu aksesibilitas memperbesar isi halaman dan footer saja; bilah atas dan
             menu samping tetap, supaya kendalinya tidak terdorong keluar layar HP. */}
         <div className="isi-zoom flex flex-1 flex-col" style={a11y.gayaIsi}>
-          <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 pb-4 pt-2 sm:px-6 lg:px-8">
+          <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 pb-4 pt-2 sm:px-6 lg:px-8">
             <KonteksMahasiswa.Provider value={student}>
               {/* Dikunci per jalur supaya animasi masuknya berjalan lagi setiap pindah menu. */}
               <div key={jalurHalaman} className="animate-halaman">
@@ -144,8 +149,8 @@ export default function StudentLayout({ children }) {
             </KonteksMahasiswa.Provider>
           </main>
 
-          {/* Mulai layar laptop: kartu melayang sepasang dengan sidebar (sudut dan jarak 16px yang sama). */}
-          <Footer pintasan={PINTASAN} melayang />
+          {/* Menempel di dasar kolom isi, selebar kolom. kelasIsi sama dengan <main>, jadi isi footer segaris dengan isi halaman. */}
+          <Footer pintasan={PINTASAN} kelasIsi="max-w-[1600px] px-5 sm:px-6 lg:px-8" />
         </div>
       </div>
 

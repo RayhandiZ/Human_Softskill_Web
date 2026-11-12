@@ -1291,8 +1291,8 @@ export const EN = {
   'Belum ada akun dosen.': 'No lecturer accounts yet.',
   'Belum ada akun admin.': 'No admin accounts yet.',
   'Belum ada akun mahasiswa.': 'No student accounts yet.',
-  'Akses Super Admin tidak bisa dicabut atau dihapus dari sini, termasuk akun Anda sendiri; itu diatur langsung di basis data. Hanya akun yang aksesnya sudah dicabut dan belum punya data yang bisa dihapus. Setiap perubahan akses dan penghapusan akun tercatat di Log Aktivitas beserta alasannya.':
-    'Super Admin accounts cannot be revoked or deleted here, including your own; they are managed directly in the database. Only accounts whose access is revoked and that have no data can be deleted. Every access change and account deletion is recorded in the Activity Log with its reason.',
+  'Akses Super Admin tidak bisa dicabut atau dihapus dari sini, termasuk akun Anda sendiri; itu diatur langsung di basis data. Hanya akun yang aksesnya sudah dicabut yang bisa dihapus. Akun mahasiswa terhapus beserta nilai dan datanya; akun dosen terhapus tanpa menghapus nilai yang pernah ia masukkan; akun admin yang masih punya data tidak bisa dihapus. Setiap perubahan akses dan penghapusan akun tercatat di Log Aktivitas beserta alasannya.':
+    'Super Admin accounts cannot be revoked or deleted here, including your own; they are managed directly in the database. Only accounts whose access is revoked can be deleted. A student account is deleted together with its scores and other data; a lecturer account is deleted without removing the scores they entered; admin accounts that still have data cannot be deleted. Every access change and account deletion is recorded in the Activity Log with its reason.',
   'Cabut akses': 'Revoke access',
   'Pulihkan akses': 'Restore access',
   // Hapus akun; juga label HAPUS_AKUN di Log Aktivitas, bersama dua label akun lain yang dibaca lewat LABEL_LOG.
@@ -1302,6 +1302,16 @@ export const EN = {
   'Hapus permanen': 'Delete permanently',
   'Akun ini dihapus permanen dari basis data beserta profilnya, dan tidak bisa dikembalikan. Akun yang masih punya nilai, pengumpulan, atau riwayat tindakan tidak bisa dihapus; biarkan aksesnya tetap dicabut.':
     'This account and its profile are permanently deleted from the database and cannot be restored. Accounts that still have scores, submissions, or an action history cannot be deleted; keep their access revoked instead.',
+  'Akun mahasiswa ini dihapus permanen dari basis data beserta profil, nilai, status final aspek, pengajuan koreksi, permintaan sertifikat, dan pengumpulannya, dan tidak bisa dikembalikan. Log Aktivitas dan riwayat perubahan nilainya tetap tersimpan.':
+    'This student account is permanently deleted from the database together with its profile, scores, aspect final statuses, correction requests, certificate requests, and submissions, and cannot be restored. The Activity Log and its score change history are kept.',
+  // Rincian HAPUS_AKUN akun mahasiswa di Log Aktivitas (LABEL_RINCIAN di admin/Log.jsx).
+  'Akun dosen ini dihapus permanen dari basis data beserta profil dan kelas yang diampunya, dan tidak bisa dikembalikan. Nilai yang pernah ia masukkan, usulan, unggahan, dan Log Aktivitasnya tetap tersimpan atas namanya.':
+    'This lecturer account is permanently deleted from the database together with its profile and the classes it teaches, and cannot be restored. The scores they entered, their proposals, uploads, and Activity Log stay recorded under their name.',
+  'ID akun': 'Account ID',
+  'ID data dosen': 'Lecturer record ID',
+  'ID data mahasiswa': 'Student record ID',
+  'Data yang ikut terhapus': 'Data deleted with it',
+  'Permintaan sertifikat': 'Certificate requests',
   'Akun {nama} sudah dihapus dari basis data.': 'Account {nama} was deleted from the database.',
   // Formulir tambah akun.
   'Nama lengkap': 'Full name',
@@ -1631,24 +1641,11 @@ export const EN = {
     'Use the up and down arrows to choose, Enter to open, Esc to close.',
 
   /* ------------------------------- Overview ------------------------------- */
-  'Pekerjaan yang menunggu Anda dan capaian mahasiswa periode ini.': 'Work waiting for you and student achievement this period.',
+  'Capaian mahasiswa periode ini. Pekerjaan yang menunggu Anda ada di lonceng di kanan atas.':
+    'Student achievement this period. Work waiting for you is under the bell at the top right.',
   'Perlu dikerjakan': 'To do',
-  'Urut dari yang menunggu keputusan Anda, lalu nilai yang belum diisi.':
-    'Items awaiting your decision come first, then scores not yet filled in.',
-  '{n} hal': '{n} items',
-  '{n} usulan nilai dari dosen menunggu persetujuan': '{n} score proposals from lecturers await approval',
-  '{n} pengajuan koreksi nilai dari mahasiswa belum diputuskan': '{n} score correction requests from students await a decision',
-  '{n} nilai {sumber} Semester {semester} belum diisi': '{n} {sumber} scores for Semester {semester} are not filled in yet',
   'dan {n} lainnya': 'and {n} more',
-  'Tinjau usulan': 'Review proposals',
-  'Tinjau koreksi': 'Review corrections',
-  'Buka Angkatan': 'Open Cohorts',
-  'Lihat mahasiswa': 'View students',
-  '{n} kelompok nilai lain juga belum lengkap; semuanya ada di lonceng di kanan atas.':
-    '{n} more score groups are incomplete; all of them are listed under the bell at the top right.',
   'Tidak ada pekerjaan yang menunggu': 'Nothing is waiting for you',
-  'Koreksi mahasiswa dan nilai yang wajib diisi sudah tertangani.':
-    'Student corrections and required scores are all handled.',
   'Lihat nilai': 'View scores',
   'Ringkasan angka': 'Key figures',
 
@@ -2015,9 +2012,7 @@ export const EN = {
     'Changes you submit wait for Super Admin approval before taking effect. While a request is still waiting, you can withdraw it.',
   'Permintaan baru muncul di sini begitu admin mengajukan perubahan yang perlu persetujuan Super Admin.':
     'New requests appear here as soon as an admin submits a change that needs Super Admin approval.',
-  // Overview, Pusat Kendali, lonceng.
-  '{n} permintaan akses cetak sertifikat menunggu keputusan Anda': '{n} certificate print access requests are waiting for your decision',
-  'Tinjau permintaan': 'Review requests',
+  // Pusat Kendali, lonceng.
   'Juga menunggu Anda: {koreksi} pengajuan ubah nilai dan {sertifikat} akses cetak sertifikat.':
     'Also waiting for you: {koreksi} score change requests and {sertifikat} certificate print access requests.',
   'Tidak ada permintaan admin yang menunggu.': 'No admin requests are waiting.',

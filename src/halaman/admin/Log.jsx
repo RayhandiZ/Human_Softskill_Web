@@ -129,6 +129,17 @@ const LABEL_RINCIAN = {
   cluster: 'Cluster',
   aktif: 'Aktif',
   kelolaMaster: 'Izin lihat data master',
+  // HAPUS_AKUN: id akun, id data mahasiswa atau dosen untuk melacak riwayat yang tetap tersimpan, dan data mahasiswa
+  // yang ikut terhapus (hapusDataMahasiswa di src/server/akses.js).
+  penggunaId: 'ID akun',
+  dosenId: 'ID data dosen',
+  mahasiswaId: 'ID data mahasiswa',
+  dataIkutTerhapus: 'Data yang ikut terhapus',
+  nilai: 'Nilai',
+  statusFinal: 'Status final aspek',
+  pengajuanKoreksi: 'Pengajuan koreksi',
+  permintaanSertifikat: 'Permintaan sertifikat',
+  pengumpulan: 'Pengumpulan',
   ditambah: 'Ditambah',
   // Akses angkatan admin (UBAH_AKSES_ANGKATAN): angkatan lewat yang dibuka, angkatan berjalan yang dinonaktifkan.
   dibuka: 'Angkatan dibuka',

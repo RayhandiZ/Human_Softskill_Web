@@ -102,7 +102,7 @@ export async function petaAkun(ids) {
   const unik = [...new Set(ids.filter((x) => x != null))]
   if (!unik.length) return new Map()
   const daftar = await db.pengguna.findMany({ where: { id: { in: unik } }, include: { dosen: true, mahasiswa: true } })
-  return new Map(
+  const hasil = new Map(
     daftar.map((p) => [
       p.id,
       {
@@ -112,7 +112,23 @@ export async function petaAkun(ids) {
       },
     ]),
   )
+  // Akun yang sudah dihapus (hapusAkun di akses.js): nama, peran, dan emailnya diambil dari catatan HAPUS_AKUN, yang
+  // menyimpan penggunaId sejak 12 Nov 2026. Tanpa ini nilai dari dosen yang akunnya dihapus tampil "penilai tidak
+  // tercatat" di Riwayat mahasiswa, dan pelakunya di Log Aktivitas kosong.
+  const hilang = unik.filter((id) => id > 0 && !hasil.has(id))
+  if (hilang.length) {
+    const terhapus = await db.logAktivitas.findMany({ where: { aksi: 'HAPUS_AKUN' }, select: { rincian: true } })
+    for (const { rincian: r } of terhapus) {
+      if (!r || !hilang.includes(r.penggunaId) || hasil.has(r.penggunaId)) continue
+      const peran = PERAN_DARI_LABEL[r.peran] ?? null
+      hasil.set(r.penggunaId, { nama: r.nama ?? (peran === 'ADMIN' ? 'Biro Kemahasiswaan' : null), peran, email: r.email ?? null })
+    }
+  }
+  return hasil
 }
+
+/** Peran di rincian HAPUS_AKUN (label dari susunAkun di akses.js) kembali ke nilai basis data. */
+const PERAN_DARI_LABEL = { mahasiswa: 'MAHASISWA', dosen: 'DOSEN', admin: 'ADMIN' }
 
 export const SERTA_MAHASISWA = {
   prodi: { include: { fakultas: true } },

@@ -388,10 +388,21 @@ export async function tambahAkun(pengguna, isi) {
 
 /* ------------------------------- hapus akun ------------------------------- */
 
-// Super admin menghapus permanen akun yang aksesnya sudah dicabut, hanya bila akun itu belum punya data. Data
-// mahasiswa (nilai, pengumpulan, koreksi, penguncian) dan riwayat dosen tidak boleh ikut hilang. Jejak tindakan
-// juga dihitung sebagai data: kolom pelaku di log menyimpan id akun tanpa relasi, dan Log Aktivitas membaca nama
-// pelakunya dari akun itu (petaNama di muat.js). Akun yang punya data cukup dibiarkan dicabut.
+// Super admin menghapus permanen akun yang aksesnya sudah dicabut.
+// - Akun mahasiswa boleh dihapus walaupun sudah punya data, misalnya mahasiswa yang keluar di Semester 1 dengan nilai
+//   yang belum lengkap (keputusan pemilik produk, 11 Nov 2026; berlaku sementara sampai aturan finalnya ditetapkan
+//   bersama back-end). Nilai, status final aspek, pengajuan koreksi, permintaan sertifikat, dan pengumpulannya ikut
+//   terhapus dalam transaksi yang sama (hapusDataMahasiswa). AuditLog (append-only), LogAktivitas, dan UsulanEntri
+//   (bagian usulan dosen, lewat NIM) tetap; jumlah data yang ikut terhapus dicatat di log HAPUS_AKUN.
+// - Akun dosen juga boleh dihapus walaupun sudah punya data (permintaan yang sama, 12 Nov 2026). Yang terhapus hanya
+//   akun, profil, dan baris Dosen (kelas yang diampu, DosenAngkatan, ikut lewat onDelete: Cascade). Nilai yang pernah
+//   ia masukkan milik mahasiswa, jadi tetap, begitu juga usulan, unggahan (Batch), pengumpulan, dan semua log; kolom
+//   dosenId/penilaiId/aktorId di sana tanpa relasi, jadi tidak menahan penghapusan.
+// - Akun admin hanya bila belum punya data: jejak tindakannya dihitung sebagai data. Akun seperti itu cukup dibiarkan
+//   dicabut.
+// Kolom pelaku di log dan penilai nilai menyimpan id akun tanpa relasi, dan namanya dibaca dari akun (petaAkun di
+// muat.js). Karena itu log HAPUS_AKUN menyimpan penggunaId: petaAkun memakai nama di catatan itu untuk akun yang sudah
+// dihapus, jadi "Dinilai oleh" dan pelaku di Log Aktivitas tetap bernama.
 
 /** Gabungan daftar untuk kalimat: "a", "a dan b", "a, b, dan c". */
 function gabung(daftar) {
@@ -399,29 +410,13 @@ function gabung(daftar) {
   return daftar.slice(0, -1).join(', ') + (daftar.length > 2 ? ', dan ' : ' dan ') + daftar.at(-1)
 }
 
-/** Data yang masih bergantung pada akun ini, sebagai [keterangan, jumlah] yang jumlahnya lebih dari nol. */
+/**
+ * Data yang masih bergantung pada akun admin, sebagai [keterangan, jumlah] yang jumlahnya lebih dari nol. Akun
+ * mahasiswa dan dosen tidak diperiksa di sini: keduanya boleh dihapus walaupun punya data (lihat di atas).
+ */
 async function dataTerkait(akun) {
   const id = akun.id
   const hitung = []
-  if (akun.mahasiswa) {
-    const m = akun.mahasiswa
-    hitung.push(
-      ['nilai', db.nilai.count({ where: { mahasiswaId: m.id } })],
-      ['pengumpulan', db.pengumpulan.count({ where: { mahasiswaId: m.id } })],
-      ['pengajuan koreksi', db.pengajuanKoreksi.count({ where: { mahasiswaId: m.id } })],
-      ['permintaan sertifikat', db.permintaanSertifikat.count({ where: { mahasiswaId: m.id } })],
-      ['penguncian aspek', db.penguncian.count({ where: { mahasiswaId: m.id } })],
-      ['riwayat perubahan nilai', db.auditLog.count({ where: { mahasiswaId: m.id } })],
-      ['entri usulan dosen', db.usulanEntri.count({ where: { nim: m.nim } })],
-    )
-  }
-  if (akun.dosen) {
-    const d = akun.dosen
-    hitung.push(
-      ['usulan nilai', db.usulan.count({ where: { dosenId: d.id } })],
-      ['pengumpulan yang diterima', db.pengumpulan.count({ where: { dosenId: d.id } })],
-    )
-  }
   hitung.push([
     'riwayat tindakan',
     Promise.all([
@@ -446,6 +441,21 @@ async function dataTerkait(akun) {
   return hitung.map(([ket], i) => [ket, jumlah[i]]).filter(([, n]) => n > 0)
 }
 
+/**
+ * Data milik satu mahasiswa yang ikut terhapus bersama akunnya, di dalam transaksi `tx`; jawabannya jumlah per jenis.
+ * Kelima tabel ini berelasi ke Mahasiswa tanpa onDelete, jadi barisnya harus terhapus sebelum baris Mahasiswa.
+ */
+async function hapusDataMahasiswa(tx, mahasiswaId) {
+  const hapus = (tabel) => tabel.deleteMany({ where: { mahasiswaId } }).then((h) => h.count)
+  return {
+    nilai: await hapus(tx.nilai),
+    statusFinal: await hapus(tx.penguncian),
+    pengajuanKoreksi: await hapus(tx.pengajuanKoreksi),
+    permintaanSertifikat: await hapus(tx.permintaanSertifikat),
+    pengumpulan: await hapus(tx.pengumpulan),
+  }
+}
+
 /** Menghapus permanen satu akun beserta data mahasiswa/dosen dan profilnya; jawabannya { id } akun yang dihapus. */
 export async function hapusAkun(pengguna, { id, alasan }) {
   const target = Number(id)
@@ -459,7 +469,7 @@ export async function hapusAkun(pengguna, { id, alasan }) {
   if (akun.peran === 'SUPER_ADMIN') throw new GalatApi('Akun Super Admin diatur langsung di basis data.', 403)
   if (akun.aktif) throw new GalatApi('Cabut dulu akses akun ini sebelum menghapusnya.', 409)
 
-  const terkait = await dataTerkait(akun)
+  const terkait = akun.mahasiswa || akun.dosen ? [] : await dataTerkait(akun)
   if (terkait.length) {
     throw new GalatApi(
       'Akun ini tidak bisa dihapus karena masih punya ' +
@@ -474,14 +484,27 @@ export async function hapusAkun(pengguna, { id, alasan }) {
     // Profil, data mahasiswa/dosen, akun, dan catatan log dalam satu transaksi: terhapus semua atau tidak sama sekali.
     await db.$transaction(async (tx) => {
       await tx.profil.deleteMany({ where: { penggunaId: akun.id } })
-      if (akun.mahasiswa) await tx.mahasiswa.delete({ where: { id: akun.mahasiswa.id } })
+      let ikutTerhapus = null
+      if (akun.mahasiswa) {
+        ikutTerhapus = await hapusDataMahasiswa(tx, akun.mahasiswa.id)
+        await tx.mahasiswa.delete({ where: { id: akun.mahasiswa.id } })
+      }
       if (akun.dosen) await tx.dosen.delete({ where: { id: akun.dosen.id } })
       await tx.pengguna.delete({ where: { id: akun.id } })
       await catatLog(tx, {
         aktorId: pengguna.id,
         aksi: 'HAPUS_AKUN',
         target: 'akun ' + akun.email,
-        rincian: { ...ringkas, alasan: teksAlasan },
+        // penggunaId: dibaca petaAkun (muat.js) untuk menamai pelaku dan penilai yang akunnya sudah dihapus.
+        // mahasiswaId/dosenId: baris AuditLog, usulan, dan pengumpulan yang tetap ada hanya menyimpan id itu, jadi
+        // id-nya ikut dicatat supaya masih bisa dilacak ke nama di catatan ini.
+        rincian: {
+          ...ringkas,
+          alasan: teksAlasan,
+          penggunaId: akun.id,
+          ...(akun.mahasiswa ? { mahasiswaId: akun.mahasiswa.id, dataIkutTerhapus: ikutTerhapus } : {}),
+          ...(akun.dosen ? { dosenId: akun.dosen.id } : {}),
+        },
       })
     })
   } catch (e) {

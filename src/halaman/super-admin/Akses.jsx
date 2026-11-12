@@ -199,7 +199,7 @@ export default function Akses() {
       </Card>
 
       <CatatanKaki>
-        {t('Akses Super Admin tidak bisa dicabut atau dihapus dari sini, termasuk akun Anda sendiri; itu diatur langsung di basis data. Hanya akun yang aksesnya sudah dicabut dan belum punya data yang bisa dihapus. Setiap perubahan akses dan penghapusan akun tercatat di Log Aktivitas beserta alasannya.')}
+        {t('Akses Super Admin tidak bisa dicabut atau dihapus dari sini, termasuk akun Anda sendiri; itu diatur langsung di basis data. Hanya akun yang aksesnya sudah dicabut yang bisa dihapus. Akun mahasiswa terhapus beserta nilai dan datanya; akun dosen terhapus tanpa menghapus nilai yang pernah ia masukkan; akun admin yang masih punya data tidak bisa dihapus. Setiap perubahan akses dan penghapusan akun tercatat di Log Aktivitas beserta alasannya.')}
       </CatatanKaki>
     </div>
   )
@@ -214,7 +214,7 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
   const [galat, setGalat] = useState('')
   const bisaDiubah = a.peran !== 'superadmin' && !milikSaya
   const cabut = Boolean(a.aktif)
-  // Hanya akun yang aksesnya sudah dicabut; server juga menolak akun yang masih punya data.
+  // Hanya akun yang aksesnya sudah dicabut; server juga menolak akun admin yang masih punya data.
   const bisaDihapus = bisaDiubah && !a.aktif
   const hapus = mode === 'hapus'
   // Izin lihat data master hanya untuk admin biasa (aturIzinMaster di src/server/akses.js). Memberi izin butuh akun
@@ -407,7 +407,14 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
           <p className="text-[13px] leading-relaxed text-ink">
             {t(
               hapus
-                ? 'Akun ini dihapus permanen dari basis data beserta profilnya, dan tidak bisa dikembalikan. Akun yang masih punya nilai, pengumpulan, atau riwayat tindakan tidak bisa dihapus; biarkan aksesnya tetap dicabut.'
+                ? // Akun mahasiswa terhapus beserta datanya (sejak 11 Nov 2026); akun dosen terhapus tanpa menghapus nilai
+                  // yang pernah ia masukkan (sejak 12 Nov 2026); akun admin yang masih punya data tetap ditolak server.
+                  // Lihat hapusAkun di src/server/akses.js.
+                  a.peran === 'mahasiswa'
+                  ? 'Akun mahasiswa ini dihapus permanen dari basis data beserta profil, nilai, status final aspek, pengajuan koreksi, permintaan sertifikat, dan pengumpulannya, dan tidak bisa dikembalikan. Log Aktivitas dan riwayat perubahan nilainya tetap tersimpan.'
+                  : a.peran === 'dosen'
+                    ? 'Akun dosen ini dihapus permanen dari basis data beserta profil dan kelas yang diampunya, dan tidak bisa dikembalikan. Nilai yang pernah ia masukkan, usulan, unggahan, dan Log Aktivitasnya tetap tersimpan atas namanya.'
+                    : 'Akun ini dihapus permanen dari basis data beserta profilnya, dan tidak bisa dikembalikan. Akun yang masih punya nilai, pengumpulan, atau riwayat tindakan tidak bisa dihapus; biarkan aksesnya tetap dicabut.'
                 : izin
                   ? punyaIzin
                     ? 'Admin ini tidak bisa lagi membuka halaman Data Master. Halaman lain yang menampilkan mahasiswa dan angkatan tetap terbaca seperti biasa.'

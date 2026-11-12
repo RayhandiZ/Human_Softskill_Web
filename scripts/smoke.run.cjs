@@ -3,7 +3,7 @@ const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http:
 const w = dom.window
 w.matchMedia = (q) => ({ matches: false, media: q, addEventListener(){}, removeEventListener(){}, addListener(){}, removeListener(){} })
 w.scrollTo = () => {}
-for (const k of ['document','navigator','localStorage','HTMLElement','Element','Node','MutationObserver','requestAnimationFrame','cancelAnimationFrame','SVGElement','ResizeObserver','HTMLInputElement','HTMLSelectElement','Image','FileReader','File','Blob','Event','MouseEvent','KeyboardEvent']) global[k] = w[k]
+for (const k of ['document','navigator','localStorage','HTMLElement','Element','Node','MutationObserver','requestAnimationFrame','cancelAnimationFrame','SVGElement','ResizeObserver','HTMLInputElement','HTMLSelectElement','HTMLImageElement','getComputedStyle','matchMedia','Image','FileReader','File','Blob','Event','MouseEvent','KeyboardEvent']) global[k] = w[k]
 global.window = w
 global.IS_REACT_ACT_ENVIRONMENT = true
 w.IS_REACT_ACT_ENVIRONMENT = true
@@ -19,6 +19,9 @@ const SESI = { student: JSON.stringify({ role:'student', studentId:'DEMO-2', ema
 const ISI = {
   '/mahasiswa': [
     [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
+    /* Menu samping dan footer menempel di tepi layar, bukan kartu melayang (11 Nov 2026). */
+    [/<aside[^>]*class="[^"]*\bp-4\b/, 'menu samping tidak lagi melayang (tanpa jarak ke tepi layar)', false, true],
+    [/<footer[^>]*class="[^"]*(?:rounded|lg:mx-4|lg:mb-4)/, 'footer tidak lagi melayang (tanpa sudut bulat dan jarak tepi)', false, true],
     /* Kerangka panel kerja (bilah atas kapsul, susunan kartu) sengaja tidak menyentuh panel mahasiswa. */
     [/panel-kerja/, 'panel mahasiswa tidak memakai kerangka panel kerja', false, true],
     [/Nilai akhir/, 'ubin nilai akhir ada'],
@@ -54,12 +57,14 @@ const ISI = {
   '/admin': [
     /* Menu aksesibilitas ada di keempat panel (README.md › Menu aksesibilitas). */
     [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
+    [/<aside[^>]*class="[^"]*\bp-4\b/, 'menu samping tidak lagi melayang (tanpa jarak ke tepi layar)', false, true],
     /* Kartu "Requires Review" dilebur ke lonceng — isinya mengulang angka yang
        sama dengan daftar "Belum dinilai" di sana. */
     [/Requires Review/, 'kartu Requires Review sudah tidak ada di Ringkasan', false],
-    /* Kartu "Halaman lain" dilepas: menu samping sudah memuat semua halaman. Yang dibuka di atas sekarang
-       pekerjaan yang menunggu, atau satu baris tenang bila tidak ada. */
-    [/Perlu dikerjakan|Tidak ada pekerjaan yang menunggu/, 'pekerjaan yang menunggu dibuka paling atas'],
+    /* Kartu "Halaman lain" dilepas: menu samping sudah memuat semua halaman. Kartu "Perlu dikerjakan" juga dilepas
+       (11 Nov 2026): isinya sama dengan lonceng di bilah atas, jadi Overview hanya menunjuk ke sana. */
+    [/id="judul-perlu"/, 'kartu Perlu dikerjakan tidak ada lagi di Overview', false, true],
+    [/Pekerjaan yang menunggu Anda ada di lonceng di kanan atas/, 'keterangan halaman menunjuk ke lonceng'],
     [/Halaman lain/, 'tidak ada lagi kartu Halaman lain', false],
     [/panel-kerja/, 'memakai rupa panel kerja', true, true],
     [/Mahasiswa terpantau[\s\S]{0,400}Rata-rata nilai[\s\S]{0,400}Nilai sudah final[\s\S]{0,400}Kelengkapan nilai/, 'empat kartu angka utama'],
@@ -148,8 +153,10 @@ const ISI = {
     [/langsung tersimpan/, 'dijelaskan bahwa unggahan langsung tersimpan'],
     [/Menunggu dinilai|Penilaian|Riwayat Pengiriman/, 'tidak ada sisa alur pengumpulan dan usulan lama', false],
     [/<input(?=[^>]*inputmode="decimal")/, 'tidak ada kotak isi nilai di Beranda', false, true],
-    /* Footer melayang seperti panel mahasiswa; pintasannya ketiga halaman dosen. */
+    /* Footer yang sama dengan panel mahasiswa; pintasannya ketiga halaman dosen. Sejak 11 Nov 2026 menempel, bukan kartu melayang. */
     [/<footer[\s\S]*?Beranda[\s\S]{0,900}Unggah Nilai[\s\S]{0,900}Profil/, 'footer punya pintasan berikon', true, true],
+    [/<footer[^>]*class="[^"]*(?:rounded|lg:mx-4|lg:mb-4)/, 'footer tidak lagi melayang (tanpa sudut bulat dan jarak tepi)', false, true],
+    [/<aside[^>]*class="[^"]*\bp-4\b/, 'menu samping tidak lagi melayang (tanpa jarak ke tepi layar)', false, true],
     [/Helpdesk[\s\S]{0,300}vibe@umn\.ac\.id/, 'helpdesk dan kontak tercantum'],
     /* Ukuran panel seperti super admin; tulisan besar, kontras, dan alat lain lewat menu aksesibilitas. */
     [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
@@ -200,6 +207,9 @@ const ISI = {
   ],
   '/super': [
     [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
+    [/<aside[^>]*class="[^"]*\bp-4\b/, 'menu samping tidak lagi melayang (tanpa jarak ke tepi layar)', false, true],
+    /* Hanya kotak langsung di dalam <aside>: kartu keputusan di Pusat Kendali juga .kartu-aurora bersudut bulat, dan itu benar. */
+    [/<aside[^>]*><div[^>]*class="[^"]*kartu-aurora[^"]*rounded-3xl/, 'menu samping navy tidak lagi bersudut bulat', false, true],
     [/Pusat Kendali/, 'judul Pusat Kendali'],
     [/permintaan menunggu/, 'jumlah permintaan yang menunggu di kartu keputusan'],
     [/Perlu keputusan Anda/, 'daftar yang perlu diputuskan'],
@@ -1662,19 +1672,22 @@ const RUTE = [
   w.localStorage.setItem('sk5c.session', SESI.student)
   const sb = await ujiSeretBahasa()
   const cekSeret = [
-    ['ada pil penanda yang bergerak', sb.adaPil],
-    ['pilnya memakai bahan kaca', sb.pilBerkaca],
-    ['mulai menempel di segmen kiri', sb.mulaiDiKiri],
+    ['ada lensa penanda', sb.adaLensa],
+    ['lensanya memakai bahan kaca pustaka', sb.lensaKaca],
+    ['mulai di segmen kiri (aria-pressed)', sb.mulaiDiKiri],
+    ['tanpa peran tablist/tab bawaan pustaka', sb.tanpaPeranTab],
+    ['tombolnya bernama bahasa, bukan kodenya', sb.namaBahasa],
     ['KLIK BIASA mengganti bahasa', sb.klikBiasaMengganti],
     ['klik susulan tidak menghitungnya dua kali', sb.klikSusulanDiabaikan],
     ['klik biasa bisa kembali ke segmen kiri', sb.klikBiasaBisaKembali],
-    ['pil mengikuti jari saat diseret', sb.pilIkutJari],
-    ['transisi dimatikan selama diseret', sb.transisiMatiSaatDiseret],
+    ['menekan bahasa yang sedang tampil tetap diingat', sb.tekanSamaDiingat],
+    ['lensa terangkat saat ditekan', sb.lensaTerangkat],
+    ['bahasa belum berganti selama diseret', sb.belumBergantiSaatDiseret],
     ['seret lalu dilepas di kanan: bahasa berganti', sb.seretMengganti],
-    ['transisi pulih setelah dilepas', sb.transisiPulih],
-    ['klik susulan sesudah seret tidak membalikkannya', sb.seretTakDibalikSentuhan],
+    ['klik susulan sesudah seret tidak membalikkannya', sb.seretTakDibalikKlik],
     ['seret pendek kembali ke tempat semula', sb.seretPendekKembali],
-    ['papan ketik tetap dilayani', sb.papanKetikJalan],
+    ['papan ketik tetap dilayani (Enter/Spasi)', sb.papanKetikJalan],
+    ['panah kiri/kanan memindahkan pilihan', sb.panahJalan],
   ]
   const rusakSeret = cekSeret.filter(([, ok]) => !ok)
   gagal += rusakSeret.length
