@@ -54,7 +54,14 @@ async function main() {
     await db.fakultas.create({
       data: {
         nama: f.name,
-        prodi: { create: f.programs.map((p) => ({ nama: p.nama, jenjang: p.jenjang })) },
+        // Contoh kelas A dan B tiap prodi (KELAS_CONTOH di src/lib/data.js); kelas lama terhapus bersama prodinya (Cascade).
+        prodi: {
+          create: f.programs.map((p) => ({
+            nama: p.nama,
+            jenjang: p.jenjang,
+            kelas: { create: (p.kelas ?? []).map((nama) => ({ nama })) },
+          })),
+        },
       },
     })
   }

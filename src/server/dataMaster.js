@@ -2,10 +2,10 @@ import { db } from './db.js'
 import { GalatApi } from './api.js'
 import { catatLog } from './log.js'
 import { ambilAngkatanProdi } from './master.js'
-import { ALASAN_MIN, cariProdi, tambahAkun, wajib } from './akses.js'
+import { ALASAN_MIN, cariKelas, cariProdi, rapikanNamaKelas, tambahAkun, wajib } from './akses.js'
 import { PERIODE_AKTIF } from '../lib/data.js'
 
-// Menambah dan mengubah data master: angkatan, fakultas, prodi, dan mahasiswa. Hanya untuk super admin (penjaga
+// Menambah dan mengubah data master: angkatan, fakultas, prodi, kelas, dan mahasiswa. Hanya untuk super admin (penjaga
 // ['superadmin'] di app/api/master/*): sejak rapat 24 Okt 2026 data master dipegang penuh super admin, dan admin yang
 // diberi izin (aturIzinMaster di src/server/akses.js) hanya melihatnya. Tidak ada hapus: menghapus akun tetap hanya
 // lewat hapusAkun di akses.js.
@@ -265,13 +265,157 @@ async function ubahProdi(pengguna, { nama, namaBaru, namaEn, jenjang, fakultas, 
   return { master: await ambilAngkatanProdi() }
 }
 
+/* ------------------------------------ kelas ------------------------------------ */
+
+// Kelas di dalam satu prodi (sejak 12 Nov 2026), mis. Sistem Informasi Kelas A. Nama disimpan tanpa kata "Kelas"
+// ('A', 'B', 'Malam') karena layar selalu menulis "Kelas <nama>", dan unik di dalam prodinya tanpa membedakan huruf
+// besar/kecil (indeks Kelas_prodiId_nama_key, kolasi utf8mb4_unicode_ci). Contoh A dan B untuk setiap prodi lama
+// ditanam migrasi 20261112150000_kelas_prodi; prodi baru belum punya kelas sampai ditambahkan di sini. Sejak 13 Nov 2026
+// mahasiswa dimasukkan ke kelas di prodinya (`anggota`, banyak sekaligus, atau ubah satu mahasiswa di bawah), dan dosen
+// yang mengampu kelas itu (DosenKelas, diatur di Akses Pengguna) melihat anggotanya. Tidak ada hapus, sama dengan data
+// master lain.
+
+const BATAS_NAMA_KELAS = 30 // panjang kolom Kelas.nama; angkanya juga tertulis di pesan namaKelas()
+const BATAS_ANGGOTA = 500 // mahasiswa sekali simpan; angkanya juga tertulis di pesannya
+
+/** `aksi` 'tambah' (kelas baru), 'ubah' (ganti nama), atau 'anggota' (memasukkan mahasiswa ke kelas). */
+export function kelolaKelas(pengguna, isi = {}) {
+  if (isi?.aksi === 'anggota') return aturAnggotaKelas(pengguna, isi)
+  return pilihAksi(isi, tambahKelas, ubahKelas)(pengguna, isi)
+}
+
+/**
+ * Nama kelas tanpa awalan "Kelas" yang ikut diketik ("Kelas C" menjadi "C"; "Kelas" saja berarti kosong). `baru`: untuk
+ * ganti nama. Pesannya ditulis utuh supaya cocok dengan kamus teks.js dan terbaca test:bahasa.
+ */
+function namaKelas(nilai, baru = false) {
+  const teks = rapikanNamaKelas(nilai)
+  if (!teks) throw new GalatApi(baru ? 'Nama baru kelas wajib diisi, misalnya A.' : 'Nama kelas wajib diisi, misalnya A.')
+  if (teks.length > BATAS_NAMA_KELAS) {
+    throw new GalatApi(baru ? 'Nama baru kelas paling panjang 30 karakter.' : 'Nama kelas paling panjang 30 karakter.')
+  }
+  return teks
+}
+
+/** Prodi beserta kelasnya, dikenali dari nama prodi seperti cariProdi() di akses.js. */
+async function prodiBerkelas(nama) {
+  const p = await db.programStudi.findUnique({ where: { nama: wajib(nama, 'Program studi') }, include: { kelas: true } })
+  if (!p) throw new GalatApi('Program studi tidak ditemukan.', 404)
+  return p
+}
+
+/** Kelas lain di prodi yang sama dengan nama itu, tanpa membedakan huruf besar/kecil (sama dengan indeks uniknya). */
+const kelasKembar = (p, nama, kecualiId = null) =>
+  p.kelas.some((k) => k.id !== kecualiId && k.nama.toLowerCase() === nama.toLowerCase())
+
+async function tambahKelas(pengguna, { prodi, nama }) {
+  const p = await prodiBerkelas(prodi)
+  const teks = namaKelas(nama)
+  const kembar = 'Kelas ' + teks + ' sudah ada di ' + p.nama + '.'
+  if (kelasKembar(p, teks)) throw new GalatApi(kembar, 409)
+
+  await denganNamaUnik(
+    () =>
+      db.$transaction(async (tx) => {
+        await tx.kelas.create({ data: { nama: teks, prodiId: p.id } })
+        await catatLog(tx, {
+          aktorId: pengguna.id,
+          aksi: 'TAMBAH_KELAS',
+          target: 'kelas ' + p.nama + ' ' + teks,
+          rincian: { prodi: p.nama, kelas: teks },
+        })
+      }),
+    kembar,
+  )
+  return { master: await ambilAngkatanProdi() }
+}
+
+async function ubahKelas(pengguna, { prodi, nama, namaBaru, alasan }) {
+  const teksAlasan = alasanUbah(alasan)
+  const p = await prodiBerkelas(prodi)
+  const k = p.kelas.find((x) => x.nama === String(nama ?? '').trim())
+  if (!k) throw new GalatApi('Kelas tidak ditemukan.', 404)
+  const baru = namaKelas(namaBaru, true)
+  if (baru === k.nama) return { master: await ambilAngkatanProdi() }
+  const kembar = 'Kelas ' + baru + ' sudah ada di ' + p.nama + '.'
+  if (kelasKembar(p, baru, k.id)) throw new GalatApi(kembar, 409)
+
+  await denganNamaUnik(
+    () =>
+      db.$transaction(async (tx) => {
+        await tx.kelas.update({ where: { id: k.id }, data: { nama: baru } })
+        await catatLog(tx, {
+          aktorId: pengguna.id,
+          aksi: 'UBAH_KELAS',
+          target: 'kelas ' + p.nama + ' ' + k.nama,
+          rincian: { prodi: p.nama, sebelum: { kelas: k.nama }, sesudah: { kelas: baru }, alasan: teksAlasan },
+        })
+      }),
+    kembar,
+  )
+  return { master: await ambilAngkatanProdi() }
+}
+
+/**
+ * Memasukkan beberapa mahasiswa satu prodi ke satu kelas (`kelas`: nama kelasnya), atau mengeluarkannya dari kelas
+ * (`kelas` kosong), dengan alasan. Mahasiswa dikenali dari NIM (`nim`: larik) dan harus mahasiswa prodi itu. Yang kelasnya
+ * sudah sama dilewati, dan bila tidak ada yang berubah tidak ada yang dicatat. Semua perubahan tercatat dalam satu baris
+ * log ATUR_KELAS_MAHASISWA. Nilai tidak berubah; yang berubah hanya dosen yang melihat mahasiswanya, yaitu dosen yang
+ * mengampu kelas itu (diKelasDosen di src/server/muat.js). Jawabannya { jumlah } mahasiswa yang berpindah kelas.
+ */
+async function aturAnggotaKelas(pengguna, { prodi, kelas, nim, alasan }) {
+  const teksAlasan = alasanUbah(alasan)
+  const p = await prodiBerkelas(prodi)
+  const teksKelas = rapikanNamaKelas(kelas)
+  const k = teksKelas ? p.kelas.find((x) => x.nama.toLowerCase() === teksKelas.toLowerCase()) : null
+  if (teksKelas && !k) throw new GalatApi('Kelas tidak ditemukan.', 404)
+  const daftarNim = [...new Set((Array.isArray(nim) ? nim : []).map((x) => String(x ?? '').trim()).filter(Boolean))]
+  if (!daftarNim.length) throw new GalatApi('Pilih minimal satu mahasiswa.')
+  if (daftarNim.length > BATAS_ANGGOTA) throw new GalatApi('Paling banyak 500 mahasiswa sekali simpan.')
+
+  const mhs = await db.mahasiswa.findMany({ where: { nim: { in: daftarNim } }, include: { kelas: true } })
+  const adaNim = new Set(mhs.map((m) => m.nim))
+  const asing = daftarNim.find((x) => !adaNim.has(x))
+  if (asing) throw new GalatApi('Mahasiswa dengan NIM ' + asing + ' tidak ditemukan.', 404)
+  // Kelas milik satu prodi: mahasiswa prodi lain tidak bisa masuk ke sana.
+  const luar = mhs.find((m) => m.prodiId !== p.id)
+  if (luar) throw new GalatApi('NIM ' + luar.nim + ' bukan mahasiswa ' + p.nama + '.')
+
+  const tujuan = k?.id ?? null
+  const pindah = mhs.filter((m) => (m.kelasId ?? null) !== tujuan).sort((a, b) => a.nim.localeCompare(b.nim))
+  if (!pindah.length) return { jumlah: 0 } // semuanya sudah di kelas itu, tidak dicatat
+
+  await db.$transaction(async (tx) => {
+    await tx.mahasiswa.updateMany({ where: { id: { in: pindah.map((m) => m.id) } }, data: { kelasId: tujuan } })
+    await catatLog(tx, {
+      aktorId: pengguna.id,
+      aksi: 'ATUR_KELAS_MAHASISWA',
+      target: k ? 'kelas ' + p.nama + ' ' + k.nama : 'prodi ' + p.nama,
+      rincian: {
+        prodi: p.nama,
+        kelas: k?.nama ?? null,
+        jumlah: pindah.length,
+        mahasiswa: pindah.map((m) => ({
+          nim: m.nim,
+          nama: m.nama,
+          sebelum: { kelas: m.kelas?.nama ?? null },
+          sesudah: { kelas: k?.nama ?? null },
+        })),
+        alasan: teksAlasan,
+      },
+    })
+  })
+  return { jumlah: pindah.length }
+}
+
 /* ---------------------------------- mahasiswa ---------------------------------- */
 
 // Tambah memakai tambahAkun() di akses.js (akun + data mahasiswa + log TAMBAH_AKUN), jadi aturannya sama persis
-// dengan Akses Pengguna super admin, termasuk penolakan angkatan terkunci. Ubah mencakup nama, email, prodi, dan
-// angkatan; NIM tidak bisa diubah karena UsulanEntri menyambung ke mahasiswa lewat teks NIM, bukan id, sehingga
+// dengan Akses Pengguna super admin, termasuk penolakan angkatan terkunci. Ubah mencakup nama, email, prodi, angkatan,
+// dan kelas; NIM tidak bisa diubah karena UsulanEntri menyambung ke mahasiswa lewat teks NIM, bukan id, sehingga
 // riwayat usulan dosen akan putus. Pindah prodi atau angkatan hanya selama mahasiswanya belum punya data penilaian:
-// pindah angkatan menggeser semesternya, dan pindah prodi memindahkannya ke dosen lain.
+// pindah angkatan menggeser semesternya, dan pindah prodi memindahkannya ke dosen lain. Pindah kelas di prodi yang sama
+// selalu boleh (13 Nov 2026): nilainya tetap, yang berubah hanya dosen yang melihatnya.
 
 export const kelolaMahasiswa = (pengguna, isi = {}) =>
   pilihAksi(isi, (p, i) => tambahAkun(p, { ...i, peran: 'mahasiswa' }), ubahMahasiswa)(pengguna, isi)
@@ -290,29 +434,35 @@ async function dataPenilaian(m) {
   return hitung.map(([ket], i) => [ket, jumlah[i]]).filter(([, n]) => n > 0)
 }
 
-async function ubahMahasiswa(pengguna, { nim, nama, email, prodi, angkatanId, alasan }) {
+async function ubahMahasiswa(pengguna, { nim, nama, email, prodi, angkatanId, kelas, alasan }) {
   const teksAlasan = alasanUbah(alasan)
   const m = await db.mahasiswa.findUnique({
     where: { nim: wajib(nim, 'NIM') },
-    include: { pengguna: true, prodi: true, angkatan: true },
+    include: { pengguna: true, prodi: true, angkatan: true, kelas: true },
   })
   if (!m) throw new GalatApi('Mahasiswa dengan NIM itu tidak ditemukan.', 404)
 
   const emailBaru = email == null ? m.pengguna.email : wajib(email, 'Email').toLowerCase()
   if (!EMAIL_SAH.test(emailBaru)) throw new GalatApi('Format email tidak valid.')
   const prodiId = prodi == null || prodi === m.prodi.nama ? m.prodiId : await cariProdi(prodi)
+  const prodiNama = prodiId === m.prodiId ? m.prodi.nama : String(prodi).trim()
   const tujuan =
     angkatanId == null || angkatanId === m.angkatanId
       ? m.angkatan
       : await db.angkatan.findUnique({ where: { id: wajib(angkatanId, 'Angkatan') } })
   if (!tujuan) throw new GalatApi('Angkatan tidak ditemukan.')
+  // Kelas tidak dikirim: tetap, kecuali pindah prodi (kelas lamanya milik prodi lama, jadi dikosongkan). Kelas kosong:
+  // keluar dari kelas. Selain itu harus kelas di prodi (barunya).
+  const kelasBaru =
+    kelas === undefined ? (prodiId === m.prodiId ? m.kelas : null) : await cariKelas(prodiId, prodiNama, kelas)
 
-  const lama = { nama: m.nama, email: m.pengguna.email, prodi: m.prodi.nama, angkatan: m.angkatan.label }
+  const lama = { nama: m.nama, email: m.pengguna.email, prodi: m.prodi.nama, angkatan: m.angkatan.label, kelas: m.kelas?.nama ?? null }
   const baru = {
     nama: nama == null ? m.nama : wajib(nama, 'Nama'),
     email: emailBaru,
-    prodi: prodiId === m.prodiId ? m.prodi.nama : String(prodi).trim(),
+    prodi: prodiNama,
     angkatan: tujuan.label,
+    kelas: kelasBaru?.nama ?? null,
   }
   const beda = bedaIsi(lama, baru)
   if (!beda.berubah) return { mahasiswa: { nim: m.nim, ...baru } }
@@ -339,7 +489,10 @@ async function ubahMahasiswa(pengguna, { nim, nama, email, prodi, angkatanId, al
 
   try {
     await db.$transaction(async (tx) => {
-      await tx.mahasiswa.update({ where: { id: m.id }, data: { nama: baru.nama, prodiId, angkatanId: tujuan.id } })
+      await tx.mahasiswa.update({
+        where: { id: m.id },
+        data: { nama: baru.nama, prodiId, angkatanId: tujuan.id, kelasId: kelasBaru?.id ?? null },
+      })
       if (baru.email !== m.pengguna.email) await tx.pengguna.update({ where: { id: m.penggunaId }, data: { email: baru.email } })
       await catatLog(tx, {
         aktorId: pengguna.id,

@@ -1345,8 +1345,8 @@ const RUTE = [
     ['admin: mencabut dengan alasan tercatat atas namanya', alur.dicabut],
     ['admin: barisnya tertulis Dicabut, tombol Cetak mati, tombol Cabut hilang', alur.barisMenyebutDicabut],
     ['mahasiswa: alasan pencabutan tampil dan bisa mengajukan peninjauan', alur.mahasiswaMelihatPencabutan],
-    ['mahasiswa: rincian langkah yang tidak tersimpan tidak dikarang, dan ada jalur menghubungi Kemahasiswaan', alur.pencabutanJujur],
-    ['mahasiswa: instruksi cetak sesudah dicabut bersyarat', alur.instruksiBersyarat],
+    ['mahasiswa: kartu dicabut hanya alasan dan tombol Ajukan peninjauan akses (tanpa siapa, langkah, dan Hubungi Kemahasiswaan)', alur.pencabutanRingkas],
+    ['mahasiswa: sesudah dicabut tidak ada catatan cetak di bawah kartu', alur.tanpaCatatanSesudahDicabut],
     ['mahasiswa: sesudah dicabut tidak ada lembar sertifikat', alur.tanpaLembarSesudahDicabut],
     ['sesudah dicabut pencetakan ditolak dan tidak terhitung', alur.cetakSesudahDicabutDitolak],
     ['sesudah dicabut permintaan baru masuk lagi ke lapis pertama', alur.mintaLagiSesudahDicabut],
@@ -1455,13 +1455,16 @@ const RUTE = [
     ['mencabut akses butuh alasan, lalu statusnya berubah', ps.cabutAkses],
     ['hapus akun hanya untuk akses yang dicabut, butuh alasan, lalu barisnya hilang', ps.hapusAkun],
     ['pencarian NIP menyisakan dosen itu', ps.cariAkun],
+    ['Ubah kelas dosen: prodi dosen terpilih, Kelas A bisa ditambah lalu tidak ditawarkan lagi, dan bisa dilepas', ps.pilihKelasDosen],
     ['akun super admin (milik sendiri) tidak bisa dicabut', ps.superTidakBisaDicabut],
     ['tab Mahasiswa: NIM, prodi, dan angkatan tampil, pencarian NIM jalan, akses bisa dicabut', ps.aksesMahasiswa],
     ['izin lihat data master: hanya di baris admin biasa, butuh alasan, lalu lencananya muncul', ps.beriIzinMaster],
     ['akses angkatan: panel di baris admin biasa, centang = terlihat (Semester 1–3 tercentang, yang lewat kosong), simpan butuh perubahan dan alasan', ps.panelAksesAngkatan],
     ['Data Master: admin tanpa izin melihat kartu minta akses baca (tombolnya mati tanpa alasan), menunya ada', ps.dataMasterTanpaIzin],
-    ['Data Master: admin berizin hanya melihat, tanpa tombol tambah dan ubah', ps.dataMasterBacaSaja],
-    ['Data Master: super admin melihat menu, tiga tab, pratinjau angkatan, dan catatan NIM', ps.dataMasterSuper],
+    ['Data Master: admin berizin hanya melihat, tanpa tombol tambah, ubah, dan atur mahasiswa (juga di tab Kelas)', ps.dataMasterBacaSaja],
+    ['Data Master: super admin melihat menu, empat tab, pratinjau angkatan, Kelas A dan B beserta jumlah anggotanya di setiap prodi, formulir tambah kelas, dan catatan NIM', ps.dataMasterSuper],
+    ['Data Master: Atur mahasiswa hanya memuat mahasiswa prodi itu, simpan butuh pilihan dan alasan, saringan baru mengosongkan pilihan', ps.panelAnggotaKelas],
+    ['Data Master: pilihan Kelas di formulir tambah mahasiswa mengikuti prodinya', ps.kelasIkutProdi],
     ['pintu API yang belum dibuat (404) dikenali', ps.apiBelumAdaDikenali],
   ]
   const rusakPs = cekPs.filter(([, ok]) => !ok)
@@ -1699,6 +1702,7 @@ const RUTE = [
   const ad = await ujiAlurDosen()
   const cekDosen = [
     ['kelas dosen hanya mahasiswa prodi dan semesternya', ad.kelasTersaring],
+    ['kelas yang diampu: hanya anggota kelas itu, juga dari prodi lain; yang belum masuk kelas tidak ikut', ad.kelasPilihan],
     ['kelas punya lebih dari satu tugas', ad.adaDuaTugas],
     ['templat dikenali dari kode tugasnya', ad.templatDikenali],
     ['templat yang diunggah kembali tidak mengubah apa pun', ad.templatTanpaPerubahan],

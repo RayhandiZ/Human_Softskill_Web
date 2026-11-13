@@ -27,6 +27,9 @@
    (keputusan, pencabutan, pembukaan cetak) terhapus bersama mahasiswa dan angkatan sementara itu.
    Bagian kelas dosen membuat akun dosen sementara (uji.kelas.dosen.*) yang mengampu ANG_A, mengajukan perbaikan nilai
    NIM2 yang lalu disetujui dan dibatalkan lagi; permintaan, log, dan akunnya dihapus di akhir.
+   Bagian kelas A/B memasukkan mahasiswa uji ke Kelas A dan B Sistem Informasi yang sudah ada (kolom kelasId-nya ikut
+   hilang bersama mahasiswa uji), memberi dosen uji kelas yang diampu (DosenKelas ikut terhapus bersama dosennya), dan
+   membuat satu akun mahasiswa sementara (uji.kelas.mhs.*) langsung di Kelas B; semua log-nya dihapus di akhir.
    Bagian pembaruan dari super admin membuat beberapa baris log (yang berkaitan dengan admin uji dan yang tidak; semuanya
    dihapus lewat id-nya) dan mengembalikan penanda baca akun admin uji (Pengguna.notifDibacaId) persis seperti semula.
    Angkatan uji ANG_A dan ANG_C sudah lewat Semester 3, jadi dibuka untuk admin uji (tabel AdminAngkatan) begitu dibuat,
@@ -78,6 +81,7 @@ import * as kelasAkses from '../app/api/akses/kelas/route.js'
 import * as angkatanAkses from '../app/api/akses/angkatan/route.js'
 import * as masterAngkatan from '../app/api/master/angkatan/route.js'
 import * as masterProdi from '../app/api/master/prodi/route.js'
+import * as masterKelas from '../app/api/master/kelas/route.js'
 import * as masterMahasiswa from '../app/api/master/mahasiswa/route.js'
 import * as masterAkses from '../app/api/master/akses/route.js'
 import * as aspekRoute from '../app/api/kurikulum/aspek/route.js'
@@ -146,6 +150,7 @@ const PINTU = {
   '/api/akses/angkatan': angkatanAkses,
   '/api/master/angkatan': masterAngkatan,
   '/api/master/prodi': masterProdi,
+  '/api/master/kelas': masterKelas,
   '/api/master/mahasiswa': masterMahasiswa,
   '/api/master/akses': masterAkses,
   '/api/kurikulum/aspek': aspekRoute,
@@ -222,6 +227,8 @@ const HAPUS_UJI = {
 }
 /* Bagian "kelas dosen": satu akun dosen sementara yang mengampu ANG_A (angkatan selesai dan disahkan). */
 const DOSEN_KELAS = { email: 'uji.kelas.dosen.' + SUF + '@lecturer.umn.ac.id', nip: 'UJIKELAS' + SUF, sandi: 'uji-kelas-' + SUF }
+/* Bagian "kelas A/B": satu akun mahasiswa sementara yang langsung dimasukkan ke Kelas B saat dibuat (NIM wajib angka). */
+const MHS_KELAS = { email: 'uji.kelas.mhs.' + SUF + '@student.umn.ac.id', nim: '99997' + SUF }
 /* Bagian "data master": nama fakultas/prodi dan akun mahasiswa sementara (NIM wajib angka), id angkatan yang
    dibuat uji, id log yang dibuatnya, dan izin admin uji sebelum disentuh (undefined = belum disentuh). */
 const FAK_UJI = 'Fakultas Uji ' + SUF
@@ -276,6 +283,7 @@ const targetLog = [
   'akun ' + EMAIL,
   ...Object.values(HAPUS_UJI).map((a) => 'akun ' + a.email),
   'akun ' + DOSEN_KELAS.email,
+  'akun ' + MHS_KELAS.email,
 ]
 
 async function bersihkanMahasiswa(email) {
@@ -481,6 +489,7 @@ async function bersihkan() {
   await bersihkanMahasiswa(EMAIL)
   await bersihkanMahasiswa(EMAIL2)
   await bersihkanMahasiswa(EMAIL3)
+  await bersihkanMahasiswa(MHS_KELAS.email)
   // Akun bagian hapus akun yang belum sempat terhapus (uji berhenti di tengah), dan dosen bagian kelas dosen. Baris
   // DosenAngkatan-nya ikut terhapus bersama baris Dosen (onDelete Cascade).
   for (const { email } of [...Object.values(HAPUS_UJI), DOSEN_KELAS]) {
@@ -2077,6 +2086,51 @@ try {
   await db.programStudi.delete({ where: { nama: PRODI_UJI_EN } })
   await db.fakultas.delete({ where: { nama: FAK_UJI_EN } })
 
+  // Kelas di dalam prodi (sejak 12 Nov 2026): hanya super admin, nama disimpan tanpa awalan "Kelas", unik di dalam
+  // prodinya tanpa beda huruf besar/kecil, ganti nama wajib beralasan. Kelasnya ikut terhapus bersama prodi uji.
+  const kirimKelasProdi = (pelaku, isi) => kirimMaster(pelaku, 'kelas', isi)
+  cek('admin tidak boleh menambah kelas (403)', (await kirimKelasProdi(admin, { aksi: 'tambah', prodi: PRODI_UJI_B, nama: 'A' })).status === 403)
+  cek('dosen tidak boleh menambah kelas (403)', (await kirimKelasProdi(dosen, { aksi: 'tambah', prodi: PRODI_UJI_B, nama: 'A' })).status === 403)
+  cek('kelas tanpa nama ("Kelas" saja) ditolak (400)', (await kirimKelasProdi(sa, { aksi: 'tambah', prodi: PRODI_UJI_B, nama: 'Kelas ' })).status === 400)
+  cek('kelas untuk prodi yang tidak ada ditolak (404)', (await kirimKelasProdi(sa, { aksi: 'tambah', prodi: 'Tidak Ada ' + SUF, nama: 'A' })).status === 404)
+  const tambahKelasProdi = await kirimKelasProdi(sa, { aksi: 'tambah', prodi: PRODI_UJI_B, nama: 'Kelas A' })
+  const logKelasProdi = await logBaru('TAMBAH_KELAS', 'kelas ' + PRODI_UJI_B + ' A')
+  cek(
+    'super admin menambah kelas; awalan "Kelas" dibuang, master dan log ikut',
+    tambahKelasProdi.status === 200 &&
+      (await db.kelas.count({ where: { prodi: { nama: PRODI_UJI_B }, nama: 'A' } })) === 1 &&
+      tambahKelasProdi.isi.master?.fakultas?.flatMap((f) => f.programs).find((p) => p.nama === PRODI_UJI_B)?.kelas?.join() === 'A' &&
+      logKelasProdi?.rincian?.prodi === PRODI_UJI_B &&
+      logKelasProdi.rincian.kelas === 'A',
+    JSON.stringify(tambahKelasProdi.isi),
+  )
+  cek(
+    'nama kelas kembar di prodi yang sama ditolak (409), tanpa beda huruf besar/kecil',
+    (await kirimKelasProdi(sa, { aksi: 'tambah', prodi: PRODI_UJI_B, nama: 'a' })).status === 409,
+  )
+  await kirimKelasProdi(sa, { aksi: 'tambah', prodi: PRODI_UJI_B, nama: 'B' })
+  await logBaru('TAMBAH_KELAS', 'kelas ' + PRODI_UJI_B + ' B')
+  cek('ganti nama kelas tanpa alasan ditolak (400)', (await kirimKelasProdi(sa, { aksi: 'ubah', prodi: PRODI_UJI_B, nama: 'B', namaBaru: 'C' })).status === 400)
+  cek(
+    'ganti nama kelas menjadi nama kelas lain di prodinya ditolak (409)',
+    (await kirimKelasProdi(sa, { aksi: 'ubah', prodi: PRODI_UJI_B, nama: 'B', namaBaru: 'A', alasan: ALASAN_DM })).status === 409,
+  )
+  cek(
+    'ganti nama kelas yang tidak ada ditolak (404)',
+    (await kirimKelasProdi(sa, { aksi: 'ubah', prodi: PRODI_UJI_B, nama: 'Z', namaBaru: 'C', alasan: ALASAN_DM })).status === 404,
+  )
+  const ubahKelasProdi = await kirimKelasProdi(sa, { aksi: 'ubah', prodi: PRODI_UJI_B, nama: 'B', namaBaru: 'Malam', alasan: ALASAN_DM })
+  const logUbahKelasProdi = await logBaru('UBAH_KELAS', 'kelas ' + PRODI_UJI_B + ' B')
+  cek(
+    'super admin mengganti nama kelas; log memuat sebelum/sesudah dan alasan',
+    ubahKelasProdi.status === 200 &&
+      (await db.kelas.findMany({ where: { prodi: { nama: PRODI_UJI_B } }, orderBy: { nama: 'asc' } })).map((k) => k.nama).join() === 'A,Malam' &&
+      logUbahKelasProdi?.rincian?.sebelum?.kelas === 'B' &&
+      logUbahKelasProdi.rincian.sesudah?.kelas === 'Malam' &&
+      logUbahKelasProdi.rincian.alasan === ALASAN_DM,
+    JSON.stringify(ubahKelasProdi.isi),
+  )
+
   // Mahasiswa: tambah lewat tambahAkun, ubah tanpa NIM; pindah prodi/angkatan hanya selama belum punya data penilaian.
   const isiMhsDM = { aksi: 'tambah', email: EMAIL_DM, sandi: 'umn12345', nama: 'Mahasiswa Uji Master', nim: NIM_DM, prodi: PRODI_UJI_B }
   cek(
@@ -2439,6 +2493,177 @@ try {
       JSON.stringify(diSuper ?? null).slice(0, 300),
     )
   }
+
+  /* ------------------------------ kelas A/B ------------------------------ */
+  garis('21B. KELAS A/B: ANGGOTA KELAS DAN KELAS YANG DIAMPU DOSEN')
+  // 13 Nov 2026: super admin memasukkan mahasiswa ke Kelas A/B di prodinya (Data Master › Kelas › Atur mahasiswa, atau
+  // ubah satu mahasiswa), dan memilih kelas yang diampu dosen, boleh beberapa dan juga di prodi lain. Dosen dengan kelas
+  // terpilih hanya melihat anggota kelas itu; tanpa pilihan, semua mahasiswa prodinya seperti sebelumnya.
+  const kelasSI = await db.kelas.findMany({ where: { prodiId: prodi.id }, orderBy: { nama: 'asc' } })
+  const prodiLain = await db.programStudi.findFirst({
+    where: { NOT: { id: prodi.id }, kelas: { some: {} } },
+    include: { kelas: { orderBy: { nama: 'asc' } } },
+    orderBy: { id: 'asc' },
+  })
+  cek(
+    'prasyarat: Kelas A dan B Sistem Informasi dan satu prodi lain berkelas (migrasi kelas_prodi)',
+    ['A', 'B'].every((n) => kelasSI.some((k) => k.nama === n)) && Boolean(prodiLain),
+    JSON.stringify(kelasSI.map((k) => k.nama)),
+  )
+  const idKelas = (nama) => kelasSI.find((k) => k.nama === nama)?.id
+  const kelasNim = async (nim) => (await db.mahasiswa.findUnique({ where: { nim } }))?.kelasId ?? null
+  const ALASAN_KELAS = 'Uji otomatis pembagian kelas'
+  const anggota = (pelaku, isi) => kirimMaster(pelaku, 'kelas', { aksi: 'anggota', prodi: prodi.nama, alasan: ALASAN_KELAS, ...isi })
+
+  cek('admin tidak boleh memasukkan mahasiswa ke kelas (403)', (await anggota(admin, { kelas: 'A', nim: [NIM2] })).status === 403)
+  cek('pembagian kelas tanpa alasan ditolak (400)', (await anggota(sa, { kelas: 'A', nim: [NIM2], alasan: '' })).status === 400)
+  cek('pembagian kelas tanpa mahasiswa ditolak (400)', (await anggota(sa, { kelas: 'A', nim: [] })).status === 400)
+  cek('kelas yang tidak ada di prodinya ditolak (404)', (await anggota(sa, { kelas: 'Tidak Ada', nim: [NIM2] })).status === 404)
+  cek('NIM yang tidak terdaftar ditolak (404)', (await anggota(sa, { kelas: 'A', nim: ['00000000000'] })).status === 404)
+  const lintasProdi = await anggota(sa, { prodi: prodiLain.nama, kelas: prodiLain.kelas[0].nama, nim: [NIM2] })
+  cek(
+    'mahasiswa prodi lain tidak bisa masuk ke kelas prodi ini (400)',
+    lintasProdi.status === 400 && (await kelasNim(NIM2)) === null,
+    JSON.stringify(lintasProdi.isi),
+  )
+  const masukA = await anggota(sa, { kelas: 'Kelas A', nim: [NIM2, NIM3] })
+  const logMasukA = await logBaru('ATUR_KELAS_MAHASISWA', 'kelas ' + prodi.nama + ' A')
+  cek(
+    'super admin memasukkan dua mahasiswa ke Kelas A; awalan "Kelas" dibuang, log memuat jumlah, sebelum/sesudah, dan alasan',
+    masukA.status === 200 &&
+      masukA.isi.jumlah === 2 &&
+      (await kelasNim(NIM2)) === idKelas('A') &&
+      (await kelasNim(NIM3)) === idKelas('A') &&
+      logMasukA?.rincian?.jumlah === 2 &&
+      logMasukA.rincian.kelas === 'A' &&
+      logMasukA.rincian.mahasiswa?.every((m) => m.sebelum?.kelas === null && m.sesudah?.kelas === 'A') &&
+      logMasukA.rincian.alasan === ALASAN_KELAS,
+    JSON.stringify(masukA.isi),
+  )
+  const jumlahLogKelas = () => db.logAktivitas.count({ where: { aksi: 'ATUR_KELAS_MAHASISWA', target: 'kelas ' + prodi.nama + ' A' } })
+  const logSebelumUlang = await jumlahLogKelas()
+  const ulangA = await anggota(sa, { kelas: 'a', nim: [NIM2, NIM3] })
+  cek(
+    'memasukkan lagi ke kelas yang sama (tanpa beda huruf besar/kecil) tidak mengubah dan tidak mencatat apa pun',
+    ulangA.status === 200 && ulangA.isi.jumlah === 0 && (await jumlahLogKelas()) === logSebelumUlang,
+    JSON.stringify(ulangA.isi),
+  )
+  await anggota(sa, { kelas: 'B', nim: [NIM3] })
+  await logBaru('ATUR_KELAS_MAHASISWA', 'kelas ' + prodi.nama + ' B')
+  cek('mahasiswa bisa dipindah ke Kelas B', (await kelasNim(NIM3)) === idKelas('B'))
+  const dataKelasSA = (await sa('/api/data')).isi.mahasiswa ?? []
+  cek(
+    'data mahasiswa membawa nama kelasnya',
+    dataKelasSA.find((m) => m.nim === NIM2)?.kelas === 'A' && dataKelasSA.find((m) => m.nim === NIM3)?.kelas === 'B',
+    JSON.stringify(dataKelasSA.filter((m) => [NIM2, NIM3].includes(m.nim)).map((m) => [m.nim, m.kelas])),
+  )
+  cek(
+    'daftar Akses Pengguna menulis kelas akun mahasiswa',
+    (await sa('/api/akses', { metode: 'POST' })).isi.akun?.find((a) => a.nim === NIM2)?.kelas === 'A',
+  )
+
+  // Kelas yang diampu dosen: kelas yang tidak ada dan isian yang bukan larik ditolak; dua kelas di dua prodi boleh.
+  cek(
+    'kelas yang diampu yang tidak ada ditolak (400)',
+    (await ubahKelas(sa, { angkatan: [ANG_A, ANG_C], kelas: [{ prodi: prodi.nama, nama: 'Tidak Ada' }] })).status === 400,
+  )
+  cek('daftar kelas yang diampu harus berupa larik (400)', (await ubahKelas(sa, { kelas: 'A' })).status === 400)
+  const kelasLain = { prodi: prodiLain.nama, nama: prodiLain.kelas[0].nama }
+  const pakaiKelas = await ubahKelas(sa, { angkatan: [ANG_A, ANG_C], kelas: [kelasLain, { prodi: prodi.nama, nama: 'A' }] })
+  const logPakaiKelas = await db.logAktivitas.findFirst({
+    where: { aksi: 'UBAH_KELAS_DOSEN', target: 'akun ' + DOSEN_KELAS.email },
+    orderBy: { id: 'desc' },
+  })
+  const diampu = pakaiKelas.isi.akun?.kelasDiampu ?? []
+  cek(
+    'super admin memberi dosen dua kelas di dua prodi; daftarnya urut prodi, log memuat kelas sesudahnya',
+    pakaiKelas.status === 200 &&
+      diampu.length === 2 &&
+      diampu.some((k) => k.prodi === prodi.nama && k.nama === 'A') &&
+      diampu.some((k) => k.prodi === kelasLain.prodi && k.nama === kelasLain.nama) &&
+      diampu[0].prodi.localeCompare(diampu[1].prodi, 'id') <= 0 &&
+      logPakaiKelas?.rincian?.sesudah?.kelasDiampu?.length === 2 &&
+      (logPakaiKelas.rincian.sebelum?.kelasDiampu ?? []).length === 0,
+    JSON.stringify(pakaiKelas.isi),
+  )
+  const jumlahLogDosen = () => db.logAktivitas.count({ where: { aksi: 'UBAH_KELAS_DOSEN', target: 'akun ' + DOSEN_KELAS.email } })
+  const logDosenSebelum = await jumlahLogDosen()
+  await ubahKelas(sa, { angkatan: [ANG_C, ANG_A], kelas: [{ prodi: prodi.nama, nama: 'a' }, kelasLain] })
+  cek('kelas yang sama dengan urutan berbeda tidak dicatat lagi', (await jumlahLogDosen()) === logDosenSebelum)
+  cek(
+    'sesi dosen membawa kelas yang diampu',
+    (await dk('/api/sesi')).isi.akun?.dosen?.kelas?.some((k) => k.prodi === prodi.nama && k.nama === 'A'),
+  )
+  const dataDkKelas = (await dk('/api/data')).isi.mahasiswa?.map((m) => m.nim) ?? []
+  cek(
+    'dosen hanya melihat anggota kelas yang diampunya (NIM2 di Kelas A), bukan Kelas B (NIM3)',
+    dataDkKelas.includes(NIM2) && !dataDkKelas.includes(NIM3),
+    JSON.stringify(dataDkKelas),
+  )
+  const unggahLuarKelas = await dk('/api/nilai/dosen', {
+    metode: 'POST',
+    isi: { entri: [{ nim: NIM3, komponenId: 'A1-MK-UAS', nilai: 70 }], alasan: 'Uji: mahasiswa di luar kelas.' },
+  })
+  cek(
+    'unggahan untuk mahasiswa di luar kelasnya ditolak (400)',
+    unggahLuarKelas.status === 400 && /tidak terdaftar di kelas Anda/.test(unggahLuarKelas.isi.galat ?? ''),
+    JSON.stringify(unggahLuarKelas.isi),
+  )
+
+  // Ubah satu mahasiswa: pindah kelas selalu boleh, juga untuk angkatan yang disahkan; kelas asing ditolak.
+  cek(
+    'kelas yang tidak ada saat mengubah satu mahasiswa ditolak (400)',
+    (await kirimMaster(sa, 'mahasiswa', { aksi: 'ubah', nim: NIM3, kelas: 'Tidak Ada', alasan: ALASAN_KELAS })).status === 400,
+  )
+  const pindahKelas = await kirimMaster(sa, 'mahasiswa', { aksi: 'ubah', nim: NIM3, kelas: 'A', alasan: ALASAN_KELAS })
+  const logPindahKelas = await logBaru('UBAH_AKUN', 'akun ' + EMAIL3)
+  cek(
+    'satu mahasiswa dipindah dari Kelas B ke A lewat ubah data; log memuat kelas sebelum dan sesudahnya',
+    pindahKelas.status === 200 &&
+      (await kelasNim(NIM3)) === idKelas('A') &&
+      logPindahKelas?.rincian?.sebelum?.kelas === 'B' &&
+      logPindahKelas.rincian.sesudah?.kelas === 'A',
+    JSON.stringify(pindahKelas.isi),
+  )
+  cek('sesudah dipindah, dosen Kelas A melihatnya', ((await dk('/api/data')).isi.mahasiswa ?? []).some((m) => m.nim === NIM3))
+  const keluarKelas = await anggota(sa, { kelas: '', nim: [NIM2] })
+  const logKeluar = await logBaru('ATUR_KELAS_MAHASISWA', 'prodi ' + prodi.nama)
+  cek(
+    'mengeluarkan mahasiswa dari kelas: kelasnya kosong, dosen kelas itu tidak melihatnya lagi',
+    keluarKelas.status === 200 &&
+      keluarKelas.isi.jumlah === 1 &&
+      (await kelasNim(NIM2)) === null &&
+      logKeluar?.rincian?.kelas === null &&
+      !((await dk('/api/data')).isi.mahasiswa ?? []).some((m) => m.nim === NIM2),
+    JSON.stringify(keluarKelas.isi),
+  )
+
+  // Akun mahasiswa baru bisa langsung dimasukkan ke kelas; kelas yang tidak ada di prodinya ditolak tanpa membuat akun.
+  const isiMhsKelas = {
+    peran: 'mahasiswa', email: MHS_KELAS.email, sandi: 'umn12345', nama: 'Mahasiswa Uji Kelas', nim: MHS_KELAS.nim,
+    prodi: prodi.nama, angkatanId: angkatan.id,
+  }
+  const tambahKelasAsing = await sa('/api/akses/tambah', { metode: 'POST', isi: { ...isiMhsKelas, kelas: 'Tidak Ada' } })
+  cek(
+    'akun mahasiswa baru dengan kelas yang tidak ada ditolak (400), akunnya tidak dibuat',
+    tambahKelasAsing.status === 400 && !(await db.pengguna.findUnique({ where: { email: MHS_KELAS.email } })),
+    JSON.stringify(tambahKelasAsing.isi),
+  )
+  const tambahDiKelas = await sa('/api/akses/tambah', { metode: 'POST', isi: { ...isiMhsKelas, kelas: 'B' } })
+  cek(
+    'akun mahasiswa baru langsung masuk Kelas B',
+    tambahDiKelas.status === 200 && tambahDiKelas.isi.akun?.kelas === 'B' && (await kelasNim(MHS_KELAS.nim)) === idKelas('B'),
+    JSON.stringify(tambahDiKelas.isi),
+  )
+
+  // Kelas dosen dikosongkan lagi: kembali memegang semua mahasiswa prodinya, apa pun kelasnya.
+  const tanpaKelas = await ubahKelas(sa, { angkatan: [ANG_A, ANG_C], kelas: [] })
+  const dataTanpaKelas = ((await dk('/api/data')).isi.mahasiswa ?? []).map((m) => m.nim)
+  cek(
+    'tanpa kelas terpilih, dosen kembali melihat mahasiswa prodinya di angkatan yang diampu, termasuk yang belum punya kelas',
+    tanpaKelas.status === 200 && tanpaKelas.isi.akun?.kelasDiampu?.length === 0 && dataTanpaKelas.includes(NIM2) && dataTanpaKelas.includes(NIM3),
+    JSON.stringify(dataTanpaKelas),
+  )
 
   /* ------------------------------ pembaruan dari super admin ------------------------------ */
   garis('22. PEMBARUAN DARI SUPER ADMIN (LONCENG ADMIN)')

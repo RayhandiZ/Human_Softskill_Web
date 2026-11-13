@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from 'react'
 import { Card, CatatanKaki, EmptyState, StatusTeks } from '../../components/Ui'
 import { IconAlert, IconCheck, IconClock, IconDocument, IconDownload, IconUpload } from '../../components/Icons'
 import { SUMBER } from '../../lib/curriculum'
-import { dosenSesi, getAngkatan, komponenDosen, mahasiswaKelas } from '../../lib/data'
+import { cakupanKelasDosen, dosenSesi, getAngkatan, komponenDosen, mahasiswaKelas } from '../../lib/data'
 import { PERMINTAAN, batalkanPermintaan, unggahNilaiDosen, unggahanDosen, useStore } from '../../lib/store'
 import { bacaBarisBerkas } from '../../lib/csv'
 import { bacaRekap, judulKolom, lembarTemplat } from '../../lib/unggahDosen'
@@ -46,7 +46,7 @@ async function unduhTemplat({ dosen, mahasiswa, komponen, t }) {
   const kelas = t('{unit} Semester {semester}, {prodi}', {
     unit: SUMBER[dosen.sumber]?.label ?? dosen.sumber,
     semester: dosen.semester,
-    prodi: dosen.prodi,
+    prodi: cakupanKelasDosen(dosen, t),
   })
   await tulisXlsx(lembarTemplat({ mahasiswa, komponenKelas: komponen, kelas, t })).toFile(
     'templat-nilai-' + String(dosen.sumber).toLowerCase() + '-sem' + dosen.semester + '.xlsx',
@@ -169,8 +169,9 @@ export default function Unggah() {
   const langsung = rekap ? rekap.perubahan.length - perlu : 0
   const kurangAlasan = perlu > 0 && alasan.trim().length < ALASAN_MIN
   const bisaSimpan = Boolean(rekap && !rekap.galat.length && rekap.perubahan.length && !kurangAlasan)
-  // Angkatan yang diampu, bila Super Admin sudah memilihnya (sama dengan Beranda, dosen/Pantau.jsx).
+  // Angkatan dan kelas yang diampu, bila Super Admin sudah memilihnya (sama dengan Beranda, dosen/Pantau.jsx).
   const angkatanDiampu = dosen.angkatan.map((id) => t(getAngkatan(id)?.label ?? id)).join(', ')
+  const prodiKelas = cakupanKelasDosen(dosen, t)
   // Langkah yang sedang berjalan. Hanya penunjuk arah: dosen yang sudah punya berkas tetap boleh langsung mengunggah.
   const langkahKini = tersimpan ? 5 : rekap ? (rekap.galat.length || !rekap.perubahan.length ? 3 : 4) : membaca || sudahUnduh ? 2 : 1
 
@@ -204,14 +205,16 @@ export default function Unggah() {
         <Card>
           <EmptyState title={t('Belum ada mahasiswa di kelas Anda')}>
             {angkatanDiampu
-              ? t('Angkatan yang Anda ampu ({daftar}) belum berisi mahasiswa {prodi}.', { daftar: angkatanDiampu, prodi: dosen.prodi })
+              ? t('Angkatan yang Anda ampu ({daftar}) belum berisi mahasiswa {prodi}.', { daftar: angkatanDiampu, prodi: prodiKelas })
               : t('Saat ini tidak ada mahasiswa {prodi} yang sudah sampai Semester {n} dan programnya belum selesai.', {
-                  prodi: dosen.prodi,
+                  prodi: prodiKelas,
                   n: dosen.semester,
                 })}{' '}
             {angkatanDiampu
               ? t('Bila angkatannya keliru, minta Super Admin mengubahnya di akun Anda.')
               : t('Bila Anda mengampu angkatan tertentu, termasuk yang sudah disahkan, minta Super Admin memilihnya di akun Anda.')}{' '}
+            {/* Kelas dipilih tetapi mahasiswanya belum dimasukkan ke kelas itu oleh Super Admin. */}
+            {dosen.kelas.length ? t('Mahasiswa masuk ke kelas Anda setelah Super Admin memasukkannya ke kelas di Data Master.') + ' ' : null}
             {t('Templat dan unggahan bisa dipakai setelah kelas Anda berisi mahasiswa.')}
           </EmptyState>
         </Card>

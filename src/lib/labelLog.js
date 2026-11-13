@@ -33,6 +33,12 @@ export const LABEL_LOG = {
   UBAH_FAKULTAS: 'Ubah fakultas',
   TAMBAH_PRODI: 'Tambah program studi',
   UBAH_PRODI: 'Ubah program studi',
+  // Kelas di dalam prodi (sejak 12 Nov 2026); berbeda dengan UBAH_KELAS_DOSEN, yaitu prodi, semester, angkatan, dan
+  // kelas yang diampu seorang dosen.
+  TAMBAH_KELAS: 'Tambah kelas prodi',
+  UBAH_KELAS: 'Ubah kelas prodi',
+  // Mahasiswa yang dimasukkan ke kelas atau dikeluarkan dari kelas (Data Master › Kelas › Atur mahasiswa, 13 Nov 2026).
+  ATUR_KELAS_MAHASISWA: 'Atur kelas mahasiswa',
   // Aspek CPMK itu sendiri (src/server/aspek.js).
   TAMBAH_ASPEK: 'Tambah aspek',
   UBAH_ASPEK: 'Ubah struktur aspek',
@@ -74,6 +80,8 @@ const POLA_SASARAN = [
   [/^batch (.+)$/, (m, t) => t('batch {nama}', { nama: m[1] })],
   [/^fakultas (.+)$/, (m, t) => t('fakultas {nama}', { nama: m[1] })],
   [/^prodi (.+)$/, (m, t) => t('prodi {nama}', { nama: m[1] })],
+  // 'kelas Sistem Informasi A' (dataMaster.js): nama prodi lalu nama kelas.
+  [/^kelas (.+)$/, (m, t) => t('kelas {nama}', { nama: m[1] })],
   [/^mahasiswa (\S+)$/, (m, t) => t('mahasiswa {nim}', { nim: m[1] })],
   [/^permintaan (P-\d+)$/, (m, t) => t('permintaan {id}', { id: m[1] })],
   // 'wewenang Mahasiswa: Mengajukan koreksi nilai' (src/server/wewenang.js): nama kolom dan baris matriks. Nama kolom

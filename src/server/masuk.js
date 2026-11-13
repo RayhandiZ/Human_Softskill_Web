@@ -18,8 +18,16 @@ export class GalatMasuk extends Error {
 
 const SERTA = {
   mahasiswa: { include: { prodi: { include: { fakultas: true } }, angkatan: true } },
-  dosen: { include: { prodi: { include: { fakultas: true } }, angkatan: true } },
+  dosen: {
+    include: { prodi: { include: { fakultas: true } }, angkatan: true, kelas: { include: { kelas: { include: { prodi: true } } } } },
+  },
 }
+
+/** Kelas yang diampu dosen (DosenKelas) untuk sesi: [{ prodi, nama }], urut prodi lalu nama kelas. */
+const kelasDiampu = (d) =>
+  d.kelas
+    .map((k) => ({ prodi: k.kelas.prodi.nama, nama: k.kelas.nama }))
+    .sort((a, b) => a.prodi.localeCompare(b.prodi, 'id') || a.nama.localeCompare(b.nama, 'id'))
 
 export async function periksaMasuk({ email, password } = {}) {
   const alamat = String(email ?? '').trim().toLowerCase()
@@ -91,6 +99,8 @@ function susunAkun(akun) {
           fakultas: d.prodi.fakultas.nama,
           // Angkatan yang diampu (id), dipilih Super Admin; kosong = angkatan yang sedang di semesternya.
           angkatan: d.angkatan.map((a) => a.angkatanId).sort(),
+          // Kelas yang diampu, dipilih Super Admin; kosong = semua mahasiswa prodinya (lihat diKelasDosen di muat.js).
+          kelas: kelasDiampu(d),
         }
       : null,
   }

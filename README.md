@@ -50,8 +50,9 @@ npm run test:nilai  # simpan batch, rollback, dan validasi import
 npm run test:profil # penyimpanan profil: kunci akun, simpan-muat, foto
 npm run test:db     # setiap pintu API terhadap MySQL, termasuk kunci angkatan, data terkunci, log, kurikulum, bobot, periode,
                     # akses, tambah akun, hapus akun, izin dan data master, aspek CPMK, serta koreksi dan akses cetak
-                    # sertifikat dua lapis beserta pencabutan dan catatan cetaknya, dan kelas dosen per angkatan; data uji
-                    # (NIM dan angkatan berawalan UJI, akun uji.kelas.dosen.*,
+                    # sertifikat dua lapis beserta pencabutan dan catatan cetaknya, kelas dosen per angkatan, serta
+                    # anggota Kelas A/B dan kelas yang diampu dosen; data uji
+                    # (NIM dan angkatan berawalan UJI, akun uji.kelas.dosen.* dan uji.kelas.mhs.*,
                     # akun uji.hapus.* dan uji.master.*, Fakultas/Prodi Uji) dihapus lagi dan izin admin uji dikembalikan
 ```
 
@@ -250,7 +251,7 @@ src/lib/
   data.js         sumber data halaman: periode akademik (semesterAktif dibatasi 3,
                   semesterKalender tidak); angkatan, fakultas, prodi (diisi dari basis data
                   lewat isiMaster); data isian (mahasiswa, nilai, usulan lama) yang dimulai
-                  kosong; kelas dosen (komponenDosen, mahasiswaKelas)
+                  kosong; kelas dosen (komponenDosen, mahasiswaKelas, cakupanKelasDosen)
   store.js        penulisan: kirim ke API lalu muat ulang dari basis data (mode lokal untuk uji:
                   diputar ulang di memori)
   kirim.js        satu pintu fetch ke API; jawaban 401 mengakhiri sesi
@@ -310,12 +311,13 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
                   /api/wewenang/matriks); semuanya hanya super admin; lihat Panel Super Admin › Peran &
                   Wewenang
   akses.js        daftar akun, cabut/pulihkan akses, tambah akun, hapus akun, izin lihat data master,
-                  kelas dosen (angkatan yang diampu), dan akses angkatan admin, hanya super admin (POST
+                  kelas dosen (angkatan dan kelas yang diampu), dan akses angkatan admin, hanya super admin (POST
                   /api/akses, /api/akses/ubah, /api/akses/tambah, /api/akses/hapus, /api/akses/izin,
                   /api/akses/kelas, /api/akses/angkatan); bukaAksesMaster() menjalankan permintaan akses
                   admin yang disetujui
-  dataMaster.js   tambah/ubah angkatan, fakultas, prodi, dan mahasiswa, hanya super admin
-                  (POST /api/master/angkatan, /api/master/prodi, /api/master/mahasiswa)
+  dataMaster.js   tambah/ubah angkatan, fakultas, prodi, kelas (beserta anggotanya), dan mahasiswa, hanya
+                  super admin (POST /api/master/angkatan, /api/master/prodi, /api/master/kelas,
+                  /api/master/mahasiswa)
 
 app/api/          masuk, keluar, sesi, data, nilai, nilai/dosen, nilai/rollback, penguncian,
                   koreksi, koreksi/keputusan, sertifikat, sertifikat/keputusan, sertifikat/cabut,
@@ -323,8 +325,8 @@ app/api/          masuk, keluar, sesi, data, nilai, nilai/dosen, nilai/rollback,
                   angkatan/kunci, log, kurikulum/bobot, kurikulum/penilaian, persetujuan/keputusan,
                   persetujuan/batal, periode, akses, akses/ubah, akses/tambah, akses/hapus, akses/izin,
                   akses/kelas, akses/angkatan, master/akses, master/angkatan, master/prodi,
-                  master/mahasiswa, kurikulum/aspek, notifikasi, notifikasi/dibaca, wewenang,
-                  wewenang/matriks (41 pintu)
+                  master/kelas, master/mahasiswa, kurikulum/aspek, notifikasi, notifikasi/dibaca, wewenang,
+                  wewenang/matriks (42 pintu)
 src/components/PemuatData.jsx  memuat /api/data begitu ada yang masuk dan menahan panel
                   sampai datanya tiba
 prisma/           skema, migrasi, seed.js (isi dasar), seed-contoh.js (data contoh),
@@ -696,15 +698,20 @@ di `src/server/akses.js`. Bila server menjawab 404, halaman menyatakan fiturnya 
 (`galat.status` dari `kirim()`).
 
 - `POST /api/akses`, hanya super admin (`tangani(request, ['superadmin'], …)`). Jawaban:
-  `{ akun: [{ id, email, peran, aktif, nama?, nip?, nim?, prodi?, angkatan?, sumber?, semester?,
-  angkatanDiampu? }] }` untuk semua akun, dengan `peran` `'mahasiswa'`, `'dosen'`, `'admin'`, atau
-  `'superadmin'`. `nama` dan `prodi` ada untuk dosen dan mahasiswa; `nip`, `sumber`, `semester`, dan
-  `angkatanDiampu` (`[{ id, label }]`, kosong = otomatis) hanya dosen; `nim` dan `angkatan` (label angkatan) hanya
-  mahasiswa. Daftarnya belum berhalaman: seluruh akun dikirim sekaligus, lalu dicari dan disaring di peramban.
-- `POST /api/akses/kelas` dengan isi `{ id, prodi, sumber, semester, angkatan: [id angkatan] }`, hanya super admin
-  (`ubahKelasDosen()`): mengganti kelas satu akun dosen (409 untuk akun lain, 400 untuk angkatan yang tidak ada).
-  Tercatat `UBAH_KELAS_DOSEN` beserta kelas sebelum dan sesudahnya; nilai yang sudah tersimpan tidak berubah. Di
-  layar: tombol *Ubah kelas* pada baris dosen, dan pilihan *Angkatan yang diampu* juga ada di form tambah dosen.
+  `{ akun: [{ id, email, peran, aktif, nama?, nip?, nim?, prodi?, angkatan?, kelas?, sumber?, semester?,
+  angkatanDiampu?, kelasDiampu? }] }` untuk semua akun, dengan `peran` `'mahasiswa'`, `'dosen'`, `'admin'`, atau
+  `'superadmin'`. `nama` dan `prodi` ada untuk dosen dan mahasiswa; `nip`, `sumber`, `semester`, `angkatanDiampu`
+  (`[{ id, label }]`, kosong = otomatis), dan `kelasDiampu` (`[{ id, prodi, nama }]`, kosong = semua mahasiswa
+  prodinya) hanya dosen; `nim`, `angkatan` (label angkatan), dan `kelas` (nama kelas, `null` = belum punya kelas)
+  hanya mahasiswa. Daftarnya belum berhalaman: seluruh akun dikirim sekaligus, lalu dicari dan disaring di peramban.
+- `POST /api/akses/kelas` dengan isi `{ id, prodi, sumber, semester, angkatan: [id angkatan], kelas: [{ prodi, nama }] }`,
+  hanya super admin (`ubahKelasDosen()`): mengganti kelas satu akun dosen (409 untuk akun lain, 400 untuk angkatan
+  atau kelas yang tidak ada, atau `kelas` yang bukan larik). `kelas` (sejak 13 Nov 2026) boleh beberapa dan dari prodi
+  lain; tidak dikirim atau kosong berarti tanpa pilihan kelas. Tercatat `UBAH_KELAS_DOSEN` beserta kelas sebelum dan
+  sesudahnya; nilai yang sudah tersimpan tidak berubah. Di layar: tombol *Ubah kelas* pada baris dosen, berisi
+  *Kelas yang diampu* (daftar kelas terpilih yang bisa dilepas, lalu pilihan program studi dan kelasnya untuk menambah
+  satu lagi) dan *Angkatan yang diampu*; keduanya juga ada di form tambah dosen. Form tambah mahasiswa punya pilihan
+  *Kelas* yang mengikuti prodinya (boleh *Tanpa kelas*), dikirim sebagai `kelas` ke `/api/akses/tambah`.
 - `POST /api/akses/ubah` dengan isi `{ id, aktif, alasan }`, hanya super admin. Tolak (403) bila
   akunnya milik sendiri atau berperan `SUPER_ADMIN`; tolak (400) bila `alasan` kurang dari 10
   karakter; 404 bila akun tidak ada. Dicatat ke `LogAktivitas` dengan aksi `UBAH_AKSES` beserta email,
@@ -726,7 +733,8 @@ di `src/server/akses.js`. Bila server menjawab 404, halaman menyatakan fiturnya 
     namanya lewat `mahasiswaId`; id itu tercatat di log `HAPUS_AKUN`), dan admin biasa ikut melihat riwayat itu
     walaupun angkatannya tersembunyi baginya, karena saringan angkatan hanya mengenal mahasiswa yang masih ada.
   - Akun dosen juga boleh dihapus walaupun sudah punya data (permintaan yang sama, 12 Nov 2026). Yang terhapus
-    hanya `Pengguna`, `Profil`, dan `Dosen`; `DosenAngkatan` (kelas yang diampu) ikut lewat `onDelete: Cascade`.
+    hanya `Pengguna`, `Profil`, dan `Dosen`; `DosenAngkatan` dan `DosenKelas` (angkatan dan kelas yang diampu) ikut
+    lewat `onDelete: Cascade`.
     Nilai yang pernah ia masukkan milik mahasiswa, jadi tetap, begitu juga `Usulan`, `Batch` (unggahan),
     `Pengumpulan`, `AuditLog`, dan `LogAktivitas`: kolom `dosenId`, `penilaiId`, dan `aktorId` di sana tanpa relasi,
     jadi tidak menahan penghapusan. Usulan yang masih menunggu dari dosen yang sudah dihapus tetap bisa ditolak;
@@ -1294,22 +1302,34 @@ memakai bahan yang sama; lihat Panel mahasiswa › Kaca dan Panel Kemahasiswaan 
 
 ### Kelas dosen
 
-Akun dosen berisi prodi, sumber (MK atau PDP), semester yang diampu, dan sejak 25 Okt 2026 **angkatan yang
-diampu** (tabel `DosenAngkatan`, migrasi `dosen_angkatan`), dipilih Super Admin saat menambah akun atau lewat
-*Ubah kelas* di Akses Pengguna (`POST /api/akses/kelas`, `ubahKelasDosen()` di `src/server/akses.js`, tercatat
-`UBAH_KELAS_DOSEN`). Mahasiswa kelasnya:
+Akun dosen berisi prodi, sumber (MK atau PDP), semester yang diampu, sejak 25 Okt 2026 **angkatan yang
+diampu** (tabel `DosenAngkatan`, migrasi `dosen_angkatan`), dan sejak 13 Nov 2026 **kelas yang diampu** (tabel
+`DosenKelas`, migrasi `20261113090000_kelas_dosen_mahasiswa`): Kelas A/B di tab Kelas Data Master, boleh beberapa dan
+juga di prodi lain, misalnya Sistem Informasi Kelas A dan Informatika Kelas B. Keduanya dipilih Super Admin saat
+menambah akun atau lewat *Ubah kelas* di Akses Pengguna (`POST /api/akses/kelas`, `ubahKelasDosen()` di
+`src/server/akses.js`, tercatat `UBAH_KELAS_DOSEN`). Mahasiswa kelasnya disaring dua langkah:
 
-- **Angkatan sudah dipilih**: mahasiswa prodinya pada angkatan itu saja, termasuk angkatan yang programnya sudah
-  selesai atau sudah disahkan. Dengan begitu dosen tetap melihat data dan riwayat angkatan lamanya, dan bisa
-  mengunggah perbaikan nilainya lewat persetujuan Super Admin (lihat Unggah Nilai).
-- **Belum dipilih** (otomatis, termasuk akun dari sebelum fitur ini): angkatan yang sudah sampai semester kelas itu
-  dan programnya belum lewat Semester 3.
+1. **Kelas.** Bila kelas yang diampu sudah dipilih: anggota kelas-kelas itu saja (`Mahasiswa.kelasId`, diisi Super
+   Admin di Data Master; lihat Data master), dari prodi mana pun kelasnya. Mahasiswa yang belum dimasukkan ke kelas
+   tidak ikut. Bila belum dipilih (termasuk akun dari sebelum fitur ini): semua mahasiswa prodi dosen, apa pun
+   kelasnya, seperti sebelum ada kelas.
+2. **Angkatan.**
+   - **Angkatan sudah dipilih**: angkatan itu saja, termasuk angkatan yang programnya sudah selesai atau sudah
+     disahkan. Dengan begitu dosen tetap melihat data dan riwayat angkatan lamanya, dan bisa mengunggah perbaikan
+     nilainya lewat persetujuan Super Admin (lihat Unggah Nilai).
+   - **Belum dipilih** (otomatis, termasuk akun dari sebelum fitur ini): angkatan yang sudah sampai semester kelas itu
+     dan programnya belum lewat Semester 3.
 
-Aturan itu satu fungsi di server, `diKelasDosen()` (`src/server/muat.js`), dipakai `muatData()` dan unggahan; sisi
-layar memakai `mahasiswaKelas()` di `src/lib/data.js` dengan aturan yang sama. Tugas kelasnya `komponenDosen()`:
-komponen bersumber unit dosen itu pada aspek semester kelasnya. Setelah menarik migrasi `dosen_angkatan`, hentikan
-`npm run dev`, jalankan `npx prisma migrate deploy` dan `npx prisma generate`, lalu nyalakan lagi: server yang masih
-memakai klien Prisma lama gagal di setiap permintaan, karena pengguna sesi kini dimuat beserta angkatan dosennya.
+Prodi dosen (`Dosen.prodiId`) tetap wajib: dipakai bila kelas belum dipilih, dan tampil di profilnya. Semester dan
+sumber tetap satu per dosen, jadi tugas di semua kelasnya sama. Panel dosen menulis kelas yang diampu di tempat nama
+prodi (*Kelas Anda*, Beranda, Unggah Nilai, templat Excel, Profil) lewat `cakupanKelasDosen()` di `src/lib/data.js`.
+
+Aturan itu satu fungsi di server, `diKelasDosen()` (`src/server/muat.js`, calon mahasiswanya dari `calonKelasDosen()`),
+dipakai `muatData()` dan unggahan; sisi layar memakai `mahasiswaKelas()` di `src/lib/data.js` dengan aturan yang sama.
+Tugas kelasnya `komponenDosen()`: komponen bersumber unit dosen itu pada aspek semester kelasnya. Setelah menarik
+migrasi `dosen_angkatan` atau `kelas_dosen_mahasiswa`, hentikan `npm run dev`, jalankan `npx prisma migrate deploy`
+dan `npx prisma generate`, lalu nyalakan lagi: server yang masih memakai klien Prisma lama gagal di setiap permintaan,
+karena pengguna sesi kini dimuat beserta angkatan dan kelas dosennya.
 
 ### Beranda (`Pantau.jsx`)
 
@@ -1577,8 +1597,8 @@ padanya:
 
 ## Data master
 
-Angkatan, fakultas, program studi, dan data mahasiswa ada di `/admin/data-master`
-(`src/halaman/admin/DataMaster.jsx`, tab Angkatan, Fakultas & Prodi, dan Mahasiswa). Sejak rapat 24 Okt 2026
+Angkatan, fakultas, program studi, kelas, dan data mahasiswa ada di `/admin/data-master`
+(`src/halaman/admin/DataMaster.jsx`, tab Angkatan, Fakultas & Prodi, Kelas, dan Mahasiswa). Sejak rapat 24 Okt 2026
 **hanya super admin yang menambah dan mengubahnya**. Admin boleh **melihat** untuk mencocokkan ulang data, tanpa
 tombol tambah atau ubah, setelah diberi izin super admin di Akses Pengguna atau setelah permintaan aksesnya
 disetujui. Tidak ada yang bisa menghapus.
@@ -1603,15 +1623,39 @@ disetujui. Tidak ada yang bisa menghapus.
     namaBaru?, namaEn?, jenjang?, fakultas?, alasan }`). Dikenali dari namanya; nama kembar 409. Ganti nama aman
     karena mahasiswa dan dosen menyambung lewat id. `namaEn` dan `labelEn` paling panjang 191 karakter: tidak
     dikirim berarti tetap, dikosongkan berarti kembali memakai kamus (lihat Kamus dan terjemahan).
+  - `/api/master/kelas` (sejak 12 Nov 2026): tambah `{ prodi, nama }`, ubah `{ prodi, nama, namaBaru, alasan }`
+    (hanya nama kelasnya). Tabel `Kelas` (migrasi `20261112150000_kelas_prodi`) menyimpan nama tanpa kata "Kelas"
+    (`'A'`, ditampilkan *Kelas A*; awalan "Kelas" yang ikut diketik dibuang server), unik di dalam prodinya tanpa
+    membedakan huruf besar/kecil (409). Migrasi itu menanam contoh kelas A dan B untuk setiap prodi yang sudah ada;
+    basis data baru mendapatnya dari `npm run db:seed` (`KELAS_CONTOH` di `src/lib/data.js`), dan prodi yang
+    ditambahkan sesudahnya belum punya kelas sampai ditambahkan. Kelas terhapus bersama prodinya (`onDelete:
+    Cascade`, hanya terjadi di `db:seed:contoh`); anggotanya lalu kembali tanpa kelas (`onDelete: SetNull`).
+  - **Anggota kelas** (sejak 13 Nov 2026, migrasi `20261113090000_kelas_dosen_mahasiswa`): setiap mahasiswa bisa
+    masuk satu kelas di prodinya (`Mahasiswa.kelasId`, boleh kosong). `/api/master/kelas` dengan
+    `{ aksi: 'anggota', prodi, kelas, nim: [NIM], alasan }` (`aturAnggotaKelas()`) memasukkan beberapa mahasiswa
+    sekaligus ke kelas itu, atau mengeluarkannya bila `kelas` kosong; paling banyak 500 sekali simpan. Ditolak:
+    alasan kurang dari 10 karakter atau tanpa mahasiswa (400), kelas yang tidak ada di prodi itu atau NIM yang tidak
+    terdaftar (404), dan mahasiswa prodi lain (400). Yang kelasnya sudah sama dilewati; perubahannya tercatat satu baris
+    `ATUR_KELAS_MAHASISWA` (sasaran `kelas <prodi> <kelas>`, atau `prodi <prodi>` bila dikeluarkan) berisi jumlah dan
+    tiap mahasiswa dengan kelas sebelum dan sesudahnya. Jawabannya `{ jumlah }` yang berpindah. Nilai tidak berubah;
+    yang berubah hanya dosen yang melihatnya (lihat Panel Dosen › Kelas dosen). Di layar: tombol *Atur mahasiswa* di
+    setiap prodi pada tab Kelas, dengan saringan angkatan, kelas sekarang, dan nama/NIM, centang per mahasiswa atau
+    *Pilih semua yang tampil* (pilihan kosong lagi setiap saringan berubah), tujuan kelas atau *Keluarkan dari kelas*,
+    dan alasan. Baris prodinya menulis jumlah anggota tiap kelas dan yang belum punya kelas. Kelas mahasiswa juga tampil
+    di tab Mahasiswa, Data Mahasiswa (kolom *Kelas*, ikut ekspor CSV), Akses Pengguna, dan profil mahasiswa.
   - `/api/master/mahasiswa`: tambah memakai `tambahAkun()` (isi sama dengan Akses Pengguna: email, sandi
-    awal, NIM, nama, prodi, angkatan), jadi tercatat `TAMBAH_AKUN`. Ubah `{ nim, nama?, email?, prodi?,
-    angkatanId?, alasan }`, dicatat `UBAH_AKUN` dengan sebelum/sesudah. **NIM tidak bisa diubah**:
+    awal, NIM, nama, prodi, angkatan, dan sejak 13 Nov 2026 `kelas` yang boleh kosong), jadi tercatat `TAMBAH_AKUN`.
+    Ubah `{ nim, nama?, email?, prodi?, angkatanId?, kelas?, alasan }`, dicatat `UBAH_AKUN` dengan sebelum/sesudah.
+    `kelas` tidak dikirim berarti tetap (pindah prodi mengosongkannya, karena kelas milik prodi lama), kosong berarti
+    keluar dari kelas, dan kelas yang tidak ada di prodinya ditolak (400). Pindah kelas selalu boleh, juga untuk
+    mahasiswa yang sudah punya nilai atau angkatannya sudah disahkan. **NIM tidak bisa diubah**:
     `UsulanEntri` menyambung ke mahasiswa lewat teks NIM, bukan id. Prodi dan angkatan hanya bisa diubah
     selama mahasiswanya belum punya nilai, pengumpulan, koreksi, penguncian, atau usulan nilai (409
     menyebut jumlahnya), dan angkatan asal maupun tujuannya tidak terkunci.
 - **Angkatan terkunci menolak mahasiswa baru**, baik dari sini maupun dari Akses Pengguna
   (`isianMahasiswa()` di `akses.js`).
-- Jawaban angkatan dan prodi membawa `master` terbaru (`ambilAngkatanProdi()` di `master.js`);
+- Jawaban angkatan, prodi, dan kelas membawa `master` terbaru (`ambilAngkatanProdi()` di `master.js`, kelas ikut di
+  setiap prodi sebagai `kelas: ['A', 'B']`);
   `tulisMaster()` di `store.js` memasangnya lewat `isiMaster()` lalu memuat ulang `/api/data`, jadi
   pilihan angkatan dan prodi di semua halaman langsung ikut tanpa memuat ulang halaman.
 - Akun dosen dan penghapusan tetap hanya lewat super admin di Akses Pengguna.
@@ -2020,12 +2064,15 @@ karena `AuditLog` tidak mendapat baris baru saat batch dibatalkan.
 | `UBAH_AKSES` | super admin mencabut atau memulihkan akses akun (lihat Panel Super Admin › Akses Pengguna) | email, peran, aktif sebelum/sesudah, alasan |
 | `HAPUS_AKUN` | super admin menghapus permanen akun yang aksesnya sudah dicabut: akun mahasiswa beserta datanya, akun dosen tanpa menghapus nilai yang pernah ia masukkan, akun admin hanya bila belum punya data | email, peran, nama, NIM/NIP, prodi, angkatan, alasan, ID akun; akun mahasiswa juga ID data mahasiswa dan jumlah data yang ikut terhapus; akun dosen juga ID data dosen |
 | `TAMBAH_AKUN` | akun baru dibuat dari Akses Pengguna atau Data Master | email, peran, nama, NIM/NIP, prodi, angkatan (tanpa sandi) |
-| `UBAH_AKUN` | data mahasiswa diubah dari Data Master | NIM, nama/email/prodi/angkatan sebelum dan sesudah (hanya yang berubah), alasan |
+| `UBAH_AKUN` | data mahasiswa diubah dari Data Master | NIM, nama/email/prodi/angkatan/kelas sebelum dan sesudah (hanya yang berubah), alasan |
+| `UBAH_KELAS_DOSEN` | super admin mengubah kelas dosen di Akses Pengguna (lihat Panel Dosen › Kelas dosen) | email, prodi, sumber, semester, angkatan yang diampu, dan kelas yang diampu sebelum/sesudah |
 | `UBAH_IZIN` | super admin memberi atau mencabut izin lihat data master (lihat Data master) | email, izin, sebelum/sesudah, alasan |
 | `UBAH_AKSES_ANGKATAN` | super admin mengatur angkatan yang terlihat oleh admin biasa: membuka angkatan yang sudah lewat Semester 3 atau menonaktifkan angkatan Semester 1–3 (lihat Hak peran › Akses angkatan) | email, angkatan dibuka dan dinonaktifkan (label) sebelum/sesudah, alasan |
 | `TAMBAH_ANGKATAN`, `UBAH_ANGKATAN` | angkatan ditambah atau labelnya diubah | kode, label, periode; untuk ubah: label sebelum/sesudah dan alasan |
 | `TAMBAH_FAKULTAS`, `UBAH_FAKULTAS` | fakultas ditambah atau namanya diubah | nama; untuk ubah: sebelum/sesudah dan alasan |
 | `TAMBAH_PRODI`, `UBAH_PRODI` | program studi ditambah atau diubah | nama, jenjang, fakultas; untuk ubah: hanya yang berubah, sebelum/sesudah, dan alasan |
+| `TAMBAH_KELAS`, `UBAH_KELAS` | kelas ditambah ke prodi atau namanya diganti (lihat Data master) | prodi, kelas; untuk ubah: nama sebelum/sesudah dan alasan |
+| `ATUR_KELAS_MAHASISWA` | super admin memasukkan mahasiswa ke kelas atau mengeluarkannya (Data Master › Kelas › Atur mahasiswa) | prodi, kelas tujuan (kosong = dikeluarkan), jumlah, tiap mahasiswa (NIM, nama, kelas sebelum/sesudah), alasan |
 
 Kedua log dibaca lewat `POST /api/log` (`bacaLog()`, hanya Kemahasiswaan), satu halaman setiap kali:
 
@@ -2077,16 +2124,18 @@ yang semuanya tercentang:
   diminta, belum diminta, sedang ditinjau (admin atau Super Admin), siap dicetak, ditolak, atau dicabut.
 - **Kelayakan akademik** memuat kelima syarat beserta statusnya.
 
-Ditolak dan dicabut tampil sebagai peringatan padat, tanpa kaca: judul, *Alasan*, siapa dan kapan, *Yang perlu dilakukan*,
-lalu dua tindakan. Sistem hanya menyimpan alasan, jadi langkah penyelesaiannya tidak dikarang: tertulis bahwa rinciannya belum
-tersedia, dengan **Hubungi Kemahasiswaan** (WhatsApp dengan pesan awal berisi nama dan NIM) sebagai jalur meminta penjelasan.
+Ditolak dan dicabut tampil sebagai peringatan padat, tanpa kaca. Yang ditolak memuat judul, *Alasan*, siapa dan kapan,
+*Yang perlu dilakukan*, lalu dua tindakan. Sistem hanya menyimpan alasan, jadi langkah penyelesaiannya tidak dikarang: tertulis
+bahwa rinciannya belum tersedia, dengan **Hubungi Kemahasiswaan** (WhatsApp dengan pesan awal berisi nama dan NIM) sebagai jalur
+meminta penjelasan. Yang dicabut sejak 12 Nov 2026 hanya memuat judul, *Alasan*, dan tombol *Ajukan peninjauan akses*: tanpa
+siapa dan kapan dicabut, tanpa *Yang perlu dilakukan*, tanpa **Hubungi Kemahasiswaan**, dan tanpa catatan di bawah kartu.
 *Ajukan peninjauan akses* sama dengan meminta lagi: permintaannya masuk lewat kedua lapis (`POST /api/sertifikat`), jadi
 sesudahnya tampil *Sedang ditinjau*.
 
 Selama ditinjau dan sesudah disetujui, kartu izin hanya memuat statusnya (permintaan pemilik produk, 9 Nov 2026): *Sedang
 ditinjau*, tanpa tanggal, langkah berikutnya, deretan langkah, catatan, atau tombol, lalu *Siap dicetak* beserta tombol
-**Cetak / Simpan PDF**. Tombol itu hanya ada saat aksesnya disetujui. Saat belum diminta, ditolak, atau dicabut, catatan di
-bawah kartu tetap bersyarat ("Setelah akses dipulihkan, tombol Cetak / Simpan PDF akan tersedia"). Ubin Sertifikat di Dashboard memakai keadaan yang sama dengan warna bawaan
+**Cetak / Simpan PDF**. Tombol itu hanya ada saat aksesnya disetujui. Saat belum diminta atau ditolak, catatan di
+bawah kartu tetap bersyarat ("Setelah akses disetujui, tombol Cetak / Simpan PDF akan tersedia"). Ubin Sertifikat di Dashboard memakai keadaan yang sama dengan warna bawaan
 kartu, juga saat ditolak atau dicabut; peringatannya di halaman Sertifikat. Kelayakan
 selalu didahulukan: bila nilai berubah dan syaratnya gugur, akses yang sudah disetujui tidak bisa dipakai mencetak.
 Sertifikat dicetak, atau disimpan sebagai PDF lewat dialog cetak, dari tombol di website ini dan tidak dikirim lewat
@@ -2675,7 +2724,7 @@ Klik, seret, dan gerak lensanya milik pustaka. Yang ditambahkan di sini, dan mud
 | — | Panel dosen: Beranda (pantau) dan Unggah Nilai (rekap Excel, langsung tersimpan) | selesai, sesuai rapat 24 Okt 2026; Penilaian tiga langkah dan Riwayat Pengiriman dihapus (lihat Panel Dosen) |
 | — | Hak peran rapat 24 Okt 2026: admin hanya melihat nilai, tanda final dan bobot dari admin diajukan, data master hanya super admin | selesai (lihat Hak peran) |
 | — | Persetujuan dua lapis rapat 24 Okt 2026: pengajuan ubah nilai dan akses cetak sertifikat, beserta pencabutan akses cetak dan catatan cetak | selesai (lihat Persetujuan dua lapis) |
-| — | Basis data MySQL: 26 tabel, 21 migrasi, 41 pintu API, sesi cookie | selesai |
+| — | Basis data MySQL: 28 tabel, 23 migrasi, 42 pintu API, sesi cookie | selesai |
 | — | Kerangka dan susunan panel dosen, Kemahasiswaan, dan Super Admin mengikuti video referensi; warnanya tetap navy dan toska (lihat Panel kerja) | selesai 3 Nov 2026 |
 | — | Cek ulang semua halaman rapat 24 Okt 2026: bahasa Inggris, tampilan HP 360px sampai 1536px, kontras terang dan gelap, papan ketik | selesai 3 Nov 2026 |
 | — | Bahasa Inggris untuk isi kurikulum, pesan server, serta nama fakultas, prodi, dan angkatan (rapat 24 Okt 2026, keputusan 3 Nov 2026) | selesai; draf terjemahan isi kurikulum dan nama prodi menunggu diperiksa tim (lihat Kamus dan terjemahan) |
@@ -2684,6 +2733,7 @@ Klik, seret, dan gerak lensanya milik pustaka. Yang ditambahkan di sini, dan mud
 | — | Log Aktivitas admin biasa tanpa tindakan Super Admin, kedua tab (31 Okt 2026) | selesai (lihat Log aktivitas); Log Aktivitas super admin tetap memuat semuanya |
 | — | Akses angkatan admin biasa (30–31 Okt 2026): bawaannya angkatan Semester 1–3; Super Admin bisa menonaktifkannya atau membuka angkatan yang sudah lewat, per admin | selesai (lihat Hak peran › Akses angkatan); admin belum bisa meminta aksesnya sendiri |
 | — | Kelas dosen per angkatan yang diampu, dan perbaikan nilai angkatan yang sudah disahkan lewat Super Admin | selesai (lihat Kelas dosen) |
+| — | Kelas A/B (13 Nov 2026): mahasiswa dimasukkan ke kelas di prodinya, dosen mengampu beberapa kelas termasuk di prodi lain | selesai (lihat Kelas dosen dan Data master); impor anggota kelas dari berkas belum ada |
 | — | Mengelola aspek CPMK: tambah, ubah kode/semester/cluster, arsip, pulihkan | selesai; super admin langsung, admin biasa lewat persetujuan, angkatan terkunci tetap memakai aspek saat dikunci |
 | — | Data master (angkatan, fakultas, prodi, mahasiswa) oleh super admin; admin berizin hanya melihat | selesai; tanpa hapus, NIM tetap (lihat Data master) |
 | — | Penilaian per aspek dari Input Manual (teks aspek, komponen, arsip, bobot) | selesai; super admin langsung, admin biasa lewat persetujuan |

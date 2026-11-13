@@ -113,6 +113,18 @@ model ProgramStudi {
   fakultas    Fakultas    @relation(fields: [fakultasId], references: [id])
   mahasiswa   Mahasiswa[]
   dosen       Dosen[]
+  kelas       Kelas[]
+}
+
+model Kelas {                   // kelas di dalam satu prodi, mis. Sistem Informasi Kelas A (12 Nov 2026)
+  id        Int          @id @default(autoincrement())
+  nama      String       @db.VarChar(30)          // tanpa kata "Kelas": 'A', 'B', 'Malam'; layar menulis "Kelas A"
+  prodiId   Int
+  prodi     ProgramStudi @relation(fields: [prodiId], references: [id], onDelete: Cascade)
+  mahasiswa Mahasiswa[]                           // anggota kelas, dimasukkan super admin di Data Master (13 Nov 2026)
+  dosen     DosenKelas[]                          // dosen yang mengampu kelas ini (13 Nov 2026)
+
+  @@unique([prodiId, nama])                      // nama kelas unik di dalam prodinya (tanpa beda huruf besar/kecil)
 }
 
 model Angkatan {
@@ -138,15 +150,18 @@ model Mahasiswa {
   penggunaId Int          @unique
   prodiId    Int
   angkatanId String
+  kelasId    Int?                      // kelas di prodinya (13 Nov 2026); kosong = belum dimasukkan ke kelas mana pun
   pengguna   Pengguna     @relation(fields: [penggunaId], references: [id])
   prodi      ProgramStudi @relation(fields: [prodiId], references: [id])
   angkatan   Angkatan     @relation(fields: [angkatanId], references: [id])
+  kelas      Kelas?       @relation(fields: [kelasId], references: [id], onDelete: SetNull)
   nilai      Nilai[]
   penguncian Penguncian[]
   koreksi    PengajuanKoreksi[]
   pengumpulan Pengumpulan[]
   sertifikat PermintaanSertifikat[]
   @@index([angkatanId, prodiId])
+  @@index([kelasId])
 }
 
 model Dosen {
@@ -161,6 +176,7 @@ model Dosen {
   pengguna   Pengguna     @relation(fields: [penggunaId], references: [id])
   prodi      ProgramStudi @relation(fields: [prodiId], references: [id])
   angkatan   DosenAngkatan[]
+  kelas      DosenKelas[]
 }
 
 model DosenAngkatan {           // angkatan yang diampu seorang dosen; tanpa baris, kelasnya angkatan yang sedang di semesternya
@@ -170,6 +186,16 @@ model DosenAngkatan {           // angkatan yang diampu seorang dosen; tanpa bar
   angkatan   Angkatan @relation(fields: [angkatanId], references: [id], onDelete: Cascade)
   @@id([dosenId, angkatanId])
   @@index([angkatanId])
+}
+
+model DosenKelas {              // kelas yang diampu seorang dosen, boleh di beberapa prodi (13 Nov 2026); tanpa baris,
+                                // kelasnya semua mahasiswa prodi dosen (Dosen.prodiId), seperti sebelum ada kelas
+  dosenId Int
+  kelasId Int
+  dosen   Dosen @relation(fields: [dosenId], references: [id], onDelete: Cascade)
+  kelas   Kelas @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  @@id([dosenId, kelasId])
+  @@index([kelasId])
 }
 
 model AdminAngkatan {           // akses angkatan seorang admin biasa yang diatur super admin, menimpa bawaannya: tanpa baris,

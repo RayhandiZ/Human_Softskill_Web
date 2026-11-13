@@ -19,7 +19,11 @@ import { ambilWewenang } from './wewenang.js'
 export async function ambilAngkatanProdi() {
   const [angkatan, fakultas] = await Promise.all([
     db.angkatan.findMany(),
-    db.fakultas.findMany({ orderBy: { id: 'asc' }, include: { prodi: { orderBy: { id: 'asc' } } } }),
+    db.fakultas.findMany({
+      orderBy: { id: 'asc' },
+      // Kelas tiap prodi (sejak 12 Nov 2026), urut nama: A, B, lalu yang ditambahkan.
+      include: { prodi: { orderBy: { id: 'asc' }, include: { kelas: { orderBy: { nama: 'asc' } } } } },
+    }),
   ])
   return {
     angkatan: angkatan.map((a) => ({
@@ -33,7 +37,7 @@ export async function ambilAngkatanProdi() {
     fakultas: fakultas.map((f) => ({
       name: f.nama,
       namaEn: f.namaEn,
-      programs: f.prodi.map((p) => ({ nama: p.nama, namaEn: p.namaEn, jenjang: p.jenjang })),
+      programs: f.prodi.map((p) => ({ nama: p.nama, namaEn: p.namaEn, jenjang: p.jenjang, kelas: p.kelas.map((k) => k.nama) })),
     })),
   }
 }

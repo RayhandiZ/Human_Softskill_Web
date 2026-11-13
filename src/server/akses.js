@@ -17,14 +17,24 @@ const PERAN = {
 };
 export const ALASAN_MIN = 10;
 const SERTA = {
-  dosen: { include: { prodi: true, angkatan: { include: { angkatan: true } } } },
-  mahasiswa: { include: { prodi: true, angkatan: true } },
+  dosen: {
+    include: {
+      prodi: true,
+      angkatan: { include: { angkatan: true } },
+      kelas: { include: { kelas: { include: { prodi: true } } } },
+    },
+  },
+  mahasiswa: { include: { prodi: true, angkatan: true, kelas: true } },
   aksesAngkatan: { include: { angkatan: true } },
 };
 
+/** Urutan kelas di daftar: nama prodi, lalu nama kelas (A, B, lalu yang ditambahkan). */
+const urutKelas = (a, b) => a.prodi.localeCompare(b.prodi, 'id') || a.nama.localeCompare(b.nama, 'id');
+
 /**
- * Kelas seorang dosen untuk dibaca: sumber, semester, dan angkatan yang diampu ([] = otomatis), urut id. Kuncinya
- * angkatanDiampu, bukan angkatan, karena `angkatan` pada akun mahasiswa berisi label angkatannya.
+ * Kelas seorang dosen untuk dibaca: sumber, semester, angkatan yang diampu ([] = otomatis), urut id, dan kelas yang
+ * diampu ([] = semua mahasiswa prodinya; sejak 13 Nov 2026), urut prodi lalu nama kelas. Kuncinya angkatanDiampu, bukan
+ * angkatan, karena `angkatan` pada akun mahasiswa berisi label angkatannya; begitu juga kelasDiampu dan `kelas` mahasiswa.
  */
 const kelasDosen = (d) => ({
   sumber: d.sumber,
@@ -32,6 +42,7 @@ const kelasDosen = (d) => ({
   angkatanDiampu: d.angkatan
     .map((a) => ({ id: a.angkatanId, label: a.angkatan.label }))
     .sort((a, b) => a.id.localeCompare(b.id)),
+  kelasDiampu: d.kelas.map((k) => ({ id: k.kelasId, prodi: k.kelas.prodi.nama, nama: k.kelas.nama })).sort(urutKelas),
 });
 
 function susunAkun(p) {
@@ -60,6 +71,8 @@ function susunAkun(p) {
           nim: p.mahasiswa.nim,
           prodi: p.mahasiswa.prodi.nama,
           angkatan: p.mahasiswa.angkatan.label,
+          // Nama kelas di prodinya ('A'), atau null bila belum dimasukkan ke kelas.
+          kelas: p.mahasiswa.kelas?.nama ?? null,
         }
       : {}),
   };
@@ -271,6 +284,28 @@ export async function cariProdi(nama) {
   return prodi.id
 }
 
+/* --------------------------------- kelas --------------------------------- */
+
+// Kelas di dalam prodi (Kelas A, Kelas B; tabel Kelas sejak 12 Nov 2026). Sejak 13 Nov 2026 mahasiswa bisa dimasukkan ke
+// satu kelas di prodinya (Mahasiswa.kelasId, boleh kosong) dan dosen bisa mengampu beberapa kelas, juga di prodi lain
+// (DosenKelas). Nama kelas dikirim layar tanpa kata "Kelas" ('A'), dan dicocokkan tanpa beda huruf besar/kecil, sama
+// dengan indeks unik Kelas_prodiId_nama_key.
+
+/** Nama kelas tanpa awalan "Kelas" yang ikut diketik ("Kelas C" menjadi "C"); dipakai juga src/server/dataMaster.js. */
+export const rapikanNamaKelas = (nilai) => String(nilai ?? '').trim().replace(/^kelas(\s+|$)/i, '').trim()
+
+/**
+ * Baris kelas `nama` di prodi `prodiId` (`prodiNama` untuk pesan), atau null bila `nama` kosong: mahasiswanya belum atau
+ * tidak lagi dimasukkan ke kelas. Kelas yang tidak ada di prodi itu ditolak (400). Dipakai juga src/server/dataMaster.js.
+ */
+export async function cariKelas(prodiId, prodiNama, nama) {
+  const teks = rapikanNamaKelas(nama)
+  if (!teks) return null
+  const k = await db.kelas.findFirst({ where: { prodiId, nama: teks } })
+  if (!k) throw new GalatApi('Kelas ' + teks + ' tidak ditemukan di ' + prodiNama + '.')
+  return k
+}
+
 async function isianMahasiswa(isi) {
   const nim = wajib(isi.nim, 'NIM')
   if (!/^\d+$/.test(nim)) throw new GalatApi('NIM hanya berisi angka.')
@@ -281,12 +316,44 @@ async function isianMahasiswa(isi) {
   if (angkatan.status === 'TERKUNCI') {
     throw new GalatApi('Angkatan ' + angkatan.label + ' sudah dikunci, jadi tidak bisa menerima mahasiswa baru.', 409)
   }
-  return { nim, nama: wajib(isi.nama, 'Nama'), prodiId: await cariProdi(isi.prodi), angkatanId: angkatan.id }
+  const prodiId = await cariProdi(isi.prodi)
+  // Kelas boleh dikosongkan: mahasiswanya bisa dimasukkan ke kelas kemudian di Data Master.
+  const kelas = await cariKelas(prodiId, String(isi.prodi).trim(), isi.kelas)
+  return { nim, nama: wajib(isi.nama, 'Nama'), prodiId, angkatanId: angkatan.id, kelasId: kelas?.id ?? null }
 }
 
 /**
- * Isian kelas dosen yang sudah diperiksa: prodi, sumber, semester yang diampu, dan angkatan yang diampu. Angkatan boleh
- * kosong: kelasnya lalu angkatan yang sedang di semester itu (diKelasDosen di muat.js). Dipakai tambah akun dan ubah kelas.
+ * Kelas yang diampu dari isian [{ prodi, nama }] (nama prodi dan nama kelas, seperti yang tampil di layar), sebagai id
+ * kelasnya, urut. Kosong atau tidak dikirim = tanpa pilihan kelas: semua mahasiswa prodi dosen. Boleh dari beberapa prodi;
+ * kelas yang tidak ada ditolak.
+ */
+async function kelasDipilih(daftar) {
+  if (daftar == null) return []
+  if (!Array.isArray(daftar)) throw new GalatApi('Daftar kelas yang diampu tidak valid.')
+  const unik = new Map()
+  for (const k of daftar) {
+    const prodi = String(k?.prodi ?? '').trim()
+    const nama = rapikanNamaKelas(k?.nama)
+    if (!prodi || !nama) throw new GalatApi('Daftar kelas yang diampu tidak valid.')
+    unik.set(prodi.toLowerCase() + '|' + nama.toLowerCase(), { prodi, nama })
+  }
+  const minta = [...unik.values()]
+  if (!minta.length) return []
+  const ada = await db.kelas.findMany({
+    where: { OR: minta.map((k) => ({ nama: k.nama, prodi: { nama: k.prodi } })) },
+    include: { prodi: true },
+  })
+  const cocok = (k) =>
+    ada.find((x) => x.prodi.nama.toLowerCase() === k.prodi.toLowerCase() && x.nama.toLowerCase() === k.nama.toLowerCase())
+  const asing = minta.find((k) => !cocok(k))
+  if (asing) throw new GalatApi('Kelas ' + asing.nama + ' tidak ditemukan di ' + asing.prodi + '.')
+  return [...new Set(minta.map((k) => cocok(k).id))].sort((a, b) => a - b)
+}
+
+/**
+ * Isian kelas dosen yang sudah diperiksa: prodi, sumber, semester yang diampu, angkatan yang diampu, dan kelas yang diampu.
+ * Angkatan boleh kosong: kelasnya lalu angkatan yang sedang di semester itu. Kelas juga boleh kosong: kelasnya lalu semua
+ * mahasiswa prodi dosen (diKelasDosen di muat.js). Dipakai tambah akun dan ubah kelas.
  */
 async function isianKelas(isi) {
   if (!SUMBER_DOSEN.includes(isi.sumber)) throw new GalatApi('Sumber penilaian harus PDP atau MK.')
@@ -296,26 +363,33 @@ async function isianKelas(isi) {
   const ada = new Set((await db.angkatan.findMany({ where: { id: { in: ids } }, select: { id: true } })).map((a) => a.id))
   const asing = ids.find((id) => !ada.has(id))
   if (asing) throw new GalatApi('Angkatan ' + asing + ' tidak ditemukan.')
-  return { sumber: isi.sumber, semester, prodiId: await cariProdi(isi.prodi), angkatan: ids.sort() }
+  return {
+    sumber: isi.sumber,
+    semester,
+    prodiId: await cariProdi(isi.prodi),
+    angkatan: ids.sort(),
+    kelas: await kelasDipilih(isi.kelas),
+  }
 }
 
 async function isianDosen(isi) {
   const nip = wajib(isi.nip, 'NIP')
   if (await db.dosen.findUnique({ where: { nip } })) throw new GalatApi('NIP ' + nip + ' sudah terdaftar.', 409)
-  const { angkatan, ...kelas } = await isianKelas(isi)
+  const { angkatan, kelas, ...dasar } = await isianKelas(isi)
   return {
     nip,
     nama: wajib(isi.nama, 'Nama'),
     jabatan: wajib(isi.jabatan, 'Jabatan'),
-    ...kelas,
+    ...dasar,
     angkatan: { create: angkatan.map((angkatanId) => ({ angkatanId })) },
+    kelas: { create: kelas.map((kelasId) => ({ kelasId })) },
   }
 }
 
 /**
- * Mengubah kelas seorang dosen: prodi, sumber, semester yang diampu, dan angkatan yang diampu (rapat 25 Okt 2026). Hanya
- * super admin. Nilai yang sudah tersimpan tidak berubah; yang berubah hanya mahasiswa yang terlihat dan bisa diunggah
- * dosen itu. Tercatat sebagai UBAH_KELAS_DOSEN beserta kelas sebelum dan sesudahnya.
+ * Mengubah kelas seorang dosen: prodi, sumber, semester yang diampu, angkatan yang diampu (rapat 25 Okt 2026), dan kelas
+ * yang diampu (13 Nov 2026). Hanya super admin. Nilai yang sudah tersimpan tidak berubah; yang berubah hanya mahasiswa
+ * yang terlihat dan bisa diunggah dosen itu. Tercatat sebagai UBAH_KELAS_DOSEN beserta kelas sebelum dan sesudahnya.
  */
 export async function ubahKelasDosen(pengguna, isi) {
   const target = Number(isi?.id)
@@ -330,11 +404,13 @@ export async function ubahKelasDosen(pengguna, isi) {
     kelas.prodiId === akun.dosen.prodiId &&
     kelas.sumber === akun.dosen.sumber &&
     kelas.semester === akun.dosen.semester &&
-    kelas.angkatan.join() === sebelum.angkatanDiampu.map((a) => a.id).join()
+    kelas.angkatan.join() === sebelum.angkatanDiampu.map((a) => a.id).join() &&
+    kelas.kelas.join() === akun.dosen.kelas.map((k) => k.kelasId).sort((a, b) => a - b).join()
   if (sama) return { akun: susunAkun(akun) } // tidak ada yang berubah, tidak dicatat
 
   const baru = await db.$transaction(async (tx) => {
     await tx.dosenAngkatan.deleteMany({ where: { dosenId: akun.dosen.id } })
+    await tx.dosenKelas.deleteMany({ where: { dosenId: akun.dosen.id } })
     await tx.dosen.update({
       where: { id: akun.dosen.id },
       data: {
@@ -342,6 +418,7 @@ export async function ubahKelasDosen(pengguna, isi) {
         sumber: kelas.sumber,
         semester: kelas.semester,
         angkatan: { create: kelas.angkatan.map((angkatanId) => ({ angkatanId })) },
+        kelas: { create: kelas.kelas.map((kelasId) => ({ kelasId })) },
       },
     })
     const hasil = await tx.pengguna.findUnique({ where: { id: akun.id }, include: SERTA })
@@ -395,9 +472,9 @@ export async function tambahAkun(pengguna, isi) {
 //   terhapus dalam transaksi yang sama (hapusDataMahasiswa). AuditLog (append-only), LogAktivitas, dan UsulanEntri
 //   (bagian usulan dosen, lewat NIM) tetap; jumlah data yang ikut terhapus dicatat di log HAPUS_AKUN.
 // - Akun dosen juga boleh dihapus walaupun sudah punya data (permintaan yang sama, 12 Nov 2026). Yang terhapus hanya
-//   akun, profil, dan baris Dosen (kelas yang diampu, DosenAngkatan, ikut lewat onDelete: Cascade). Nilai yang pernah
-//   ia masukkan milik mahasiswa, jadi tetap, begitu juga usulan, unggahan (Batch), pengumpulan, dan semua log; kolom
-//   dosenId/penilaiId/aktorId di sana tanpa relasi, jadi tidak menahan penghapusan.
+//   akun, profil, dan baris Dosen (angkatan dan kelas yang diampu, DosenAngkatan dan DosenKelas, ikut lewat onDelete:
+//   Cascade). Nilai yang pernah ia masukkan milik mahasiswa, jadi tetap, begitu juga usulan, unggahan (Batch),
+//   pengumpulan, dan semua log; kolom dosenId/penilaiId/aktorId di sana tanpa relasi, jadi tidak menahan penghapusan.
 // - Akun admin hanya bila belum punya data: jejak tindakannya dihitung sebagai data. Akun seperti itu cukup dibiarkan
 //   dicabut.
 // Kolom pelaku di log dan penilai nilai menyimpan id akun tanpa relasi, dan namanya dibaca dari akun (petaAkun di

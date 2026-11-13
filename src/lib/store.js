@@ -893,8 +893,9 @@ export async function tambahAkun(isi) {
 }
 
 /**
- * Mengubah kelas seorang dosen: `isi` = { id, prodi, sumber, semester, angkatan: [id angkatan] } ([] = otomatis);
- * jawabannya { akun }. Lihat ubahKelasDosen di src/server/akses.js.
+ * Mengubah kelas seorang dosen: `isi` = { id, prodi, sumber, semester, angkatan: [id angkatan] ([] = otomatis),
+ * kelas: [{ prodi, nama }] ([] = semua mahasiswa prodinya) }; jawabannya { akun }. Lihat ubahKelasDosen di
+ * src/server/akses.js.
  */
 export async function ubahKelasDosen(isi) {
   if (modeLokal()) throw new Error('Kelas dosen hanya bisa diubah saat terhubung ke basis data.')
@@ -976,8 +977,16 @@ export const simpanAngkatan = (isi) => tulisMaster('/api/master/angkatan', isi)
 export const simpanProdi = (isi) => tulisMaster('/api/master/prodi', isi)
 
 /**
- * { aksi: 'tambah', email, sandi, nim, nama, prodi, angkatanId } atau { aksi: 'ubah', nim, nama?, email?, prodi?,
- * angkatanId?, alasan }. NIM tidak bisa diubah.
+ * Kelas di dalam prodi (sejak 12 Nov 2026): { aksi: 'tambah', prodi, nama } atau { aksi: 'ubah', prodi, nama, namaBaru,
+ * alasan }; sejak 13 Nov 2026 juga { aksi: 'anggota', prodi, kelas, nim: [NIM], alasan }, yang memasukkan mahasiswa prodi
+ * itu ke kelas `kelas` ('' = mengeluarkannya dari kelas) dan menjawab { jumlah } yang berpindah. Nama tanpa kata "Kelas"
+ * ('A'); prodi dikenali dari namanya. Lihat kelolaKelas di src/server/dataMaster.js.
+ */
+export const simpanKelas = (isi) => tulisMaster('/api/master/kelas', isi)
+
+/**
+ * { aksi: 'tambah', email, sandi, nim, nama, prodi, angkatanId, kelas? } atau { aksi: 'ubah', nim, nama?, email?, prodi?,
+ * angkatanId?, kelas?, alasan }; `kelas` nama kelas di prodinya, '' = tanpa kelas. NIM tidak bisa diubah.
  */
 export const simpanMahasiswa = (isi) => tulisMaster('/api/master/mahasiswa', isi)
 

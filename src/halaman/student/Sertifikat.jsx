@@ -23,7 +23,9 @@ import LembarSertifikat from './LembarSertifikat'
    Dulu keduanya bercampur, jadi akses yang dicabut terbaca bertentangan dengan syarat yang semuanya tercentang.
    Selama ditinjau dan sesudah siap, kartu izin hanya memuat statusnya: "Sedang ditinjau", lalu "Siap dicetak" beserta
    tombol cetak (permintaan pemilik produk, 9 Nov 2026). Rincian hanya untuk yang ditolak atau dicabut, karena di sana
-   mahasiswa perlu alasannya. */
+   mahasiswa perlu alasannya. Sejak 12 Nov 2026 yang dicabut hanya memuat alasan dan tombol Ajukan peninjauan akses: tanpa
+   siapa dan kapan dicabut, tanpa "Yang perlu dilakukan", tanpa tombol Hubungi Kemahasiswaan, dan tanpa catatan di bawah
+   kartu. */
 
 const JUDUL_IZIN = {
   belum_layak: 'Belum bisa diminta',
@@ -40,10 +42,8 @@ const KALIMAT_IZIN = {
   bisa_diminta: 'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.',
 }
 
-const CATATAN_CETAK = {
-  dicabut: 'Setelah akses dipulihkan, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.',
-}
-const CATATAN_CETAK_BAWAAN =
+// Catatan di bawah kartu saat belum bisa diminta, belum diminta, atau ditolak. Kartu yang dicabut tidak memakainya.
+const CATATAN_CETAK =
   'Setelah akses disetujui, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.'
 
 export default function Sertifikat() {
@@ -149,17 +149,9 @@ export default function Sertifikat() {
             </div>
           </div>
 
+          {/* Dicabut: hanya alasannya (12 Nov 2026); siapa yang mencabut dan "Yang perlu dilakukan" tidak ditampilkan. */}
           {keadaan === 'dicabut' ? (
-            <RincianAkses
-              baris={[
-                ['Alasan', permintaan?.dicabut?.alasan || teks('Alasannya belum dicatat.')],
-                ['Dicabut oleh', jejak(permintaan?.dicabut, bahasa)],
-                [
-                  'Yang perlu dilakukan',
-                  teks('Rincian langkahnya belum tersedia. Hubungi Kemahasiswaan untuk meminta penjelasan. Bila masalahnya sudah selesai, ajukan peninjauan akses.'),
-                ],
-              ]}
-            />
+            <RincianAkses baris={[['Alasan', permintaan?.dicabut?.alasan || teks('Alasannya belum dicatat.')]]} />
           ) : null}
 
           {keadaan === 'ditolak' ? (
@@ -203,7 +195,8 @@ export default function Sertifikat() {
                   {teks('Cetak / Simpan PDF')}
                 </button>
               ) : null}
-              {peringatan ? (
+              {/* Hanya untuk yang ditolak; yang dicabut cukup tombol Ajukan peninjauan akses (12 Nov 2026). */}
+              {keadaan === 'ditolak' ? (
                 <a
                   href={tautanWhatsapp(
                     teks('Halo, saya {nama} (NIM {nim}). Saya ingin meminta penjelasan soal akses cetak sertifikat VIBE saya.', {
@@ -232,7 +225,7 @@ export default function Sertifikat() {
             </p>
           ) : null}
 
-          {ditinjau || bolehCetak ? null : <CatatanKaki>{teks(CATATAN_CETAK[keadaan] ?? CATATAN_CETAK_BAWAAN)}</CatatanKaki>}
+          {ditinjau || bolehCetak || keadaan === 'dicabut' ? null : <CatatanKaki>{teks(CATATAN_CETAK)}</CatatanKaki>}
         </section>
 
         {/* --------------------------- kelayakan akademik --------------------------- */}

@@ -58,7 +58,17 @@ async function main() {
   } else {
     for (const f of MASTER_AWAL.fakultas) {
       await db.fakultas.create({
-        data: { nama: f.name, prodi: { create: f.programs.map((p) => ({ nama: p.nama, jenjang: p.jenjang })) } },
+        data: {
+          nama: f.name,
+          // Contoh kelas A dan B tiap prodi (KELAS_CONTOH di src/lib/data.js).
+          prodi: {
+            create: f.programs.map((p) => ({
+              nama: p.nama,
+              jenjang: p.jenjang,
+              kelas: { create: (p.kelas ?? []).map((nama) => ({ nama })) },
+            })),
+          },
+        },
       })
     }
     console.log('Fakultas & prodi ditanam dari isi awal.')

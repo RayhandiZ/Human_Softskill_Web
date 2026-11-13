@@ -10,7 +10,7 @@ import TombolTema from '../../components/TombolTema'
 import { IconGauge, IconUpload, IconUsers } from '../../components/Icons'
 import { useAuth } from '../../lib/auth'
 import { SUMBER } from '../../lib/curriculum'
-import { PERIODE_AKTIF, dosenSesi, labelPeriode } from '../../lib/data'
+import { PERIODE_AKTIF, cakupanKelasDosen, dosenSesi, labelPeriode } from '../../lib/data'
 import { useStore } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
 import { kunciSesi, useProfil } from '../../lib/profil'
@@ -40,11 +40,12 @@ export default function DosenLayout({ children }) {
 
   const dosen = dosenSesi(user)
 
+  // Kelas yang diampu (Sistem Informasi Kelas A, ...) bila Super Admin sudah memilihnya, atau nama prodinya.
   const kelas = dosen
     ? t('{unit} Semester {semester}, {prodi}', {
         unit: SUMBER[dosen.sumber]?.label ?? dosen.sumber,
         semester: dosen.semester,
-        prodi: dosen.prodi,
+        prodi: cakupanKelasDosen(dosen, t),
       })
     : null
   const periode = t('Periode {periode}', { periode: labelPeriode(PERIODE_AKTIF) })

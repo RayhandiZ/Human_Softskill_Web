@@ -36,6 +36,8 @@ const KOLOM = [
   { key: 'nim', label: 'NIM', align: 'left' },
   { key: 'name', label: 'Nama', align: 'left' },
   { key: 'program', label: 'Program studi', align: 'left' },
+  // Kelas di prodinya (sejak 13 Nov 2026), dimasukkan Super Admin di Data Master; kosong = belum punya kelas.
+  { key: 'kelas', label: 'Kelas', align: 'left' },
   { key: 'angkatanLabel', label: 'Angkatan', align: 'left' },
   { key: 'semesterAktif', label: 'Sem', align: 'right' },
   { key: 'nilai', label: 'Nilai', align: 'right' },
@@ -195,6 +197,8 @@ export default function Students() {
       if (sort.key === 'huruf') return x.nilai
       // Prodi dan angkatan diurutkan menurut yang tertulis di layar.
       if (sort.key === 'program' || sort.key === 'angkatanLabel') return t(x.s[sort.key])
+      // Yang belum punya kelas diurutkan sebagai teks kosong, supaya tetap sebanding dengan nama kelas.
+      if (sort.key === 'kelas') return x.s.kelas ?? ''
       return x.s[sort.key]
     }
     return [...rows].sort((a, b) => {
@@ -214,9 +218,9 @@ export default function Students() {
     unduhBerkas(
       'data-mahasiswa-' + new Date().toISOString().slice(0, 10) + '.csv',
       susunCSV(
-        ['NIM', 'Nama', 'Email', 'Program studi', 'Angkatan', 'Semester', 'Nilai', 'Predikat', 'Aspek dinilai', 'Sertifikat'].map((k) => t(k)),
+        ['NIM', 'Nama', 'Email', 'Program studi', 'Kelas', 'Angkatan', 'Semester', 'Nilai', 'Predikat', 'Aspek dinilai', 'Sertifikat'].map((k) => t(k)),
         urut.map((x) => [
-          x.s.nim, x.s.name, x.s.email, t(x.s.program), t(x.s.angkatanLabel),
+          x.s.nim, x.s.name, x.s.email, t(x.s.program), x.s.kelas ? t('Kelas {nama}', { nama: x.s.kelas }) : '', t(x.s.angkatanLabel),
           x.s.semesterAktif, x.nilai ?? '', hurufMutu(x.nilai)?.huruf ?? '',
           x.dinilai + '/' + x.total, t(x.layak ? 'Berhak' : 'Belum'),
         ]),
@@ -284,7 +288,7 @@ export default function Students() {
             selebar kolom itu: tanpa itu, judul kolom atau tautan yang difokus dengan Tab berhenti tepat di
             bawah kolom ⋯ dan tertutup (WCAG 2.4.11). */}
         <GulirTabel jarak="scroll-pl-5 scroll-pr-[72px]">
-          <table className="w-full min-w-[980px] border-separate border-spacing-0">
+          <table className="w-full min-w-[1060px] border-separate border-spacing-0">
             <thead>
               <tr className="bg-surface-2">
                 {KOLOM.map((c, i) => {
@@ -333,6 +337,9 @@ export default function Students() {
                     </Link>
                   </td>
                   <td className="px-3 py-3 text-sm text-ink-2">{t(x.s.program)}</td>
+                  <td className="whitespace-nowrap px-3 py-3 text-sm text-ink-2">
+                    {x.s.kelas ? t('Kelas {nama}', { nama: x.s.kelas }) : '–'}
+                  </td>
                   <td className="px-3 py-3 text-sm text-ink-2">{t(x.s.angkatanLabel)}</td>
                   <td className="px-3 py-3 text-right text-[13.5px] tabular-nums text-ink-2">
                     {x.s.semesterAktif}/{CONFIG.TOTAL_SEMESTER_PROGRAM}

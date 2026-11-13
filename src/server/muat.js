@@ -27,17 +27,25 @@ export const semesterDari = (a) => turunkanSemesterAktif(intakeDari(a))
 export const selesaiProgram = (a) => programSelesai(intakeDari(a))
 
 /**
- * Apakah mahasiswa `m` (dengan `angkatan`) masuk kelas `dosen` (dengan `angkatan`: baris DosenAngkatan). Prodinya harus
- * sama. Bila Super Admin sudah memilih angkatan yang diampu, kelasnya angkatan itu saja, termasuk yang programnya sudah
- * selesai; bila belum, angkatan yang sudah sampai semester dosen dan programnya belum selesai. Sama dengan mahasiswaKelas
- * di src/lib/data.js.
+ * Apakah mahasiswa `m` (dengan `angkatan`) masuk kelas `dosen` (dengan `angkatan` dan `kelas`: baris DosenAngkatan dan
+ * DosenKelas). Bila Super Admin sudah memilih kelas yang diampu (Kelas A Sistem Informasi, Kelas B Informatika, dan
+ * seterusnya; sejak 13 Nov 2026), mahasiswanya harus anggota salah satu kelas itu; bila belum, prodinya harus sama dengan
+ * prodi dosen, apa pun kelasnya. Lalu angkatannya: bila Super Admin sudah memilih angkatan yang diampu, angkatan itu saja,
+ * termasuk yang programnya sudah selesai; bila belum, angkatan yang sudah sampai semester dosen dan programnya belum
+ * selesai. Sama dengan mahasiswaKelas di src/lib/data.js.
  */
 export function diKelasDosen(dosen, m) {
-  if (!dosen || m.prodiId !== dosen.prodiId) return false
+  if (!dosen) return false
+  const kelas = (dosen.kelas ?? []).map((k) => k.kelasId)
+  if (kelas.length ? !kelas.includes(m.kelasId) : m.prodiId !== dosen.prodiId) return false
   const diampu = (dosen.angkatan ?? []).map((a) => a.angkatanId)
   if (diampu.length) return diampu.includes(m.angkatanId)
   return semesterDari(m.angkatan) >= dosen.semester && !selesaiProgram(m.angkatan)
 }
+
+/** Saringan Prisma untuk calon mahasiswa kelas `dosen` (anggota kelas yang diampu, atau prodinya); diKelasDosen menuntaskannya. */
+export const calonKelasDosen = (dosen) =>
+  dosen.kelas?.length ? { kelasId: { in: dosen.kelas.map((k) => k.kelasId) } } : { prodiId: dosen.prodiId }
 
 /**
  * Angkatan yang TIDAK terlihat oleh `pengguna`, sebagai Map id → label, atau null bila semuanya terlihat. Hanya admin
@@ -133,6 +141,7 @@ const PERAN_DARI_LABEL = { mahasiswa: 'MAHASISWA', dosen: 'DOSEN', admin: 'ADMIN
 export const SERTA_MAHASISWA = {
   prodi: { include: { fakultas: true } },
   angkatan: true,
+  kelas: true,
   pengguna: { select: { email: true } },
   nilai: true,
   penguncian: true,
@@ -170,6 +179,8 @@ export function susunMahasiswa(m, nama = new Map(), { komponenBoleh = null, deng
     program: m.prodi.nama,
     faculty: m.prodi.fakultas.nama,
     jenjang: m.prodi.jenjang,
+    // Nama kelas di prodinya ('A'; layar menulis "Kelas A"), atau null bila belum dimasukkan ke kelas.
+    kelas: m.kelas?.nama ?? null,
     angkatan: m.angkatan.tahun,
     angkatanId: m.angkatanId,
     angkatanLabel: m.angkatan.label,
@@ -416,8 +427,9 @@ export async function muatData(pengguna) {
   if (pengguna.peran === 'dosen') {
     const dosen = pengguna.dosen
     const komponenBoleh = new Set(komponenDosen(dosen).map((k) => k.id))
-    // Kelasnya angkatan yang diampu (dipilih Super Admin), atau tanpa pilihan, angkatan yang sedang di semesternya.
-    const mhs = (await db.mahasiswa.findMany({ where: { prodiId: dosen.prodiId }, include: SERTA_MAHASISWA, orderBy: { nim: 'asc' } }))
+    // Kelasnya anggota kelas yang diampu (atau tanpa pilihan, mahasiswa prodinya), lalu angkatan yang diampu (atau tanpa
+    // pilihan, angkatan yang sedang di semesternya); keduanya dipilih Super Admin.
+    const mhs = (await db.mahasiswa.findMany({ where: calonKelasDosen(dosen), include: SERTA_MAHASISWA, orderBy: { nim: 'asc' } }))
       .filter((m) => diKelasDosen(dosen, m))
     const nama = await petaNama(idPengguna(mhs))
     hasil.mahasiswa = mhs.map((m) => susunMahasiswa(m, nama, { komponenBoleh, denganEmail: false }))

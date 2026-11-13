@@ -47,7 +47,7 @@ export const AKSI_LOG = [
   'TAMBAH_AKUN',
   'UBAH_AKUN',
   'HAPUS_AKUN',
-  // Kelas dosen (prodi, sumber, semester, angkatan yang diampu) dari Akses Pengguna (ubahKelasDosen di akses.js).
+  // Kelas dosen (prodi, sumber, semester, angkatan dan kelas yang diampu) dari Akses Pengguna (ubahKelasDosen di akses.js).
   'UBAH_KELAS_DOSEN',
   // Angkatan yang dibuka atau dinonaktifkan untuk seorang admin biasa (aturAksesAngkatan di akses.js).
   'UBAH_AKSES_ANGKATAN',
@@ -59,6 +59,10 @@ export const AKSI_LOG = [
   'UBAH_FAKULTAS',
   'TAMBAH_PRODI',
   'UBAH_PRODI',
+  'TAMBAH_KELAS',
+  'UBAH_KELAS',
+  // Mahasiswa yang dimasukkan ke kelas atau dikeluarkan dari kelas, banyak sekaligus (aturAnggotaKelas di dataMaster.js).
+  'ATUR_KELAS_MAHASISWA',
   // Aspek CPMK itu sendiri (src/server/aspek.js).
   'TAMBAH_ASPEK',
   'UBAH_ASPEK',

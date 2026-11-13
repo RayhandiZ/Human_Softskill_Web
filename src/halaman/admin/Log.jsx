@@ -67,10 +67,12 @@ const LABEL_RINCIAN = {
   nim: 'NIM',
   nip: 'NIP',
   prodi: 'Program studi',
+  kelas: 'Kelas',
   fakultas: 'Fakultas',
   jenjang: 'Jenjang',
   angkatan: 'Angkatan',
   angkatanDiampu: 'Angkatan yang diampu',
+  kelasDiampu: 'Kelas yang diampu',
   label: 'Label',
   labelEn: 'Nama (Inggris)',
   namaEn: 'Nama (Inggris)',
@@ -221,6 +223,8 @@ function teksNilai(v, t, { kunci = null, aksi = null } = {}) {
     if (punyaSebelumSesudah(v)) return teksNilai(v.sebelum, t, { kunci, aksi }) + ' → ' + teksNilai(v.sesudah, t, { kunci, aksi })
     // Angkatan yang diampu dan sejenisnya ({ id, label }) cukup ditulis labelnya.
     if (typeof v.label === 'string') return t(v.label)
+    // Kelas yang diampu dosen ({ id, prodi, nama }, ubahKelasDosen di src/server/akses.js): "Sistem Informasi Kelas A".
+    if (kunci === 'kelasDiampu' && typeof v.nama === 'string') return t('{prodi} Kelas {nama}', { prodi: v.prodi, nama: v.nama })
     return Object.entries(v)
       .map(([k, x]) => labelKunci(k, t) + ': ' + teksNilai(x, t, { kunci: k, aksi }))
       .join('; ')
@@ -241,6 +245,8 @@ function teksNilai(v, t, { kunci = null, aksi = null } = {}) {
   // Nama fakultas, prodi, dan angkatan ikut bahasa aktif; nama lama yang sudah diganti tampil apa adanya.
   if (KUNCI_NAMA.includes(kunci) || (kunci === 'nama' && /_(FAKULTAS|PRODI)$/.test(aksi ?? ''))) return t(s)
   if (kunci === 'dari' || kunci === 'ke') return dari(LABEL_TANDA)
+  // Nama kelas disimpan tanpa kata "Kelas" ('A'; dataMaster.js), jadi ditulis seperti di layar: "Kelas A".
+  if (kunci === 'kelas') return t('Kelas {nama}', { nama: s })
   if (kunci === 'aksi') return LABEL_AKSI[s] || LABEL_LOG[s] ? t(LABEL_AKSI[s] ?? LABEL_LOG[s]) : s
   if (kunci === 'status') return LABEL_SERTIFIKAT[s.toLowerCase()] ? t(LABEL_SERTIFIKAT[s.toLowerCase()]) : s
   if (kunci === 'komponen') {
@@ -446,6 +452,14 @@ export function ringkasan(b, t) {
   }
   if (Array.isArray(r.diubah) && r.diubah.length && r.diubah.every((x) => typeof x === 'string')) {
     baris.push(labelKunci('diubah', t) + ': ' + r.diubah.join(', '))
+  }
+  // Pembagian kelas (aturAnggotaKelas di src/server/dataMaster.js): berapa mahasiswa, ke kelas mana.
+  if (b.aksi === 'ATUR_KELAS_MAHASISWA' && typeof r.jumlah === 'number') {
+    baris.push(
+      r.kelas
+        ? t('{n} mahasiswa dimasukkan ke Kelas {kelas}', { n: r.jumlah, kelas: r.kelas })
+        : t('{n} mahasiswa dikeluarkan dari kelasnya', { n: r.jumlah }),
+    )
   }
   const alasan = typeof r.alasan === 'string' && r.alasan ? ['Alasan', r.alasan] : typeof r.catatan === 'string' && r.catatan ? ['Catatan', r.catatan] : null
   if (alasan) baris.push(t(alasan[0]) + ': ' + potong(alasan[1], 90))

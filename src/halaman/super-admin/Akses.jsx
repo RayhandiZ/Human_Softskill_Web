@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Avatar, Badge, Card, CatatanKaki, EmptyState, SearchInput, Select, Tabs } from '../../components/Ui'
-import { IconAlert, IconCalendar, IconCheck, IconCheckShield, IconHapus, IconLock, IconPlus, IconRefresh, IconUndo, IconUsers } from '../../components/Icons'
+import { IconAlert, IconCalendar, IconCheck, IconCheckShield, IconHapus, IconLock, IconPlus, IconRefresh, IconUndo, IconUsers, IconX } from '../../components/Icons'
 import {
   ALASAN_AKSES_MIN,
   SANDI_AWAL_MIN,
@@ -22,7 +22,9 @@ import { useTeks } from '../../lib/bahasa'
    Baris admin juga memberi atau mencabut izin lihat data master lewat /api/akses/izin (sejak rapat 24 Okt 2026 hanya
    untuk melihat; menambah dan mengubahnya hanya super admin); lihat README.md › Data master. Baris admin juga mengatur
    angkatan yang terlihat oleh admin itu (membuka angkatan yang sudah lewat Semester 3, menonaktifkan angkatan
-   Semester 1–3) lewat /api/akses/angkatan; lihat README.md › Akses angkatan. */
+   Semester 1–3) lewat /api/akses/angkatan; lihat README.md › Akses angkatan. Baris dosen mengatur kelasnya lewat
+   /api/akses/kelas: prodi, sumber, semester, angkatan yang diampu, dan sejak 13 Nov 2026 kelas yang diampu (Kelas A
+   Sistem Informasi, Kelas B Informatika, dan seterusnya; boleh beberapa, juga di prodi lain). */
 
 const KELOMPOK = {
   dosen: { label: 'Dosen', peran: ['dosen'], kosong: 'Belum ada akun dosen.', cari: 'Cari nama, email, atau NIP', tambah: 'Tambah dosen' },
@@ -281,12 +283,16 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
     a.nip ? 'NIP ' + a.nip : null,
     a.nim ? 'NIM ' + a.nim : null,
     t(a.prodi),
+    // Kelas mahasiswa di prodinya; yang belum dimasukkan ke kelas tidak menulis apa-apa.
+    a.peran === 'mahasiswa' && a.kelas ? t('Kelas {nama}', { nama: a.kelas }) : null,
     a.angkatan ? t('Angkatan {label}', { label: a.angkatan }) : null,
-    // Kelas dosen: tanpa angkatan terpilih, kelasnya angkatan yang sedang di semester itu.
+    // Kelas dosen: tanpa kelas terpilih, semua mahasiswa prodinya; tanpa angkatan terpilih, angkatan yang sedang di
+    // semester itu.
     ...(a.peran === 'dosen'
       ? [
           SUMBER_DOSEN[a.sumber] ?? a.sumber,
           t('Semester {n}', { n: a.semester }),
+          a.kelasDiampu?.length ? a.kelasDiampu.map((k) => labelKelas(k, t)).join(', ') : t('semua kelas'),
           a.angkatanDiampu?.length
             ? t('Angkatan {label}', { label: a.angkatanDiampu.map((x) => t(x.label)).join(', ') })
             : t('angkatan otomatis'),
@@ -467,6 +473,92 @@ function BarisAkun({ a, milikSaya, terbuka, onBuka, onTutup, onGanti, onHapus })
 }
 const SUMBER_DOSEN = { PDP: 'PDP', MK: 'MK Humaniora' }
 
+/** "Sistem Informasi Kelas A" untuk satu kelas { prodi, nama }, dalam bahasa aktif. */
+const labelKelas = (k, t) => t('{prodi} Kelas {nama}', { prodi: k.prodi, nama: k.nama })
+const kunciKelas = (k) => k.prodi + '\n' + k.nama
+const urutKelas = (a, b) => a.prodi.localeCompare(b.prodi, 'id') || a.nama.localeCompare(b.nama, 'id')
+
+/**
+ * Kelas yang diampu dosen (sejak 13 Nov 2026): daftar kelas terpilih, masing-masing bisa dilepas, lalu pilihan program
+ * studi dan kelasnya untuk menambah satu lagi. Boleh beberapa kelas, juga di prodi lain. Kosong berarti semua mahasiswa
+ * program studi dosen, seperti sebelum ada kelas. Mahasiswanya dimasukkan ke kelas di Data Master (tab Kelas).
+ * `prodiAwal`: prodi yang langsung terpilih di pilihan tambah, biasanya prodi dosen itu.
+ */
+function PilihKelas({ terpilih, onUbah, prodiAwal = '' }) {
+  const t = useTeks()
+  const pilihanProdi = PROGRAMS.filter((p) => p.kelas?.length).map((p) => p.program)
+  const [prodi, setProdi] = useState(pilihanProdi.includes(prodiAwal) ? prodiAwal : '')
+  const [kelas, setKelas] = useState('')
+  // Kelas yang sudah terpilih tidak ditawarkan lagi.
+  const pilihanKelas = (PROGRAMS.find((p) => p.program === prodi)?.kelas ?? []).filter(
+    (nama) => !terpilih.some((k) => k.prodi === prodi && k.nama === nama),
+  )
+
+  function tambah() {
+    if (!prodi || !kelas) return
+    onUbah([...terpilih, { prodi, nama: kelas }].sort(urutKelas))
+    setKelas('')
+  }
+
+  return (
+    <fieldset className="sm:col-span-2">
+      <legend className="mb-1.5 block label">{t('Kelas yang diampu')}</legend>
+      {terpilih.length ? (
+        <ul className="flex flex-wrap gap-2">
+          {terpilih.map((k) => (
+            <li
+              key={kunciKelas(k)}
+              className="inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-brand-ink bg-brand-soft pl-3 pr-1 text-[13.5px] font-semibold text-ink"
+            >
+              {labelKelas(k, t)}
+              <button
+                type="button"
+                className="grid h-9 w-9 place-items-center rounded-lg text-ink-2 transition hover:bg-surface hover:text-ink"
+                aria-label={t('Lepas {kelas}', { kelas: labelKelas(k, t) })}
+                onClick={() => onUbah(terpilih.filter((x) => kunciKelas(x) !== kunciKelas(k)))}
+              >
+                <IconX size={15} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[13px] text-ink-2">{t('Belum ada kelas terpilih: dosen ini memegang semua mahasiswa program studinya.')}</p>
+      )}
+      <div className="mt-2.5 flex flex-wrap items-end gap-2.5">
+        <Select
+          label={t('Program studi kelas')}
+          value={prodi}
+          onChange={(v) => {
+            setProdi(v)
+            setKelas('')
+          }}
+          options={pilihanProdi}
+          tampilkan={(x) => t(x)}
+          kosong={t('Pilih program studi')}
+          className="min-w-[200px] flex-1"
+        />
+        <Select
+          label={t('Kelas')}
+          value={kelas}
+          onChange={setKelas}
+          options={pilihanKelas}
+          tampilkan={(nama) => t('Kelas {nama}', { nama })}
+          kosong={t('Pilih kelas')}
+          className="w-[160px]"
+        />
+        <button type="button" className="btn-ghost" disabled={!prodi || !kelas} onClick={tambah}>
+          <IconPlus size={16} />
+          {t('Tambah kelas')}
+        </button>
+      </div>
+      <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-2">
+        {t('Dosen bisa memegang beberapa kelas, juga di program studi lain. Kosongkan untuk semua kelas di program studi dosen. Mahasiswa dimasukkan ke kelasnya di Data Master, tab Kelas.')}
+      </p>
+    </fieldset>
+  )
+}
+
 /**
  * Angkatan yang diampu dosen, kotak centang per angkatan. Kosong berarti otomatis: angkatan yang sedang di semester yang
  * diampu dan programnya belum selesai. Angkatan yang sudah selesai atau disahkan boleh dipilih; perbaikan nilainya oleh
@@ -505,6 +597,7 @@ function PanelKelas({ a, onBatal, onSelesai }) {
     sumber: a.sumber ?? '',
     semester: a.semester ? String(a.semester) : '',
     angkatan: (a.angkatanDiampu ?? []).map((x) => x.id),
+    kelas: (a.kelasDiampu ?? []).map(({ prodi, nama }) => ({ prodi, nama })),
   })
   const [sibuk, setSibuk] = useState(false)
   const [galat, setGalat] = useState('')
@@ -546,6 +639,7 @@ function PanelKelas({ a, onBatal, onSelesai }) {
           options={['1', '2', '3']}
           tampilkan={(s) => t('Semester {n}', { n: s })}
         />
+        <PilihKelas terpilih={isian.kelas} onUbah={pasang('kelas')} prodiAwal={a.prodi} />
         <PilihAngkatan terpilih={isian.angkatan} onUbah={pasang('angkatan')} />
       </div>
       <div className="flex flex-wrap gap-2.5">
@@ -714,11 +808,18 @@ function FormTambah({ kelompok, onBatal, onTambah }) {
     semester: '',
     // Angkatan yang diampu dosen; kosong = otomatis (PilihAngkatan).
     angkatan: [],
+    // Kelas mahasiswa di prodinya ('' = belum dimasukkan ke kelas), dan kelas yang diampu dosen ([] = semua kelas di
+    // prodinya). Keduanya dikirim sebagai `kelas`.
+    kelasMahasiswa: '',
+    kelasDosen: [],
   })
   const [sibuk, setSibuk] = useState(false)
   const [galat, setGalat] = useState('')
-  const pasang = (kunci) => (nilai) => setIsian((x) => ({ ...x, [kunci]: nilai }))
+  // Kelas mahasiswa milik prodinya, jadi ikut dikosongkan saat prodinya diganti.
+  const pasang = (kunci) => (nilai) =>
+    setIsian((x) => ({ ...x, [kunci]: nilai, ...(kunci === 'prodi' && x.prodi !== nilai ? { kelasMahasiswa: '' } : {}) }))
   const prodi = PROGRAMS.map((p) => p.program)
+  const kelasProdi = PROGRAMS.find((p) => p.program === isian.prodi)?.kelas ?? []
   const wajibDipilih = {
     mahasiswa: [
       ['prodi', t('Pilih program studi lebih dulu.')],
@@ -742,7 +843,9 @@ function FormTambah({ kelompok, onBatal, onTambah }) {
     setSibuk(true)
     setGalat('')
     try {
-      const { akun } = await tambahAkun({ ...isian, peran: kelompok })
+      const { kelasMahasiswa, kelasDosen, ...dasar } = isian
+      const kelas = kelompok === 'dosen' ? kelasDosen : kelompok === 'mahasiswa' ? kelasMahasiswa : undefined
+      const { akun } = await tambahAkun({ ...dasar, kelas, peran: kelompok })
       onTambah(akun)
     } catch (err) {
       setGalat(t(err.message))
@@ -782,6 +885,14 @@ function FormTambah({ kelompok, onBatal, onTambah }) {
               tampilkan={(id) => t(getAngkatan(id)?.label ?? id)}
               kosong={t('Pilih angkatan')}
             />
+            {/* Boleh tanpa kelas: mahasiswanya bisa dimasukkan ke kelas kemudian di Data Master. */}
+            <Select
+              label={t('Kelas')}
+              value={isian.kelasMahasiswa}
+              onChange={pasang('kelasMahasiswa')}
+              options={['', ...kelasProdi]}
+              tampilkan={(nama) => (nama ? t('Kelas {nama}', { nama }) : t('Tanpa kelas'))}
+            />
           </>
         ) : null}
         {kelompok === 'dosen' ? (
@@ -812,6 +923,7 @@ function FormTambah({ kelompok, onBatal, onTambah }) {
               tampilkan={(s) => t('Semester {n}', { n: s })}
               kosong={t('Pilih semester')}
             />
+            <PilihKelas terpilih={isian.kelasDosen} onUbah={pasang('kelasDosen')} />
             <PilihAngkatan terpilih={isian.angkatan} onUbah={pasang('angkatan')} />
           </>
         ) : null}

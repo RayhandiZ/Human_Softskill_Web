@@ -2100,7 +2100,8 @@ export const EN = {
   'Menghapus data master tidak bisa dari sini. NIM tidak bisa diubah karena riwayat usulan nilai dosen menyambung lewat NIM; bila NIM salah, minta Super Admin menghapus akunnya selama belum punya data, lalu tambahkan lagi.': 'Master data cannot be deleted here. Student IDs cannot be changed because lecturer score proposals are linked by Student ID; if one is wrong, ask the Super Admin to delete the account while it has no data, then add it again.',
   'Nama fakultas': 'Faculty name',
   'Nama program studi': 'Study programme name',
-  'Prodi dan angkatan hanya bisa diubah selama mahasiswanya belum punya nilai, pengumpulan, atau usulan nilai.': 'Programme and cohort can only be changed while the student has no scores, submissions, or score proposals.',
+  'Prodi dan angkatan hanya bisa diubah selama mahasiswanya belum punya nilai, pengumpulan, atau usulan nilai. Kelas di prodinya bisa dipindah kapan saja.':
+    'Programme and cohort can only be changed while the student has no scores, submissions, or score proposals. Their class within the programme can be changed at any time.',
   'Program studi {nama} sudah ditambahkan.': 'Study programme {nama} has been added.',
   'Program studi {nama} sudah diubah.': 'Study programme {nama} has been updated.',
   'Semester masuk': 'Intake semester',
@@ -2124,6 +2125,59 @@ export const EN = {
   'Ubah fakultas': 'Edit faculty',
   'Ubah program studi': 'Edit study programme',
   'Menambah dan mengubah angkatan, fakultas, prodi, dan data mahasiswa': 'Add and edit cohorts, faculties, programmes, and student data',
+  // Tab Kelas (BagianKelas di admin/DataMaster.jsx, sejak 12 Nov 2026), label log-nya (labelLog.js), dan rincian log.
+  'Kelas': 'Class',
+  'Kelas {nama}': 'Class {nama}',
+  '{n} kelas di {p} program studi. Nama kelas unik di dalam prodinya. Dosen yang mengampu sebuah kelas melihat mahasiswa anggotanya.':
+    '{n} classes across {p} study programmes. A class name is unique within its programme. Lecturers who teach a class see its students.',
+  'Tambah kelas': 'Add class',
+  'Nama kelas': 'Class name',
+  'Nama baru kelas': 'New class name',
+  'Misalnya C': 'For example C',
+  'Tulis namanya saja, tanpa kata "Kelas": C tampil sebagai Kelas C.': 'Write the name only, without the word "Kelas": C is shown as Class C.',
+  'Kelas {kelas} sudah ditambahkan ke {prodi}.': 'Class {kelas} has been added to {prodi}.',
+  'Kelas {kelas} di {prodi} sudah diubah.': 'Class {kelas} in {prodi} has been updated.',
+  'Belum ada kelas': 'No classes yet',
+  'Tambah kelas prodi': 'Add programme class',
+  'Ubah kelas prodi': 'Edit programme class',
+  'kelas {nama}': 'class {nama}',
+  // Anggota kelas (13 Nov 2026): Atur mahasiswa di tab Kelas (PanelAnggotaKelas), isian Kelas di tab Mahasiswa, kolom
+  // Kelas di Data Mahasiswa, profil mahasiswa, dan label log-nya.
+  'Kelas {nama}: {n} mahasiswa': 'Class {nama}: {n} students',
+  '{n} belum punya kelas': '{n} without a class',
+  'Atur mahasiswa': 'Assign students',
+  'Centang mahasiswa {prodi} yang akan dimasukkan ke satu kelas. Dosen yang mengampu kelas itu langsung melihat mereka; nilainya tidak berubah.':
+    'Tick the {prodi} students to place in one class. Lecturers who teach that class see them straight away; their scores do not change.',
+  'Semua angkatan': 'All cohorts',
+  'Kelas sekarang': 'Current class',
+  'Belum punya kelas': 'No class yet',
+  'Mahasiswa {prodi}': '{prodi} students',
+  'Pilih semua yang tampil ({n})': 'Select all shown ({n})',
+  'Belum ada mahasiswa di program studi ini.': 'There are no students in this study programme yet.',
+  'Masukkan ke': 'Place in',
+  'Keluarkan dari kelas': 'Remove from class',
+  '{n} mahasiswa dipilih.': '{n} students selected.',
+  'Simpan pembagian kelas': 'Save class placement',
+  '{n} mahasiswa terpilih sudah berada di sana; tidak ada yang berubah.': 'The {n} selected students are already there; nothing changed.',
+  '{n} mahasiswa dimasukkan ke {kelas} di {prodi}.': '{n} students placed in {kelas} in {prodi}.',
+  '{n} mahasiswa dikeluarkan dari kelasnya di {prodi}.': '{n} students removed from their class in {prodi}.',
+  'Tanpa kelas': 'No class',
+  'Atur kelas mahasiswa': 'Place students in classes',
+  '{n} mahasiswa dimasukkan ke Kelas {kelas}': '{n} students placed in Class {kelas}',
+  '{n} mahasiswa dikeluarkan dari kelasnya': '{n} students removed from their class',
+  // Kelas yang diampu dosen (PilihKelas di super-admin/Akses.jsx, panel dosen, dan rincian log UBAH_KELAS_DOSEN).
+  '{prodi} Kelas {nama}': '{prodi} Class {nama}',
+  'Kelas yang diampu': 'Classes taught',
+  'semua kelas': 'all classes',
+  'Lepas {kelas}': 'Remove {kelas}',
+  'Belum ada kelas terpilih: dosen ini memegang semua mahasiswa program studinya.':
+    'No class chosen yet: this lecturer covers every student in their study programme.',
+  'Program studi kelas': 'Class study programme',
+  'Pilih kelas': 'Choose a class',
+  'Dosen bisa memegang beberapa kelas, juga di program studi lain. Kosongkan untuk semua kelas di program studi dosen. Mahasiswa dimasukkan ke kelasnya di Data Master, tab Kelas.':
+    'A lecturer can teach several classes, including in other study programmes. Leave this empty for every class in the lecturer’s study programme. Students are placed in their class in Master Data, Class tab.',
+  'Mahasiswa masuk ke kelas Anda setelah Super Admin memasukkannya ke kelas di Data Master.':
+    'Students appear in your class once the Super Admin places them in it in Master Data.',
 
   /* ------------- panel kerja: redesign dosen, Kemahasiswaan, Super Admin ------------- */
   '{unit} Semester {semester}': '{unit} Semester {semester}',
@@ -2364,6 +2418,16 @@ export const EN = {
   'Akses angkatan hanya untuk akun admin Kemahasiswaan.': 'Cohort access is only for Student Affairs admin accounts.',
   'Pulihkan dulu akses akun ini sebelum membuka angkatan untuknya.': "Restore this account's access before opening cohorts for it.",
   'Program studi tidak ditemukan.': 'Study program not found.',
+  // Kelas di dalam prodi (kelolaKelas di src/server/dataMaster.js, sejak 12 Nov 2026).
+  'Kelas tidak ditemukan.': 'Class not found.',
+  'Nama kelas wajib diisi, misalnya A.': 'The class name is required, for example A.',
+  'Nama baru kelas wajib diisi, misalnya A.': 'The new class name is required, for example A.',
+  'Nama kelas paling panjang 30 karakter.': 'The class name can be at most 30 characters.',
+  'Nama baru kelas paling panjang 30 karakter.': 'The new class name can be at most 30 characters.',
+  // Kelas yang diampu dosen dan anggota kelas (akses.js dan dataMaster.js, sejak 13 Nov 2026).
+  'Daftar kelas yang diampu tidak valid.': 'The list of classes taught is not valid.',
+  'Pilih minimal satu mahasiswa.': 'Select at least one student.',
+  'Paling banyak 500 mahasiswa sekali simpan.': 'At most 500 students can be saved at once.',
   'NIM hanya berisi angka.': 'NIM may only contain digits.',
   'Angkatan tidak ditemukan.': 'Cohort not found.',
   'Sumber penilaian harus PDP atau MK.': 'The assessment source must be PDP or MK.',
@@ -2572,6 +2636,12 @@ export const POLA_EN = [
   [/^Angkatan (.+) sudah dikunci, jadi mahasiswanya tidak bisa dipindah\.$/, 'Cohort $1 is already ratified, so its students cannot be moved.'],
   [/^Angkatan (.+) sudah dikunci, jadi tidak bisa diubah\.$/, 'Cohort $1 is already ratified, so it cannot be changed.'],
   [/^Angkatan (.+) sudah ada\.$/, 'Cohort $1 already exists.'],
+  // Nama kelas kembar di dalam satu prodi (kelolaKelas di src/server/dataMaster.js).
+  [/^Kelas (.+) sudah ada di (.+)\.$/, 'Class $1 already exists in $2.'],
+  // Kelas yang tidak ada di prodinya, dan mahasiswa yang dimasukkan ke kelas prodi lain (akses.js, dataMaster.js).
+  [/^Kelas (.+) tidak ditemukan di (.+)\.$/, 'Class $1 was not found in $2.'],
+  [/^Mahasiswa dengan NIM (.+) tidak ditemukan\.$/, 'No student has NIM $1.'],
+  [/^NIM (\S+) bukan mahasiswa (.+)\.$/, 'NIM $1 is not a student of $2.'],
   [/^Angkatan (.+) baru di semester (\d+) dari (\d+)\. Penguncian baru bisa dilakukan setelah semester (\d+) berakhir\.$/, 'Cohort $1 is only in semester $2 of $3. It can be ratified after semester $4 ends.'],
   [/^(NIM|NIP|Email) (.+) sudah terdaftar\.$/, '$1 $2 is already registered.'],
   [/^Email (.+) sudah dipakai akun lain\.$/, 'Email $1 is already used by another account.'],

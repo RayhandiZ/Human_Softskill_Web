@@ -6,7 +6,7 @@ import { Card, CardHeader, CatatanKaki, EmptyState, KartuAngka, Paginasi, Search
 import { IconAlert, IconChevronDown, IconList, IconTarget, IconUpload, IconUsers } from '../../components/Icons'
 import { SUMBER } from '../../lib/curriculum'
 import { CONFIG } from '../../lib/config'
-import { dosenSesi, getAngkatan, komponenDosen, mahasiswaKelas } from '../../lib/data'
+import { cakupanKelasDosen, dosenSesi, getAngkatan, komponenDosen, mahasiswaKelas } from '../../lib/data'
 import { unggahanDosen, useStore } from '../../lib/store'
 import { ringkasKelas } from '../../lib/unggahDosen'
 import { useAuth } from '../../lib/auth'
@@ -52,9 +52,11 @@ export default function Pantau() {
   const persen = ringkas.total ? Math.round((ringkas.terisi / ringkas.total) * 100) : 0
   // Angkatan yang diampu, bila Super Admin sudah memilihnya; tanpa pilihan, kelasnya angkatan yang sedang di semester ini.
   const angkatanDiampu = dosen.angkatan.map((id) => t(getAngkatan(id)?.label ?? id)).join(', ')
+  // Kelas yang diampu ("Sistem Informasi Kelas A, ..."), atau tanpa pilihan kelas, nama prodinya.
+  const prodiKelas = cakupanKelasDosen(dosen, t)
   const cakupan = angkatanDiampu
-    ? t('{prodi}, angkatan {daftar}.', { prodi: dosen.prodi, daftar: angkatanDiampu })
-    : t('{prodi} dari Semester {n} sampai programnya selesai.', { prodi: dosen.prodi, n: dosen.semester })
+    ? t('{prodi}, angkatan {daftar}.', { prodi: prodiKelas, daftar: angkatanDiampu })
+    : t('{prodi} dari Semester {n} sampai programnya selesai.', { prodi: prodiKelas, n: dosen.semester })
 
   return (
     <div className="space-y-5">
@@ -124,14 +126,16 @@ export default function Pantau() {
         ) : !mahasiswa.length ? (
           <EmptyState title={t('Belum ada mahasiswa di kelas Anda')}>
             {angkatanDiampu
-              ? t('Di sini akan muncul mahasiswa {prodi} angkatan {daftar}.', { prodi: dosen.prodi, daftar: angkatanDiampu })
+              ? t('Di sini akan muncul mahasiswa {prodi} angkatan {daftar}.', { prodi: prodiKelas, daftar: angkatanDiampu })
               : t('Di sini akan muncul mahasiswa {prodi} yang sudah sampai Semester {n} dan programnya belum selesai.', {
-                  prodi: dosen.prodi,
+                  prodi: prodiKelas,
                   n: dosen.semester,
                 })}{' '}
             {angkatanDiampu
               ? null
-              : t('Bila Anda mengampu angkatan tertentu, termasuk yang sudah disahkan, minta Super Admin memilihnya di akun Anda.')}
+              : t('Bila Anda mengampu angkatan tertentu, termasuk yang sudah disahkan, minta Super Admin memilihnya di akun Anda.')}{' '}
+            {/* Kelas dipilih tetapi mahasiswanya belum dimasukkan ke kelas itu oleh Super Admin. */}
+            {dosen.kelas.length ? t('Mahasiswa masuk ke kelas Anda setelah Super Admin memasukkannya ke kelas di Data Master.') : null}
           </EmptyState>
         ) : (
           <ul className="grid gap-x-10 px-5 py-2 sm:px-6 xl:grid-cols-2">

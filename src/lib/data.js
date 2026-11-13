@@ -142,6 +142,11 @@ export function batasiAngkatan(ids) {
 
 /* ------------------------------ fakultas & prodi -------------------------- */
 
+/* Contoh dua kelas di setiap prodi (12 Nov 2026), untuk mode lokal dan seed. Basis data yang sudah ada mendapatnya dari
+   migrasi 20261112150000_kelas_prodi. Nama tanpa kata "Kelas"; layar menulis "Kelas A". Mahasiswa membawa nama kelasnya
+   (`kelas`, null = belum dimasukkan ke kelas) dan dosen kelas yang diampunya (`kelas` di dosenSesi), sejak 13 Nov 2026. */
+const KELAS_CONTOH = ['A', 'B']
+
 const FAKULTAS_AWAL = [
   {
     name: 'Teknik & Informatika',
@@ -177,7 +182,7 @@ const FAKULTAS_AWAL = [
       { nama: 'Perhotelan', jenjang: 'D3' },
     ],
   },
-]
+].map((f) => ({ ...f, programs: f.programs.map((p) => ({ ...p, kelas: [...KELAS_CONTOH] })) }))
 
 export const FACULTIES = []
 export const PROGRAMS = []
@@ -195,7 +200,9 @@ function pasangFakultas(daftar) {
   isiUlang(FACULTIES, daftar)
   isiUlang(
     PROGRAMS,
-    daftar.flatMap((f) => f.programs.map((p) => ({ program: p.nama, namaEn: p.namaEn, jenjang: p.jenjang, faculty: f.name }))),
+    daftar.flatMap((f) =>
+      f.programs.map((p) => ({ program: p.nama, namaEn: p.namaEn, jenjang: p.jenjang, faculty: f.name, kelas: p.kelas ?? [] })),
+    ),
   )
   isiPeta(FACULTY_OF, PROGRAMS.map((p) => [p.program, p.faculty]))
   isiPeta(JENJANG_OF, PROGRAMS.map((p) => [p.program, p.jenjang]))
@@ -264,17 +271,31 @@ export function komponenDosen(dosen) {
 }
 
 /**
- * Mahasiswa kelas dosen: prodinya sama, lalu angkatan yang diampu bila Super Admin sudah memilihnya (termasuk angkatan
- * yang programnya sudah selesai), atau tanpa pilihan, yang sudah sampai semester kelas itu dan programnya belum lewat
- * Semester 3. Data dari server sudah tersaring dengan aturan yang sama (diKelasDosen di src/server/muat.js); mode lokal
- * memuat semua mahasiswa, jadi disaring di sini.
+ * Mahasiswa kelas dosen: anggota kelas yang diampu bila Super Admin sudah memilihnya (`dosen.kelas`: [{ prodi, nama }],
+ * boleh di beberapa prodi; sejak 13 Nov 2026), atau tanpa pilihan, mahasiswa prodi dosen apa pun kelasnya. Lalu angkatan
+ * yang diampu bila Super Admin sudah memilihnya (termasuk angkatan yang programnya sudah selesai), atau tanpa pilihan, yang
+ * sudah sampai semester kelas itu dan programnya belum lewat Semester 3. Data dari server sudah tersaring dengan aturan
+ * yang sama (diKelasDosen di src/server/muat.js); mode lokal memuat semua mahasiswa, jadi disaring di sini.
  */
 export function mahasiswaKelas(dosen) {
   if (!dosen) return []
-  if (dosen.angkatan?.length) return STUDENTS.filter((s) => s.program === dosen.prodi && dosen.angkatan.includes(s.angkatanId))
+  const diKelas = dosen.kelas?.length
+    ? (s) => dosen.kelas.some((k) => k.prodi === s.program && k.nama === s.kelas)
+    : (s) => s.program === dosen.prodi
+  if (dosen.angkatan?.length) return STUDENTS.filter((s) => diKelas(s) && dosen.angkatan.includes(s.angkatanId))
   return STUDENTS.filter(
-    (s) => s.program === dosen.prodi && s.semesterAktif >= dosen.semester && !(s.periode?.[0] && programSelesai(s.periode[0])),
+    (s) => diKelas(s) && s.semesterAktif >= dosen.semester && !(s.periode?.[0] && programSelesai(s.periode[0])),
   )
+}
+
+/**
+ * Cakupan kelas dosen sebagai teks: kelas yang diampu ("Sistem Informasi Kelas A, Informatika Kelas B"), atau tanpa
+ * pilihan kelas, nama prodinya. `t`: penerjemah bahasa aktif. Dipakai panel dosen di tempat nama prodi dulu ditulis.
+ */
+export function cakupanKelasDosen(dosen, t = (teks, isi) => teks.replace(/\{(\w+)\}/g, (_, k) => isi?.[k] ?? '')) {
+  if (!dosen) return ''
+  if (!dosen.kelas?.length) return t(dosen.prodi)
+  return dosen.kelas.map((k) => t('{prodi} Kelas {nama}', { prodi: k.prodi, nama: k.nama })).join(', ')
 }
 
 /* --------------------------- akun yang sedang masuk ----------------------- */
@@ -327,6 +348,8 @@ export function dosenSesi(user) {
     prodi: user.prodi,
     fakultas: user.fakultas ?? FAKULTAS_OF[user.prodi] ?? '',
     angkatan: user.angkatan ?? [],
+    // Kelas yang diampu: [{ prodi, nama }]; kosong = semua mahasiswa prodinya. Lihat mahasiswaKelas di atas.
+    kelas: user.kelas ?? [],
   }
 }
 

@@ -2136,11 +2136,14 @@ export async function ujiAlurSertifikat() {
       /Akses cetak dicabut/.test(el.textContent) &&
       el.textContent.includes('Ada laporan sikap dari dosen wali.') &&
       Boolean(tombol(el, 'Ajukan peninjauan akses'))
-    // Sistem hanya menyimpan alasan, jadi langkahnya tidak dikarang: tertulis belum tersedia, dengan jalur bertanya.
-    hasil.pencabutanJujur =
-      /Rincian langkahnya belum tersedia/.test(el.textContent) &&
-      /wa\.me/.test(tautan(el, 'Hubungi Kemahasiswaan')?.getAttribute('href') ?? '')
-    hasil.instruksiBersyarat = /Setelah akses dipulihkan, tombol Cetak \/ Simpan PDF akan tersedia/.test(el.textContent)
+    // Sejak 12 Nov 2026 kartunya hanya memuat alasan dan tombol Ajukan peninjauan akses: tanpa siapa yang mencabut
+    // (Biro Kemahasiswaan), "Yang perlu dilakukan", tautan Hubungi Kemahasiswaan, dan catatan di bawah kartu.
+    const kartuDicabut = el.querySelector('section[aria-labelledby="judul-izin"]')
+    hasil.pencabutanRingkas =
+      [...(kartuDicabut?.querySelectorAll('dt') ?? [])].map((d) => d.textContent.trim()).join('|') === 'Alasan' &&
+      !/Dicabut oleh|Yang perlu dilakukan|Biro Kemahasiswaan/.test(kartuDicabut?.textContent ?? '') &&
+      [...(kartuDicabut?.querySelectorAll('button, a') ?? [])].map((b) => b.textContent.trim()).join('|') === 'Ajukan peninjauan akses'
+    hasil.tanpaCatatanSesudahDicabut = Boolean(kartuDicabut) && !/Setelah akses (dipulihkan|disetujui)/.test(kartuDicabut.textContent)
     hasil.tanpaLembarSesudahDicabut = !document.querySelector('.lembar-sertifikat')
     try {
       await catatCetakSertifikat(milik().id)
@@ -2557,6 +2560,29 @@ export async function ujiPanelSuper() {
     /sudah dihapus dari basis data/.test(el.querySelector('[role="status"]')?.textContent ?? '')
   await ketik(el.querySelector('input[type="search"]'), d2.nip)
   hasil.cariAkun = barisAkun().length === 1 && barisAkun()[0].textContent.includes(d2.nama)
+  // Kelas yang diampu (13 Nov 2026): di panel Ubah kelas, prodi dosen langsung terpilih; memilih Kelas A lalu Tambah
+  // kelas memasangnya (dan Kelas A tidak ditawarkan lagi), tombol lepas melepasnya. Menyimpannya butuh basis data.
+  const barisD2 = () => barisAkun().find((li) => li.textContent.includes(d2.nama))
+  await klik([...barisD2().querySelectorAll('button')].find((b) => /Ubah kelas/.test(b.textContent)))
+  const formKelas = barisD2().querySelector('form')
+  const pilihanDi = (teks) => [...formKelas.querySelectorAll('select')].find((s) => [...s.options].some((o) => o.textContent === teks))
+  const tombolTambahKelas = () => [...formKelas.querySelectorAll('button')].find((b) => /Tambah kelas/.test(b.textContent))
+  const kelasDosenAwal =
+    /Belum ada kelas terpilih/.test(formKelas.textContent) &&
+    pilihanDi('Pilih program studi')?.value === d2.prodi &&
+    tombolTambahKelas()?.disabled === true
+  await act(async () => {
+    const sel = pilihanDi('Pilih kelas')
+    sel.value = 'A'
+    sel.dispatchEvent(new window.Event('change', { bubbles: true }))
+  })
+  await klik(tombolTambahKelas())
+  const kelasTerpilih = () => [...formKelas.querySelectorAll('li')].find((li) => /Sistem Informasi Kelas A/.test(li.textContent))
+  const kelasTerpasang =
+    Boolean(kelasTerpilih()) && ![...(pilihanDi('Pilih kelas')?.options ?? [])].some((o) => o.value === 'A')
+  await klik(kelasTerpilih()?.querySelector('button'))
+  hasil.pilihKelasDosen = kelasDosenAwal && kelasTerpasang && !kelasTerpilih() && /Belum ada kelas terpilih/.test(formKelas.textContent)
+  await klik([...barisD2().querySelectorAll('button')].find((b) => /Ubah kelas/.test(b.textContent)))
   await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /Admin Kemahasiswaan/.test(b.textContent)))
   await ketik(el.querySelector('input[type="search"]'), '')
   const barisSuper = barisAkun().find((li) => li.textContent.includes('super.admin@umn.ac.id'))
@@ -2646,10 +2672,18 @@ export async function ujiPanelSuper() {
     JSON.stringify({ role: 'admin', kelolaMaster: true, email: 'admin@umn.ac.id', name: 'Biro Kemahasiswaan & Humaniora', initials: 'KH' }),
   )
   ;({ el, lepas } = await pasang('/admin/data-master'))
-  hasil.dataMasterBacaSaja =
-    [...el.querySelectorAll('[role="tab"]')].length === 3 &&
+  const bacaSajaAwal =
+    [...el.querySelectorAll('[role="tab"]')].length === 4 &&
     !/Tambah angkatan|Ubah label/.test(el.textContent) &&
     /Anda hanya bisa melihat data master/.test(el.textContent)
+  // Tab Kelas (sejak 12 Nov 2026) juga hanya dilihat: kelasnya beserta jumlah anggotanya tampil, tanpa Tambah kelas,
+  // tanpa Atur mahasiswa (13 Nov 2026), dan tanpa tombol Ubah.
+  await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /^Kelas/.test(b.textContent)))
+  hasil.dataMasterBacaSaja =
+    bacaSajaAwal &&
+    /Kelas A: \d+ mahasiswa · Kelas B: \d+ mahasiswa/.test(el.textContent) &&
+    !/Tambah kelas|Atur mahasiswa/.test(el.textContent) &&
+    ![...el.querySelectorAll('button')].some((b) => b.textContent.trim() === 'Ubah')
   lepas()
   sesi(true)
   ;({ el, lepas } = await pasang('/admin/data-master'))
@@ -2659,14 +2693,59 @@ export async function ujiPanelSuper() {
   const pratinjauAngkatan = /Akan dibuat: [0-9]{4} \(kode [0-9]{4}\)/.test(el.textContent)
   await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /Fakultas & Prodi/.test(b.textContent)))
   const bagianProdi = /Tambah fakultas/.test(el.textContent) && /Tambah program studi/.test(el.textContent)
+  // Tab Kelas (sejak 12 Nov 2026): contoh Kelas A dan B di setiap prodi (KELAS_CONTOH di data.js) beserta jumlah
+  // anggotanya, lalu formulir tambah.
+  await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /^Kelas/.test(b.textContent)))
+  const jumlahProdi = MASTER_AWAL.fakultas.flatMap((f) => f.programs).length
+  const barisKelasContoh = [...el.querySelectorAll('li')].filter((li) =>
+    /Kelas A: \d+ mahasiswa · Kelas B: \d+ mahasiswa/.test(li.textContent),
+  ).length
+  await klik([...el.querySelectorAll('button')].find((b) => /Tambah kelas/.test(b.textContent)))
+  const bagianKelas = barisKelasContoh === jumlahProdi && /Nama kelas/.test(el.textContent) && /tanpa kata "Kelas"/.test(el.textContent)
+  // Atur mahasiswa (13 Nov 2026): panelnya hanya memuat mahasiswa prodi itu; simpan mati sampai ada yang dicentang dan
+  // alasannya cukup. Menyimpannya butuh basis data, jadi tidak dicoba di sini (diuji test:db).
+  const barisSI = () => [...el.querySelectorAll('li')].find((li) => li.querySelector('p')?.textContent === 'Sistem Informasi')
+  await klik([...barisSI().querySelectorAll('button')].find((b) => /Atur mahasiswa/.test(b.textContent)))
+  const panelAnggota = barisSI().querySelector('form')
+  const mhsSI = STUDENTS.filter((s) => s.program === 'Sistem Informasi')
+  // Daftar mahasiswanya saja (ul di dalam fieldset panel): `ul input` dari formulir ikut menangkap kotak "Pilih semua",
+  // karena ul baris prodi di luar formulir juga cocok sebagai leluhurnya.
+  const daftarAnggota = () => panelAnggota?.querySelector('fieldset ul')
+  const centangAnggota = () => [...(daftarAnggota()?.querySelectorAll('input[type="checkbox"]') ?? [])]
+  const simpanAnggota = () => [...(panelAnggota?.querySelectorAll('button[type="submit"]') ?? [])].find((b) => /Simpan pembagian kelas/.test(b.textContent))
+  const hanyaProdiItu = mhsSI.length > 0 && centangAnggota().length === mhsSI.length && !/Informatika/.test(daftarAnggota()?.textContent ?? 'Informatika')
+  const anggotaMatiAwal = simpanAnggota()?.disabled === true
+  await klik(centangAnggota()[0])
+  const anggotaMatiTanpaAlasan = simpanAnggota()?.disabled === true && /1 mahasiswa dipilih/.test(panelAnggota.textContent)
+  await ketik([...panelAnggota.querySelectorAll('input')].find((i) => !i.type || i.type === 'text'), 'Pembagian kelas semester ganjil')
+  const anggotaHidup = simpanAnggota()?.disabled === false
+  // Pilih semua yang tampil, lalu pilihan kosong lagi begitu saringannya diganti.
+  await klik([...panelAnggota.querySelectorAll('label')].find((l) => /Pilih semua yang tampil/.test(l.textContent))?.querySelector('input'))
+  const semuaTerpilih = new RegExp(mhsSI.length + ' mahasiswa dipilih').test(panelAnggota.textContent)
+  await ketik(panelAnggota.querySelector('input[type="search"]'), mhsSI[0].nim)
+  const saringMengosongkan = centangAnggota().length === 1 && /0 mahasiswa dipilih/.test(panelAnggota.textContent)
+  hasil.panelAnggotaKelas = hanyaProdiItu && anggotaMatiAwal && anggotaMatiTanpaAlasan && anggotaHidup && semuaTerpilih && saringMengosongkan
   await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /^Mahasiswa/.test(b.textContent)))
   hasil.dataMasterSuper =
-    tabDataMaster.length === 3 &&
+    tabDataMaster.length === 4 &&
     adaMenuDataMaster &&
     pratinjauAngkatan &&
     bagianProdi &&
+    bagianKelas &&
     Boolean(el.querySelector('input[type="search"]')) &&
     /NIM tidak bisa diubah/.test(el.textContent)
+  // Tab Mahasiswa: formulir tambah punya pilihan Kelas yang mengikuti prodinya (Tanpa kelas, lalu kelas prodi itu).
+  await klik([...el.querySelectorAll('button')].find((b) => /Tambah mahasiswa/.test(b.textContent)))
+  const formMhsBaru = [...el.querySelectorAll('form')].find((f) => /Sandi awal/.test(f.textContent))
+  const pilihKelasMhs = () => [...formMhsBaru.querySelectorAll('select')].find((s) => [...s.options].some((o) => o.textContent === 'Tanpa kelas'))
+  const kelasAwalKosong = pilihKelasMhs()?.options.length === 1
+  const pilihProdiMhs = [...formMhsBaru.querySelectorAll('select')].find((s) => [...s.options].some((o) => o.value === 'Sistem Informasi'))
+  await act(async () => {
+    pilihProdiMhs.value = 'Sistem Informasi'
+    pilihProdiMhs.dispatchEvent(new window.Event('change', { bubbles: true }))
+  })
+  hasil.kelasIkutProdi =
+    kelasAwalKosong && [...(pilihKelasMhs()?.options ?? [])].map((o) => o.textContent).join() === 'Tanpa kelas,Kelas A,Kelas B'
   lepas()
 
   // Pintu API yang belum dibuat (404) dikenali, supaya halaman bisa menjelaskannya.
@@ -3215,6 +3294,25 @@ export async function ujiAlurDosen() {
     kelasTersaring:
       kelas.length > 0 && kelas.length < STUDENTS.length && kelas.every((s) => s.program === d.prodi && s.semesterAktif >= d.semester),
     adaDuaTugas: komponen.length >= 2,
+  }
+
+  /* 0. Kelas yang diampu (13 Nov 2026): dengan kelas terpilih, kelasnya hanya anggota kelas itu, juga dari prodi lain;
+     mahasiswa prodinya yang belum dimasukkan ke kelas itu tidak ikut. Kelas mahasiswa contoh dikembalikan sesudahnya. */
+  {
+    const [anggota, bukanAnggota] = STUDENTS.filter((s) => s.program === d.prodi)
+    const lain = STUDENTS.find((s) => s.program !== d.prodi)
+    const kelasLama = [anggota, bukanAnggota, lain].map((s) => [s, s.kelas])
+    anggota.kelas = 'A'
+    bukanAnggota.kelas = null
+    lain.kelas = 'A'
+    const dKelas = {
+      ...d,
+      angkatan: [...new Set([anggota.angkatanId, bukanAnggota.angkatanId, lain.angkatanId])],
+      kelas: [{ prodi: d.prodi, nama: 'A' }, { prodi: lain.program, nama: 'A' }],
+    }
+    const pilihan = mahasiswaKelas(dKelas).map((s) => s.nim)
+    hasil.kelasPilihan = pilihan.includes(anggota.nim) && pilihan.includes(lain.nim) && !pilihan.includes(bukanAnggota.nim)
+    for (const [s, k] of kelasLama) s.kelas = k
   }
 
   /* 1. Templat yang diunggah kembali apa adanya tidak mengubah apa pun. */

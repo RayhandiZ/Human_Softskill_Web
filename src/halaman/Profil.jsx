@@ -5,7 +5,7 @@ import { labelPeran, useAuth } from '../lib/auth'
 import { useTeks } from '../lib/bahasa'
 import { CONFIG } from '../lib/config'
 import { SUMBER } from '../lib/curriculum'
-import { PERIODE_AKTIF, dosenSesi, labelPeriode, mahasiswaSesi } from '../lib/data'
+import { PERIODE_AKTIF, cakupanKelasDosen, dosenSesi, labelPeriode, mahasiswaSesi } from '../lib/data'
 import { useStore } from '../lib/store'
 import { BATAS_FOTO_MB, bacaFoto, kunciSesi, simpanProfil, useProfil } from '../lib/profil'
 import PenyuntingFoto from '../components/PenyuntingFoto'
@@ -410,6 +410,12 @@ export default function Profil() {
                 {t(student.program)} · {student.jenjang}
               </Tetap>
             </Baris>
+            {/* Kelas di prodinya, bila Super Admin sudah memasukkannya ke kelas (sejak 13 Nov 2026). */}
+            {student.kelas ? (
+              <Baris label={t('Kelas')}>
+                <Tetap>{t('Kelas {nama}', { nama: student.kelas })}</Tetap>
+              </Baris>
+            ) : null}
             <Baris label={t('Angkatan')}>
               <Tetap>{t(student.angkatanLabel)}</Tetap>
             </Baris>
@@ -429,7 +435,7 @@ export default function Profil() {
               catatan={t('Menentukan pengumpulan mana yang masuk ke antrean Anda dan komponen mana yang boleh Anda nilai.')}
             >
               <Tetap>
-                {t('Semester {n}', { n: dosen.semester })} · {t(dosen.prodi)}
+                {t('Semester {n}', { n: dosen.semester })} · {cakupanKelasDosen(dosen, t)}
               </Tetap>
             </Baris>
             <Baris label={t('Fakultas')}>

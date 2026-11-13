@@ -97,6 +97,8 @@ function sesiDari(akun) {
       fakultas: d.fakultas,
       // Angkatan yang diampu (id); kosong = angkatan yang sedang di semesternya. Lihat mahasiswaKelas di data.js.
       angkatan: d.angkatan ?? [],
+      // Kelas yang diampu ([{ prodi, nama }]); kosong = semua mahasiswa prodinya.
+      kelas: d.kelas ?? [],
     }
   }
 

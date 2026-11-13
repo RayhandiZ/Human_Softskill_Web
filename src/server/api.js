@@ -21,8 +21,12 @@ export async function penggunaDari(request) {
 
 /** Akun `id` dalam bentuk yang diterima setiap `kerja`; null bila tidak ada atau nonaktif. */
 export async function penggunaDariId(id) {
-  // dosen.angkatan: angkatan yang diampu (DosenAngkatan), penentu kelasnya; lihat diKelasDosen di muat.js.
-  const p = await db.pengguna.findUnique({ where: { id }, include: { mahasiswa: true, dosen: { include: { angkatan: true } } } })
+  // dosen.angkatan dan dosen.kelas: angkatan dan kelas yang diampu (DosenAngkatan, DosenKelas), penentu mahasiswa
+  // kelasnya; lihat diKelasDosen di muat.js.
+  const p = await db.pengguna.findUnique({
+    where: { id },
+    include: { mahasiswa: true, dosen: { include: { angkatan: true, kelas: true } } },
+  })
   if (!p || !p.aktif) return null
   return {
     id: p.id,
