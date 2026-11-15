@@ -283,22 +283,6 @@ export async function ujiMenuHp(rute) {
   return hasil
 }
 
-/** Bilah bawah panel dosen di ponsel: selalu ada di DOM (disembunyikan CSS di layar lebar), berlabel teks, dan
-    menandai halaman yang terbuka dengan aria-current. */
-export async function ujiBilahBawah(rute) {
-  const { el, lepas } = await pasang(rute)
-  const nav = el.querySelector('nav.bilah-bawah')
-  const tautan = nav ? [...nav.querySelectorAll('a')] : []
-  const hasil = {
-    adaHamburger: Boolean(el.querySelector('[aria-label="Buka menu navigasi"]')),
-    ada: Boolean(nav),
-    tautan: tautan.map((a) => a.textContent.trim()),
-    aktif: tautan.find((a) => a.getAttribute('aria-current') === 'page')?.textContent.trim() ?? null,
-  }
-  lepas()
-  return hasil
-}
-
 /** Kaca panel dosen: kelas yang dipakai index.css ada pada unsur yang berkaca, dan isi halaman tidak memakainya. */
 export async function ujiKacaDosen() {
   const { el, lepas } = await pasang('/dosen')
@@ -1757,14 +1741,9 @@ export async function ujiTrenSemester(sem) {
     tanpaTipAwal: !tip() && garisTegak().length === 0,
   }
 
-  // Cara hitung: tertutup bawaannya, dan isinya mengikat nilai akhir ke titik terakhir garis rata-rata.
-  const tombolCara = [...el.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Cara hitung')
-  if (tombolCara) {
-    const tertutup = tombolCara.getAttribute('aria-expanded') === 'false' && !el.querySelector('#cara-hitung')
-    await klik(tombolCara)
-    hasil.caraHitung = tertutup && /titik terakhir garis Rata-rata Anda/.test(el.querySelector('#cara-hitung')?.textContent ?? '')
-    await klik(tombolCara)
-  }
+  // Tautan "Cara hitung" dihapus 15 Nov 2026 (permintaan pemilik produk): kartu nilai akhir hanya angka, grade, dan grafik.
+  hasil.tanpaCaraHitung =
+    ![...el.querySelectorAll('button, a')].some((b) => b.textContent.trim() === 'Cara hitung') && !el.querySelector('#cara-hitung')
 
   if (kolom.length) {
     const terakhir = kolom[kolom.length - 1]

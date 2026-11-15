@@ -102,7 +102,7 @@ export function kelasAksesibilitas(s) {
 }
 
 /* Filter warna dipasang di <html>, bukan di panel: filter pada elemen lain menjadi bingkai bagi elemen fixed di
-   dalamnya (menu samping, bilah bawah, tombol bantuan), sedangkan elemen akar dikecualikan dari aturan itu. */
+   dalamnya (menu samping, laci, tombol bantuan), sedangkan elemen akar dikecualikan dari aturan itu. */
 export function saringanAksesibilitas(s) {
   return [
     s.kontras === 'tinggi' && 'contrast(1.35)',

@@ -339,7 +339,7 @@ src/components/   Ui (termasuk pola halaman Kemahasiswaan: JudulHalaman, KartuAn
                   Paginasi, GulirTabel, JUDUL_KOLOM), Icons, Navbar, Laci, MenuAkun, Footer, FilterBar, ErrorBoundary,
                   TombolBahasa, PilihanMengambang, PenyuntingFoto, LihatFoto, LayananTambahan,
                   LogoPdp, Lipat, MenuSamping (menu samping mahasiswa, dosen, Kemahasiswaan, dan
-                  super admin), BilahBawah (menu bawah HP panel dosen), MenuAksesibilitas (semua panel),
+                  super admin, juga isi laci HP), MenuAksesibilitas (semua panel),
                   TombolTema, CariCepat
                   (pencarian cepat Ctrl+K panel Kemahasiswaan), KerangkaKerja (kerangka bersama panel dosen,
                   Kemahasiswaan, dan Super Admin; lihat Panel kerja)
@@ -887,8 +887,9 @@ transparan pernah membuat animasinya tampak hilang padahal waktunya masih berjal
 
 **Kerangka.** `src/components/KerangkaKerja.jsx` hanya mengatur tampilan: menu samping, bilah atas, kolom isi, dan zoom
 aksesibilitas. Daftar menu, lencana, dan isi bilah atas tetap ditentukan `DosenLayout`, `AdminLayout`, dan `SuperLayout`,
-jadi hak akses dan tindakan per peran tidak pindah ke sini. Pencarian dan lonceng hanya ada di panel Kemahasiswaan, dan
-dosen tetap memakai bilah bawah di HP. `sampingGelap` memilih menu samping navy Super Admin.
+jadi hak akses dan tindakan per peran tidak pindah ke sini. Pencarian dan lonceng hanya ada di panel Kemahasiswaan. Di HP
+ketiga panel memakai tombol garis tiga dan laci (dosen sejak 15 Nov 2026, sebelumnya bilah bawah). `sampingGelap` memilih
+menu samping navy Super Admin.
 
 **Bentuk.** `index.css` › panel kerja hanya berisi bentuk dan jarak: bilah atas kapsul (`.kepala-kerja`, `.bilah-kerja`),
 judul halaman, dan sudut kartu. Semuanya di dalam `@media screen`, jadi lembar cetak tidak berubah, dan `.card` serta
@@ -1155,9 +1156,9 @@ hanya `transform` dan `opacity`, dan sekali jalan saat sesuatu muncul atau ditek
   - Semua daftar membuka ke bawah. Bawaan Chrome memilih sisi yang paling lega, sehingga dalam satu baris saringan
     daftar panjang (Tugas) bisa membuka ke atas sementara daftar pendek (Status) ke bawah. Dua aturan menyamakannya:
     `position-try-order: normal` (coba bawah dulu), dan tinggi yang dibatasi ruang di bawah kotak,
-    `max(160px, min(320px, 100% - 16px - var(--tinggi-bilah-bawah, 0px)))`. Dengan `position-area`, `100%` di
+    `max(160px, min(320px, 100% - 16px))`. Dengan `position-area`, `100%` di
     sini adalah area di bawah kotak (terukur: dengan ruang 240px daftar Tugas tetap di bawah, dipendekkan, dan bisa
-    digulir), dan di panel dosen bilah bawah HP ikut dikurangkan. Daftar baru membalik ke atas bila ruang itu kurang
+    digulir). Daftar baru membalik ke atas bila ruang itu kurang
     dari 160px, karena daftar setipis itu tidak terpakai.
   - Lebar daftar dibatasi `min(100vw - 32px, 100% - 16px)`; `100%` di sini adalah area dari tepi kiri kotak sampai
     tepi kanan layar, jadi daftar yang lebih lebar dari kotaknya (di HP) berhenti 16px sebelum tepi layar.
@@ -1244,19 +1245,20 @@ Pengiriman) diteruskan ke Unggah Nilai di peramban, seperti `app/page.jsx`.
 - **Menu samping putih** seperti panel Kemahasiswaan (`DosenLayout.jsx`, `KerangkaKerja.jsx`; lihat Panel kerja)
   berisi Beranda, Unggah Nilai, dan Profil, tanpa lencana. Di atas menu ada kotak *Kelas Anda*
   (unit penilai, semester, dan program studi).
-- **Bilah bawah berlabel di HP** (`BilahBawah.jsx`, label pendek "Unggah"), bukan tombol garis tiga.
-- **Bilah atas**: pemilih bahasa, tema, menu aksesibilitas, dan menu akun dalam ukuran bawaannya. Di HP logonya
-  hanya logo PDP, supaya semuanya muat sampai lebar 360px.
+- **Di HP tombol garis tiga membuka laci**, sama dengan panel mahasiswa (permintaan pemilik produk, 15 Nov 2026):
+  laci berisi menu dosen (Profil sudah termasuk), garis pemisah, Keluar, dan pemilih bahasa. Sebelumnya bilah bawah
+  berlabel (`BilahBawah.jsx`, kini dihapus beserta `--tinggi-bilah-bawah`, `.kolom-dosen`, dan posisi khusus tombol
+  bantuan).
+- **Bilah atas**: pemilih bahasa, tema, menu aksesibilitas, dan menu akun dalam ukuran bawaannya. Di HP ada tombol garis
+  tiga, logonya hanya logo PDP, dan pemilih bahasa pindah ke laci, supaya semuanya muat sampai lebar 360px.
 - **Footer seperti panel mahasiswa** (`<Footer pintasan kelasIsi />`, komponen dan ukurannya sama):
   pintasan berikon ke tiga halaman dosen, alamat Helpdesk, telepon dan surel, identitas unit, dan baris hak
   cipta. Menempel di dasar kolom isi, selebar kolom, dan isinya segaris dengan isi halaman (lihat Panel kerja ›
   Menu samping dan footer menempel). Sampai 11 Nov 2026 ia kartu bersudut bulat berjarak 16px mulai layar laptop.
 - **Kontras**: teks redup memakai warna panel admin (`--text-muted` #63677f, 5,6:1 di kartu putih; sebelumnya
   #8a8ea9, 3,2:1), begitu juga nada `Badge`, dan galat memakai `--teks-kritis`.
-- **Bilah bawah, footer, dan tombol bantuan tidak saling menutupi**: tinggi bilah bawah disimpan sebagai
-  `--tinggi-bilah-bawah` (68px tautan + 1px garis atas). Kolom isi (`.kolom-dosen`) berakhir setinggi bilah bawah di
-  atas dasar layar, supaya baris hak cipta footer tidak tertutup, dan tombol bantuan (`posisi="bantuan-dosen"`,
-  prop `posisi` milik `LayananTambahan`) melayang 20px di atas bilah bawah.
+- **Tombol bantuan** di letak yang sama dengan panel mahasiswa (`LayananTambahan` tanpa prop; prop `posisi` dihapus
+  bersama bilah bawah).
 
 ### Kaca
 
@@ -1271,7 +1273,6 @@ memakai bahan yang sama; lihat Panel mahasiswa › Kaca dan Panel Kemahasiswaan 
 |---|---|
 | Bilah atas | Putih tembus 68% dengan blur 12px, garis terang, dan kilau di tepi atas. Tetap menempel saat digulir |
 | Menu aktif | Pil kebiruan tembus dengan kilau tepi. Ikon dan garis kiri tetap. Saat ditunjuk, pil butir lain lebih tipis, jadi halaman yang terbuka tetap jelas |
-| Bilah bawah HP | Bahan yang sama dengan bilah atas, karena di HP ia menggantikan menu samping |
 | Menu akun, panel bantuan | Lapisan melayang, lebih pekat (84%) karena isinya dibaca, dengan bayangan lembut |
 | Tombol bantuan | Kaca biru 78% dengan kilau tepi dan ikon putih |
 
@@ -1293,7 +1294,7 @@ memakai bahan yang sama; lihat Panel mahasiswa › Kaca dan Panel Kemahasiswaan 
 - **Gulir.** Cahaya latar sengaja tanpa `background-attachment: fixed`: jejak compositor Chrome menunjukkan properti itu membuat
   halaman dilukis ulang di setiap langkah gulir (Paint 50 kali per gestur di panel mahasiswa, 120 sampai 140 di Beranda dosen, 0
   tanpanya), dan `scripts/smoke.run.cjs` menjaganya. Sesudah digulir cahaya tidak perlu ikut, karena kaca sudah berlatar isi
-  halaman. Yang berblur selama digulir hanya kapsul, tombol bantuan, bilah bawah HP dosen, bilah alat Riwayat, dan lintasan
+  halaman. Yang berblur selama digulir hanya kapsul, tombol bantuan, bilah alat Riwayat, dan lintasan
   pemilih bahasa: lajur di belakang kapsul cukup gradasi (`--kaca-tirai`) tanpa blur dan mask. Pemilih bahasa sejak 11 Nov 2026
   memakai kaca pustaka liquid glass (blur 6px plus pembiasan; pembiasannya dimatikan pustaka selama digulir lewat
   `html[data-lg-scrolling]`), jadi di dalam kapsul ia blur ganda. Sebelumnya pil bahasa sengaja tanpa blur sendiri karena blur
@@ -1393,8 +1394,8 @@ Pustakanya `read-excel-file` dan `write-excel-file` (MIT), dimuat hanya saat dip
 tidak dipakai karena celah keamanan 2026 pada versi sampai 4.4.0, begitu juga paket `xlsx` di npm (0.18.5) yang
 celahnya tidak ditambal di npm.
 
-**Uji**: `scripts/smoke.run.cjs` memeriksa isi Beranda dan Unggah Nilai, keadaan kosongnya, dan bilah bawah
-(3 tautan berlabel, halaman aktif ditandai, tanpa tombol garis tiga). `ujiAlurDosen` menguji alur unggahan
+**Uji**: `scripts/smoke.run.cjs` memeriksa isi Beranda dan Unggah Nilai, keadaan kosongnya, dan laci HP (`ujiMenuHp`,
+sama dengan panel mahasiswa dan Kemahasiswaan: tombol garis tiga, laci 3 tautan, gulir dikunci dan pulih). `ujiAlurDosen` menguji alur unggahan
 terhadap data mahasiswa (templat dibaca kembali tanpa perubahan, rekap dosen sendiri, sembilan jenis penolakan,
 aspek yang belum dibuka disebut sekali per baris, aspek final yang diajukan, kelas dari angkatan yang diampu,
 unggahan campuran yang sebagian diajukan, simpan, unggah ulang, ringkasan Beranda, dan pembatalan), dan
@@ -1429,20 +1430,19 @@ tidak berlaci dan tetap memuat semuanya di bilah atas.
 
 | Bagian | Alat | Cara kerjanya |
 |---|---|---|
-| Penyesuaian konten | Ukuran tulisan 90 sampai 150% | `zoom` pada `.isi-zoom` (isi halaman dan footer). Bilah atas, menu samping, dan bilah bawah tidak ikut, supaya kendalinya tidak terdorong keluar layar HP. Bilah aksi membagi jarak menempelnya dengan `--skala`. |
+| Penyesuaian konten | Ukuran tulisan 90 sampai 150% | `zoom` pada `.isi-zoom` (isi halaman dan footer). Bilah atas dan menu samping tidak ikut, supaya kendalinya tidak terdorong keluar layar HP. Bilah aksi membagi jarak menempelnya dengan `--skala`. |
 | | Sorot judul, Sorot tautan | garis tepi pada h1 sampai h3; garis bawah tebal dan bingkai `box-shadow` pada tautan (bukan outline, supaya cincin fokus papan ketik tetap terlihat) |
 | | Huruf ramah disleksia | Lexend lewat `next/font` dengan `preload: false`, jadi baru diunduh saat dinyalakan |
 | | Jarak huruf, Jarak baris, Huruf tebal | 0,12em huruf dan 0,16em kata (WCAG 1.4.12), tinggi baris 1,8, tebal 700 |
 | Penyesuaian warna | Kontras gelap, Kontras terang, Kontras tinggi | gelap dan terang: palet token hitam/putih yang lebih tegas, terlepas dari tema, dengan permukaan kaca dan tulisan bergradasi dibuat padat; tinggi: `filter: contrast(1.35)`. Ketiganya saling menggantikan. |
-| | Saturasi tinggi, Saturasi rendah, Monokrom | `filter` saturate atau grayscale, saling menggantikan. Filter dipasang di `<html>`, bukan di panel: filter pada elemen lain menjadi bingkai bagi elemen fixed di dalamnya (menu samping, bilah bawah, tombol bantuan). |
+| | Saturasi tinggi, Saturasi rendah, Monokrom | `filter` saturate atau grayscale, saling menggantikan. Filter dipasang di `<html>`, bukan di panel: filter pada elemen lain menjadi bingkai bagi elemen fixed di dalamnya (menu samping, laci, tombol bantuan). |
 | Alat | Pemandu baca, Hentikan animasi, Kursor besar | pita mendatar yang mengikuti penunjuk (portal ke `<body>`, di luar zoom); semua animasi dan transisi dimatikan; kursor SVG 48px (panah, dan tangan untuk yang bisa ditekan) |
 
 - Menu ini dialog nonmodal. Saat dibuka, fokus pindah ke judulnya; Esc menutup dan mengembalikan fokus ke
   tombolnya; klik atau Tab ke luar menutupnya. Setiap alat adalah tombol `aria-pressed`, dan keadaan nyala
   ditandai garis tepi, latar, dan centang, bukan warna saja.
 - Menu ada di dalam bilah atas (sticky, z-20). Selama menu terbuka bilah atas dinaikkan ke z-50
-  (`header:has([role='dialog'])`), supaya tombol bantuan dan bilah bawah tidak menutupinya. Di HP menu menjadi
-  lembar selebar layar yang berhenti di atas bilah bawah.
+  (`header:has([role='dialog'])`), supaya tombol bantuan tidak menutupinya. Di HP menu menjadi lembar selebar layar.
 - Semua aturan aksesibilitas ada di dalam `@media screen`, dan `@media print` melepas zoom `.isi-zoom` serta filter
   `<html>`. Transkrip dan sertifikat tetap tercetak seperti aslinya walau pemakainya sedang memakai kontras gelap
   atau tulisan 150%.
@@ -2198,8 +2198,9 @@ Aturan tampilan dashboard mahasiswa:
   dari mana;
 - sejak 26 Okt 2026 ubin nilai akhir hanya memuat angkanya, "Grade C" di bawahnya (atau *Belum Memenuhi* di bawah
   ambang huruf mutu terendah), dan grafik perkembangan, atas permintaan pengguna; status (sementara atau final) dan
-  dasar hitungnya tetap ada di Transkrip (R3, diperiksa `npm run assert`). Sejak 4 Nov 2026 ada *Cara hitung*, tautan kecil
-  yang membuka penjelasan singkat nilai akhir, nilai semester, dan nilai aspek, bukan paragraf yang selalu tampil;
+  dasar hitungnya tetap ada di Transkrip (R3, diperiksa `npm run assert`). Tautan kecil *Cara hitung* (penjelasan singkat
+  nilai akhir, nilai semester, dan nilai aspek, ada sejak 4 Nov 2026) dihapus pada 15 Nov 2026 atas permintaan pemilik
+  produk; `npm run smoke` memeriksa bahwa ia tidak muncul lagi;
 - ubin *Aspek dinilai* berganti judul menjadi *Aspek final* begitu seluruh aspek final ("10 / 10", "Seluruh aspek sudah
   selesai dinilai."). Sebelum itu keterangannya menyebut yang masih kurang: belum dibuka, belum dinilai, atau belum final;
 - kartu *Capaian per area* juga dihapus pada hari yang sama, karena rata-rata dan jumlah aspek dinilai per area

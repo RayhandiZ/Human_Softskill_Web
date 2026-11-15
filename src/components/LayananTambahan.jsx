@@ -5,10 +5,10 @@ import { IconChat, IconChevronRight, IconX } from './Icons'
 import { LAYANAN } from '../lib/layanan'
 import { useTeks } from '../lib/bahasa'
 
-/* Tetap di bawah laci navigasi (z-40 < z-50) dan tidak ikut tercetak. `posisi`: kelas letaknya; panel dosen
-   menaikkannya di atas bilah bawah dan bilah aksi (index.css › panel dosen). */
+/* Tetap di bawah laci navigasi (z-40 < z-50) dan tidak ikut tercetak. Letaknya sama di panel mahasiswa dan dosen; sampai
+   15 Nov 2026 panel dosen menaikkannya di atas bilah bawah HP, yang kini diganti laci. */
 
-export default function LayananTambahan({ posisi = 'bottom-5 right-5 sm:bottom-6 sm:right-6' }) {
+export default function LayananTambahan() {
   const t = useTeks()
   const [buka, setBuka] = useState(false)
   const wadah = useRef(null)
@@ -33,7 +33,7 @@ export default function LayananTambahan({ posisi = 'bottom-5 right-5 sm:bottom-6
   }, [buka])
 
   return (
-    <div ref={wadah} className={'fixed z-40 print:hidden ' + posisi}>
+    <div ref={wadah} className="fixed bottom-5 right-5 z-40 print:hidden sm:bottom-6 sm:right-6">
       {buka ? (
         <div
           id="panel-layanan"

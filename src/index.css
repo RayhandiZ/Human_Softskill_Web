@@ -382,10 +382,10 @@ body {
     max-inline-size: min(100vw - 32px, 100% - 16px);
     /* Semua daftar membuka ke bawah. Bawaan Chrome most-block-size membuka ke sisi yang paling lega, jadi di satu baris
        saringan daftar panjang (Tugas) bisa ke atas sementara daftar pendek (Status) ke bawah. normal: coba bawah dulu.
-       Tingginya dibatasi ruang di bawah kotak (100% di sini adalah area di bawah kotak, minus margin 8px atas-bawah,
-       minus bilah bawah HP panel dosen), jadi daftar panjang tetap muat di bawah dan bisa digulir. Baru bila ruang itu
-       kurang dari 160px daftar membalik ke atas, karena daftar setipis itu tidak terpakai. */
-    max-block-size: max(160px, min(320px, 100% - 16px - var(--tinggi-bilah-bawah, 0px)));
+       Tingginya dibatasi ruang di bawah kotak (100% di sini adalah area di bawah kotak, minus margin 8px atas-bawah),
+       jadi daftar panjang tetap muat di bawah dan bisa digulir. Baru bila ruang itu kurang dari 160px daftar membalik ke
+       atas, karena daftar setipis itu tidak terpakai. */
+    max-block-size: max(160px, min(320px, 100% - 16px));
     position-try-order: normal;
     animation: rise 0.35s cubic-bezier(0.22, 0.68, 0.35, 1) both;
   }
@@ -1194,7 +1194,7 @@ body {
    sampai 24 + jarak ke panel 12 + sisa 8. */
 @media (max-height: 480px) {
   .layanan-panel {
-    max-height: calc(100dvh - 100px - var(--tinggi-bilah-bawah, 0px));
+    max-height: calc(100dvh - 100px);
     overflow-y: auto;
   }
 }
@@ -1338,35 +1338,6 @@ body {
   --teks-tunggu: var(--warning-ink);
 }
 
-/* ------------------------------- panel dosen -------------------------------- */
-/* Tinggi bilah bawah HP, supaya isi halaman, footer, dan tombol bantuan mengambang tidak saling menutupi. Lihat
-   README.md › Panel Dosen. */
-.panel-dosen {
-  /* 68px tautan + 1px garis atas bilah bawah. */
-  --tinggi-bilah-bawah: calc(69px + env(safe-area-inset-bottom, 0px));
-}
-@media (min-width: 1024px) {
-  .panel-dosen {
-    --tinggi-bilah-bawah: 0px;
-  }
-}
-.bilah-bawah {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-/* Kolom isi (halaman dan footer) berakhir di atas bilah bawah HP, supaya baris hak cipta footer tidak tertutup. */
-.kolom-dosen {
-  padding-bottom: var(--tinggi-bilah-bawah);
-}
-@media print {
-  .kolom-dosen {
-    padding-bottom: 0;
-  }
-}
-/* Tombol bantuan melayang di atas bilah bawah HP. */
-.bantuan-dosen {
-  bottom: calc(var(--tinggi-bilah-bawah) + 20px);
-}
-
 /* ------------------------------- panel kerja -------------------------------- */
 /* Kerangka bersama panel dosen, Kemahasiswaan, dan Super Admin (KerangkaKerja.jsx): bilah atas kapsul dan bentuk kartu. Di sini
    hanya bentuk dan jarak. Warnanya tetap token :root dan .dark yang sama dengan panel lain, jadi tidak ada token warna
@@ -1433,7 +1404,7 @@ body {
 
 /* ------------------------- kaca panel dosen dan mahasiswa ------------------------- */
 /* Navigasi dan kendali berbahan kaca, informasi nilai tetap padat (permintaan pemilik produk, 4 Nov 2026). Yang berkaca: bilah
-   atas, menu aktif, bilah bawah HP, menu akun, panel dan tombol bantuan; di panel mahasiswa juga bilah alat Riwayat dan aksen
+   atas, menu aktif, menu akun, panel dan tombol bantuan; di panel mahasiswa juga bilah alat Riwayat dan aksen
    Peta Perjalanan. Kartu, tabel, grafik, bilah kelengkapan, area unggah, formulir, peringatan, dan tombol utama sengaja tidak
    disentuh. Di dalam @media screen, jadi hasil cetak tidak berubah. Lihat README.md › Panel Dosen › Kaca.
    Panel Kemahasiswaan (.panel-admin) memakai token dan aturan bilah atas, menu aktif, dan menu akun yang sama sejak 10 Nov 2026;
@@ -1580,22 +1551,6 @@ body {
     :is(.panel-dosen, .panel-mahasiswa, .panel-admin) .menu-sorot:not(.menu-aktif):hover::before {
       opacity: 0.6;
     }
-  }
-
-  /* Bilah bawah HP: padanan menu samping, jadi bahannya sama. */
-  .panel-dosen .bilah-bawah {
-    --text-secondary: var(--kaca-teks-2);
-    --text-muted: var(--kaca-teks-2);
-    border-top-color: var(--kaca-tepi);
-    background: var(--kaca-isi);
-    -webkit-backdrop-filter: var(--kaca-kabur);
-    backdrop-filter: var(--kaca-kabur);
-    box-shadow: var(--kaca-kilau);
-  }
-  .panel-dosen .bilah-bawah [aria-current='page'] > span:first-child {
-    border: 1px solid var(--kaca-pil-tepi);
-    background: var(--kaca-pil);
-    box-shadow: var(--kaca-pil-bayang);
   }
 
   /* Lapisan melayang: isiannya lebih pekat daripada bilah, karena isinya dibaca dan yang di belakangnya bisa apa saja. Di panel
@@ -1813,7 +1768,7 @@ body {
    Lihat README.md › Menu aksesibilitas. */
 @media screen {
   /* Menunya ada di dalam bilah atas (sticky, z-20), jadi z-index menu hanya berlaku di dalam bilah itu. Selama menu
-     terbuka bilah atas dinaikkan, supaya tombol bantuan (z-40) dan bilah bawah (z-30) tidak menutupi menu. */
+     terbuka bilah atas dinaikkan, supaya tombol bantuan (z-40) tidak menutupi menu. */
   .akar-a11y header:has([role='dialog']) {
     z-index: 50;
   }

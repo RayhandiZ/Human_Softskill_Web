@@ -310,7 +310,7 @@ const RUTE = [
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiBilahBawah, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiPembaruanAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiLayarUnggah, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAlurSertifikat,ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiRincianLog, ujiSakelarWewenang, ujiMatriksWewenang, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiPembaruanAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiLayarUnggah, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAlurSertifikat,ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiRincianLog, ujiSakelarWewenang, ujiMatriksWewenang, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -475,7 +475,9 @@ const RUTE = [
 
   /* ------------------------------ menu di ponsel --------------------------- */
   console.log('')
-  for (const [peran, rute, harapTautan] of [['student', '/mahasiswa', 6], ['admin', '/admin', 11]]) {
+  /* Panel dosen memakai laci yang sama dengan panel mahasiswa sejak 15 Nov 2026 (sebelumnya bilah bawah berlabel); tiga
+     tautannya adalah menu dosen, Profil termasuk di dalamnya. Lihat README.md › Panel Dosen. */
+  for (const [peran, rute, harapTautan] of [['student', '/mahasiswa', 6], ['admin', '/admin', 11], ['dosen', '/dosen', 3]]) {
     w.localStorage.setItem('sk5c.session', SESI[peran])
     const h = await ujiMenuHp(rute)
 
@@ -491,25 +493,6 @@ const RUTE = [
     const rusak = wajib.filter(([, ok]) => !ok)
     if (rusak.length) gagal += rusak.length
     console.log((rusak.length ? 'GAGAL  ' : 'OK     ') + 'menu ponsel ' + rute)
-    for (const [ket, ok, rinci] of wajib) {
-      console.log('       ' + (ok ? 'v ' : 'x ') + ket + (ok || rinci === undefined ? '' : '  → ' + rinci))
-    }
-  }
-
-  /* Panel dosen di ponsel memakai bilah bawah berlabel, bukan tombol garis tiga; lihat README.md › Panel Dosen. */
-  {
-    w.localStorage.setItem('sk5c.session', SESI.dosen)
-    const b = await ujiBilahBawah('/dosen')
-    const wajib = [
-      ['tidak ada tombol garis tiga', !b.adaHamburger],
-      ['bilah bawah ada', b.ada],
-      ['bilah bawah memuat 3 tautan', b.tautan.length === 3, b.tautan.join(', ')],
-      ['setiap tautan berlabel teks', b.tautan.every((x) => x.length > 0), b.tautan.join(', ')],
-      ['halaman yang terbuka ditandai aria-current', b.aktif === 'Beranda', b.aktif],
-    ]
-    const rusak = wajib.filter(([, ok]) => !ok)
-    if (rusak.length) gagal += rusak.length
-    console.log((rusak.length ? 'GAGAL  ' : 'OK     ') + 'menu ponsel /dosen (bilah bawah)')
     for (const [ket, ok, rinci] of wajib) {
       console.log('       ' + (ok ? 'v ' : 'x ') + ket + (ok || rinci === undefined ? '' : '  → ' + rinci))
     }
@@ -1186,7 +1169,7 @@ const RUTE = [
     ['tiga semester: tren yang tampil', tr3.adaTren && !tr3.adaSebaran],
     ['legenda menyebut kedua garis', tr3.legenda],
     ['nilai tiap semester bertitik isi, rata-rata gabungan bercincin', tr3.bentukBeda],
-    ['Cara hitung tertutup dulu, dan terbuka menjelaskan hubungan nilai akhir dengan garis rata-rata', tr3.caraHitung],
+    ['tautan Cara hitung sudah dihapus dari kartu nilai akhir', tr3.tanpaCaraHitung],
     ['tidak ada sebutan lama "Rata-rata gabungan" atau "kumulatif"', tr3.tanpaSebutanLama],
     ['angka tertulis di titik terakhir kedua garis', tr3.angkaDiTitik?.includes('84') && tr3.angkaDiTitik?.includes('82'), String(tr3.angkaDiTitik)],
     ['satu titik per semester, di tiap garis', tr3.jumlahTitikSemester === 3 && tr3.jumlahTitikKumulatif === 3],

@@ -149,8 +149,8 @@ const DARI_DATA = [
   'Setelah akses disetujui, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.',
   'Alasan', 'Dicabut oleh', 'Ditolak oleh', 'Yang perlu dilakukan',
   'Ajukan peninjauan akses', 'Minta akses cetak lagi', 'Minta akses cetak', 'Oleh admin Kemahasiswaan', 'Sedang ditinjau',
-  /* Kartu nilai akhir mahasiswa: seri grafik dan label Cara hitung, lalu pilihan urutan Riwayat. */
-  'Rata-rata Anda', 'Nilai semester', 'Nilai aspek', 'Aspek final', 'Aspek dinilai',
+  /* Kartu nilai akhir mahasiswa: seri grafik dan judul ubin, lalu pilihan urutan Riwayat. */
+  'Rata-rata Anda', 'Nilai semester', 'Aspek final', 'Aspek dinilai',
   'Terbaru', 'Terlama', 'Ditetapkan oleh {oleh}', 'Dinilai oleh {oleh}',
   'Tidak ada catatan yang cocok dengan saringan ini.', 'Lihat rincian', 'Tutup rincian',
   /* Rekomendasi admin saat meneruskan akses cetak (LABEL_SARAN di duaLapis.js), kuncinya di Rincian Log Aktivitas, dan
@@ -161,7 +161,7 @@ const DARI_DATA = [
   'angkatan sudah disahkan', 'program sudah selesai', 'aspek sudah final',
   'Menunggu persetujuan Super Admin', 'Disetujui Super Admin', 'Ditolak Super Admin', 'Gagal dijalankan', 'Ditarik',
   'Perbaikan nilai dari dosen', 'Ubah kelas dosen',
-  /* Label menu panel dosen (DosenLayout, diterjemahkan MenuSamping dan BilahBawah); 'Riwayat' juga menu mahasiswa. */
+  /* Label menu panel dosen (DosenLayout, diterjemahkan MenuSamping di menu samping dan laci); 'Riwayat' juga menu mahasiswa. */
   'Beranda', 'Unggah Nilai', 'Unggah', 'Riwayat', 'Profil',
   /* Unggahan nilai dosen: galat dan peringatan bacaRekap (src/lib/unggahDosen.js) dan galat bacaBarisBerkas
      (src/lib/csv.js), diterjemahkan lewat t(g.teks, g.isi) dan t(e.message); lalu isi lembar templat Excel

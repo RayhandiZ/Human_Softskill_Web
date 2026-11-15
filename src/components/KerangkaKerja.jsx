@@ -92,7 +92,7 @@ export function RemahKerja({ akar, lapis = [] }) {
  * `kiriAtas`: isi kiri bilah atas (tombol laci, logo layar kecil, lokasi halaman); `kananAtas`: tombol di kanan.
  * `meta`: baris konteks di atas isi halaman; `kunci`: jalur, supaya animasi masuk berjalan lagi setiap pindah halaman.
  * `kelasKolom`: kelas tambahan kolom isi; `kakiIsi`: isi sesudah <main> yang ikut diperbesar (footer dosen);
- * `lapisan`: unsur di luar kolom (laci, bilah bawah, tombol bantuan).
+ * `lapisan`: unsur di luar kolom (laci, tombol bantuan).
  */
 export default function KerangkaKerja({
   panel,

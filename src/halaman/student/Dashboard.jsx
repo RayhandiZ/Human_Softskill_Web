@@ -1,7 +1,6 @@
 import { Fragment, useLayoutEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { StatusTeks, Terkunci } from '../../components/Ui'
-import Lipat from '../../components/Lipat'
 import {
   IconCheck,
   IconChevronDown,
@@ -9,7 +8,7 @@ import {
   IconDocument,
   IconLock,
 } from '../../components/Icons'
-import { CATATAN_BOBOT_SEMENTARA, CONFIG } from '../../lib/config'
+import { CONFIG } from '../../lib/config'
 import { SUMBER, getArea } from '../../lib/curriculum'
 import { kelayakanSertifikat } from '../../lib/rules'
 import { PERIODE_AKTIF, labelPeriode, transkripOf } from '../../lib/data'
@@ -440,40 +439,6 @@ function UbinRingkas({ judul, nilai, satuan, ke, children }) {
   )
 }
 
-/* Isi "Cara hitung" di kartu nilai akhir. Dua rumus MODE_AGREGASI sama-sama rata-rata, jadi kalimatnya mengikuti yang aktif. */
-function CaraHitung({ t }) {
-  const teks = useTeks()
-  const adaTren = Object.values(t.semester).filter((s) => s.nilai != null).length >= 2
-  const baris = [
-    [
-      'Nilai akhir',
-      (t.akhir.mode === 'per-semester'
-        ? teks('Rata-rata nilai tiap semester yang sudah dinilai.')
-        : teks('Rata-rata semua aspek yang sudah dinilai.')) +
-        (adaTren ? ' ' + teks('Angkanya sama dengan titik terakhir garis Rata-rata Anda.') : ''),
-    ],
-    ['Nilai semester', teks('Rata-rata aspek di semester itu saja, jadi bisa lebih tinggi atau lebih rendah daripada nilai akhir.')],
-    ['Nilai aspek', teks('Gabungan nilai tugasnya menurut bobot.') + ' ' + teks(CATATAN_BOBOT_SEMENTARA)],
-  ]
-  return (
-    <div className="mt-4 rounded-xl bg-surface-2 px-4 py-3">
-      <dl className="grid gap-x-5 gap-y-1.5 text-[13px] leading-snug sm:grid-cols-[110px_minmax(0,1fr)]">
-        {baris.map(([label, isi]) => (
-          <div key={label} className="contents">
-            <dt className="font-bold text-ink">{teks(label)}</dt>
-            <dd className="text-ink-2 max-sm:mb-1">{isi}</dd>
-          </div>
-        ))}
-      </dl>
-      <Link href="/mahasiswa/transkrip" className="mt-2 inline-flex min-h-[44px] items-center gap-1 text-[13px] font-bold text-brand-ink hover:underline sm:min-h-[24px]">
-        {teks('Lihat bobot tiap komponen di transkrip')}
-        <IconChevronRight size={15} />
-      </Link>
-    </div>
-  )
-}
-
-
 /* ------------------------------ status aspek ------------------------------ */
 
 function StatusAspek({ a }) {
@@ -762,7 +727,6 @@ export default function Dashboard() {
 
   const terkunci = t.aspek.filter((a) => a.terkunci).length
   const [rinciBuka, setRinciBuka] = useState(false)
-  const [caraBuka, setCaraBuka] = useState(false)
   // Judul ubin mengikuti keadaannya: "10/10 aspek final" sekaligus berarti seluruhnya sudah dinilai.
   const semuaFinal = akhir.aspekTotal > 0 && akhir.aspekFinal === akhir.aspekTotal
   const jumlahUbin = semuaFinal ? akhir.aspekFinal : akhir.aspekDinilai
@@ -805,7 +769,8 @@ export default function Dashboard() {
           <p className="text-[14px] font-semibold text-ink-2">{teks('Nilai akhir')}</p>
 
           {/* Angka dan grade-nya saja (permintaan 26 Okt 2026); status dan dasar hitungnya ada di Transkrip. Di bawah
-              ambang huruf mutu terendah tidak ada huruf, jadi labelnya yang ditulis. */}
+              ambang huruf mutu terendah tidak ada huruf, jadi labelnya yang ditulis. Tautan "Cara hitung" di bawah grade
+              dihapus 15 Nov 2026 atas permintaan pemilik produk. */}
           <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
             <div className="sm:shrink-0">
               <p className="text-[56px] font-extrabold leading-[0.9] tracking-tight text-ink sm:text-[64px]">
@@ -816,26 +781,10 @@ export default function Dashboard() {
                   {mutu.huruf ? teks('Grade {huruf}', { huruf: mutu.huruf }) : teks(mutu.label)}
                 </p>
               ) : null}
-              {akhir.nilai != null ? (
-                <button
-                  type="button"
-                  onClick={() => setCaraBuka((v) => !v)}
-                  aria-expanded={caraBuka}
-                  aria-controls="cara-hitung"
-                  className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[13px] font-bold text-brand-ink hover:underline sm:min-h-[28px]"
-                >
-                  {teks('Cara hitung')}
-                  <IconChevronDown size={15} className={'shrink-0 transition-transform ' + (caraBuka ? 'rotate-180' : '')} />
-                </button>
-              ) : null}
             </div>
 
             <GrafikRingkas t={t} />
           </div>
-
-          <Lipat buka={caraBuka} id="cara-hitung">
-            <CaraHitung t={t} />
-          </Lipat>
 
           <button
             type="button"
@@ -861,8 +810,7 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* content-start saat Cara hitung terbuka: kartu kiri memanjang, dan kedua ubin ini tidak perlu ikut kosong memanjang. */}
-        <div id="ubin-rinci" className={(rinciBuka ? 'grid' : 'hidden') + ' gap-4 sm:grid sm:grid-cols-2 xl:grid-cols-1 ' + (caraBuka ? 'xl:content-start' : '')}>
+        <div id="ubin-rinci" className={(rinciBuka ? 'grid' : 'hidden') + ' gap-4 sm:grid sm:grid-cols-2 xl:grid-cols-1'}>
           <UbinRingkas
             judul={semuaFinal ? 'Aspek final' : 'Aspek dinilai'}
             nilai={jumlahUbin}
