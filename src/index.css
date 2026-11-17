@@ -69,7 +69,7 @@
 
   --grid: #eceef6;
 
-  /* Butiran halus aurora (halaman masuk dan kartu aurora panel super admin). */
+  /* Butiran halus kartu aurora panel super admin. */
   --butiran: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -280,6 +280,12 @@ body {
 
 .animate-rise { animation: rise .35s cubic-bezier(.22,.68,.35,1) both; }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* Kolom kartu halaman masuk: gerak yang sama dengan animate-rise, tetapi backwards. Dengan both, nilai akhir
+   animasinya terus dipegang dan pembungkus ini menjadi batas belakang kaca (backdrop root), sehingga
+   backdrop-filter kartu kaca di dalamnya tidak melihat foto latar dan tidak bekerja sama sekali. Terbukti 16 Nov
+   2026: piksel di belakang kartu identik dengan dan tanpa filter, dan berubah begitu animasinya dicabut. */
+.animate-masuk { animation: rise .35s cubic-bezier(.22,.68,.35,1) backwards; }
 
 /* backwards, bukan both: both membuat elemen fixed mengacu ke pembungkus ini; lihat README.md › Gerak. */
 .animate-halaman { animation: halaman .22s cubic-bezier(.22,.68,.35,1) backwards; }
@@ -654,344 +660,106 @@ body {
 
 .animate-pudar { animation: pudar .24s ease both; }
 
-/* ---------------------------- pita logo masuk ----------------------------- */
-/* Kertas berkaki gulungan yang menjorok 24px ke balik tepi atas panel; lihat README.md › Gerak. */
-.pita-logo {
-  --tinggi-kertas: 194px; /* 76 + logo 84 + 34 */
+/* ---------------------------- panji logo masuk ----------------------------- */
+/* Panji kain berlapis (PanjiPdp.jsx) di pojok kiri atas halaman masuk, pengganti pita kertas bergulung sejak 17 Nov
+   2026; lihat README.md › Gerak. Ditarik 27px ke kiri supaya tepi kiri kain depan segaris dengan tulisan panel kiri;
+   batang dan kenopnya menjorok ke jarak samping panel. Hanya transform dan opacity yang dianimasikan, sekali saat
+   halaman dibuka: panji berayun masuk dari kaitnya lalu diam. Ayunan angin yang berulang tiap 9 detik dilepas atas
+   permintaan pengguna (17 Nov 2026). Bayangannya di unsur dalam yang tidak beranimasi, jadi compositor cukup
+   memutar lapisan yang sudah jadi tanpa menggambar ulang tiap bingkai. */
+.panji {
   position: relative;
-  margin-top: -24px;
-  /* Diayun angin dari titik gantungnya di tepi atas kertas. */
-  transform-origin: 50% 0;
-  animation:
-    pita-mantul 0.4s ease-out 0.85s backwards,
-    pita-angin 8s ease-in-out 1.3s infinite;
+  margin-left: -27px;
+  transform-origin: 80px 6.5px;
+  animation: panji-masuk 1.3s cubic-bezier(0.3, 0.7, 0.3, 1) 0.1s backwards;
 }
-/* Jendela yang membuka kertas dari atas ke bawah mengikuti gulungan. Dulu yang dianimasikan clip-path kertas, dan
-   Chrome menjalankannya lewat paint worklet yang me-raster ulang kertas (beserta bayangan dan logonya) di setiap
-   bingkai. Di jejak performa: 110 tugas raster dalam 0,8 detik gulungan turun, utas compositor 1,6 kali lebih sibuk,
-   dan ada bingkai yang tampil tanpa seluruh pembaruannya. Itulah yang terasa patah-patah. Kini jendela ber-overflow:
-   clip ini turun bersama gulungan (keyframe pita-gulung yang sama), sementara kertas di dalamnya digeser balik sejauh
-   yang sama (pita-kertas-buka), jadi kertas tampak diam dan tepi bawahnya terbuka. Keduanya hanya transform, digeser
-   compositor tanpa raster ulang. Kiri dan kanan dilebihkan 20px supaya bayangan kertas tidak ikut terpotong. */
-.pita-jendela {
-  margin-inline: -20px;
-  padding-inline: 20px;
-  overflow: clip;
-  animation: pita-gulung 0.8s cubic-bezier(0.4, 0.1, 0.3, 1) 0.1s backwards;
-}
-.pita-kertas {
+/* Dua lapis bayangan: dekat dan tegas di tepi, jauh dan lembut di bawah, supaya panji terasa tergantung. */
+.panji-bayang {
   position: relative;
-  height: var(--tinggi-kertas);
-  /* 26px = ruang 24px + rata-rata lekuk tepi (separuh dari 4px). */
-  padding: 76px 26px 34px;
-  /* Badan kertas berhenti 4px sebelum tepi; sisanya diisi .pita-tepi yang bergelombang. */
-  background: linear-gradient(#ffffff 0 0) center / calc(100% - 8px) 100% no-repeat;
-  /* Bukan box-shadow: bayangannya harus ikut tepi yang bergelombang. */
-  filter: drop-shadow(0 2px 8px rgb(0 0 0 / 0.25));
-  animation: pita-kertas-buka 0.8s cubic-bezier(0.4, 0.1, 0.3, 1) 0.1s backwards;
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.35)) drop-shadow(0 9px 14px rgb(0 0 0 / 0.38));
 }
-/* Angin hanya menggerakkan transform, translate, dan opacity supaya dikerjakan GPU tanpa menggambar
-   ulang kertas tiap bingkai; topeng atau latar yang dianimasikan memakan sekitar seperempat utas
-   utama. Logo tidak ikut melengkung, jadi tetap tajam.
-   Tepi kiri-kanan adalah lajur 9px yang menumpang 5px di atas badan kertas. Di dalamnya, kolom
-   ombak setinggi kertas + 256px digeser ke bawah (pita-riak); lekuknya tetap 4px. Hembusan terasa
-   dari laju ombak, ayunan, dan bayangan lipatan. Besar lekuk sengaja tidak dianimasikan: scale
-   memunculkan garis tipis terang di tepi lajur, dan menggeser kolom keluar-masuk lajur membuat
-   tepinya tampak tergigit. Latar lajur adalah penjepit yang meluruskan tepi dekat titik gantung
-   dan gulungan. */
-.pita-tepi {
-  position: absolute;
-  inset-block: 0;
-  z-index: -1;
-  width: 9px;
-  overflow: hidden;
-}
-.pita-tepi::before {
-  content: '';
-  position: absolute;
-  top: -256px;
-  bottom: 0;
-  /* Lebih lebar dari lajurnya supaya selalu menumpang di atas badan kertas. Kalau hanya
-     bersentuhan di tengah piksel, muncul garis tipis tembus pandang. */
-  width: 24px;
-  animation: pita-riak 8s cubic-bezier(0.3, 0, 0.2, 1) 1.3s infinite;
-}
-.pita-tepi-kiri {
-  left: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 194' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M0 0H9V66C9 46 0 46 0 26ZM9 148C9 163 0 163 0 178V194H9Z'/%3E%3C/svg%3E")
-    0 0 / 100% 100% no-repeat;
-}
-.pita-tepi-kiri::before {
-  left: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 64' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M2 0Q6 16 2 32T2 64H24V0Z'/%3E%3C/svg%3E")
-    0 0 / 24px 64px repeat-y;
-}
-.pita-tepi-kanan {
-  right: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 194' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M9 0H0V66C0 46 9 46 9 26ZM0 148C0 163 9 163 9 178V194H0Z'/%3E%3C/svg%3E")
-    0 0 / 100% 100% no-repeat;
-}
-.pita-tepi-kanan::before {
-  right: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 64' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M22 0Q18 16 22 32T22 64H0V0Z'/%3E%3C/svg%3E")
-    0 0 / 24px 64px repeat-y;
-}
-/* Bayangan lipatan yang ikut merambat: gelap di lereng ombak yang menghadap ke bawah, dan menebal
-   saat hembusan. Warnanya --brand-deep, sama persis dengan panel di kedua tema, jadi bagian yang
-   lewat di luar tepi kertas tidak terlihat. */
-.pita-lipat {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-}
-/* Opacity dan translate di unsur yang sama: kalau opacity dianimasikan di induknya, Chrome
-   mengerjakan keduanya di utas utama (±12% beban). */
-.pita-lipat::before {
-  content: '';
-  position: absolute;
-  inset: -256px 0 0;
-  --lipat: color-mix(in srgb, var(--brand-deep) 8%, transparent);
-  background: linear-gradient(var(--lipat), transparent 50%, var(--lipat)) 0 0 / 100% 64px;
-  opacity: 0.35;
-  animation:
-    pita-riak 8s cubic-bezier(0.3, 0, 0.2, 1) 1.3s infinite,
-    pita-lipat-tegas 8s ease-in-out 1.3s infinite;
-}
-/* Bayangan di tepi atas, tempat kertas masuk ke balik panel; digambar setelah lajur tepi supaya
-   tidak terpotong di sana. */
-.pita-kertas::after {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: -1;
-  height: 38px;
-  background: linear-gradient(rgb(8 42 82 / 0.1) 24px, transparent);
-}
-/* Gulungan di depan kertas; menutup 8px terbawah kertas dan bergerak seiring tepi kertas yang terbuka. */
-.pita-gulungan {
-  position: absolute;
-  inset: auto -3px -8px;
-  height: 16px;
-  border-radius: 8px;
-  /* Lapis pertama: tepi ujung kertas yang melilit gulungan. */
-  background:
-    linear-gradient(transparent 66%, rgb(8 42 82 / 0.16) 66% 72%, transparent 72%),
-    linear-gradient(#c6cfdb, #ffffff 30%, #eef1f6 55%, #c0c9d6 85%, #95a1b3);
-  box-shadow:
-    inset 4px 0 3px -3px rgb(8 42 82 / 0.3),
-    inset -4px 0 3px -3px rgb(8 42 82 / 0.3),
-    0 10px 14px -8px rgb(0 0 0 / 0.6);
-  animation: pita-gulung 0.8s cubic-bezier(0.4, 0.1, 0.3, 1) 0.1s backwards;
-}
-/* Kertas meredup tepat sebelum melengkung masuk ke gulungan. */
-.pita-gulungan::before {
-  content: '';
-  position: absolute;
-  inset: auto 3px 100%;
-  height: 10px;
-  background: linear-gradient(transparent, rgb(8 42 82 / 0.1));
-}
-/* Tongkat berkenop toska menembus sumbu gulungan; dipasang sebelum gulungan, jadi bagian tengahnya tertutup.
-   Dasarnya toska yang lebih pekat dari --accent supaya gradasi terang-gelap kenopnya tetap terbaca. */
-.pita-tongkat {
-  --warna-kenop: #14b8a6;
-  --batang: linear-gradient(
-    color-mix(in srgb, var(--warna-kenop) 40%, white),
-    var(--warna-kenop) 50%,
-    color-mix(in srgb, var(--warna-kenop) 60%, black)
-  );
-  position: absolute;
-  inset: auto -16px -4.5px;
-  height: 9px;
-  /* Dua cincin dekat kenop, lalu batang 5px di sepanjang tongkat. */
-  background:
-    var(--batang) left 8px center / 3px 9px no-repeat,
-    var(--batang) right 8px center / 3px 9px no-repeat,
-    var(--batang) center / 100% 5px no-repeat;
-  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.45));
-  animation: pita-gulung 0.8s cubic-bezier(0.4, 0.1, 0.3, 1) 0.1s backwards;
-}
-.pita-tongkat::before,
-.pita-tongkat::after {
-  content: '';
-  position: absolute;
-  top: -1px;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 50% 32%,
-    color-mix(in srgb, var(--warna-kenop) 35%, white),
-    var(--warna-kenop) 50%,
-    color-mix(in srgb, var(--warna-kenop) 55%, black)
-  );
-}
-.pita-tongkat::before {
-  left: -5px;
-}
-.pita-tongkat::after {
-  right: -5px;
-}
-/* Kebalikan pita-gulung: selama jendelanya turun, kertas di dalamnya tetap di tempat. Awalnya hanya 32px teratas
-   kertas yang terlihat, sama dengan inset clip-path yang dulu. */
-@keyframes pita-kertas-buka {
-  from {
-    transform: translateY(calc(var(--tinggi-kertas) - 32px));
+/* Jatuh sedikit dari kaitnya, lalu berayun makin kecil sampai diam. */
+@keyframes panji-masuk {
+  0% {
+    opacity: 0;
+    transform: translateY(-14px) rotate(5deg);
   }
-}
-@keyframes pita-gulung {
-  from {
-    transform: translateY(calc(32px - var(--tinggi-kertas)));
-  }
-}
-/* Memakai `translate`, bukan `transform`, supaya tidak berebut dengan ayunan angin. */
-@keyframes pita-mantul {
-  40% {
-    translate: 0 5px;
-  }
-  75% {
-    translate: 0 -1px;
-  }
-}
-/* Satu siklus angin 8 detik: hembusan datang cepat dan memuncak di 30%, lalu reda pelan sampai
-   hampir diam. Semua animasi angin berdurasi dan berjeda sama, jadi ombak paling deras dan lipatan
-   paling gelap saat ayunan terjauh. Riak bergeser tepat 4 gelombang (4 × 64px) supaya sambungan
-   siklusnya tak terlihat. */
-@keyframes pita-riak {
-  to {
-    translate: 0 256px;
-  }
-}
-@keyframes pita-lipat-tegas {
-  30% {
+  35% {
     opacity: 1;
+    transform: translateY(0) rotate(-2.4deg);
   }
-}
-/* Didorong ke kanan, lalu berayun balik makin kecil. */
-@keyframes pita-angin {
-  30% {
-    transform: rotate(-1deg) skewX(1.6deg);
+  60% {
+    transform: rotate(1.2deg);
   }
-  46% {
-    transform: rotate(0.45deg) skewX(-0.8deg);
+  80% {
+    transform: rotate(-0.5deg);
   }
-  61% {
-    transform: rotate(-0.25deg) skewX(0.45deg);
-  }
-  76% {
-    transform: rotate(0.1deg) skewX(-0.2deg);
+  100% {
+    transform: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pita-logo,
-  .pita-jendela,
-  .pita-kertas,
-  .pita-tepi::before,
-  .pita-lipat::before,
-  .pita-gulungan,
-  .pita-tongkat {
+  .panji {
     animation: none;
   }
 }
 
 /* --------------------- latar dan kartu kaca halaman masuk --------------------- */
-/* Latar "aurora" seluruh halaman masuk, mengikuti pola halaman masuk modern di Dribbble: dasar navy pekat
-   dengan cahaya sian, biru elektrik, nila, dan biru laut yang melayang pelan, plus butiran halus. Kaca baru
-   tampak seperti kaca di atas latar yang kaya warna; di atas latar pucat ia hanya kartu putih. Panel kiri
-   dan kanan memakai latar yang sama, jadi teks di atasnya putih. Hanya transform yang dianimasikan, jadi
-   dikerjakan GPU. Halaman masuk sengaja dikecualikan dari aturan "tanpa gradien"; lihat README.md ›
-   Bahasa visual. Cahaya dijauhkan dari judul dan teks panjang supaya teks putih tetap kontras. */
+/* Latar seluruh halaman masuk: foto udara kampus UMN (public/kampus-umn.webp) dengan warna aslinya, diredupkan
+   merata dengan hitam netral (bukan navy, supaya tidak kebiruan), dan langitnya sedikit lebih redup karena
+   judul VIBE dan kutipannya berdiri di depan langit yang paling terang. Cahaya biru, lingkaran hiasan, butiran,
+   lapisan navy, sudut-sudut gelap, dan alas kartu di belakang tulisan dibuang bertahap pada 16 Nov 2026 atas
+   permintaan, supaya pemandangan kampusnya terlihat jernih, termasuk di belakang tulisan. Tulisan di atas foto
+   dibantu bayangan huruf (.teks-foto). Di atas foto polos tulisan putih hanya 1,0 sampai 3,1:1; bila redupnya
+   dikurangi, ukur ulang. Gradasi navy di bawah foto hanya tampil selama foto belum termuat. */
 .latar-masuk {
   position: absolute;
   inset: 0;
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
-  background: linear-gradient(140deg, #04122a 0%, #082a52 50%, #071a38 100%);
+  background-color: #04122a;
+  background-image:
+    linear-gradient(180deg, rgb(0 0 0 / 0.3) 0%, rgb(0 0 0 / 0) 34%),
+    linear-gradient(rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.55)),
+    url('/kampus-umn.webp'),
+    linear-gradient(140deg, #04122a 0%, #082a52 50%, #071a38 100%);
+  background-size: cover;
+  /* Layar sempit: potongan sempitnya digeser ke menara dan gedung lengkung. */
+  background-position: 65% 60%;
+  background-repeat: no-repeat;
 }
-/* Butiran halus di atas warna (statis), supaya gradasinya tidak tampak plastik. */
-.latar-masuk::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: var(--butiran);
-  opacity: 0.13;
-  mix-blend-mode: overlay;
-}
-.latar-masuk > span {
-  position: absolute;
-  border-radius: 9999px;
-}
-.gumpal-biru {
-  top: 28%;
-  left: 30%;
-  width: 760px;
-  height: 760px;
-  background: radial-gradient(circle, rgb(59 130 246 / 0.4), transparent 66%);
-  animation: gumpal-biru 24s ease-in-out infinite alternate;
-}
-/* Di atas panel kiri (di sekitar lingkaran hiasan), jauh dari judul VIBE di kanan atas. */
-.gumpal-langit {
-  top: -320px;
-  left: 16%;
-  width: 640px;
-  height: 640px;
-  background: radial-gradient(circle, rgb(34 211 238 / 0.26), transparent 66%);
-  animation: gumpal-langit 20s ease-in-out infinite alternate;
-}
-.gumpal-nila {
-  bottom: -300px;
-  left: -220px;
-  width: 720px;
-  height: 720px;
-  background: radial-gradient(circle, rgb(99 102 241 / 0.34), transparent 66%);
-  animation: gumpal-nila 28s ease-in-out infinite alternate;
-}
-/* Biru laut, menyatu dengan nada biru lainnya. Toska merek hanya dipakai pada tulisan VIBE, tanda kutip, dan
-   kenop pita. */
-.gumpal-laut {
-  right: -220px;
-  bottom: -260px;
-  width: 640px;
-  height: 640px;
-  background: radial-gradient(circle, rgb(14 165 233 / 0.3), transparent 66%);
-  animation: gumpal-laut 26s ease-in-out infinite alternate;
-}
-/* Pita cahaya miring yang mengalir pelan, kesan "cair" seperti latar halaman masuk modern. */
-.pita-cahaya {
-  top: 46%;
-  left: -20%;
-  width: 140%;
-  height: 220px;
-  background: radial-gradient(50% 50% at 50% 50%, rgb(56 189 248 / 0.16), transparent 70%);
-  rotate: -16deg;
-  animation: pita-cahaya 18s ease-in-out infinite alternate;
-}
-@keyframes gumpal-biru {
-  to {
-    transform: translate(-180px, 80px) scale(1.12);
+@media (min-width: 1024px) {
+  .latar-masuk {
+    background-position: center;
   }
 }
-@keyframes gumpal-langit {
-  to {
-    transform: translate(220px, 40px) scale(1.1);
-  }
+
+/* Bayangan huruf untuk tulisan yang berdiri langsung di atas foto (blok "Apa sih VIBE itu?", nama kampus, judul
+   VIBE dan kutipannya). Diwariskan ke semua tulisan di dalamnya. Lapisan rapat 2px menegaskan tepi huruf,
+   lapisan lebar 18px menggelapkan foto tepat di sekitar baris tanpa tampak seperti kotak. */
+.teks-foto {
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.6),
+    0 0 18px rgb(0 0 0 / 0.5);
 }
-@keyframes gumpal-nila {
-  to {
-    transform: translate(200px, -120px) scale(0.92);
-  }
+/* Tulisan bergradasi (background-clip: text) menggambar text-shadow di atas gradasinya sendiri, jadi judul VIBE
+   memakai drop-shadow yang digambar di bawah hurufnya. Logo pdp di HP (SVG) juga. */
+.teks-foto .teks-vibe,
+.logo-foto {
+  text-shadow: none;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.6)) drop-shadow(0 0 14px rgb(0 0 0 / 0.5));
 }
-@keyframes gumpal-laut {
-  to {
-    transform: translate(-140px, -110px) scale(1.12);
-  }
-}
-@keyframes pita-cahaya {
-  to {
-    transform: translate(0, -90px) scaleX(1.15);
-  }
+
+/* Pemilih bahasa di halaman masuk, di atas foto: blur dan penggelapannya dipasang di kaca lintasan milik pustaka
+   (token --lg-*), bukan di alas terpisah. Kaca lintasan ikut menggembung saat lensa terangkat. Alas terpisah
+   (.kaca-teks, 16 Nov 2026) tetap di ukuran semula, jadi saat ditahan tampak dua garis tepi dan lensa menyembul
+   keluar dari daerah yang diburamkan; dilaporkan 17 Nov 2026 ("biar ga keliatan rusak"). brightness 0,45 sama
+   dengan alas lama: lintasan putih 10% dan pil aktif putih 20% milik pemilih butuh latar segelap itu. */
+.kolom-masuk .tombol-bahasa {
+  --lg-blur: 12px;
+  --lg-saturate: 1.6;
+  --lg-brightness: 0.45;
 }
 
 /* Kartu kaca pembungkus formulir: putih tembus pandang, kabur dan lebih jenuh di belakangnya, bertepi
@@ -1025,30 +793,41 @@ body {
 .kaca-masuk .field:focus {
   background: #ffffff;
 }
-/* Halaman masuk selalu berwarna gelap di atas latar aurora: kaca gelap yang tembus pandang, dengan tepi dan
-   kilau terang supaya warna aurora di belakangnya terlihat mengalir. */
+/* Halaman masuk selalu berwarna gelap di atas foto kampus. Kartunya kaca bening ("liquid glass"): tanpa isian
+   abu-abu atau navy (dibuang 16 Nov 2026 atas permintaan, supaya pemandangan terlihat menembus kartu). Yang
+   tersisa kilau putih tipis, tepi terang, dan backdrop-filter: blur 12px mengaburkan foto, saturate 160% menjaga
+   warnanya tetap hidup, dan brightness 0,62 menggelapkan bagian foto di belakang kartu tanpa menambah warna,
+   supaya tulisan di kartu tetap kontras di depan gedung putih foto (di 0,7 "Lupa kata sandi?" 4,43:1 di
+   1366×657). Filter ini hanya bekerja karena pembungkus kartu memakai .animate-masuk, bukan .animate-rise. */
 .dark .kaca-masuk {
-  /* Dasar cukup gelap supaya teks abu-abu di kartu tetap kontras walau cahaya terang lewat di belakangnya. */
-  background:
-    linear-gradient(150deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.02)),
-    color-mix(in srgb, var(--surface) 62%, transparent);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  backdrop-filter: blur(24px) saturate(140%);
-  border-color: rgb(255 255 255 / 0.18);
+  background: linear-gradient(150deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.03));
+  -webkit-backdrop-filter: blur(12px) saturate(160%) brightness(0.62);
+  backdrop-filter: blur(12px) saturate(160%) brightness(0.62);
+  border-color: rgb(255 255 255 / 0.28);
   box-shadow:
-    0 30px 70px -30px rgba(0, 0, 0, 0.8),
-    inset 0 1px 0 rgb(255 255 255 / 0.22),
-    inset 0 -1px 0 rgb(255 255 255 / 0.06);
+    0 30px 70px -30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgb(255 255 255 / 0.38),
+    inset 0 -1px 0 rgb(255 255 255 / 0.1);
 }
 .dark .kaca-masuk::before {
-  background: linear-gradient(125deg, rgb(255 255 255 / 0.14), transparent 40%);
+  background: linear-gradient(125deg, rgb(255 255 255 / 0.08), transparent 40%);
 }
+/* Kolom isian ikut bening: sedikit lebih terang dari kartu dengan tepi yang jelas. Saat difokus menggelap
+   (bukan menjadi permukaan navy padat), supaya tulisan yang diketik tetap kontras. */
 .dark .kaca-masuk .field {
-  background: rgb(255 255 255 / 0.05);
-  border-color: rgb(255 255 255 / 0.12);
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.24);
 }
 .dark .kaca-masuk .field:focus {
-  background: var(--surface);
+  background: rgb(0 0 0 / 0.3);
+}
+/* Pesan galat di kartu bening (masuk, lupa sandi, atur sandi): alas merah 10% saja tembus ke foto, dan merah
+   --critical tema gelap hanya 3,20:1 di sana. Alasnya diberi dasar hitam 45% dan tulisannya merah muda. */
+.dark .kaca-masuk [role='alert'] {
+  background:
+    linear-gradient(color-mix(in srgb, var(--critical) 12%, transparent), color-mix(in srgb, var(--critical) 12%, transparent)),
+    rgb(0 0 0 / 0.45);
+  color: #fca5a5;
 }
 /* Abu-abu bawaan placeholder terlalu redup di atas kaca gelap; tetap lebih redup daripada isian. */
 .dark .kaca-masuk .field::placeholder {
@@ -1075,7 +854,7 @@ body {
   }
 }
 
-/* Tombol Masuk: gradasi biru seirama aurora. Gerak hanya saat ditunjuk, ditekan, atau memverifikasi, jadi
+/* Tombol Masuk: gradasi biru. Gerak hanya saat ditunjuk, ditekan, atau memverifikasi, jadi
    tidak menambah beban saat halaman dibiarkan terbuka. Kilau (::before) di atas latar tetapi di bawah teks,
    jadi ikut menerangkan latar teks: gradasi sengaja cukup gelap dan kilaunya 0,2 supaya teks putih tetap
    minimal 4,5:1 saat puncak kilau lewat di bagian gradasi paling terang (#2048d4). Mengubah warna atau
@@ -1162,8 +941,11 @@ body {
   .dark .kaca-masuk {
     background: var(--surface);
   }
+  .kolom-masuk .tombol-bahasa {
+    --lg-navigation-fill: var(--surface);
+  }
 }
-/* Efek tembus pandang dimatikan sistem: kartu padat. */
+/* Efek tembus pandang dimatikan sistem: kartu dan lintasan pemilih bahasa padat. */
 @media (prefers-reduced-transparency: reduce) {
   .kaca-masuk,
   .dark .kaca-masuk {
@@ -1171,11 +953,17 @@ body {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+  .kolom-masuk .tombol-bahasa {
+    --lg-navigation-fill: var(--surface);
+    --lg-blur: 0px;
+    --lg-brightness: 1;
+  }
 }
-/* Kurangi gerak: gumpalan diam di tempatnya. */
-@media (prefers-reduced-motion: reduce) {
-  .latar-masuk > span {
-    animation: none;
+/* Warna paksa (Kontras Tinggi Windows) tetap menggambar foto berlatar url(). Fotonya dibuang supaya halaman
+   sepenuhnya memakai warna sistem. */
+@media (forced-colors: active) {
+  .latar-masuk {
+    background-image: none;
   }
 }
 
@@ -1259,6 +1047,16 @@ body {
 }
 
 .ganti-bahasa main {
+  animation: ganti-bahasa 0.28s cubic-bezier(0.22, 0.68, 0.35, 1) both;
+}
+/* Halaman masuk: <main> berisi kartu kaca dan pemilih bahasa ber-backdrop-filter. Memudarkan <main> (opacity)
+   menjadikannya batas belakang kaca, jadi blur dan penggelapan kartu hilang selama pudar lalu muncul lagi: kartu
+   berkedip saat bahasa diganti (dilaporkan 17 Nov 2026; terukur kecerahan kartu naik dari 72 ke 92 selama ~0,3
+   detik). Di sini yang dipudarkan isi kartu dan judul VIBE, bukan <main>. */
+.ganti-bahasa main.kolom-masuk {
+  animation: none;
+}
+.ganti-bahasa .kolom-masuk :is(.kaca-masuk > *, .teks-foto) {
   animation: ganti-bahasa 0.28s cubic-bezier(0.22, 0.68, 0.35, 1) both;
 }
 @keyframes ganti-bahasa {
@@ -1408,11 +1206,12 @@ body {
    Peta Perjalanan. Kartu, tabel, grafik, bilah kelengkapan, area unggah, formulir, peringatan, dan tombol utama sengaja tidak
    disentuh. Di dalam @media screen, jadi hasil cetak tidak berubah. Lihat README.md › Panel Dosen › Kaca.
    Panel Kemahasiswaan (.panel-admin) memakai token dan aturan bilah atas, menu aktif, dan menu akun yang sama sejak 10 Nov 2026;
-   aturan khususnya di bagian kaca panel Kemahasiswaan di bawah. */
+   aturan khususnya di bagian kaca panel Kemahasiswaan di bawah. Panel Super Admin (.panel-super) ikut sejak 16 Nov 2026 dengan
+   aturan yang sama persis dengan panel Kemahasiswaan, ditambah pil kaca untuk menu samping navy-nya. */
 @media screen {
   /* .portal-admin: portal pencarian cepat panel Kemahasiswaan. Ia dipasang di <body>, di luar akar panel, jadi tokennya dibawa
      lewat penanda sendiri (AdminLayout.jsx). */
-  :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin) {
+  :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .panel-super, .portal-admin) {
     --kaca-isi: color-mix(in srgb, var(--surface) 68%, transparent);
     --kaca-isi-lapis: color-mix(in srgb, var(--surface) 84%, transparent);
     --kaca-kendali: color-mix(in srgb, var(--surface) 45%, transparent);
@@ -1441,11 +1240,11 @@ body {
       radial-gradient(620px 170px at 82% -20px, rgb(94 234 212 / 0.16), transparent 72%);
   }
   /* Cahaya latar hanya di akar panel, bukan di tirai portal. */
-  :is(.panel-dosen, .panel-mahasiswa, .panel-admin) {
+  :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .panel-super) {
     background-image: var(--kaca-cahaya);
     background-repeat: no-repeat;
   }
-  .dark :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin) {
+  .dark :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .panel-super, .portal-admin) {
     --kaca-isi: color-mix(in srgb, var(--surface) 70%, transparent);
     --kaca-isi-lapis: color-mix(in srgb, var(--surface) 86%, transparent);
     --kaca-kendali: color-mix(in srgb, var(--surface-2) 50%, transparent);
@@ -1469,14 +1268,21 @@ body {
   /* Tanpa saturate(): backdrop-filter bersaturasi membuat Chrome melepas penghalusan subpiksel (ClearType) di seluruh isi halaman
      di bawahnya. Terukur di Overview 390px: tepi huruf berwarna 73,8% sebelum kaca, 14,2% dengan blur dan saturasi, 73,7% dengan
      blur saja. Tabel dan angka di panel ini harus tetap setajam sebelumnya. */
-  :is(.panel-admin, .portal-admin) {
+  :is(.panel-admin, .panel-super, .portal-admin) {
     --kaca-kabur: blur(12px);
     --kaca-isi: color-mix(in srgb, var(--surface) 74%, transparent);
     --kaca-isi-lapis: color-mix(in srgb, var(--surface) 90%, transparent);
     --kaca-isi-panel: color-mix(in srgb, var(--surface-2) 92%, transparent);
     --kaca-isi-cari: color-mix(in srgb, var(--surface) 94%, transparent);
   }
-  .dark :is(.panel-admin, .portal-admin) {
+  /* Pil kaca menu samping navy Super Admin: putih tembus dengan kilau tepi atas, padanan --kaca-pil di menu putih. Menunya sama
+     navy di kedua tema, jadi tokennya tidak dibedakan per tema. */
+  .panel-super {
+    --kaca-pil-gelap: linear-gradient(165deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0.07));
+    --kaca-pil-gelap-tepi: rgb(255 255 255 / 0.2);
+    --kaca-pil-gelap-bayang: 0 8px 18px -10px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.32);
+  }
+  .dark :is(.panel-admin, .panel-super, .portal-admin) {
     --kaca-isi: color-mix(in srgb, var(--surface) 76%, transparent);
     --kaca-isi-lapis: color-mix(in srgb, var(--surface) 92%, transparent);
     --kaca-isi-panel: color-mix(in srgb, var(--surface-2) 94%, transparent);
@@ -1486,14 +1292,14 @@ body {
   /* Kaca bilah atas ada di ::before, bukan di bilah atau kepalanya: backdrop-filter pada induk membuat menu akun di dalamnya
      hanya bisa mengaburkan isi induk itu, bukan halaman (Backdrop Root), dan menjadi containing block bagi panel fixed di
      dalamnya (lonceng dan menu aksesibilitas di HP). */
-  :is(.panel-dosen .kepala-kerja, .panel-admin .kepala-kerja, .panel-mahasiswa .bilah-kaca) {
+  :is(.panel-dosen .kepala-kerja, .panel-admin .kepala-kerja, .panel-super .kepala-kerja, .panel-mahasiswa .bilah-kaca) {
     background: var(--kaca-jalur);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
   /* Celah di atas kapsul: isi yang tergulir memudar, tidak terpotong tajam di tepi layar. Hanya gradasi, tanpa blur dan mask:
      lajur selebar layar ini tidak perlu ikut menambah kerja GPU di setiap bingkai gulir. */
-  :is(.panel-dosen .kepala-kerja, .panel-admin .kepala-kerja, .panel-mahasiswa .bilah-kaca)::before {
+  :is(.panel-dosen .kepala-kerja, .panel-admin .kepala-kerja, .panel-super .kepala-kerja, .panel-mahasiswa .bilah-kaca)::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -1501,7 +1307,7 @@ body {
     pointer-events: none;
     background: linear-gradient(to bottom, var(--kaca-tirai) 10px, transparent 40px);
   }
-  :is(.panel-dosen, .panel-admin) .bilah-kerja {
+  :is(.panel-dosen, .panel-admin, .panel-super) .bilah-kerja {
     --text-secondary: var(--kaca-teks-2);
     --text-muted: var(--kaca-teks-2);
     position: relative;
@@ -1510,7 +1316,7 @@ body {
     background: transparent;
     box-shadow: var(--kaca-bayang);
   }
-  :is(.panel-dosen .bilah-kerja, .panel-admin .bilah-kerja, .panel-mahasiswa .bilah-utilitas, .panel-mahasiswa .alat-riwayat)::before {
+  :is(.panel-dosen .bilah-kerja, .panel-admin .bilah-kerja, .panel-super .bilah-kerja, .panel-mahasiswa .bilah-utilitas, .panel-mahasiswa .alat-riwayat)::before {
     content: '';
     position: absolute;
     inset: -1px;
@@ -1552,10 +1358,31 @@ body {
       opacity: 0.6;
     }
   }
+  /* Menu samping navy Super Admin (.menu-sorot-gelap): pil kaca putih tembus, gerak dan tipisnya sama dengan pil kebiruan di
+     atas. Garis kiri toska (::after) tetap. */
+  .panel-super .menu-sorot.menu-sorot-gelap {
+    --sorot-latar: var(--kaca-pil-gelap);
+  }
+  .panel-super .menu-sorot-gelap::before {
+    border: 1px solid var(--kaca-pil-gelap-tepi);
+    box-shadow: var(--kaca-pil-gelap-bayang);
+    transition:
+      opacity 0.25s ease,
+      transform 0.42s cubic-bezier(0.22, 1.2, 0.36, 1);
+  }
+  .panel-super .menu-sorot-gelap:active::before {
+    transform: scale(0.975);
+    transition-duration: 0.12s;
+  }
+  @media (hover: hover) {
+    .panel-super .menu-sorot-gelap:not(.menu-aktif):hover::before {
+      opacity: 0.6;
+    }
+  }
 
   /* Lapisan melayang: isiannya lebih pekat daripada bilah, karena isinya dibaca dan yang di belakangnya bisa apa saja. Di panel
      Kemahasiswaan kaitnya ada di menu akun dan panel lonceng. */
-  :is(.panel-dosen, .panel-mahasiswa, .panel-admin) .lapisan-kaca {
+  :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .panel-super) .lapisan-kaca {
     /* Merah "Keluar" lebih tua: --critical turun ke 4,18:1 saat isi gelap lewat di belakangnya. */
     --critical: var(--teks-kritis);
     border-color: var(--kaca-tepi);
@@ -1681,16 +1508,17 @@ body {
    formulir, area unggah, tombol utama, pesan galat dan status, serta TabSaring (tetap bergaris bawah). Lihat README.md › Panel
    Kemahasiswaan › Kaca. */
 @media screen {
-  /* Kendali di kapsul menyatu dengan kacanya, bukan gelembung masing-masing. Kolom cari tetap berupa kolom padat. */
-  .panel-admin .bilah-kerja :is(button.grid, [role='group']) {
+  /* Kendali di kapsul menyatu dengan kacanya, bukan gelembung masing-masing. Kolom cari tetap berupa kolom padat. Super Admin
+     sama sejak 16 Nov 2026. */
+  :is(.panel-admin, .panel-super) .bilah-kerja :is(button.grid, [role='group']) {
     border-color: transparent;
     background: transparent;
   }
-  .panel-admin .bilah-kerja button.grid:hover {
+  :is(.panel-admin, .panel-super) .bilah-kerja button.grid:hover {
     background: var(--kaca-isi-lapis);
   }
   /* Menu aksesibilitas: kaca pekat di atas dasar abu-abunya. Kepala biru, ubin, dan kendalinya tetap padat. */
-  .panel-admin .lapisan-a11y {
+  :is(.panel-admin, .panel-super) .lapisan-a11y {
     border-color: var(--kaca-tepi);
     background: var(--kaca-isi-panel);
     -webkit-backdrop-filter: var(--kaca-kabur);
@@ -1717,8 +1545,8 @@ body {
 
 /* Tanpa backdrop-filter, atau efek tembus pandang dimatikan sistem: semua permukaan kaca padat. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin),
-  .dark :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin) {
+  :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .panel-super, .portal-admin),
+  .dark :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .panel-super, .portal-admin) {
     --kaca-isi: var(--surface);
     --kaca-isi-lapis: var(--surface);
     --kaca-isi-panel: var(--surface-2);
@@ -1730,8 +1558,8 @@ body {
   }
 }
 @media (prefers-reduced-transparency: reduce) {
-  :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin),
-  .dark :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin) {
+  :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .panel-super, .portal-admin),
+  .dark :is(.panel-dosen, .panel-mahasiswa, .panel-admin, .panel-super, .portal-admin) {
     --kaca-isi: var(--surface);
     --kaca-isi-lapis: var(--surface);
     --kaca-isi-panel: var(--surface-2);
@@ -1746,8 +1574,8 @@ body {
 /* Warna paksa sistem (Windows High Contrast): latar tembus tetap tembus karena alfanya dipertahankan, jadi panel Kemahasiswaan
    dibuat padat dan cahaya latarnya dilepas. */
 @media (forced-colors: active) {
-  :is(.panel-admin, .portal-admin),
-  .dark :is(.panel-admin, .portal-admin) {
+  :is(.panel-admin, .panel-super, .portal-admin),
+  .dark :is(.panel-admin, .panel-super, .portal-admin) {
     --kaca-isi: var(--surface);
     --kaca-isi-lapis: var(--surface);
     --kaca-isi-panel: var(--surface-2);
@@ -1924,8 +1752,8 @@ body {
   }
   /* Kaca panel dosen, mahasiswa, dan Kemahasiswaan dilepas seluruhnya, termasuk cahaya dan kilaunya. Di panel Kemahasiswaan
      (dan portal pencarian cepatnya) juga saat Kontras tinggi, yang memakai filter <html> tanpa palet sendiri. */
-  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang):is(.panel-dosen, .panel-mahasiswa, .panel-admin, .portal-admin),
-  .akar-a11y.a11y-kontras-tinggi:is(.panel-admin, .portal-admin) {
+  .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang):is(.panel-dosen, .panel-mahasiswa, .panel-admin, .panel-super, .portal-admin),
+  .akar-a11y.a11y-kontras-tinggi:is(.panel-admin, .panel-super, .portal-admin) {
     --kaca-isi: var(--surface);
     --kaca-isi-lapis: var(--surface);
     --kaca-isi-panel: var(--surface-2);
@@ -1947,6 +1775,10 @@ body {
     --kaca-cincin: var(--brand-ink);
     --kaca-simpul: none;
     --kaca-cahaya: none;
+    /* Menu navy Super Admin kembali ke sorotan polos sebelum kaca (putih 10%, tanpa garis tepi dan kilau). */
+    --kaca-pil-gelap: rgb(255 255 255 / 0.1);
+    --kaca-pil-gelap-tepi: transparent;
+    --kaca-pil-gelap-bayang: 0 0 #0000;
   }
   .akar-a11y:is(.a11y-kontras-gelap, .a11y-kontras-terang):is(.panel-dosen, .panel-mahasiswa) .layanan-tombol {
     border-color: var(--border-strong);

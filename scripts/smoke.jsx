@@ -29,6 +29,8 @@ import { jalurMulus } from '../src/lib/kurva'
 import { SAKELAR, pasangWewenang } from '../src/lib/wewenang'
 
 import Login from '../src/halaman/Login'
+import LupaSandi from '../src/halaman/LupaSandi'
+import AturSandi from '../src/halaman/AturSandi'
 import Profil from '../src/halaman/Profil'
 import StudentLayout from '../src/halaman/student/StudentLayout'
 import Dashboard from '../src/halaman/student/Dashboard'
@@ -162,6 +164,9 @@ const superAdmin = (isi) => (
 
 const RUTE = {
   '/masuk': { pohon: () => <Login />, params: {} },
+  // Lupa kata sandi lewat email (16 Nov 2026). Tanpa token di alamat, /atur-sandi langsung berkeadaan "tautan tidak berlaku".
+  '/lupa-sandi': { pohon: () => <LupaSandi />, params: {} },
+  '/atur-sandi': { pohon: () => <AturSandi />, params: {} },
   '/mahasiswa': { pohon: () => mahasiswa(<Dashboard />) },
   '/mahasiswa/transkrip': { pohon: () => mahasiswa(<TranskripPage />) },
   '/mahasiswa/peta': { pohon: () => mahasiswa(<Peta />) },

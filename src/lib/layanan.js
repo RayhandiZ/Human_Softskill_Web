@@ -1,7 +1,5 @@
 import { IconChat, IconMail, IconPhone } from '../components/Icons'
 
-export const SSO_LUPA_SANDI = 'https://sso.umn.ac.id/password/public/forgottenpassword'
-
 const NOMOR_WHATSAPP = '622154220808'
 
 /** Tautan WhatsApp UMN dengan pesan awal, yang masih bisa diubah pengirimnya sebelum dikirim. */

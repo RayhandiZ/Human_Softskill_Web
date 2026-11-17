@@ -47,6 +47,8 @@ export const AKSI_LOG = [
   'TAMBAH_AKUN',
   'UBAH_AKUN',
   'HAPUS_AKUN',
+  // Mahasiswa atau dosen mengganti kata sandinya lewat tautan lupa kata sandi (aturSandi di lupaSandi.js); pelakunya akun itu.
+  'ATUR_ULANG_SANDI',
   // Kelas dosen (prodi, sumber, semester, angkatan dan kelas yang diampu) dari Akses Pengguna (ubahKelasDosen di akses.js).
   'UBAH_KELAS_DOSEN',
   // Angkatan yang dibuka atau dinonaktifkan untuk seorang admin biasa (aturAksesAngkatan di akses.js).

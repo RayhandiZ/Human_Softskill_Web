@@ -17,6 +17,18 @@ const SESI = { student: JSON.stringify({ role:'student', studentId:'DEMO-2', ema
                super:   JSON.stringify({ role:'admin', superAdmin:true, email:'super.admin@umn.ac.id', name:'Super Admin', initials:'SA' }) }
 
 const ISI = {
+  /* Lupa kata sandi (16 Nov 2026). Bawaan bahasa kedua rute ini Inggris seperti halaman masuk, jadi polanya dua bahasa. */
+  '/lupa-sandi': [
+    [/Lupa kata sandi|Forgot password/, 'judul lupa kata sandi'],
+    [/<input[^>]*id="email-lupa"[^>]*type="email"/, 'kolom email', true, true],
+    [/Kembali ke halaman masuk|Back to sign in/, 'jalan kembali ke halaman masuk'],
+    [/sso\.umn\.ac\.id/, 'tanpa tautan SSO UMN (kata sandi VIBE disimpan sendiri)', false, true],
+  ],
+  '/atur-sandi': [
+    [/Tautan tidak berlaku|Link no longer valid/, 'tanpa token: tautan tidak berlaku, formulir tidak tampil'],
+    [/href="\/lupa-sandi"/, 'tautan untuk meminta tautan baru', true, true],
+    [/autocomplete="new-password"/i, 'kolom sandi baru tidak tampil tanpa token', false, true],
+  ],
   '/mahasiswa': [
     [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
     /* Menu samping dan footer menempel di tepi layar, bukan kartu melayang (11 Nov 2026). */
@@ -275,6 +287,9 @@ const ISI = {
 }
 
 const RUTE = [
+  // Halaman di luar panel; sesinya tidak berpengaruh.
+  ['student', '/lupa-sandi', 'Lupa kata sandi'],
+  ['student', '/atur-sandi', 'Atur kata sandi baru'],
   ['student', '/mahasiswa', 'Ringkasan mahasiswa'],
   ['student', '/mahasiswa/transkrip', 'Transkrip'],
   ['student', '/mahasiswa/peta', 'Peta Perjalanan'],
@@ -498,9 +513,9 @@ const RUTE = [
     }
   }
 
-  /* Kaca hanya untuk navigasi panel dosen, mahasiswa, dan Kemahasiswaan (termasuk portal pencarian cepatnya, .portal-admin):
-     blok CSS-nya tidak boleh bocor ke panel lain (Super Admin) atau ke seluruh isi halaman. Lihat README.md › Panel Dosen ›
-     Kaca dan › Panel Kemahasiswaan › Kaca. */
+  /* Kaca hanya untuk navigasi panel dosen, mahasiswa, Kemahasiswaan (termasuk portal pencarian cepatnya, .portal-admin), dan
+     Super Admin (sejak 16 Nov 2026): blok CSS-nya harus terikat ke panel-panel itu dan tidak boleh bocor ke seluruh isi
+     halaman. Lihat README.md › Panel Dosen › Kaca, › Panel Kemahasiswaan › Kaca, dan › Panel Super Admin. */
   {
     w.localStorage.setItem('sk5c.session', SESI.dosen)
     const k = await mod.ujiKacaDosen()
@@ -514,7 +529,7 @@ const RUTE = [
     // Peringatan bukan kaca, jadi kelasnya boleh berdiri sendiri; yang lain harus terikat ke panel-panel ini.
     const bocor = pemilih.filter(
       (p) =>
-        !/^(\.dark )?(:is\()?\.(panel-(dosen|mahasiswa|admin)|portal-admin)\b|^\.(kartu|tanda)-peringatan$/.test(p) ||
+        !/^(\.dark )?(:is\()?\.(panel-(dosen|mahasiswa|admin|super)|portal-admin)\b|^\.(kartu|tanda)-peringatan$/.test(p) ||
         /\bmain\b/.test(p),
     )
     // Data tetap padat: tidak ada aturan kaca yang menyasar tabel, formulir, atau kartu (kecuali kartu peringatan yang padat).
@@ -522,7 +537,7 @@ const RUTE = [
     const wajib = [
       ['bilah atas, menu akun, dan tombol bantuan punya kelas kacanya', k.bilahAtas && k.menuAkun && k.tombolBantuan],
       ['isi halaman tidak memakai kelas kaca', k.isiTanpaKaca],
-      ['aturan kaca terikat ke panel dosen, mahasiswa, dan Kemahasiswaan dan tidak menyasar <main>', pemilih.length > 10 && !bocor.length, bocor.join(' | ')],
+      ['aturan kaca terikat ke panel dosen, mahasiswa, Kemahasiswaan, dan Super Admin dan tidak menyasar <main>', pemilih.length > 10 && !bocor.length, bocor.join(' | ')],
       ['aturan kaca tidak menyasar tabel, formulir, atau kartu data', !kenaData.length, kenaData.join(' | ')],
       // fixed membuat halaman dilukis ulang di setiap langkah gulir; lihat README.md › Panel Dosen › Kaca.
       ['latar panel tanpa background-attachment: fixed', !/background-attachment:\s*fixed/.test(blok)],

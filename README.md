@@ -34,7 +34,9 @@ Pembagian sumber penilaian:
 ```bash
 npm install
 # basis data: nyalakan MySQL di XAMPP lebih dulu. .env berisi DATABASE_URL dan AUTH_SECRET
-# (kunci acak untuk menandatangani cookie sesi).
+# (kunci acak untuk menandatangani cookie sesi). Untuk lupa kata sandi lewat email: SMTP_HOST, SMTP_PORT,
+# SMTP_USER, SMTP_PASS, EMAIL_PENGIRIM, dan APP_URL (wajib di produksi). Tanpa SMTP_HOST, next dev mencetak
+# emailnya di konsol server; lihat Masuk › Lupa kata sandi.
 npx prisma migrate dev   # membuat/menyesuaikan tabel — hentikan `npm run dev` dulu di Windows
 npm run db:seed          # data master dan kurikulum (hanya bila belum ada) + akun awal; aman diulang
 npm run db:seed:contoh   # opsional: 290 mahasiswa contoh — MENGHAPUS seluruh isi basis data
@@ -272,7 +274,7 @@ src/lib/
   nav.jsx         TautanNav, padanan <NavLink> untuk Next
   kurva.js        kurva monoton untuk grafik tren — lihat Grafik
   tunjuk.js       tooltip (WCAG 1.4.13)
-  layanan.js      tautan lupa sandi SSO dan kontak layanan UMN
+  layanan.js      kontak layanan UMN (tautan lupa sandi SSO dilepas 16 Nov 2026, lihat Masuk › Lupa kata sandi)
   tanggal.js      tanggal pendek ("26 Okt 2026") mengikuti bahasa
 
 src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
@@ -280,6 +282,9 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   sesi.js         cookie sesi bertanda tangan (jose, AUTH_SECRET)
   api.js          kerangka pintu API: baca pemilik cookie dari basis data, periksa peran, galat
   masuk.js        pemeriksaan email + kata sandi (bcrypt) terhadap tabel Pengguna
+  lupaSandi.js    lupa kata sandi lewat email untuk mahasiswa dan dosen: tautan bertoken (tabel ResetSandi) dan
+                  penggantian sandi (POST /api/lupa-sandi, /api/atur-sandi); lihat Masuk › Lupa kata sandi
+  email.js        pengirim email SMTP (nodemailer, dimuat saat dipakai); tanpa SMTP_HOST, next dev mencetaknya di konsol
   master.js       angkatan, fakultas, prodi dari basis data — dibaca app/layout.jsx
   muat.js         data halaman per peran (GET /api/data); angkatanTersembunyi() dan
                   wajibAksesAngkatan() untuk akses angkatan admin biasa
@@ -334,11 +339,12 @@ prisma/           skema, migrasi, seed.js (isi dasar), seed-contoh.js (data cont
                   pertama)
 scripts/          skrip uji; dataContoh.js berisi data contoh (290 mahasiswa, 5 dosen,
                   audit log) yang dimuat uji lewat isiData() — website tidak memakainya
+public/           kampus-umn.webp: foto udara kampus UMN di latar halaman masuk (lihat Bahasa visual)
 
 src/components/   Ui (termasuk pola halaman Kemahasiswaan: JudulHalaman, KartuAngka, TabSaring,
                   Paginasi, GulirTabel, JUDUL_KOLOM), Icons, Navbar, Laci, MenuAkun, Footer, FilterBar, ErrorBoundary,
                   TombolBahasa, PilihanMengambang, PenyuntingFoto, LihatFoto, LayananTambahan,
-                  LogoPdp, Lipat, MenuSamping (menu samping mahasiswa, dosen, Kemahasiswaan, dan
+                  LogoPdp, PanjiPdp (panji logo halaman masuk), Lipat, MenuSamping (menu samping mahasiswa, dosen, Kemahasiswaan, dan
                   super admin, juga isi laci HP), MenuAksesibilitas (semua panel),
                   TombolTema, CariCepat
                   (pencarian cepat Ctrl+K panel Kemahasiswaan), KerangkaKerja (kerangka bersama panel dosen,
@@ -375,6 +381,51 @@ Akun awal dari `npm run db:seed` (kata sandi pengembangan, ganti sebelum dipakai
 | Dosen | `simon.petrus@lecturer.umn.ac.id` (MK Humaniora Semester 1, Sistem Informasi) | `umn12345` |
 | Kemahasiswaan | `admin@umn.ac.id` | `umn12345` |
 | Super Admin | `super.admin@umn.ac.id` | `umn12345` |
+
+### Lupa kata sandi
+
+Permintaan pemilik produk (16 Nov 2026), selama VIBE belum memakai SSO kampus. Sebelumnya tautan "Lupa kata sandi?"
+membuka lupa kata sandi SSO UMN, padahal kata sandi VIBE disimpan sendiri (`Pengguna.passwordHash`) dan tidak ikut
+berubah. Kini tautannya ke `/lupa-sandi`. Kode: `src/server/lupaSandi.js`, `src/server/email.js`,
+`src/halaman/LupaSandi.jsx`, `src/halaman/AturSandi.jsx`; latar dan panel kiri halaman masuk dipindah ke
+`src/components/KerangkaMasuk.jsx` supaya ketiga halaman sama.
+
+1. `/lupa-sandi`: pengguna mengisi email. Bila emailnya milik akun **mahasiswa atau dosen yang aktif**, server membuat
+   token acak 32 byte dan mengirim tautan `/atur-sandi?token=...` yang **berlaku 30 menit** dan **sekali pakai**, dalam
+   bahasa yang sedang dipilih (Indonesia atau Inggris). Akun admin dan Super Admin tidak dikirimi.
+2. `/atur-sandi`: token dibaca sekali, dihapus dari bilah alamat, lalu diperiksa (`POST`, bukan `GET`, supaya tidak
+   tercatat di log alamat). Bila sah, pengguna membuat sandi baru (8 sampai 72 byte; bcrypt hanya membaca 72 byte, jadi
+   yang lebih panjang ditolak, tidak dipotong). Sesudah berhasil, **semua tautan akun itu mati** dan Log Aktivitas
+   mencatat `ATUR_ULANG_SANDI` (pelakunya akun itu sendiri, tanpa sandi di catatan). Pengguna lalu masuk seperti biasa.
+
+Keamanan:
+
+- Jawaban `/api/lupa-sandi` **sama** untuk email terdaftar, tidak terdaftar, admin, dan nonaktif ("jika terdaftar ..."),
+  dan email dikirim tanpa ditunggu, jadi lama jawaban juga tidak membocorkan apakah email terdaftar.
+- Hanya **hash SHA-256** token yang disimpan (tabel `ResetSandi`); isi basis data saja tidak cukup untuk memakai
+  tautannya. Baris ikut terhapus bila akunnya dihapus (`ON DELETE CASCADE`).
+- Batas per akun: satu tautan per menit dan lima per jam. Permintaan di atas batas dijawab sama tetapi tidak dikirimi.
+- Tautan di email memakai `APP_URL`, bukan Host dari permintaan (yang bisa dipalsukan pengirimnya). Di `next dev` tanpa
+  `APP_URL` dipakai alamat permintaan.
+- Penggantian sandi diklaim di dalam transaksi: dari dua permintaan bersamaan dengan token yang sama, hanya satu lolos.
+- `/atur-sandi` memasang `referrer: no-referrer` dan `noindex`.
+- Belum ada: sesi lama (cookie berumur 8 jam) tidak dicabut saat sandi diganti, dan belum ada batas per alamat IP.
+
+Pengaturan `.env` (jangan pernah di kode, repo ini publik): `SMTP_HOST`, `SMTP_PORT` (bawaan 587; 465 memakai TLS
+langsung), `SMTP_USER`, `SMTP_PASS`, `EMAIL_PENGIRIM` (misalnya `VIBE UMN <no-reply@umn.ac.id>`; bawaan `SMTP_USER`),
+dan `APP_URL` (misalnya `https://vibe.umn.ac.id`). Di `next dev` tanpa `SMTP_HOST` email tidak dikirim tetapi dicetak di
+konsol server lengkap dengan tautannya, jadi alurnya bisa dicoba tanpa akun SMTP. Di produksi tanpa `SMTP_HOST` atau
+`APP_URL`, `/api/lupa-sandi` menjawab 503 untuk semua email dan menulis penyebabnya di konsol server.
+
+Sesudah menarik perubahan ini: hentikan `npm run dev`, jalankan `npm install` (memasang `nodemailer` 10.3.1, dikunci
+persis), `npx prisma migrate deploy` (migrasi `20261116090000_reset_sandi`), dan `npx prisma generate`, lalu nyalakan lagi.
+`nodemailer` dimuat saat dipakai saja dan tidak dibundel: impor statis membuat Turbopack menolak seluruh aplikasi dengan
+500 selama paketnya belum terpasang.
+
+Uji: `npm run smoke` merender kedua halaman (judul, kolom email, tanpa tautan SSO; tanpa token, formulir tidak tampil).
+Logika servernya diuji pada 16 Nov 2026 dengan basis data tiruan (39 skenario) dan dengan MariaDB sungguhan di basis data
+uji terpisah yang dihapus sesudahnya (seluruh migrasi diterapkan, tanpa selisih skema, 10 skenario termasuk dua permintaan
+bersamaan dan penghapusan akun).
 
 ### Super admin
 
@@ -780,9 +831,18 @@ di `src/server/akses.js`. Bila server menjawab 404, halaman menyatakan fiturnya 
 dan toska. Susunan Pusat Kendali: kartu keputusan, empat kartu ringkasan, grafik selebar halaman, lalu aktivitas dan rantai
 pengawasan.
 
+- **Kaca** (permintaan pemilik produk, 16 Nov 2026): sama dengan panel Kemahasiswaan (Panel Kemahasiswaan › Kaca). Kapsul
+  bilah atas putih tembus 74% dengan blur 12px tanpa saturasi; tombol bahasa, tema, aksesibilitas, dan akun menyatu dengan
+  kapsul; menu akun dan menu aksesibilitas berkaca; cahaya biru dan toska samar di belakang kapsul. Caranya hanya menambahkan
+  `.panel-super` ke aturan yang sudah ada. Di menu samping navy, butir aktif berpil kaca putih tembus (`--kaca-pil-gelap`:
+  gradasi putih 22% ke 7%, tepi putih 20%, kilau tepi atas, bayangan) dengan garis kiri toska yang tetap; tulisan putihnya
+  7,73:1 di atas pil. Mode kontras gelap dan terang melepas semuanya, termasuk pil itu (kembali putih 10% polos). Kartu, grafik,
+  dan tabel tetap padat.
+
 - **Permukaan aurora.** Menu samping, laci HP (`Laci nada="aurora"`), kartu keputusan, Super Admin di
-  rantai pengawasan, dan kartu peran Super Admin memakai `.kartu-aurora`: aurora halaman masuk versi diam
-  (butiran `--butiran` yang sama), dengan dasar navy sedikit lebih terang dan cahaya biru muda supaya
+  rantai pengawasan, dan kartu peran Super Admin memakai `.kartu-aurora`: versi diam dari aurora yang dulu
+  menjadi latar halaman masuk (sejak 16 Nov 2026 diganti foto kampus), dengan butiran `--butiran`, dasar
+  navy sedikit lebih terang, dan cahaya biru muda supaya
   tidak terlalu gelap. Menu samping dan laci memakai `.kartu-aurora-tegak`, yang menaruh biru muda di
   bawah, jauh dari logo dan label toska. Tidak beranimasi, supaya panel tidak terbebani saat dibiarkan
   terbuka. `--accent` (toska) dipakai apa adanya di atasnya, tanpa versi khusus aurora seperti emas
@@ -833,14 +893,28 @@ pengawasan.
 Seluruh panel memakai satu bahasa yang sama, mengikuti gaya E-Learning UMN:
 
 - **tanpa gradien** — navbar, footer, dan kepala kartu memakai warna padat. Pengecualiannya
-  halaman masuk, supaya tidak mirip E-Learning UMN: seluruh halamannya berlatar "aurora" (navy
-  pekat dengan cahaya sian, biru elektrik, nila, dan biru laut yang melayang pelan, plus butiran halus;
-  `.latar-masuk`) dan formulirnya di kartu kaca gelap (`.kaca-masuk`), mengikuti pola halaman masuk
-  modern di Dribbble. Halaman ini selalu memakai warna mode gelap (kelas `dark` di akarnya), apa
-  pun tema perangkat. Cahaya dijauhkan dari judul, dan kontras setiap teksnya diukur sepanjang
-  animasi (minimal 4,5:1, judul besar 3:1); bila cahaya diubah, ukur ulang. Gumpalan hanya
-  menggerakkan `transform`, diam saat kurangi gerak aktif, dan kartunya menjadi padat saat kurangi
-  transparansi aktif. Tombol Masuk-nya juga bergradasi biru (`.tombol-masuk`, lihat Gerak). Tulisan blok "Apa sih
+  halaman masuk, supaya tidak mirip E-Learning UMN: seluruh halamannya (`.latar-masuk`) berlatar foto
+  udara kampus UMN (`public/kampus-umn.webp`, 2400px, WebP, tanpa metadata) yang ditutup lapisan navy
+  bergradasi, dan formulirnya di kartu kaca gelap (`.kaca-masuk`). Latar ini dipasang 16 Nov 2026 dan
+  menggantikan latar "aurora" (navy dengan cahaya biru yang melayang, butiran, dan lingkaran hiasan di
+  panel kiri); cahaya, butiran, dan lingkarannya dibuang hari itu juga atas permintaan, supaya pemandangan
+  kampusnya jernih. Lapisan navy-nya:
+  - **Mulai 1280px**: lapisan tipis berbentuk elips di celah antara teks kiri dan kartu, tepat di atas menara
+    dan gedung lengkung, yang menggelap merata ke segala arah termasuk ke langit yang terang. Lapisan tegak
+    yang menipis di celah itu dicoba lebih dulu, tetapi di langit ia tampak seperti berkas lampu. Dua lapisan
+    pengaman menjaga kontras di bawah teks kiri (pekat sampai 690px dari kiri) dan di bawah judul VIBE serta
+    kartu (pekat sampai 400px dari kanan).
+  - **1024 sampai 1279px**: teks kiri dan kartu hampir bersentuhan, jadi lapisannya pekat merata.
+  - **Di bawah 1024px**: rata, dan foto digeser ke menara.
+  - Ukuran elips harus satu satuan: Chrome menolak `calc(50% - 300px)` di ukuran `radial-gradient`, dan satu
+    lapisan yang ditolak membatalkan seluruh `background-image` tanpa pesan galat.
+  - Foto dibuang di mode warna paksa Windows, dan gradasi navy polos tampil selama foto belum termuat.
+
+  Sketsa cat air dari foto yang sama ditolak: garisnya kusut setelah digelapkan, dan logo serta tulisan
+  gedungnya berubah dari aslinya. Halaman ini selalu memakai warna mode gelap (kelas `dark` di akarnya), apa
+  pun tema perangkat. Kontras setiap teks diukur per piksel terhadap kotak huruf sebenarnya (minimal 4,5:1,
+  judul besar 3:1) di 1536×728, 1366×657, 1280×720, 1920×1080, 1024×768, dan 390×844; bila foto atau
+  lapisan navy diubah, ukur ulang. Kartunya menjadi padat saat kurangi transparansi aktif. Tombol Masuk-nya juga bergradasi biru (`.tombol-masuk`, lihat Gerak). Tulisan blok "Apa sih
   VIBE itu?" dibesarkan supaya terbaca dosen (revisi 2 Nov 2026: judul 40px, paragraf 17px, nama penilaian 16,5px,
   keterangan 15px; satu tingkat di bawahnya di bawah 1280px). Bloknya dilebarkan ke 640px dan jaraknya dirapatkan,
   jadi tidak perlu digulir sampai tinggi layar 640px; bila ukurannya diubah, ukur ulang di 1366×657.
@@ -1171,7 +1245,7 @@ hanya `transform` dan `opacity`, dan sekali jalan saat sesuatu muncul atau ditek
   - Pilihan yang difokus dengan papan ketik diberi latar `--brand-soft`, seperti pemilih periode, bukan cincin
     fokus global. Bila daftar dibuka dengan tetikus, pilihan itu tidak disorot; centang menandai yang terpilih.
 - Saat kurangi gerak aktif, animasi muncul, tumbuh, dan daftar pilihan dilepas sama sekali (`animation: none`),
-  seperti pita logo di halaman masuk. Blok `prefers-reduced-motion` di akhir `index.css` hanya memendekkan durasi, dan
+  seperti panji logo di halaman masuk. Blok `prefers-reduced-motion` di akhir `index.css` hanya memendekkan durasi, dan
   jedanya (50 sampai 360 md) tetap berjalan; karena isiannya `backwards`, bagian halaman dan batang grafik
   sempat tidak terlihat selama jeda itu lalu muncul tiba-tiba. Transisi garis tab dan efek tekan tombol
   cukup dipendekkan blok global, dan kartu hanya terangkat bila gerak diizinkan (`motion-safe:`). Saat
@@ -1183,7 +1257,8 @@ Permintaan pemilik produk (10 Nov 2026): penyempurnaan, bukan desain ulang. Prin
 kendali berbahan kaca, data tetap padat**, dengan bahan yang sama (token `--kaca-*`, lihat Panel Dosen › Kaca). Kartu angka,
 grafik, panel Perlu dikerjakan, tabel, formulir, area unggah, tombol utama, pesan galat dan status, sertifikat, dan hasil cetak
 tidak disentuh. `scripts/smoke.run.cjs` menolak aturan kaca yang menyasar `<main>`, tabel, formulir, atau kartu, juga yang tidak
-terikat ke panel dosen, mahasiswa, atau Kemahasiswaan (Super Admin tidak berubah).
+terikat ke panel dosen, mahasiswa, Kemahasiswaan, atau Super Admin. Super Admin memakai aturan yang sama sejak 16 Nov 2026
+(lihat Panel Super Admin › Tampilan).
 
 | Unsur | Rupa |
 |---|---|
@@ -1197,8 +1272,8 @@ terikat ke panel dosen, mahasiswa, atau Kemahasiswaan (Super Admin tidak berubah
 - **Blur kepala bilah dilepas.** Dulu `.kepala-kerja` memakai `backdrop-filter: blur(10px)`. Terukur sebelum perubahan: ia
   menjadi Backdrop Root bagi menu akun, lonceng, dan menu aksesibilitas (kaca di sana hanya bisa mengaburkan isi bilah atas,
   bukan halaman), sekaligus containing block bagi panel lonceng dan aksesibilitas yang `fixed` di HP. Kini kepalanya hanya
-  gradasi `--kaca-tirai`, blurnya di `.bilah-kerja::before`, dan kedua panel HP itu mengacu ke layar. Panel Super Admin masih
-  memakai blur lama di `.kepala-kerja`.
+  gradasi `--kaca-tirai`, blurnya di `.bilah-kerja::before`, dan kedua panel HP itu mengacu ke layar. Panel Super Admin
+  menyusul pada 16 Nov 2026 (di HP menu aksesibilitasnya kini menempel di 76px dari atas layar saat halaman digulir).
 - **Tanpa saturasi.** `backdrop-filter` yang memakai `saturate()` membuat Chrome melepas penghalusan subpiksel (ClearType) di
   seluruh isi halaman di bawahnya, jadi tulisan tabel dan angka sedikit lebih tipis dan pucat. Terukur di Overview 390px:
   tepi huruf berwarna 73,8% sebelum kaca, 14,2% dengan `blur(12px) saturate(165%)`, 73,7% dengan `blur(12px)` saja. Panel ini
@@ -2481,6 +2556,16 @@ Sejak 11 Nov 2026 `src/components/TombolBahasa.jsx` membungkus `GlassSegmented` 
 isi di bawahnya, bisa diklik, diseret, dan dipakai dengan papan ketik (Tab lalu panah kiri/kanan).
 Klik, seret, dan gerak lensanya milik pustaka. Yang ditambahkan di sini, dan mudah rusak:
 
+- **Lensa terangkat dipertahankan.** Saat ditekan lama, lensanya lebih besar dari lintasan, membiaskan
+  tepinya, dan lintasan menggembung mengikuti penunjuk; ukuran itu dihitung skrip pustaka (props hanya
+  `intensity`). Pagi 17 Nov 2026 efek ini sempat dimatikan karena bentuknya dinilai aneh, lalu dikembalikan
+  hari itu juga atas permintaan pengguna ("efek hold liquid glassnya ... jangan di hilangkan"). Jangan
+  dimatikan lagi tanpa permintaan.
+- **Pudar saat ganti bahasa.** `bahasa.jsx` memasang `html.ganti-bahasa` selama 300 ms dan `<main>`
+  memudar dari 55%. Di halaman masuk yang dipudarkan isi kartu dan judul VIBE (`main.kolom-masuk`):
+  `<main>` di sana berisi kaca ber-`backdrop-filter`, dan memudarkannya membuat blur kartu hilang lalu
+  muncul lagi (kartu berkedip; kecerahannya terukur naik dari 72 ke 92 selama pudar).
+
 - **Peran tombol.** Pustaka menulis kendalinya sebagai `tablist`/`tab`. Pemilih bahasa tidak punya
   panel tab, jadi `TombolBahasa` menggantinya menjadi grup tombol `aria-pressed` bernama bahasa
   ("Bahasa Indonesia", "English"). Sebuah `MutationObserver` menjaganya, karena React menulis ulang
@@ -2501,10 +2586,14 @@ Klik, seret, dan gerak lensanya milik pustaka. Yang ditambahkan di sini, dan mud
   membiaskan salinan isi di bawah lensa.
 - **Uji smoke** berjalan di jsdom: `scripts/smoke.run.cjs` dan `scripts/assert.run.cjs` meneruskan
   `HTMLImageElement`, `getComputedStyle`, dan `matchMedia` ke global karena pustaka memakainya.
-- Pemilih juga ada di pojok kanan atas halaman masuk (`nada="onbrand"`), di atas alas gelap
-  `--surface` 62%. Pilihan aktifnya kaca putih 20% dengan tulisan putih, bukan pil putih bertulisan
-  navy: saat lensa terangkat alasnya hilang dan tulisan navy tenggelam. Kontras terukur paling
-  rendah 5,86:1 (aktif, HP) dan 7,00:1 (tidak aktif).
+- Pemilih juga ada di pojok kanan atas halaman masuk (`nada="onbrand"`), langsung di atas foto. Blur dan
+  penggelapannya dipasang di kaca lintasan pustaka lewat token (`.kolom-masuk .tombol-bahasa`: `--lg-blur`
+  12px, `--lg-saturate` 1,6, `--lg-brightness` 0,45), bukan di alas terpisah: kaca lintasan ikut menggembung
+  saat lensa terangkat, sedangkan alas terpisah (`.kaca-teks`, 16 Nov 2026) tetap di ukuran semula sehingga
+  saat ditahan tampak dua garis tepi dan lensa menyembul keluar dari daerah yang diburamkan (dilaporkan 17
+  Nov 2026). Saat kurangi transparansi aktif, lintasannya padat. Pilihan aktifnya kaca putih 20% dengan
+  tulisan putih, bukan pil putih bertulisan navy. Kontras terukur paling rendah 4,88:1 (aktif) dan 5,84:1
+  (tidak aktif) di 1536×728, 4,95:1 dan 5,99:1 di HP.
 
 ### Grafik
 
@@ -2576,7 +2665,8 @@ Klik, seret, dan gerak lensanya milik pustaka. Yang ditambahkan di sini, dan mud
   - `--accent-on` (`#042f2e`, 9,78:1) untuk tulisan di atas isian `--accent`.
   - `--accent-ink` (`#0f766e`, 5,47:1 di kartu putih) untuk tulisan toska di latar terang, seperti
     VIBE di menu samping mahasiswa; di tema gelap sama dengan `--accent`.
-  - Di halaman masuk judul VIBE terendah 6,14:1 terhadap aurora yang bergerak.
+  - Di halaman masuk judul VIBE terendah 6,56:1 (di HP 390×844; 8,47:1 di 1536×728) terhadap foto kampus
+    berlapis navy.
   - Toska bersebelahan dengan hijau Area C (`#1baf7a`), tetapi jauh lebih muda dan kebiruan, dan aksen
     tidak dipakai di grafik.
 - **Toska bergradasi tipis**, satu rona dari terang ke pekat, supaya lebih berkilau tanpa menambah warna:
@@ -2628,32 +2718,29 @@ Klik, seret, dan gerak lensanya milik pustaka. Yang ditambahkan di sini, dan mud
   baris grid `0fr` ↔ `1fr` (tanpa mengukur tinggi) dan isinya memudar. Isi baru dipasang saat
   dibuka dan dilepas sesaat setelah animasi tutup selesai. Selama menutup, `id`-nya langsung
   dilepas dan isinya `inert`, jadi bagi pembaca layar, Tab, dan uji, semester itu sudah tertutup.
-- Di halaman masuk, logo PDP ada di pita kertas yang kakinya tergulung ke luar (gulungan di depan
-  kertas), dengan tongkat berkenop toska (`--warna-kenop` `#14b8a6`, lebih pekat dari `--accent` supaya
-  gradasi kenopnya terbaca) di kedua ujung gulungan. Saat halaman dibuka, pita digelar sekali dari tepi
-  atas panel kiri: gulungan turun dan kertas terbuka mengikutinya, lalu pita memantul kecil. Kertas
-  dibuka oleh "jendela" ber-`overflow: clip` (`.pita-jendela`) yang turun bersama gulungan (keyframe
-  `pita-gulung` yang sama), sementara kertas di dalamnya digeser balik sejauh yang sama
-  (`pita-kertas-buka`), jadi kertas tampak diam. Semuanya `transform`, digeser compositor tanpa raster
-  ulang. Dulu kertasnya dibuka dengan `clip-path` beranimasi, dan Chrome menjalankannya lewat paint
-  worklet yang me-raster ulang kertas, bayangan, dan logonya di setiap bingkai. Hasil uji A/B di halaman
-  yang sama: 110 tugas raster dalam 0,8 detik (kini 0), utas compositor 1,6 kali lebih sibuk, dan ada
-  bingkai yang tampil tanpa seluruh pembaruannya, sehingga gerak turunnya terasa patah-patah. Rupanya
-  tidak berubah: potret di sembilan titik waktu animasi sama persis. Jangan menganimasikan `clip-path`
-  atau `mask` pada pita ini. Jarak tempuh gulungan diambil dari
-  `--tinggi-kertas` (194px: ruang atas 76 + logo 84 + ruang bawah 34), jadi ubah bersama bila
-  ukuran logo atau ruangnya diganti. Pita menjorok 24px ke balik tepi atas supaya tetap menempel
-  saat memantul. Saat kurangi gerak aktif, animasinya dilepas sama sekali (`animation: none`),
-  karena blok global hanya memendekkan durasi dan jeda awalnya tetap berjalan.
-- Setelah digelar, pita diterpa angin dalam siklus 8 detik: hembusan datang cepat, lalu reda pelan.
-  Pita berayun dari titik gantungnya (`rotate` + `skewX`), tepi kiri-kanannya bergelombang 4px
-  dengan ombak yang merambat ke bawah, dan bayangan lipatannya menebal saat hembusan. Logo tidak
-  ikut melengkung supaya tetap tajam. Semua animasi angin berdurasi dan berjeda sama, dan hanya
-  menggerakkan `transform`, `translate`, dan `opacity` supaya dikerjakan GPU (di bawah 1% utas
-  utama; versi dengan `mask`/`background-position` beranimasi memakan sekitar 25%). Dua jebakan
-  yang sudah dicoba: lekuk yang diperbesar-perkecil dengan `scale` memunculkan garis tipis terang
-  di tepi kertas, dan `opacity` yang dianimasikan di induk unsur yang bergeser membuat keduanya
-  kembali dikerjakan utas utama. Rinciannya ada di komentar `index.css` › pita logo masuk.
+- Di halaman masuk, logo PDP ada di panji kain berlapis (`src/components/PanjiPdp.jsx`, sejak 17 Nov 2026,
+  mengikuti rujukan "Opsi 10 Layered Fabric" dari pengguna; menggantikan pita kertas bergulung). Isinya: kait
+  logam di tepi atas panel, tali terpilin, batang perak bercincin dan berkenop emas (emas atas permintaan 16 Nov
+  2026, khusus di sini), kain belakang krem yang menyembul 4px di kiri-kanan dan 9px di ujung, dan kain depan
+  gading berujung runcing. Pita yang menjuntai di kedua sisi sempat ada, lalu dilepas atas permintaan pengguna
+  pada hari yang sama. Gambarnya satu SVG hiasan
+  160 × 178 px, setinggi pita lama, supaya halaman masuk tetap muat tanpa digulir di 1366×657; logonya tetap
+  `LogoPdp` di atas kain depan.
+- Rinciannya (permintaan "lebih HD dan sedikit realistis", 17 Nov 2026): serat kain dari `feTurbulence`,
+  cahaya dari kiri atas, bayangan lembut di bawah kantong batang, kain sedikit lebih gelap ke ujung runcing,
+  jahitan putus-putus di tepi dan di bawah kantong batang, bayangan kain depan yang jatuh ke kain belakang,
+  kilau dan sisi gelap batang, titik kilau kenop, dan bayangan dua lapis (dekat dan jauh). Lipatan tegak
+  terang-gelap sempat ada, lalu dilepas atas permintaan pengguna supaya tulisan pdp terbaca jelas. Seratnya sengaja tipis
+  (opacity 0,12 di kain depan): lebih tebal membuat kain tampak abu-abu dan kasar seperti batu. Semuanya
+  statis, jadi digambar sekali; tetap tajam di skala layar 125%.
+- Saat halaman dibuka, panji jatuh sedikit dari kaitnya lalu berayun makin kecil sampai diam (1,3 detik),
+  sekali saja. Ayunan angin yang berulang tiap 9 detik sempat dipasang, lalu dilepas atas permintaan
+  pengguna (17 Nov 2026): geraknya lebih baik hanya di awal. Yang dianimasikan hanya `transform` dan `opacity`
+  di unsur yang sama (`.panji`); bayangannya (`drop-shadow`) ada di unsur dalam yang diam, jadi compositor
+  cukup memutar lapisan yang sudah jadi tanpa menggambar ulang. Jangan
+  menganimasikan `opacity` di induk unsur yang bergeser, atau `clip-path`/`mask`: keduanya dulu memindahkan
+  kerja ke utas utama pada pita lama. Saat kurangi gerak aktif, animasinya dilepas sama sekali
+  (`animation: none`), karena blok global hanya memendekkan durasi dan jeda awalnya tetap berjalan.
 - Tombol Masuk (`.tombol-masuk`) hanya bergerak saat dipakai, jadi tidak menambah beban saat halaman
   dibiarkan terbuka. Saat ditunjuk (hanya perangkat berkursor), gradasinya bergeser, kilau menyapu
   sekali, cahaya di bawahnya menguat ke sian, dan panahnya maju 4px; saat ditekan, tombolnya mengecil
@@ -2747,8 +2834,9 @@ Yang belum dikerjakan:
   kode, semester, cluster, arsip), teks aspek, komponen, dan bobot sudah bisa diubah;
 - penerbitan sertifikat yang membekukan nomor, tanggal, dan nilai — kini kelayakan dihitung
   langsung, jadi sertifikat ikut berubah bila nilai diubah sesudah angkatan dikunci;
-- ganti dan lupa kata sandi di aplikasi ini, masuk lewat SSO kampus, serta pembatasan percobaan
-  masuk;
+- ganti kata sandi dari Profil, atur ulang sandi akun admin dan Super Admin, masuk lewat SSO kampus, serta
+  pembatasan percobaan masuk. Lupa kata sandi lewat email untuk mahasiswa dan dosen sudah ada sejak 16 Nov 2026 (Masuk ›
+  Lupa kata sandi);
 - menghapus angkatan, fakultas, atau prodi, mengganti NIM, dan mengelola akun dosen dari panel
   Kemahasiswaan. Angkatan, fakultas, prodi, dan data mahasiswa sudah bisa ditambah dan diubah oleh super
   admin (lihat Data master).

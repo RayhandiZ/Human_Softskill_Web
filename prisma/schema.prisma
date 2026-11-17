@@ -85,6 +85,18 @@ model Pengguna {
   dosen        Dosen?
   profil       Profil?
   aksesAngkatan AdminAngkatan[] // angkatan yang dibuka atau dinonaktifkan super admin untuk admin biasa ini
+  resetSandi   ResetSandi[]     // tautan atur ulang kata sandi lewat email (src/server/lupaSandi.js)
+}
+
+model ResetSandi {              // tautan lupa kata sandi untuk mahasiswa dan dosen (16 Nov 2026), selama VIBE belum memakai SSO
+  id          Int       @id @default(autoincrement())
+  penggunaId  Int
+  tokenHash   String    @unique @db.Char(64) // SHA-256 token di tautan email; tokennya sendiri tidak pernah disimpan
+  kedaluwarsa DateTime                       // 30 menit sesudah dibuat
+  dipakai     DateTime?                      // terisi saat kata sandi diganti; setelah itu semua tautan akun ini mati
+  dibuat      DateTime  @default(now())
+  pengguna    Pengguna  @relation(fields: [penggunaId], references: [id], onDelete: Cascade)
+  @@index([penggunaId, dibuat])
 }
 
 model Profil {                 // data milik pengguna sendiri (profil.js)

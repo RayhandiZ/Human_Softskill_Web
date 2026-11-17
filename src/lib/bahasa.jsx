@@ -14,8 +14,10 @@ const KUNCI = 'sk5c.bahasa.pilihan'
 const KUNCI_LAMA = 'sk5c.bahasa'
 
 /* Bahasa bila pengguna belum pernah memilih: halaman masuk Inggris karena penggunanya tidak hanya
-   orang Indonesia, panel tetap Indonesia. */
-export const bahasaBawaan = (jalur) => (jalur === '/masuk' ? 'en' : 'id')
+   orang Indonesia, panel tetap Indonesia. Lupa dan atur kata sandi ikut halaman masuk (16 Nov 2026), supaya bahasanya tidak
+   berganti saat tautan "Lupa kata sandi?" ditekan. */
+const RUTE_INGGRIS = ['/masuk', '/lupa-sandi', '/atur-sandi']
+export const bahasaBawaan = (jalur) => (RUTE_INGGRIS.includes(jalur) ? 'en' : 'id')
 
 export const BAHASA = [
   { id: 'id', kode: 'ID', nama: 'Bahasa Indonesia' },

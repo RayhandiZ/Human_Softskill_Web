@@ -25,6 +25,8 @@ export const LABEL_LOG = {
   TAMBAH_AKUN: 'Tambah akun',
   UBAH_AKUN: 'Ubah akun',
   HAPUS_AKUN: 'Hapus akun',
+  // Lupa kata sandi lewat email (src/server/lupaSandi.js), 16 Nov 2026.
+  ATUR_ULANG_SANDI: 'Atur ulang kata sandi',
   // Izin kelola data master (src/server/akses.js) dan perubahan data master (src/server/dataMaster.js).
   UBAH_IZIN: 'Ubah izin data master',
   TAMBAH_ANGKATAN: 'Tambah angkatan',

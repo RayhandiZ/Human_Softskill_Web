@@ -61,6 +61,43 @@ export const EN = {
   'Apa sih VIBE itu?': 'What is VIBE?',
   'VIBE (Values, Intelligence, Behavior & Excellence) merupakan sistem penilaian yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:':
     'VIBE (Values, Intelligence, Behavior & Excellence) is an assessment system designed to evaluate and develop the interpersonal abilities, technical skills, and other competencies of Universitas Multimedia Nusantara students. It covers the three assessment areas below:',
+  /* Lupa kata sandi lewat email (16 Nov 2026): halaman /lupa-sandi dan /atur-sandi, pesan src/server/lupaSandi.js, dan label
+     ATUR_ULANG_SANDI di Log Aktivitas. */
+  'Lupa kata sandi': 'Forgot password',
+  'Masukkan email kampus akun mahasiswa atau dosen Anda. Kami kirim tautan untuk membuat kata sandi baru.':
+    'Enter the campus email of your student or lecturer account. We will send you a link to create a new password.',
+  'Kirim tautan': 'Send link',
+  'Mengirim…': 'Sending…',
+  'Akun admin Kemahasiswaan dan Super Admin tidak menerima tautan ini. Hubungi pengelola VIBE.':
+    'Student Affairs admin and Super Admin accounts do not receive this link. Contact the VIBE administrator.',
+  'Kembali ke halaman masuk': 'Back to sign in',
+  'Periksa email Anda': 'Check your email',
+  'Jika {email} terdaftar sebagai akun mahasiswa atau dosen, tautan untuk membuat kata sandi baru sudah dikirim ke sana. Tautannya berlaku 30 menit dan hanya bisa dipakai sekali.':
+    'If {email} is registered as a student or lecturer account, a link to create a new password has been sent there. The link works once and expires in 30 minutes.',
+  'Belum masuk? Periksa folder spam, atau kirim ulang.': 'Not there yet? Check your spam folder, or send it again.',
+  'Kirim ulang': 'Send again',
+  'Kirim ulang ({n} detik)': 'Send again ({n} s)',
+  'Ganti email': 'Use another email',
+  'Memeriksa tautan…': 'Checking the link…',
+  'Tautan tidak berlaku': 'Link no longer valid',
+  'Tautan atur ulang berlaku 30 menit dan hanya bisa dipakai sekali.': 'Reset links expire after 30 minutes and work only once.',
+  'Minta tautan baru': 'Request a new link',
+  'Buat kata sandi baru': 'Create a new password',
+  'Untuk akun {email}.': 'For the account {email}.',
+  'Kata sandi baru': 'New password',
+  'Minimal 8 karakter.': 'At least 8 characters.',
+  'Ulangi kata sandi baru': 'Repeat the new password',
+  'Tampilkan kata sandi': 'Show password',
+  'Simpan kata sandi baru': 'Save new password',
+  'Kata sandi sudah diganti': 'Password changed',
+  'Silakan masuk dengan kata sandi baru Anda.': 'Sign in with your new password.',
+  'Kedua kata sandi tidak sama.': 'The two passwords do not match.',
+  'Email wajib diisi.': 'Email is required.',
+  'Pengiriman email belum disiapkan. Hubungi Biro Kemahasiswaan.': 'Email sending is not set up yet. Contact the Student Affairs Bureau.',
+  'Tautan ini sudah tidak berlaku. Minta tautan baru.': 'This link is no longer valid. Request a new one.',
+  'Kata sandi baru minimal 8 karakter.': 'The new password must be at least 8 characters.',
+  'Kata sandi baru terlalu panjang (paling banyak 72 karakter).': 'The new password is too long (72 characters at most).',
+  'Atur ulang kata sandi': 'Reset password',
   /* Pesan galat masuk, dari src/lib/auth.jsx dan src/server/masuk.js. */
   'Email dan kata sandi wajib diisi.': 'Email and password are required.',
   'Email atau kata sandi salah.': 'Incorrect email or password.',
@@ -863,7 +900,6 @@ export const EN = {
   '{a} dari {b} mahasiswa di atas rata-rata minimal {n}': '{a} of {b} students above the minimum average of {n}',
 
   /* ---------------------------- halaman masuk ----------------------------- */
-  '(membuka SSO UMN di tab baru)': '(opens UMN SSO in a new tab)',
 
   /* ------------------------ lembar cetak transkrip ------------------------ */
   No: 'No.',

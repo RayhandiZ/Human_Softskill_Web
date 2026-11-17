@@ -45,6 +45,8 @@ const BERKAS = [
   ...readdirSync('src/components').map((f) => join('src/components', f)),
   ...readdirSync('src/components/charts').map((f) => join('src/components/charts', f)),
   'src/halaman/Login.jsx',
+  'src/halaman/LupaSandi.jsx',
+  'src/halaman/AturSandi.jsx',
   'src/halaman/Profil.jsx',
   // Sasaran log yang diterjemahkan menurut polanya (labelSasaran), dipakai Log Aktivitas, Pusat Kendali, dan lonceng.
   'src/lib/labelLog.js',
@@ -213,6 +215,9 @@ const DARI_DATA = [
      lewat labelKunci). */
   'ID akun', 'ID data dosen', 'ID data mahasiswa', 'Data yang ikut terhapus', 'Nilai', 'Status final aspek', 'Pengajuan koreksi',
   'Permintaan sertifikat', 'Pengumpulan',
+  /* Lupa kata sandi (16 Nov 2026): label ATUR_ULANG_SANDI (LABEL_LOG), pesan tautan mati (konstanta TAUTAN_MATI di
+     src/server/lupaSandi.js), dan pesan setGalat di AturSandi.jsx yang dibaca lewat t(galat). */
+  'Atur ulang kata sandi', 'Tautan ini sudah tidak berlaku. Minta tautan baru.', 'Kedua kata sandi tidak sama.',
 ]
 /* Sama, tetapi dari src/lib/rules.js: catatan kaki transkrip sementara, dan labelT/alasanT/ringkasT syarat
    sertifikat. */

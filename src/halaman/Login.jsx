@@ -1,29 +1,10 @@
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { LABEL_PERAN, panelPengguna, roleFromEmail, useAuth } from '../lib/auth'
-import { IconAlert, IconArrowRight, IconEye, IconEyeOff, IconTabBaru } from '../components/Icons'
-import LogoPdp from '../components/LogoPdp'
-import TombolBahasa from '../components/TombolBahasa'
+import { IconAlert, IconArrowRight, IconEye, IconEyeOff } from '../components/Icons'
+import KerangkaMasuk from '../components/KerangkaMasuk'
 import { useTeks } from '../lib/bahasa'
-import { SSO_LUPA_SANDI } from '../lib/layanan'
-import { AREA } from '../lib/curriculum'
-
-/* Dipasang dua kali: di atas formulir untuk layar lebar, di dalam kolom formulir untuk layar sempit. */
-function JudulAplikasi({ className = '' }) {
-  const t = useTeks()
-  return (
-    <div className={'text-center ' + className}>
-      <p className="teks-vibe mx-auto w-fit text-[30px] font-extrabold leading-none tracking-tight text-[var(--accent-ink)]">
-        VIBE
-      </p>
-      <p className="mt-3 text-[15px] font-medium leading-relaxed text-white/85">
-        <span aria-hidden="true" className="text-[var(--accent-ink)]">“</span>
-        {t('Ayo semangat mencari human skill kamu.')}
-        <span aria-hidden="true" className="text-[var(--accent-ink)]">”</span>
-      </p>
-    </div>
-  )
-}
 
 export default function Login() {
   const { user, login } = useAuth()
@@ -59,98 +40,8 @@ export default function Login() {
   const detected = form.email.includes('@') ? roleFromEmail(form.email) : null
 
   return (
-    // Selalu memakai warna mode gelap (kelas dark), apa pun tema perangkat: seluruh halaman berlatar aurora
-    // navy, jadi teks, kolom isian, dan kartu kacanya harus versi terang. isolate: latar (z-index -1) tetap
-    // di belakang kedua panel. Lihat index.css › latar dan kartu kaca halaman masuk.
-    <div className="dark relative isolate grid min-h-screen overflow-hidden lg:grid-cols-[1.15fr_minmax(420px,540px)]">
-      <div aria-hidden="true" className="latar-masuk">
-        <span className="gumpal-nila" />
-        <span className="gumpal-biru" />
-        <span className="pita-cahaya" />
-        <span className="gumpal-langit" />
-        <span className="gumpal-laut" />
-      </div>
-
-      {/* --------------------------- panel kiri --------------------------- */}
-      {/* Tanpa overflow-hidden: latarnya menyambung ke panel kanan, jadi lingkaran hiasan tidak boleh terpotong
-          tegak di batas panel. Halaman (akar) yang memotongnya di tepi layar. */}
-      <aside className="relative hidden px-12 pb-8 pt-12 text-white lg:flex lg:flex-col">
-        <svg className="pointer-events-none absolute -right-24 -top-24 h-[520px] w-[520px] opacity-[.09]" viewBox="0 0 200 200" aria-hidden="true">
-          <circle cx="100" cy="100" r="98" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="100" cy="100" r="72" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="100" cy="100" r="46" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="100" cy="100" r="20" fill="white" />
-        </svg>
-
-        {/* Pita kertas menggantung dari tepi atas panel, kakinya tergulung ke luar; lihat README.md › Gerak. */}
-        <div className="-mt-12 mb-6 self-start">
-          <div className="pita-logo">
-            {/* Jendela yang membuka kertas mengikuti gulungan; lihat index.css › pita logo masuk. */}
-            <div className="pita-jendela">
-              <div className="pita-kertas">
-                {/* Tepi bergelombang dan bayangan lipatan saat diterpa angin. */}
-                <span aria-hidden="true" className="pita-tepi pita-tepi-kiri" />
-                <span aria-hidden="true" className="pita-tepi pita-tepi-kanan" />
-                <span aria-hidden="true" className="pita-lipat" />
-                <LogoPdp className="h-[84px] w-auto text-brand-deep" />
-              </div>
-            </div>
-            <span aria-hidden="true" className="pita-tongkat" />
-            <span aria-hidden="true" className="pita-gulungan" />
-          </div>
-        </div>
-
-        {/* Tulisan blok ini dibesarkan supaya terbaca dosen (revisi 2 Nov 2026). Bloknya dilebarkan dan jaraknya
-            dirapatkan sepadan, supaya tingginya tidak bertambah dan tetap muat di laptop kecil. Di bawah 1280px
-            kolomnya sempit dan barisnya lebih banyak, jadi ukurannya satu tingkat di bawahnya. */}
-        <div className="my-auto max-w-[640px]">
-          <h1 className="text-[38px] font-extrabold leading-[1.1] tracking-tight xl:text-[40px]">
-            {t('Apa sih VIBE itu?')}
-          </h1>
-          <p className="mt-5 text-[16px] leading-relaxed text-white/80 xl:text-[17px]">
-            {t(
-              'VIBE (Values, Intelligence, Behavior & Excellence) merupakan sistem penilaian yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:'
-            )}
-          </p>
-
-          <ul className="mt-6 space-y-3">
-            {AREA.map((a) => (
-              <li key={a.id} className="flex items-center gap-3.5">
-                <span
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[14px] font-extrabold text-white"
-                  style={{ background: a.warna }}
-                >
-                  {a.id}
-                </span>
-                <div>
-                  <p className="text-[15.5px] font-bold xl:text-[16.5px]">{t(a.nama)}</p>
-                  <p className="text-[14px] text-white/75 xl:text-[15px]">{t(a.ringkas)}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <p className="text-[14px] text-white/65">
-          Universitas Multimedia Nusantara
-        </p>
-      </aside>
-
-      {/* -------------------------- panel kanan --------------------------- */}
-      <main className="relative flex flex-col px-5 pb-12 pt-6 sm:px-10 lg:pt-12">
-        {/* Bawaan halaman ini Inggris, panel tetap Indonesia; bahasa yang dipilih di sini diingat dan ikut
-            dipakai di panel. Di layar sempit sejajar dengan logo PDP. Alas gelapnya menjaga label yang tidak
-            aktif tetap terbaca saat cahaya sian lewat di belakangnya. Lihat README.md › Hidrasi. */}
-        <div className="absolute right-5 top-6 z-10 rounded-full bg-[color-mix(in_srgb,var(--surface)_62%,transparent)] sm:right-10">
-          <TombolBahasa nada="onbrand" />
-        </div>
-        <JudulAplikasi className="mx-auto mt-8 hidden w-full max-w-[400px] lg:block" />
-        {/* Di layar sempit kolom ini menempel ke atas; di layar lebar ia di tengah. */}
-        <div className="mx-auto w-full max-w-[440px] animate-rise lg:my-auto">
-          {/* Di layar lebar logo PDP ada di pita panel kiri. */}
-          <LogoPdp keterangan={false} className="block h-7 w-auto text-ink lg:hidden" />
-          <JudulAplikasi className="mb-8 mt-20 lg:hidden" />
-
+    // Latar, panel kiri, dan judul VIBE ada di KerangkaMasuk, bersama halaman lupa dan atur kata sandi.
+    <KerangkaMasuk>
           {/* Kartu kaca dari judul Masuk sampai tombol Masuk; lihat index.css › kartu kaca halaman masuk. */}
           <div className="kaca-masuk p-6 sm:p-9">
             <h2 className="text-[26px] font-extrabold tracking-tight text-ink">
@@ -218,17 +109,15 @@ export default function Login() {
                   </button>
                 </div>
               
+                {/* Halaman lupa kata sandi VIBE sendiri (16 Nov 2026). Sebelumnya tautan ini membuka lupa kata sandi SSO UMN,
+                    padahal kata sandi VIBE disimpan sendiri dan tidak ikut berubah. */}
                 <div className="mt-2 flex justify-end">
-                  <a
-                    href={SSO_LUPA_SANDI}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    href="/lupa-sandi"
                     className="inline-flex min-h-[44px] items-center gap-1 text-[12.5px] font-semibold text-brand-ink hover:underline sm:min-h-0"
                   >
                     {t('Lupa kata sandi?')}
-                    <IconTabBaru size={13} className="shrink-0" />
-                    <span className="sr-only">{' ' + t('(membuka SSO UMN di tab baru)')}</span>
-                  </a>
+                  </Link>
                 </div>
               </div>
               
@@ -252,8 +141,6 @@ export default function Login() {
               </button>
             </form>
           </div>
-        </div>
-      </main>
-    </div>
+    </KerangkaMasuk>
   )
 }
