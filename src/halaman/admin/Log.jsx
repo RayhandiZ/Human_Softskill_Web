@@ -104,6 +104,8 @@ const LABEL_RINCIAN = {
   nilaiAkhir: 'Nilai akhir',
   pengajuan: 'Pengajuan',
   permintaan: 'Permintaan',
+  // Penjelasan mahasiswa pada pengajuan peninjauan cetak sertifikat (MINTA_SERTIFIKAT, sejak 18 Nov 2026).
+  penjelasan: 'Penjelasan mahasiswa',
   usulan: 'Usulan',
   usulanId: 'Usulan',
   dosen: 'Dosen',

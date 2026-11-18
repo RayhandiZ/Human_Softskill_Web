@@ -904,9 +904,7 @@ export const EN = {
   /* ------------------------ lembar cetak transkrip ------------------------ */
   No: 'No.',
   'Aspek belum dinilai': 'Aspects not yet scored',
-  'belum dinilai atau belum dibuka': 'not yet scored or not yet open',
   'Head of Department': 'Head of Department',
-  'di bawah {n}': 'below {n}',
   'NIM': 'Student ID',
   'Program Pembinaan VIBE, Semester 1 sampai {total}': 'VIBE Development Programme, Semester 1 to {total}',
   'Transkrip Sementara': 'Provisional Transcript',
@@ -1788,6 +1786,10 @@ export const EN = {
   'Developing Professional Skills': 'Developing Professional Skills',
   'Basic Professional Awareness': 'Basic Professional Awareness',
 
+  /* -------- huruf mutu: donat sebaran dan kotak Keterangan di lembar cetak -------- */
+  'Huruf {daftar}': 'Grade {daftar}',
+  'Belum Dinilai / Belum Dibuka': 'Not Yet Scored / Not Yet Open',
+
   /* -------- nama area (sama di kedua bahasa) -------- */
   'Personal Development': 'Personal Development',
   'Interpersonal Development': 'Interpersonal Development',
@@ -2610,7 +2612,16 @@ export const EN = {
     'The detailed steps are not available yet. Contact Student Affairs for an explanation. Once the issue is resolved, request an access review.',
   'Rincian langkahnya belum tersedia. Hubungi Kemahasiswaan untuk meminta penjelasan. Bila sudah sesuai, minta akses cetak lagi.':
     'The detailed steps are not available yet. Contact Student Affairs for an explanation. Once it is in order, request print access again.',
-  'Ajukan peninjauan akses': 'Request an access review',
+  'Ajukan peninjauan cetak': 'Request a print review',
+  /* Pengajuan peninjauan cetak wajib berpenjelasan (18 Nov 2026): isian mahasiswa, pesannya, dan kotak di panel peninjau. */
+  'Penjelasan pengajuan': 'Explanation for your request',
+  'Jelaskan kenapa kamu mengajukan peninjauan cetak, minimal 10 karakter. Penjelasan ini dibaca admin Kemahasiswaan dan Super Admin.':
+    'Explain why you are requesting a print review, at least 10 characters. Student Affairs admins and the Super Admin will read it.',
+  'Penjelasan wajib diisi, minimal 10 karakter, supaya Kemahasiswaan tahu kenapa kamu mengajukan peninjauan cetak.':
+    'An explanation of at least 10 characters is required, so Student Affairs knows why you are requesting a print review.',
+  'Penjelasan terlalu panjang, maksimal 1000 karakter.': 'The explanation is too long; the maximum is 1000 characters.',
+  'Penjelasan mahasiswa (pengajuan peninjauan cetak)': "Student's explanation (print review request)",
+  'Penjelasan mahasiswa': "Student's explanation",
   'Cetak / Simpan PDF': 'Print / save as PDF',
   'Hubungi Kemahasiswaan': 'Contact Student Affairs',
   'Halo, saya {nama} (NIM {nim}). Saya ingin meminta penjelasan soal akses cetak sertifikat VIBE saya.':
@@ -2638,7 +2649,6 @@ export const EN = {
   // Panel mahasiswa: transkrip.
   'Nilai semester: {nilai}': 'Semester score: {nilai}',
   'Panduan kode dan penilaian': 'Guide to codes and grading',
-  '{min} sampai {max}': '{min} to {max}',
   'Perubahan sesudahnya hanya lewat prosedur koreksi.': 'Later changes only go through the correction procedure.',
 }
 

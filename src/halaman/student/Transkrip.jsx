@@ -23,7 +23,7 @@ import {
 import { CATATAN_BOBOT_SEMENTARA, CONFIG } from '../../lib/config'
 import { AREA, CLUSTER, SUMBER, SUMBER_LIST, getArea, getCluster, getIndikator, getKomponen } from '../../lib/curriculum'
 import { labelNilaiAkhir, statusDokumenTranskrip } from '../../lib/rules'
-import { BELUM_MEMENUHI, RUBRIK } from '../../lib/scoring'
+import { RUBRIK, tulisRentang } from '../../lib/scoring'
 import { PERIODE_AKTIF, labelPeriode, transkripOf } from '../../lib/data'
 import { ajukanKoreksi, koreksiMilik, useStore } from '../../lib/store'
 import { LABEL_KOREKSI } from '../../lib/duaLapis'
@@ -120,7 +120,7 @@ export default function Transkrip({ student, untukAdmin = false }) {
             </p>
             <p className="mt-1 text-[12px] font-semibold text-ink-3">{teks('Nilai akhir')}</p>
           </div>
-          {/* Predikat dan status dipisah: "B · Emerging Professional" menyatakan mutu nilainya, "Final" menyatakan keadaan
+          {/* Predikat dan status dipisah: "B · Developing Professional Skills" menyatakan mutu nilainya, "Final" menyatakan keadaan
               penilaiannya, dan dulu keduanya terbaca sebagai satu label. */}
           <dl className="grid min-w-[min(100%,220px)] flex-1 gap-x-8 gap-y-2 sm:grid-cols-[auto_minmax(0,1fr)] print:min-w-0">
             <div>
@@ -445,11 +445,11 @@ function PanduanKode() {
         <div>
           <dt className="font-bold text-ink-2">{t('Predikat')}</dt>
           <dd className="mt-1.5 space-y-1 text-ink-2">
-            {[...RUBRIK, BELUM_MEMENUHI].map((r) => (
-              <p key={r.label}>
-                <span className="font-semibold text-ink">{r.huruf ?? t(r.label)}</span>{' '}
-                {r.huruf ? t(r.label) + ' ' : ''}
-                <span className="tabular-nums">{t('{min} sampai {max}', { min: r.min, max: r.max })}</span>
+            {/* Huruf, kategori, lalu rentang, seperti kotak Keterangan di lembar cetak (src/lib/scoring.js › RUBRIK). */}
+            {RUBRIK.map((r) => (
+              <p key={r.huruf}>
+                <span className="font-semibold text-ink">{r.huruf}</span> {t(r.label)}{' '}
+                <span className="tabular-nums">{tulisRentang(r.min, r.max)}</span>
               </p>
             ))}
           </dd>

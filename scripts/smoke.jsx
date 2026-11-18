@@ -741,7 +741,9 @@ const pilih = async (el, nilai) => {
 
 /** Mengetik ke sebuah <input> lewat peristiwa yang sama dengan pengguna. */
 const ketik = async (el, nilai) => {
-  const asli = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+  // Setter bawaan sesuai jenis elemennya (input atau textarea), supaya React membaca nilai yang diketik.
+  const proto = el instanceof window.HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype
+  const asli = Object.getOwnPropertyDescriptor(proto, 'value').set
   await act(async () => {
     asli.call(el, nilai)
     el.dispatchEvent(new window.Event('input', { bubbles: true }))
@@ -1961,8 +1963,11 @@ export async function ujiAlurSertifikat() {
     let { el, lepas } = await pasang('/mahasiswa/sertifikat')
     hasil.awalBisaMinta = Boolean(tombol(el, 'Minta akses cetak')) && !tombol(el, 'Cetak / Simpan PDF')
     hasil.awalTanpaLembar = !document.querySelector('.lembar-sertifikat')
+    const tanpaIsianPenjelasan = !el.querySelector('#penjelasan-peninjauan')
     await klik(tombol(el, 'Minta akses cetak'))
     hasil.mintaTercatat = milik()?.status === 'menunggu_admin'
+    // Permintaan pertama tidak meminta penjelasan; itu hanya untuk peninjauan cetak (18 Nov 2026).
+    hasil.permintaanPertamaTanpaPenjelasan = tanpaIsianPenjelasan && milik()?.penjelasan === null
     // Selama ditinjau kartu izin hanya memuat statusnya (permintaan pemilik produk, 9 Nov 2026): tanpa rincian,
     // langkah, catatan, atau tombol apa pun.
     const izin = el.querySelector('section[aria-labelledby="judul-izin"]')
@@ -2032,13 +2037,55 @@ export async function ujiAlurSertifikat() {
     hasil.ditolak = milik()?.status === 'ditolak' && milik()?.ditolak?.catatan === 'Nilai akhir belum dicek prodi.'
     lepas()
 
-    // 3. Mahasiswa membaca alasan Super Admin (bukan alasan rekomendasi admin), lalu meminta lagi.
+    // 3. Mahasiswa membaca alasan Super Admin (bukan alasan rekomendasi admin), lalu mengajukan peninjauan cetak.
     sesi(MAHASISWA)
     ;({ el, lepas } = await pasang('/mahasiswa/sertifikat'))
     hasil.alasanTampil = el.textContent.includes('Nilai akhir belum dicek prodi.')
     hasil.rekomendasiTidakTampil = !el.textContent.includes('Nilai sikap semester 3 belum dicek prodi.')
-    await klik(tombol(el, 'Minta akses cetak lagi'))
+    // Sejak 18 Nov 2026 kartu yang ditolak sama dengan yang dicabut: alasan dan tombol Ajukan peninjauan cetak saja, tanpa
+    // siapa dan kapan ditolak (tetap tercatat di server; dulu tertulis "Super Admin, 18 Nov 2026"), "Yang perlu dilakukan",
+    // Hubungi Kemahasiswaan, dan catatan di bawah kartu. Isian penjelasan belum tampil sebelum tombolnya diklik.
+    const kartuDitolak = el.querySelector('section[aria-labelledby="judul-izin"]')
+    const penolak = milik()?.ditolak?.oleh
+    const tombolKartu = () =>
+      [...(el.querySelector('section[aria-labelledby="judul-izin"]')?.querySelectorAll('button, a') ?? [])]
+        .map((b) => b.textContent.trim())
+        .join('|')
+    const isian = () => el.querySelector('section[aria-labelledby="judul-izin"] textarea#penjelasan-peninjauan')
+    hasil.penolakanRingkas =
+      /Permintaan akses cetak ditolak/.test(kartuDitolak?.textContent ?? '') &&
+      [...(kartuDitolak?.querySelectorAll('dt') ?? [])].map((d) => d.textContent.trim()).join('|') === 'Alasan' &&
+      Boolean(penolak) &&
+      !(kartuDitolak?.textContent ?? '').includes(penolak + ', ') &&
+      !/Ditolak oleh|Yang perlu dilakukan|Hubungi Kemahasiswaan|Setelah akses disetujui/.test(kartuDitolak?.textContent ?? '') &&
+      tombolKartu() === 'Ajukan peninjauan cetak' &&
+      !isian()
+    // Mengklik tombolnya memunculkan isian (langsung difokus) dengan Kirim pengajuan dan Batal, tanpa mengirim apa pun.
+    const PENJELASAN_DITOLAK = 'Nilai akhir saya sudah dicek prodi kemarin.'
+    await klik(tombol(el, 'Ajukan peninjauan cetak'))
+    hasil.isianMunculSesudahKlik =
+      Boolean(isian()) && document.activeElement === isian() && tombolKartu() === 'Kirim pengajuan|Batal' && jumlahMilik() === 1
+    // Batal menutup isian dan mengembalikan fokus ke tombol; dibuka lagi, isiannya sudah kosong.
+    await ketik(isian(), 'Coba dulu')
+    await klik(tombol(el, 'Batal'))
+    const sesudahBatal =
+      !isian() &&
+      tombolKartu() === 'Ajukan peninjauan cetak' &&
+      document.activeElement?.textContent?.trim() === 'Ajukan peninjauan cetak' &&
+      jumlahMilik() === 1
+    await klik(tombol(el, 'Ajukan peninjauan cetak'))
+    hasil.batalMenutupIsian = sesudahBatal && isian()?.value === ''
+    // Penjelasan wajib: kosong atau kurang dari 10 karakter ditahan di layar dan tidak terkirim.
+    await klik(tombol(el, 'Kirim pengajuan'))
+    const ditahanKosong =
+      /Penjelasan wajib diisi, minimal 10 karakter/.test(el.querySelector('[role="alert"]')?.textContent ?? '') && jumlahMilik() === 1
+    await ketik(isian(), 'pendek')
+    await klik(tombol(el, 'Kirim pengajuan'))
+    hasil.peninjauanTanpaPenjelasanDitahan = ditahanKosong && jumlahMilik() === 1 && milik()?.status === 'ditolak'
+    await ketik(isian(), PENJELASAN_DITOLAK)
+    await klik(tombol(el, 'Kirim pengajuan'))
     hasil.mintaLagi = milik()?.status === 'menunggu_admin' && jumlahMilik() === 2
+    hasil.penjelasanTersimpan = milik()?.penjelasan === PENJELASAN_DITOLAK
     lepas()
 
     /* 4. Lapis pertama meneruskan dengan rekomendasi disarankan; lapis kedua bukan haknya. Jendela lain sudah membuka
@@ -2046,6 +2093,9 @@ export async function ujiAlurSertifikat() {
     sesi(ADMIN)
     const jendelaLain = await pasang(alamatTinjau)
     ;({ el, lepas } = await pasang(alamatTinjau))
+    // Penjelasan peninjauan dari mahasiswa terbaca admin di atas panel keputusan (18 Nov 2026).
+    hasil.adminMembacaPenjelasan =
+      /Penjelasan mahasiswa \(pengajuan peninjauan cetak\)/.test(el.textContent) && el.textContent.includes(PENJELASAN_DITOLAK)
     await ketik(el.querySelector('input[id^="catatan-S-"]'), 'Semua aspek final dan nilai di atas ambang.')
     await klik(tombol(el, 'Teruskan: disarankan'))
     hasil.diteruskan =
@@ -2069,6 +2119,7 @@ export async function ujiAlurSertifikat() {
     ;({ el, lepas } = await pasang('/super/persetujuan'))
     const kartu = () => [...el.querySelectorAll('li')].find((li) => li.textContent.includes(m.nim) && tombol(li, 'Setujui akses cetak'))
     hasil.superMelihat = /Rekomendasi admin:\s*Disarankan/.test(kartu()?.textContent ?? '')
+    hasil.superMembacaPenjelasan = (kartu()?.textContent ?? '').includes(PENJELASAN_DITOLAK)
     await klik(tombol(kartu(), 'Setujui akses cetak'))
     hasil.siap = milik()?.status === 'siap_dicetak' && milik()?.lapis2?.oleh === 'Super Admin'
     hasil.hilangDariDaftar = !kartu()
@@ -2119,14 +2170,16 @@ export async function ujiAlurSertifikat() {
     hasil.mahasiswaMelihatPencabutan =
       /Akses cetak dicabut/.test(el.textContent) &&
       el.textContent.includes('Ada laporan sikap dari dosen wali.') &&
-      Boolean(tombol(el, 'Ajukan peninjauan akses'))
-    // Sejak 12 Nov 2026 kartunya hanya memuat alasan dan tombol Ajukan peninjauan akses: tanpa siapa yang mencabut
-    // (Biro Kemahasiswaan), "Yang perlu dilakukan", tautan Hubungi Kemahasiswaan, dan catatan di bawah kartu.
+      Boolean(tombol(el, 'Ajukan peninjauan cetak'))
+    // Sejak 12 Nov 2026 kartunya hanya memuat alasan dan tombolnya (sejak 18 Nov 2026 Ajukan peninjauan cetak, yang baru
+    // memunculkan isian penjelasan saat diklik): tanpa siapa yang mencabut (Biro Kemahasiswaan), "Yang perlu dilakukan",
+    // tautan Hubungi Kemahasiswaan, dan catatan di bawah kartu.
     const kartuDicabut = el.querySelector('section[aria-labelledby="judul-izin"]')
     hasil.pencabutanRingkas =
       [...(kartuDicabut?.querySelectorAll('dt') ?? [])].map((d) => d.textContent.trim()).join('|') === 'Alasan' &&
       !/Dicabut oleh|Yang perlu dilakukan|Biro Kemahasiswaan/.test(kartuDicabut?.textContent ?? '') &&
-      [...(kartuDicabut?.querySelectorAll('button, a') ?? [])].map((b) => b.textContent.trim()).join('|') === 'Ajukan peninjauan akses'
+      [...(kartuDicabut?.querySelectorAll('button, a') ?? [])].map((b) => b.textContent.trim()).join('|') === 'Ajukan peninjauan cetak' &&
+      !kartuDicabut?.querySelector('textarea')
     hasil.tanpaCatatanSesudahDicabut = Boolean(kartuDicabut) && !/Setelah akses (dipulihkan|disetujui)/.test(kartuDicabut.textContent)
     hasil.tanpaLembarSesudahDicabut = !document.querySelector('.lembar-sertifikat')
     try {
@@ -2135,8 +2188,19 @@ export async function ujiAlurSertifikat() {
     } catch {
       hasil.cetakSesudahDicabutDitolak = milik()?.cetak?.jumlah === 2
     }
-    await klik(tombol(el, 'Ajukan peninjauan akses'))
+    // Sama dengan sesudah ditolak: tombolnya membuka isian, tanpa penjelasan ditahan, dengan penjelasan masuk lagi ke
+    // lapis pertama.
+    const PENJELASAN_DICABUT = 'Laporan sikap sudah diselesaikan bersama dosen wali.'
+    await klik(tombol(el, 'Ajukan peninjauan cetak'))
+    await klik(tombol(el, 'Kirim pengajuan'))
+    const dicabutDitahan =
+      jumlahMilik() === 2 &&
+      milik()?.status === 'dicabut' &&
+      /Penjelasan wajib diisi/.test(el.querySelector('[role="alert"]')?.textContent ?? '')
+    await ketik(el.querySelector('#penjelasan-peninjauan'), PENJELASAN_DICABUT)
+    await klik(tombol(el, 'Kirim pengajuan'))
     hasil.mintaLagiSesudahDicabut = milik()?.status === 'menunggu_admin' && jumlahMilik() === 3
+    hasil.penjelasanSesudahDicabut = dicabutDitahan && milik()?.penjelasan === PENJELASAN_DICABUT
     lepas()
   } catch (e) {
     hasil.galat = e.message
@@ -2808,6 +2872,11 @@ export async function ujiCetakTranskrip() {
   const layar = lembar?.nextElementSibling
   const kepala = lembar ? [...lembar.querySelectorAll('thead th')].map((n) => n.textContent).join('|') : ''
   const baris = lembar ? [...lembar.querySelectorAll('tbody tr')].map((tr) => [...tr.children].map((td) => td.textContent)) : []
+  // Kotak Keterangan: judul lalu satu baris per predikat (contoh pengguna 17 Nov 2026).
+  const kotakKeterangan = lembar
+    ? [...lembar.querySelectorAll('div')].find((d) => d.firstElementChild?.textContent === 'Keterangan')
+    : null
+  const isiKeterangan = kotakKeterangan ? [...kotakKeterangan.querySelectorAll('p')].map((p) => p.textContent) : []
   const teks = lembar?.textContent ?? ''
 
   const hasil = {
@@ -2820,8 +2889,23 @@ export async function ujiCetakTranskrip() {
     jumlahBaris: baris.length,
     // Aspek yang belum dibuka tertulis "...", tidak pernah 0 (R2).
     belumBukanNol: baris.filter((r) => r[4] === '...' && r[5] === '...').length === 3 && baris.every((r) => r[4] !== '0'),
-    ringkasan: /Aspek dinilai:7 \/ 10/.test(teks) && /Nilai akhir:79 \(sementara\)/.test(teks) && /Predikat:C/.test(teks),
-    keterangan: ['A', 'B', 'C', 'D'].every((h) => teks.includes('Predikat ' + h + ':')) && /Belum Memenuhi:di bawah 60/.test(teks),
+    // Predikat 17 Nov 2026: 79 berhuruf B+ (75–<80).
+    ringkasan: /Aspek dinilai:7 \/ 10/.test(teks) && /Nilai akhir:79 \(sementara\)/.test(teks) && /Predikat:B\+/.test(teks),
+    // Kotak Keterangan persis contoh pengguna 17 Nov 2026, termasuk baris "..." untuk nilai yang belum ada (R2).
+    keterangan:
+      isiKeterangan.join('\n') ===
+      [
+        'Keterangan',
+        'A : Professional & Competent (85-100)',
+        'A- : Emerging Professional (80-<85)',
+        'B+ : Developing Professional Skills (75-<80)',
+        'B : Developing Professional Skills (70-<75)',
+        'B- : Basic Professional Awareness (65-<70)',
+        'C+ : Basic Professional Awareness (60-<65)',
+        'C : Basic Professional Awareness (55-<60)',
+        'D : Belum Memenuhi (0-<55)',
+        '... : Belum Dinilai / Belum Dibuka',
+      ].join('\n'),
     tandaTangan: /Head of Department/.test(teks) && /Tangerang, /.test(teks),
     alamat: /Jl\. Boulevard Gading Serpong/.test(teks),
     // Hanya logo; tidak ada grafik di kertas.

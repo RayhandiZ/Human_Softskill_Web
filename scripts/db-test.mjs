@@ -1164,7 +1164,8 @@ try {
   const mhs3 = peramban()
   cek('mahasiswa yang layak masuk', (await mhs3('/api/masuk', { metode: 'POST', isi: { email: EMAIL3, password: 'umn12345' } })).status === 200)
 
-  const minta = (p) => p('/api/sertifikat', { metode: 'POST', isi: {} })
+  // Peninjauan cetak (sesudah ditolak atau dicabut) wajib membawa penjelasan mahasiswa sejak 18 Nov 2026.
+  const minta = (p, penjelasan) => p('/api/sertifikat', { metode: 'POST', isi: penjelasan === undefined ? {} : { penjelasan } })
   const putuskanS = (p, isi) => p('/api/sertifikat/keputusan', { metode: 'POST', isi })
   const permintaanNim3 = async (p) => (await p('/api/data')).isi.sertifikat?.find((x) => x.nim === NIM3) ?? null
 
@@ -1176,6 +1177,8 @@ try {
 
   const s1 = await minta(mhs3)
   cek('mahasiswa yang layak meminta akses cetak', s1.status === 200 && /^S-\d+$/.test(s1.isi.id ?? ''), JSON.stringify(s1.isi))
+  const barisS1 = s1.isi.id ? await db.permintaanSertifikat.findUnique({ where: { id: Number(s1.isi.id.slice(2)) } }) : null
+  cek('permintaan pertama tidak wajib berpenjelasan (kolomnya kosong)', barisS1 !== null && barisS1.penjelasan === null)
   cek('permintaan kedua selagi berjalan ditolak (409)', (await minta(mhs3)).status === 409)
   const logMinta = await db.logAktivitas.findMany({ where: { aksi: 'MINTA_SERTIFIKAT', target: { in: ['mahasiswa ' + NIM3, 'mahasiswa ' + NIM] } } })
   cek(
@@ -1242,9 +1245,32 @@ try {
     JSON.stringify(sDitolak),
   )
 
-  const s2 = await minta(mhs3)
+  const tanpaPenjelasan = await minta(mhs3)
+  cek(
+    'peninjauan sesudah ditolak tanpa penjelasan ditolak (400) dan tidak membuat permintaan',
+    tanpaPenjelasan.status === 400 &&
+      /Penjelasan wajib diisi, minimal 10 karakter/.test(tanpaPenjelasan.isi.galat ?? '') &&
+      (await permintaanNim3(mhs3))?.id === s1.isi.id,
+    JSON.stringify(tanpaPenjelasan.isi),
+  )
+  cek('penjelasan kurang dari 10 karakter ditolak (400)', (await minta(mhs3, 'pendek')).status === 400)
+  cek('penjelasan lebih dari 1000 karakter ditolak (400)', (await minta(mhs3, 'x'.repeat(1001))).status === 400)
+  const PENJELASAN_UJI = 'Uji: nilai akhir sudah diperiksa prodi.'
+  const s2 = await minta(mhs3, '  ' + PENJELASAN_UJI + '  ')
   cek('sesudah ditolak mahasiswa boleh meminta lagi', s2.status === 200 && s2.isi.id !== s1.isi.id, JSON.stringify(s2.isi))
   cek('yang dikirim ke layar permintaan terbaru', (await permintaanNim3(mhs3))?.id === s2.isi.id)
+  cek(
+    'penjelasan tersimpan tanpa spasi tepi dan terbaca mahasiswa, admin, dan super admin',
+    (await permintaanNim3(mhs3))?.penjelasan === PENJELASAN_UJI &&
+      (await permintaanNim3(admin))?.penjelasan === PENJELASAN_UJI &&
+      (await permintaanNim3(sa))?.penjelasan === PENJELASAN_UJI,
+  )
+  const logPeninjauan = await db.logAktivitas.findFirst({ where: { aksi: 'MINTA_SERTIFIKAT', target: 'mahasiswa ' + NIM3 }, orderBy: { id: 'desc' } })
+  cek(
+    'penjelasan ikut tercatat di log permintaan',
+    logPeninjauan?.rincian?.permintaan === s2.isi.id && logPeninjauan?.rincian?.penjelasan === PENJELASAN_UJI,
+    JSON.stringify(logPeninjauan?.rincian),
+  )
 
   // Kelayakan dihitung ulang saat memutuskan: satu nilai yang hilang menahan persetujuan.
   const satuNilai = await db.nilai.findFirst({ where: { mahasiswaId: akunUji3.mahasiswa.id } })
@@ -1331,7 +1357,8 @@ try {
     JSON.stringify(logCabutSertifikat?.rincian),
   )
   cek('kedua pembukaan cetak tercatat di log', (await db.logAktivitas.count({ where: { aksi: 'CETAK_SERTIFIKAT', target: 'mahasiswa ' + NIM3 } })) === 2)
-  const s3 = await minta(mhs3)
+  cek('peninjauan sesudah dicabut tanpa penjelasan ditolak (400)', (await minta(mhs3)).status === 400)
+  const s3 = await minta(mhs3, 'Uji: laporan sikap sudah diselesaikan bersama dosen wali.')
   cek('sesudah dicabut mahasiswa boleh meminta lagi', s3.status === 200 && s3.isi.id !== s2.isi.id, JSON.stringify(s3.isi))
   await putuskanS(admin, { id: s3.isi.id, keputusan: 'disarankan', catatan: 'Uji: semua aspek final.' })
   await putuskanS(sa, { id: s3.isi.id, keputusan: 'disetujui' })

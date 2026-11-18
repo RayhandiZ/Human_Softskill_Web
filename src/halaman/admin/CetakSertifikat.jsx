@@ -390,6 +390,7 @@ export function TinjauPermintaan({ p, layak, superAdmin, aktor, onSelesai = () =
 
   return (
     <div className="max-w-3xl space-y-3 text-left">
+      <PenjelasanMahasiswa penjelasan={p.penjelasan} />
       {superAdmin ? <RekomendasiAdmin lapis1={p.lapis1} /> : null}
       <p className="text-[13.5px] leading-relaxed text-ink">
         {t(
@@ -442,6 +443,21 @@ export function TinjauPermintaan({ p, layak, superAdmin, aktor, onSelesai = () =
           {t(superAdmin ? 'Tolak' : 'Teruskan: tidak disarankan')}
         </button>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Penjelasan mahasiswa saat mengajukan peninjauan cetak sesudah ditolak atau dicabut (wajib sejak 18 Nov 2026), dibaca
+ * admin dan Super Admin sebelum memutuskan. Permintaan pertama tidak berpenjelasan, jadi kotak ini tidak muncul.
+ */
+function PenjelasanMahasiswa({ penjelasan }) {
+  const t = useTeks()
+  if (!penjelasan) return null
+  return (
+    <div className="rounded-xl border border-line bg-surface px-4 py-3">
+      <p className="text-[13.5px] font-bold text-ink">{t('Penjelasan mahasiswa (pengajuan peninjauan cetak)')}</p>
+      <p className="mt-1 whitespace-pre-line text-[13.5px] leading-relaxed text-ink">{'“' + penjelasan + '”'}</p>
     </div>
   )
 }

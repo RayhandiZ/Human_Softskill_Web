@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { IconAlert, IconChat, IconCheck, IconClock, IconPrint, IconX } from '../../components/Icons'
+import { IconAlert, IconCheck, IconClock, IconPrint, IconX } from '../../components/Icons'
 import { CatatanKaki, StatusTeks } from '../../components/Ui'
 import { kelayakanSertifikat } from '../../lib/rules'
 import { hurufMutu } from '../../lib/scoring'
@@ -8,8 +8,6 @@ import { catatCetakSertifikat, mintaSertifikat, segarkanData, sertifikatMilik, u
 import { keadaanSertifikat } from '../../lib/duaLapis'
 import { useBahasa } from '../../lib/bahasa'
 import { boleh } from '../../lib/wewenang'
-import { tautanWhatsapp } from '../../lib/layanan'
-import { tanggalPendek } from '../../lib/tanggal'
 import { useStudent } from './StudentLayout'
 import LembarSertifikat from './LembarSertifikat'
 
@@ -23,9 +21,11 @@ import LembarSertifikat from './LembarSertifikat'
    Dulu keduanya bercampur, jadi akses yang dicabut terbaca bertentangan dengan syarat yang semuanya tercentang.
    Selama ditinjau dan sesudah siap, kartu izin hanya memuat statusnya: "Sedang ditinjau", lalu "Siap dicetak" beserta
    tombol cetak (permintaan pemilik produk, 9 Nov 2026). Rincian hanya untuk yang ditolak atau dicabut, karena di sana
-   mahasiswa perlu alasannya. Sejak 12 Nov 2026 yang dicabut hanya memuat alasan dan tombol Ajukan peninjauan akses: tanpa
-   siapa dan kapan dicabut, tanpa "Yang perlu dilakukan", tanpa tombol Hubungi Kemahasiswaan, dan tanpa catatan di bawah
-   kartu. */
+   mahasiswa perlu alasannya. Keduanya hanya memuat alasan dan tombol Ajukan peninjauan cetak (dicabut sejak 12 Nov 2026,
+   ditolak sejak 18 Nov 2026): tanpa siapa dan kapan diputuskan, tanpa "Yang perlu dilakukan", tanpa tombol Hubungi
+   Kemahasiswaan, dan tanpa catatan di bawah kartu. Sejak 18 Nov 2026 tombol itu membuka isian penjelasan yang wajib
+   (minimal 10 karakter), dikirim lewat Kirim pengajuan atau ditutup lewat Batal; penjelasannya dibaca admin
+   Kemahasiswaan serta Super Admin saat meninjau. */
 
 const JUDUL_IZIN = {
   belum_layak: 'Belum bisa diminta',
@@ -42,13 +42,13 @@ const KALIMAT_IZIN = {
   bisa_diminta: 'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.',
 }
 
-// Catatan di bawah kartu saat belum bisa diminta, belum diminta, atau ditolak. Kartu yang dicabut tidak memakainya.
+// Catatan di bawah kartu saat belum bisa diminta atau belum diminta. Kartu yang ditolak atau dicabut tidak memakainya.
 const CATATAN_CETAK =
   'Setelah akses disetujui, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.'
 
 export default function Sertifikat() {
   useStore()
-  const { t: teks, bahasa } = useBahasa()
+  const { t: teks } = useBahasa()
   const student = useStudent()
   const k = kelayakanSertifikat(student)
   const t = k.transkrip
@@ -67,12 +67,36 @@ export default function Sertifikat() {
   const [sibuk, setSibuk] = useState(false)
   const [galat, setGalat] = useState('')
   const [mencetak, setMencetak] = useState(false)
+  const [penjelasan, setPenjelasan] = useState('')
+  // Isian penjelasan peninjauan cetak baru muncul setelah tombol Ajukan peninjauan cetak diklik (18 Nov 2026).
+  const [formPeninjauan, setFormPeninjauan] = useState(false)
+  const tombolPeninjauan = useRef(null)
+
+  function bukaFormPeninjauan() {
+    setGalat('')
+    setFormPeninjauan(true)
+  }
+
+  // Batal menutup isiannya dan mengembalikan fokus ke tombol yang membukanya.
+  function tutupFormPeninjauan() {
+    setGalat('')
+    setPenjelasan('')
+    flushSync(() => setFormPeninjauan(false))
+    tombolPeninjauan.current?.focus()
+  }
 
   async function minta() {
-    setSibuk(true)
     setGalat('')
+    // Pengajuan peninjauan cetak (sesudah ditolak atau dicabut) wajib berpenjelasan; server memeriksanya lagi.
+    if (peringatan && penjelasan.trim().length < 10) {
+      setGalat(teks('Penjelasan wajib diisi, minimal 10 karakter, supaya Kemahasiswaan tahu kenapa kamu mengajukan peninjauan cetak.'))
+      return
+    }
+    setSibuk(true)
     try {
-      await mintaSertifikat({ student })
+      await mintaSertifikat({ student, ...(peringatan ? { penjelasan: penjelasan.trim() } : {}) })
+      setPenjelasan('')
+      setFormPeninjauan(false)
     } catch (e) {
       setGalat(teks(e.message))
     } finally {
@@ -149,19 +173,15 @@ export default function Sertifikat() {
             </div>
           </div>
 
-          {/* Dicabut: hanya alasannya (12 Nov 2026); siapa yang mencabut dan "Yang perlu dilakukan" tidak ditampilkan. */}
-          {keadaan === 'dicabut' ? (
-            <RincianAkses baris={[['Alasan', permintaan?.dicabut?.alasan || teks('Alasannya belum dicatat.')]]} />
-          ) : null}
-
-          {keadaan === 'ditolak' ? (
+          {/* Ditolak atau dicabut: hanya alasannya (dicabut sejak 12 Nov, ditolak sejak 18 Nov 2026); siapa yang
+              memutuskan dan "Yang perlu dilakukan" tidak ditampilkan. */}
+          {peringatan ? (
             <RincianAkses
               baris={[
-                ['Alasan', permintaan?.ditolak?.catatan || teks('Alasannya belum dicatat.')],
-                ['Ditolak oleh', jejak(permintaan?.ditolak, bahasa)],
                 [
-                  'Yang perlu dilakukan',
-                  teks('Rincian langkahnya belum tersedia. Hubungi Kemahasiswaan untuk meminta penjelasan. Bila sudah sesuai, minta akses cetak lagi.'),
+                  'Alasan',
+                  (keadaan === 'ditolak' ? permintaan?.ditolak?.catatan : permintaan?.dicabut?.alasan) ||
+                    teks('Alasannya belum dicatat.'),
                 ],
               ]}
             />
@@ -174,19 +194,49 @@ export default function Sertifikat() {
             </p>
           ) : null}
 
-          {/* Selama ditinjau tidak ada tombol sama sekali; tombol cetak baru muncul saat siap. */}
-          {ditinjau ? null : (
-            <div className="mt-4 flex flex-wrap items-center gap-2.5">
-              {bisaMinta && !permintaanDitutup ? (
+          {/* Pengajuan peninjauan cetak (18 Nov 2026): isian penjelasan yang wajib baru muncul setelah tombol Ajukan
+              peninjauan cetak diklik, lalu dikirim dengan Kirim pengajuan atau ditutup dengan Batal. Penjelasannya
+              dibaca admin Kemahasiswaan dan Super Admin. Selama ditinjau tidak ada tombol sama sekali; tombol cetak
+              baru muncul saat siap. */}
+          {formPeninjauan && peringatan && !permintaanDitutup ? (
+            <div className="mt-4 space-y-3">
+              <label htmlFor="penjelasan-peninjauan" className="block">
+                <span className="mb-1.5 block text-[14px] font-bold text-ink">{teks('Penjelasan pengajuan')}</span>
+                <textarea
+                  id="penjelasan-peninjauan"
+                  className="field min-h-[84px] !py-2.5"
+                  maxLength={1000}
+                  autoFocus
+                  value={penjelasan}
+                  onChange={(e) => setPenjelasan(e.target.value)}
+                  aria-describedby="penjelasan-peninjauan-bantuan"
+                />
+                <span id="penjelasan-peninjauan-bantuan" className="mt-1.5 block text-[13px] leading-relaxed text-ink-2">
+                  {teks('Jelaskan kenapa kamu mengajukan peninjauan cetak, minimal 10 karakter. Penjelasan ini dibaca admin Kemahasiswaan dan Super Admin.')}
+                </span>
+              </label>
+              <div className="flex flex-wrap items-center gap-2.5">
                 <button type="button" onClick={minta} disabled={sibuk} className="btn-primary inline-flex min-h-[44px] items-center gap-2">
                   <IconCheck size={17} />
-                  {teks(
-                    keadaan === 'dicabut'
-                      ? 'Ajukan peninjauan akses'
-                      : keadaan === 'ditolak'
-                        ? 'Minta akses cetak lagi'
-                        : 'Minta akses cetak',
-                  )}
+                  {teks('Kirim pengajuan')}
+                </button>
+                <button type="button" onClick={tutupFormPeninjauan} disabled={sibuk} className="btn-ghost min-h-[44px]">
+                  {teks('Batal')}
+                </button>
+              </div>
+            </div>
+          ) : ditinjau ? null : (
+            <div className="mt-4 flex flex-wrap items-center gap-2.5">
+              {bisaMinta && !permintaanDitutup ? (
+                <button
+                  ref={peringatan ? tombolPeninjauan : undefined}
+                  type="button"
+                  onClick={peringatan ? bukaFormPeninjauan : minta}
+                  disabled={sibuk}
+                  className="btn-primary inline-flex min-h-[44px] items-center gap-2"
+                >
+                  <IconCheck size={17} />
+                  {teks(peringatan ? 'Ajukan peninjauan cetak' : 'Minta akses cetak')}
                 </button>
               ) : null}
               {bolehCetak ? (
@@ -194,23 +244,6 @@ export default function Sertifikat() {
                   <IconPrint size={17} />
                   {teks('Cetak / Simpan PDF')}
                 </button>
-              ) : null}
-              {/* Hanya untuk yang ditolak; yang dicabut cukup tombol Ajukan peninjauan akses (12 Nov 2026). */}
-              {keadaan === 'ditolak' ? (
-                <a
-                  href={tautanWhatsapp(
-                    teks('Halo, saya {nama} (NIM {nim}). Saya ingin meminta penjelasan soal akses cetak sertifikat VIBE saya.', {
-                      nama: student.name,
-                      nim: student.nim,
-                    }),
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-ghost inline-flex min-h-[44px] items-center gap-2"
-                >
-                  <IconChat size={17} />
-                  {teks('Hubungi Kemahasiswaan')}
-                </a>
               ) : null}
             </div>
           )}
@@ -225,7 +258,7 @@ export default function Sertifikat() {
             </p>
           ) : null}
 
-          {ditinjau || bolehCetak || keadaan === 'dicabut' ? null : <CatatanKaki>{teks(CATATAN_CETAK)}</CatatanKaki>}
+          {ditinjau || bolehCetak || peringatan ? null : <CatatanKaki>{teks(CATATAN_CETAK)}</CatatanKaki>}
         </section>
 
         {/* --------------------------- kelayakan akademik --------------------------- */}
@@ -262,11 +295,6 @@ export default function Sertifikat() {
   )
 }
 
-/** "Biro Kemahasiswaan, 25 Okt 2026" dari jejak keputusan { oleh, tanggal }. */
-function jejak(keputusan, bahasa) {
-  return [keputusan?.oleh, tanggalPendek(keputusan?.tanggal, bahasa)].filter(Boolean).join(', ')
-}
-
 function TandaIzin({ keadaan }) {
   const Ikon =
     keadaan === 'ditolak' || keadaan === 'dicabut'
@@ -289,7 +317,7 @@ function TandaIzin({ keadaan }) {
   )
 }
 
-/** Baris berlabel di bawah judul status: alasan, siapa, tanggal, dan apa yang perlu dilakukan. `baris`: [kunci kamus label, isi]. */
+/** Baris berlabel di bawah judul status yang ditolak atau dicabut (kini hanya Alasan). `baris`: [kunci kamus label, isi]. */
 function RincianAkses({ baris }) {
   const { t: teks } = useBahasa()
   return (

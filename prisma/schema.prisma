@@ -359,6 +359,7 @@ model PermintaanSertifikat {     // mahasiswa yang layak meminta akses cetak; ad
   mahasiswaId Int
   status      StatusSertifikat @default(MENUNGGU_ADMIN)
   diajukan    DateTime         @default(now())
+  penjelasan  String?          @db.Text     // pengajuan peninjauan cetak sesudah ditolak/dicabut: penjelasan mahasiswa, dibaca admin & super admin
   adminOleh   Int?                          // lapis 1: admin yang meneruskan
   adminPada   DateTime?
   adminSaran  Boolean?                      // rekomendasi admin: true disarankan, false tidak disarankan

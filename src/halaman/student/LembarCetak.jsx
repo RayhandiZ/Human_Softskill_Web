@@ -1,6 +1,6 @@
 import { IconLogo } from '../../components/Icons'
 import { CONFIG } from '../../lib/config'
-import { BELUM_MEMENUHI, RUBRIK, hurufMutu } from '../../lib/scoring'
+import { RUBRIK, hurufMutu, tulisRentang } from '../../lib/scoring'
 import { useBahasa } from '../../lib/bahasa'
 
 // Lembar resmi khusus kertas; lihat README.md › Cetak.
@@ -26,7 +26,7 @@ export default function LembarCetak({ student, transkrip: t }) {
     month: 'long',
     year: 'numeric',
   })
-  const predikat = (nilai) => (nilai == null ? BELUM : (hurufMutu(nilai)?.huruf ?? teks('Belum Memenuhi')))
+  const predikat = (nilai) => (nilai == null ? BELUM : hurufMutu(nilai).huruf)
   const belumDinilai = t.akhir.aspekTotal - t.akhir.aspekDinilai
 
   return (
@@ -111,20 +111,14 @@ export default function LembarCetak({ student, transkrip: t }) {
         </div>
 
         <div className="w-[360px] border border-black">
-          <p className="border-b border-black py-1 text-center font-bold uppercase">{teks('Keterangan')}</p>
-          <div className="grid grid-cols-[auto_auto_1fr] gap-x-2 gap-y-0.5 px-2 py-1.5">
+          <p className="border-b border-black py-1 text-center font-bold">{teks('Keterangan')}</p>
+          {/* Satu baris per predikat seperti contoh pengguna 17 Nov 2026 (src/lib/scoring.js › RUBRIK); baris terakhir
+              menjelaskan tanda "..." (R2). */}
+          <div className="space-y-0.5 px-2 py-1.5 font-bold">
             {RUBRIK.map((r) => (
-              <Baris
-                key={r.huruf}
-                label={teks('Predikat') + ' ' + r.huruf}
-                isi={teks(r.label) + ' (' + r.min + '-' + r.max + ')'}
-              />
+              <p key={r.huruf}>{r.huruf + ' : ' + teks(r.label) + ' (' + tulisRentang(r.min, r.max, '-') + ')'}</p>
             ))}
-            <Baris
-              label={teks(BELUM_MEMENUHI.label)}
-              isi={teks('di bawah {n}', { n: RUBRIK[RUBRIK.length - 1].min })}
-            />
-            <Baris label={BELUM} isi={teks('belum dinilai atau belum dibuka')} />
+            <p>{BELUM + ' : ' + teks('Belum Dinilai / Belum Dibuka')}</p>
           </div>
         </div>
       </div>

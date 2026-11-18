@@ -266,17 +266,24 @@ export function Badge({ tone = 'neutral', icon: Icon, children, className = '' }
   )
 }
 
-const TONE_HURUF = { A: 'good', B: 'brand', C: 'warning', D: 'serious' }
+/* Nada lencana mengikuti kategori kompetensi (src/lib/scoring.js › RUBRIK), bukan tiap huruf: B+ dan B sama-sama
+   Developing Professional Skills. */
+const TONE_KATEGORI = {
+  'Professional & Competent': 'good',
+  'Emerging Professional': 'brand',
+  'Developing Professional Skills': 'warning',
+  'Basic Professional Awareness': 'serious',
+  'Belum Memenuhi': 'critical',
+}
 
 export function HurufBadge({ nilai, sementara = false, panjang = false }) {
   const t = useTeks()
   if (nilai == null) return <Badge tone="neutral">{t('Belum dinilai')}</Badge>
   const r = hurufMutu(nilai)
-  const tone = r.huruf ? TONE_HURUF[r.huruf] : 'critical'
   return (
-    <Badge tone={tone}>
-      {r.huruf ? r.huruf : t('Belum Memenuhi')}
-      {panjang && r.huruf ? ' · ' + t(r.label) : ''}
+    <Badge tone={TONE_KATEGORI[r.label]}>
+      {r.huruf}
+      {panjang ? ' · ' + t(r.label) : ''}
       {sementara ? ' · ' + t('sementara') : ''}
     </Badge>
   )
@@ -288,8 +295,8 @@ export function PredikatTeks({ nilai, panjang = false }) {
   const r = hurufMutu(nilai)
   return (
     <span className="text-[14px] font-bold text-ink">
-      {r.huruf ? r.huruf : t('Belum Memenuhi')}
-      {panjang && r.huruf ? <span className="font-semibold text-ink-2">{' · ' + t(r.label)}</span> : null}
+      {r.huruf}
+      {panjang ? <span className="font-semibold text-ink-2">{' · ' + t(r.label)}</span> : null}
     </span>
   )
 }

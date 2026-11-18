@@ -236,6 +236,8 @@ function susunSertifikat(p, nama, { untukMahasiswa = false } = {}) {
     nama: p.mahasiswa.nama,
     status: kecil(p.status),
     diajukan: tanggalWib(p.diajukan),
+    // Penjelasan mahasiswa saat mengajukan peninjauan cetak (sesudah ditolak atau dicabut); permintaan pertama tanpa ini.
+    penjelasan: p.penjelasan || null,
     lapis1: p.adminOleh
       ? { ...jejak(p.adminOleh, p.adminPada), ...(untukMahasiswa ? {} : { saran, catatan: p.adminCatatan ?? '' }) }
       : null,

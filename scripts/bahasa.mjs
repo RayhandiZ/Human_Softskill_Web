@@ -150,7 +150,7 @@ const DARI_DATA = [
   'Setelah akses dipulihkan, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.',
   'Setelah akses disetujui, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.',
   'Alasan', 'Dicabut oleh', 'Ditolak oleh', 'Yang perlu dilakukan',
-  'Ajukan peninjauan akses', 'Minta akses cetak lagi', 'Minta akses cetak', 'Oleh admin Kemahasiswaan', 'Sedang ditinjau',
+  'Ajukan peninjauan cetak', 'Minta akses cetak lagi', 'Minta akses cetak', 'Oleh admin Kemahasiswaan', 'Sedang ditinjau',
   /* Kartu nilai akhir mahasiswa: seri grafik dan judul ubin, lalu pilihan urutan Riwayat. */
   'Rata-rata Anda', 'Nilai semester', 'Aspek final', 'Aspek dinilai',
   'Terbaru', 'Terlama', 'Ditetapkan oleh {oleh}', 'Dinilai oleh {oleh}',

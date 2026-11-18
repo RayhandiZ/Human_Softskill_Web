@@ -24,19 +24,35 @@ async function kelayakan(mahasiswaId) {
 
 const sebabTidakLayak = (k) => k.gagal.map((s) => s.ringkas).filter(Boolean)[0] ?? 'syaratnya belum terpenuhi'
 
-/** Mahasiswa meminta akses cetak. Satu permintaan yang berjalan per mahasiswa; yang ditolak boleh diajukan lagi. */
-export async function mintaSertifikat(pengguna) {
+// Panjang maksimal penjelasan pengajuan peninjauan cetak; sama dengan maxLength isiannya di halaman Sertifikat.
+const PENJELASAN_MAKS = 1000
+
+/**
+ * Mahasiswa meminta akses cetak. Satu permintaan yang berjalan per mahasiswa; yang ditolak atau dicabut boleh diajukan
+ * lagi sebagai peninjauan cetak, dan sejak 18 Nov 2026 peninjauan itu wajib disertai `penjelasan` mahasiswa (minimal
+ * ALASAN_MIN karakter) yang dibaca admin dan super admin. Permintaan pertama tidak perlu penjelasan.
+ */
+export async function mintaSertifikat(pengguna, { penjelasan } = {}) {
   const { m, k } = await kelayakan(pengguna.mahasiswa.id)
   if (!k.layak) throw new GalatApi('Sertifikat belum bisa diminta: ' + sebabTidakLayak(k) + '.', 409)
   const ada = await db.permintaanSertifikat.findFirst({ where: { mahasiswaId: m.id, status: { in: BERJALAN } } })
   if (ada) throw new GalatApi('Permintaan akses cetak Anda sudah ada.', 409)
+  // Tidak ada yang berjalan, jadi permintaan sebelumnya (bila ada) pasti ditolak atau dicabut: ini peninjauan cetak.
+  const sebelumnya = await db.permintaanSertifikat.findFirst({ where: { mahasiswaId: m.id }, select: { id: true } })
+  const teks = String(penjelasan ?? '').trim()
+  if (sebelumnya && teks.length < ALASAN_MIN) {
+    throw new GalatApi(
+      'Penjelasan wajib diisi, minimal ' + ALASAN_MIN + ' karakter, supaya Kemahasiswaan tahu kenapa kamu mengajukan peninjauan cetak.',
+    )
+  }
+  if (teks.length > PENJELASAN_MAKS) throw new GalatApi('Penjelasan terlalu panjang, maksimal ' + PENJELASAN_MAKS + ' karakter.')
   const baru = await db.$transaction(async (tx) => {
-    const p = await tx.permintaanSertifikat.create({ data: { mahasiswaId: m.id } })
+    const p = await tx.permintaanSertifikat.create({ data: { mahasiswaId: m.id, ...(teks ? { penjelasan: teks } : {}) } })
     await catatLog(tx, {
       aktorId: pengguna.id,
       aksi: 'MINTA_SERTIFIKAT',
       target: 'mahasiswa ' + m.nim,
-      rincian: { permintaan: 'S-' + p.id, nama: m.nama, nilaiAkhir: k.transkrip.akhir.nilai },
+      rincian: { permintaan: 'S-' + p.id, nama: m.nama, nilaiAkhir: k.transkrip.akhir.nilai, ...(teks ? { penjelasan: teks } : {}) },
     })
     return p
   })

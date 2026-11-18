@@ -1,7 +1,7 @@
 import { CONFIG, subscribeConfig } from './config.js'
 import { AREA, CLUSTER, getAspekList, getKomponen, isiKurikulum } from './curriculum.js'
 import { pasangPadananData } from './kamusData.js'
-import { hitungTranskrip, hurufMutu } from './scoring.js'
+import { RUBRIK, hitungTranskrip, hurufMutu } from './scoring.js'
 import { pasangWewenang } from './wewenang.js'
 
 /* Data master dari basis data, data isian mulai kosong; lihat README.md › Data dan store. */
@@ -393,12 +393,9 @@ const rerataAman = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b,
 export function ringkas(rows) {
   const akhir = rows.map((s) => transkripOf(s).akhir)
   const bernilai = akhir.filter((a) => a.nilai != null)
-  const huruf = { A: 0, B: 0, C: 0, D: 0, belum: 0 }
-  for (const a of bernilai) {
-    const h = hurufMutu(a.nilai)
-    if (h?.huruf) huruf[h.huruf]++
-    else huruf.belum++
-  }
+  // Jumlah mahasiswa per huruf (A, A-, …, D; lihat RUBRIK); setiap nilai pasti punya huruf.
+  const huruf = Object.fromEntries(RUBRIK.map((r) => [r.huruf, 0]))
+  for (const a of bernilai) huruf[hurufMutu(a.nilai).huruf]++
   return {
     total: rows.length,
     rata: rerataAman(bernilai.map((a) => a.nilai)),

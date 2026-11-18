@@ -548,7 +548,9 @@ Tiap keputusan tercatat di Log Aktivitas: `TERUSKAN_KOREKSI`, `SETUJUI_KOREKSI` 
 `catatan` admin), serta `SETUJUI_SERTIFIKAT` dan `TOLAK_SERTIFIKAT` (lapis 2).
 
 Satu komponen hanya boleh punya satu pengajuan koreksi yang berjalan, dan satu mahasiswa satu permintaan akses
-cetak yang berjalan atau sudah siap dicetak (409); yang ditolak atau dicabut boleh diajukan lagi.
+cetak yang berjalan atau sudah siap dicetak (409); yang ditolak atau dicabut boleh diajukan lagi sebagai peninjauan cetak,
+dan sejak 18 Nov 2026 wajib membawa `penjelasan` mahasiswa (minimal 10, maksimal 1000 karakter; tanpa itu 400), yang
+disimpan di `PermintaanSertifikat.penjelasan` dan dibaca admin serta Super Admin. Permintaan pertama tanpa penjelasan.
 
 **Pencabutan.** Akses yang sudah `SIAP_DICETAK` bisa dicabut (`POST /api/sertifikat/cabut`, status `DICABUT`),
 misalnya karena laporan sikap datang sesudah disetujui. Cukup satu orang: admin biasa atau super admin, langsung,
@@ -655,7 +657,7 @@ dari empat sakelar. Sel lain di matriks tetap bacaan, dan peran akun tetap diatu
 | Sakelar (`src/lib/wewenang.js`) | Peran | Pintu yang menolak (403) | Di layar selama ditutup | Yang tetap jalan |
 |---|---|---|---|---|
 | `AJUKAN_KOREKSI` | Mahasiswa | `POST /api/koreksi` | Transkrip: tombol *Ajukan koreksi nilai* diganti keterangan | pengajuan yang sudah masuk tetap diproses admin dan Super Admin |
-| `MINTA_SERTIFIKAT` | Mahasiswa | `POST /api/sertifikat` | Sertifikat: tombol *Minta akses cetak* (juga *lagi* dan *Ajukan peninjauan akses*) diganti keterangan | permintaan yang berjalan tetap diproses; akses yang sudah Siap dicetak tetap bisa dicetak |
+| `MINTA_SERTIFIKAT` | Mahasiswa | `POST /api/sertifikat` | Sertifikat: tombol *Minta akses cetak* (juga *Ajukan peninjauan cetak* beserta isian penjelasannya) diganti keterangan | permintaan yang berjalan tetap diproses; akses yang sudah Siap dicetak tetap bisa dicetak |
 | `UNGGAH_NILAI_DOSEN` | Dosen | `POST /api/nilai/dosen`, termasuk perbaikan untuk angkatan yang sudah disahkan | Unggah Nilai: langkah unduh, unggah, dan periksa diganti keterangan; matriks juga menutup sel perbaikan dosen | riwayat dan tombol *Tarik*; perbaikan yang sudah diajukan tetap diputuskan Super Admin |
 | `BACA_LOG_ADMIN` | Kemahasiswaan | `POST /api/log` untuk admin biasa | menu Log Aktivitas (dan pencarian cepatnya) hilang; `/admin/log` menampilkan keterangan | lonceng pembaruan admin; Super Admin tetap membaca seluruh log |
 
@@ -1557,15 +1559,19 @@ kepadatan itu memang dibutuhkan di sana.
 ### Kenapa donat, dan kenapa warnanya satu hue
 
 Donat dipakai karena tugas datanya memang bagian-terhadap-keseluruhan dengan lima segmen —
-masih di dalam batas aman enam segmen. Donat dua irisan tidak dipakai karena itu sekadar satu
-angka, dan donat untuk membandingkan nilai yang berdekatan juga dihindari; angka pastinya tetap
-tertulis di daftar sebelah kanan dan pada tampilan tabel.
+masih di dalam batas aman enam segmen. Sejak 17 Nov 2026 (lihat Huruf mutu) ada delapan huruf,
+jadi irisannya satu per **kategori kompetensi** (Professional & Competent, Emerging Professional,
+Developing Professional Skills, Basic Professional Awareness, Belum Memenuhi), bukan per huruf;
+huruf anggotanya ditulis di tiap baris ("Huruf B+, B · Developing Professional Skills") dan jumlahnya
+dijumlahkan dari `ringkas()` yang tetap menghitung per huruf. Donat dua irisan tidak
+dipakai karena itu sekadar satu angka, dan donat untuk membandingkan nilai yang berdekatan juga
+dihindari; angka pastinya tetap tertulis di daftar sebelah kanan dan pada tampilan tabel.
 
-Huruf mutu A–D adalah **skala berurutan**, bukan empat kategori setara, jadi warnanya satu hue
-biru bertingkat (`--mutu-a` … `--mutu-d` di `index.css`) — makin gelap makin baik pada latar
+Kategori itu **skala berurutan**, bukan lima kategori setara, jadi empat yang teratas memakai satu
+hue biru bertingkat (`--mutu-a` … `--mutu-d` di `index.css`) — makin gelap makin baik pada latar
 terang, dan dibalik pada latar gelap. Keduanya sudah lolos pemeriksaan ordinal ramp: lightness
-monoton, jarak antarlangkah ≥ 0,06, dan ujung terangnya 2,11:1 terhadap latar. “Belum Memenuhi”
-bukan huruf mutu melainkan status, jadi ia memakai token status merah dan selalu berlabel.
+monoton, jarak antarlangkah ≥ 0,06, dan ujung terangnya 2,11:1 terhadap latar. *Belum Memenuhi*
+(sejak 17 Nov 2026 berhuruf D, di bawah 55) memakai token status merah dan selalu berlabel.
 
 Penyebut persentasenya adalah **jumlah mahasiswa yang sudah punya nilai**, bukan seluruh
 mahasiswa — kalau ada yang belum dinilai sama sekali, jumlahnya disebutkan di bawah grafik
@@ -1770,6 +1776,37 @@ Kini seluruh komponen di `curriculum.js` berstatus `resmi`, termasuk A.3, A.4, B
 C.1 yang dulu draft. Penanda (Draft) dan “skema belum final” tidak muncul lagi, dan saklar ini
 tidak berpengaruh. Saklar sengaja dibiarkan `true` sampai kolom `Komponen.resmi` di basis data
 yang memakai kurikulum dari basis data juga diperbarui; setelah itu setel `false`.
+
+## Huruf mutu
+
+Sejak 17 Nov 2026 predikat mengikuti **contoh kotak Keterangan dari pengguna** (`RUBRIK` di `src/lib/scoring.js`),
+menggantikan A ≥ 90, B ≥ 80, C ≥ 70, D ≥ 60, dan *Belum Memenuhi* tanpa huruf di bawah 60. Huruf A sampai C dan
+rentangnya dari tabel nilai UMN, D mencakup seluruh nilai di bawah 55 (tidak ada huruf E), dan kategori kompetensinya
+dari rubrik VIBE. Kotak *Keterangan* di lembar cetak transkrip menuliskannya satu baris per huruf, misalnya
+`A : Professional & Competent (85-100)`:
+
+| Predikat | Kategori kompetensi | Rentang nilai |
+|---|---|---|
+| A | Professional & Competent | 85–100 |
+| A- | Emerging Professional | 80–<85 |
+| B+ | Developing Professional Skills | 75–<80 |
+| B | Developing Professional Skills | 70–<75 |
+| B- | Basic Professional Awareness | 65–<70 |
+| C+ | Basic Professional Awareness | 60–<65 |
+| C | Basic Professional Awareness | 55–<60 |
+| D | Belum Memenuhi | 0–<55 |
+| ... | Belum Dinilai / Belum Dibuka | – |
+
+- `<85` berarti batas atasnya tidak termasuk. Huruf diberikan dari nilai yang **sudah dibulatkan**, sama dengan angka
+  di layar: 84,6 tampil 85 dan berhuruf A. `hurufMutu()` hanya membaca batas bawah (`min`); `max` hanya untuk menulis
+  rentang (`tulisRentang()`; lembar cetak memakai tanda hubung biasa, `85-100`).
+- Setiap nilai kini punya huruf: di bawah 55 berhuruf D dengan kategori *Belum Memenuhi*. "..." hanya di lembar cetak
+  (R2); di layar nilai yang belum ada tertulis *Belum dinilai*.
+- Angka mutu tabel UMN (4; 3,7; …) tidak disalin dan tidak ditampilkan, karena tidak dipakai rumus apa pun.
+- `AMBANG_SERTIFIKAT` (70) tidak bergantung pada huruf dan tidak diubah, jadi siapa yang lolos tidak berubah: kini
+  setara huruf B ke atas, yaitu Developing Professional Skills ke atas, sama seperti sebelum 17 Nov 2026 (dulu huruf C).
+- Warna lencana (`HurufBadge` di `Ui.jsx`) dan irisan donat mengikuti kategori kompetensi, bukan tiap huruf.
+- Rubrik masih ditulis di kode, belum bisa diatur dari layar.
 
 ## Aturan bobot
 
@@ -2125,7 +2162,7 @@ karena `AuditLog` tidak mendapat baris baru saat batch dibatalkan.
 | `UBAH_DATA_TERKUNCI` | simpan nilai, persetujuan koreksi, atau persetujuan usulan menyentuh data terkunci | alasan, jumlah mahasiswa dan nilai; dari simpan nilai juga isian `SIMPAN_NILAI` di atas |
 | `ROLLBACK_DATA_TERKUNCI` | batch yang menyentuh data terkunci dibatalkan | alasan, jumlah mahasiswa, dan isian `BATALKAN_BATCH` di atas |
 | `AJUKAN_KOREKSI` | mahasiswa mengajukan koreksi nilai (pelakunya mahasiswa) | id pengajuan, komponen, nilai saat diajukan, nilai yang diharapkan, alasan |
-| `MINTA_SERTIFIKAT` | mahasiswa meminta akses cetak sertifikat | id permintaan, nama, nilai akhir saat meminta |
+| `MINTA_SERTIFIKAT` | mahasiswa meminta akses cetak sertifikat | id permintaan, nama, nilai akhir saat meminta, dan penjelasan mahasiswa bila berupa peninjauan cetak (sejak 18 Nov 2026) |
 | `SETUJUI_USULAN`, `TOLAK_USULAN` | super admin memutuskan usulan nilai dosen yang lama | id usulan, dosen, jumlah nilai; disetujui: batch, jumlah yang ditolak sistem, catatan, contoh; ditolak: alasan |
 | `UBAH_PROFIL` | pemilik akun mengubah profilnya | **hanya nama isian** yang berubah (nomor telepon, nomor ponsel, alamat, foto profil) dan apakah fotonya ditambahkan, diganti, atau dihapus; isinya tidak dicatat karena data pribadi dan log tidak bisa dihapus. Menyimpan tanpa perubahan tidak dicatat |
 | `UBAH_PENGUNCIAN` | tanda final/sementara aspek berubah | jumlah perubahan, berapa yang dicabut dari final, sampai 20 contoh |
@@ -2199,17 +2236,21 @@ yang semuanya tercentang:
   diminta, belum diminta, sedang ditinjau (admin atau Super Admin), siap dicetak, ditolak, atau dicabut.
 - **Kelayakan akademik** memuat kelima syarat beserta statusnya.
 
-Ditolak dan dicabut tampil sebagai peringatan padat, tanpa kaca. Yang ditolak memuat judul, *Alasan*, siapa dan kapan,
-*Yang perlu dilakukan*, lalu dua tindakan. Sistem hanya menyimpan alasan, jadi langkah penyelesaiannya tidak dikarang: tertulis
-bahwa rinciannya belum tersedia, dengan **Hubungi Kemahasiswaan** (WhatsApp dengan pesan awal berisi nama dan NIM) sebagai jalur
-meminta penjelasan. Yang dicabut sejak 12 Nov 2026 hanya memuat judul, *Alasan*, dan tombol *Ajukan peninjauan akses*: tanpa
-siapa dan kapan dicabut, tanpa *Yang perlu dilakukan*, tanpa **Hubungi Kemahasiswaan**, dan tanpa catatan di bawah kartu.
-*Ajukan peninjauan akses* sama dengan meminta lagi: permintaannya masuk lewat kedua lapis (`POST /api/sertifikat`), jadi
-sesudahnya tampil *Sedang ditinjau*.
+Ditolak dan dicabut tampil sebagai peringatan padat, tanpa kaca, dan keduanya hanya memuat judul, *Alasan*, dan tombol
+*Ajukan peninjauan cetak* (dicabut sejak 12 Nov 2026, ditolak sejak 18 Nov 2026, permintaan pengguna): tanpa siapa dan kapan
+diputuskan, tanpa *Yang perlu dilakukan*, tanpa **Hubungi Kemahasiswaan**, dan tanpa catatan di bawah kartu. Siapa yang
+menolak atau mencabut tetap tercatat di server dan Log Aktivitas. Mengklik *Ajukan peninjauan cetak* baru memunculkan isian
+*Penjelasan pengajuan* (langsung difokus) dengan tombol *Kirim pengajuan* dan *Batal*; *Batal* menutup dan mengosongkannya,
+lalu fokus kembali ke tombol semula. *Kirim pengajuan* membuat permintaan baru yang masuk lewat kedua lapis
+(`POST /api/sertifikat`), jadi sesudahnya tampil *Sedang ditinjau*. Sejak 18 Nov 2026 penjelasannya wajib, minimal 10 dan
+maksimal 1000 karakter, diperiksa di layar dan di server (kolom `PermintaanSertifikat.penjelasan`, migrasi
+`20261118100000_penjelasan_sertifikat`). Penjelasan itu tampil di atas panel keputusan admin dan Super Admin (*Penjelasan
+mahasiswa*) dan ikut tercatat di log `MINTA_SERTIFIKAT`. Permintaan pertama (*Minta akses cetak*) tetap langsung terkirim
+tanpa penjelasan.
 
 Selama ditinjau dan sesudah disetujui, kartu izin hanya memuat statusnya (permintaan pemilik produk, 9 Nov 2026): *Sedang
 ditinjau*, tanpa tanggal, langkah berikutnya, deretan langkah, catatan, atau tombol, lalu *Siap dicetak* beserta tombol
-**Cetak / Simpan PDF**. Tombol itu hanya ada saat aksesnya disetujui. Saat belum diminta atau ditolak, catatan di
+**Cetak / Simpan PDF**. Tombol itu hanya ada saat aksesnya disetujui. Saat belum bisa diminta atau belum diminta, catatan di
 bawah kartu tetap bersyarat ("Setelah akses disetujui, tombol Cetak / Simpan PDF akan tersedia"). Ubin Sertifikat di Dashboard memakai keadaan yang sama dengan warna bawaan
 kartu, juga saat ditolak atau dicabut; peringatannya di halaman Sertifikat. Kelayakan
 selalu didahulukan: bila nilai berubah dan syaratnya gugur, akses yang sudah disetujui tidak bisa dipakai mencetak.
@@ -2271,8 +2312,8 @@ Aturan tampilan dashboard mahasiswa:
   saja beserta statusnya, lalu apa yang masih ditunggu;
 - **satu angka besar saja** (nilai akhir); angka lain lebih kecil supaya mata tahu harus mulai
   dari mana;
-- sejak 26 Okt 2026 ubin nilai akhir hanya memuat angkanya, "Grade C" di bawahnya (atau *Belum Memenuhi* di bawah
-  ambang huruf mutu terendah), dan grafik perkembangan, atas permintaan pengguna; status (sementara atau final) dan
+- sejak 26 Okt 2026 ubin nilai akhir hanya memuat angkanya, "Grade B+" di bawahnya (sejak 17 Nov 2026 setiap nilai
+  punya huruf, lihat Huruf mutu), dan grafik perkembangan, atas permintaan pengguna; status (sementara atau final) dan
   dasar hitungnya tetap ada di Transkrip (R3, diperiksa `npm run assert`). Tautan kecil *Cara hitung* (penjelasan singkat
   nilai akhir, nilai semester, dan nilai aspek, ada sejak 4 Nov 2026) dihapus pada 15 Nov 2026 atas permintaan pemilik
   produk; `npm run smoke` memeriksa bahwa ia tidak muncul lagi;
@@ -2812,7 +2853,7 @@ Klik, seret, dan gerak lensanya milik pustaka. Yang ditambahkan di sini, dan mud
 | — | Panel dosen: Beranda (pantau) dan Unggah Nilai (rekap Excel, langsung tersimpan) | selesai, sesuai rapat 24 Okt 2026; Penilaian tiga langkah dan Riwayat Pengiriman dihapus (lihat Panel Dosen) |
 | — | Hak peran rapat 24 Okt 2026: admin hanya melihat nilai, tanda final dan bobot dari admin diajukan, data master hanya super admin | selesai (lihat Hak peran) |
 | — | Persetujuan dua lapis rapat 24 Okt 2026: pengajuan ubah nilai dan akses cetak sertifikat, beserta pencabutan akses cetak dan catatan cetak | selesai (lihat Persetujuan dua lapis) |
-| — | Basis data MySQL: 28 tabel, 23 migrasi, 42 pintu API, sesi cookie | selesai |
+| — | Basis data MySQL: 29 tabel, 25 migrasi, 44 pintu API, sesi cookie | selesai |
 | — | Kerangka dan susunan panel dosen, Kemahasiswaan, dan Super Admin mengikuti video referensi; warnanya tetap navy dan toska (lihat Panel kerja) | selesai 3 Nov 2026 |
 | — | Cek ulang semua halaman rapat 24 Okt 2026: bahasa Inggris, tampilan HP 360px sampai 1536px, kontras terang dan gelap, papan ketik | selesai 3 Nov 2026 |
 | — | Bahasa Inggris untuk isi kurikulum, pesan server, serta nama fakultas, prodi, dan angkatan (rapat 24 Okt 2026, keputusan 3 Nov 2026) | selesai; draf terjemahan isi kurikulum dan nama prodi menunggu diperiksa tim (lihat Kamus dan terjemahan) |

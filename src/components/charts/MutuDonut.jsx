@@ -1,9 +1,18 @@
 import { Cell, Pie, PieChart, Tooltip } from 'recharts'
 import ChartFrame from './ChartFrame'
-import { RUBRIK } from '../../lib/scoring'
+import { KATEGORI_KOMPETENSI, RUBRIK, tulisRentang } from '../../lib/scoring'
 import { useTeks } from '../../lib/bahasa'
 
-const WARNA = { A: 'var(--mutu-a)', B: 'var(--mutu-b)', C: 'var(--mutu-c)', D: 'var(--mutu-d)' }
+/* Satu irisan per kategori kompetensi, bukan per huruf: delapan huruf melewati batas aman enam irisan. Empat kategori
+   teratas memakai skala biru berurutan; Belum Memenuhi (huruf D, di bawah 55) memakai token merah dan selalu berlabel.
+   Lihat README.md › Kenapa donat. */
+const WARNA = {
+  'Professional & Competent': 'var(--mutu-a)',
+  'Emerging Professional': 'var(--mutu-b)',
+  'Developing Professional Skills': 'var(--mutu-c)',
+  'Basic Professional Awareness': 'var(--mutu-d)',
+  'Belum Memenuhi': 'var(--critical)',
+}
 
 function Keterangan({ active, payload, total }) {
   if (!active || !payload?.length) return null
@@ -20,24 +29,18 @@ function Keterangan({ active, payload, total }) {
 
 export default function MutuDonut({ huruf, totalMahasiswa, height = 260 }) {
   const t = useTeks()
-  const data = [
-    ...RUBRIK.map((r) => ({
-      kunci: r.huruf,
-      judul: 'Huruf ' + r.huruf,
-      rincian: r.label,
-      rentang: r.min + '–' + r.max,
-      jumlah: huruf[r.huruf] ?? 0,
-      warna: WARNA[r.huruf],
-    })),
-    {
-      kunci: 'belum',
-      judul: 'Belum Memenuhi',
-      rincian: 'Bukan huruf mutu, capaian di bawah 60',
-      rentang: '0–59',
-      jumlah: huruf.belum ?? 0,
-      warna: 'var(--critical)',
-    },
-  ].filter((d) => d.jumlah > 0)
+  const data = KATEGORI_KOMPETENSI.map((kategori) => {
+    // RUBRIK urut dari yang tertinggi: anggota pertama memegang batas atas, yang terakhir batas bawah.
+    const anggota = RUBRIK.filter((r) => r.label === kategori)
+    return {
+      kunci: kategori,
+      judul: t('Huruf {daftar}', { daftar: anggota.map((r) => r.huruf).join(', ') }),
+      rincian: t(kategori),
+      rentang: tulisRentang(anggota[anggota.length - 1].min, anggota[0].max),
+      jumlah: anggota.reduce((n, r) => n + (huruf[r.huruf] ?? 0), 0),
+      warna: WARNA[kategori],
+    }
+  }).filter((d) => d.jumlah > 0)
 
   /* Penyebut = jumlah seluruh irisan, bukan jumlah mahasiswa; lihat README.md › Kenapa donat. */
   const total = data.reduce((a, d) => a + d.jumlah, 0)

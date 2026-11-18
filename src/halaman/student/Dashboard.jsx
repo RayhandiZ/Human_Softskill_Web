@@ -768,8 +768,8 @@ export default function Dashboard() {
         <div className="kartu flex flex-col px-6 py-5 sm:px-7">
           <p className="text-[14px] font-semibold text-ink-2">{teks('Nilai akhir')}</p>
 
-          {/* Angka dan grade-nya saja (permintaan 26 Okt 2026); status dan dasar hitungnya ada di Transkrip. Di bawah
-              ambang huruf mutu terendah tidak ada huruf, jadi labelnya yang ditulis. Tautan "Cara hitung" di bawah grade
+          {/* Angka dan grade-nya saja (permintaan 26 Okt 2026); status dan dasar hitungnya ada di Transkrip. Sejak
+              17 Nov 2026 setiap nilai punya huruf, D di bawah 55. Tautan "Cara hitung" di bawah grade
               dihapus 15 Nov 2026 atas permintaan pemilik produk. */}
           <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
             <div className="sm:shrink-0">
@@ -778,7 +778,7 @@ export default function Dashboard() {
               </p>
               {mutu ? (
                 <p className="mt-2 text-[15px] font-bold text-ink">
-                  {mutu.huruf ? teks('Grade {huruf}', { huruf: mutu.huruf }) : teks(mutu.label)}
+                  {teks('Grade {huruf}', { huruf: mutu.huruf })}
                 </p>
               ) : null}
             </div>

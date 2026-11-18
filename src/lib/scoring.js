@@ -13,54 +13,42 @@ import {
 
 /* ------------------------------ rubrik huruf ------------------------------ */
 
+/* Predikat mengikuti contoh kotak Keterangan dari pengguna (17 Nov 2026), menggantikan A ≥ 90, B ≥ 80, C ≥ 70,
+   D ≥ 60, dan "Belum Memenuhi" tanpa huruf di bawah 60. Huruf A sampai C dan rentangnya dari tabel nilai UMN; D
+   mencakup seluruh nilai di bawah 55 (tidak ada huruf E). Kategori kompetensinya dari rubrik VIBE: A Professional &
+   Competent, A- Emerging Professional, B+ dan B Developing Professional Skills, B- sampai C Basic Professional
+   Awareness, D Belum Memenuhi. Urut dari yang tertinggi; hurufMutu hanya membaca `min`. `max` hanya untuk menulis
+   rentang dan TIDAK termasuk (A- = 80–<85), kecuali 100 pada huruf A. Nilai yang diberi huruf selalu sudah
+   dibulatkan (bulat), jadi 84,6 tampil 85 dan berhuruf A, sama dengan angka yang dilihat mahasiswa. Angka mutu tabel
+   UMN (4; 3,7; ...) tidak disalin karena tidak dipakai di mana pun. */
 export const RUBRIK = [
-  {
-    huruf: 'A',
-    min: 90,
-    max: 100,
-    label: 'Professional & Competent',
-    deskripsi: 'Profesionalisme tinggi; siap menghadapi tantangan kerja secara mandiri.',
-    warna: 'var(--good)',
-  },
-  {
-    huruf: 'B',
-    min: 80,
-    max: 89,
-    label: 'Emerging Professional',
-    deskripsi: 'Kapabilitas solid; masih mengembangkan konsistensi, inisiatif, dan pengambilan keputusan.',
-    warna: 'var(--brand-ink)',
-  },
-  {
-    huruf: 'C',
-    min: 70,
-    max: 79,
-    label: 'Developing Professional Skills',
-    deskripsi: 'Kemampuan dasar sudah ada; masih memerlukan bimbingan dan coaching.',
-    warna: 'var(--warning)',
-  },
-  {
-    huruf: 'D',
-    min: 60,
-    max: 69,
-    label: 'Basic Professional Awareness',
-    deskripsi: 'Memahami nilai dasar profesionalisme; penerapan masih terbatas.',
-    warna: 'var(--serious)',
-  },
+  { huruf: 'A', min: 85, max: 100, label: 'Professional & Competent' },
+  { huruf: 'A-', min: 80, max: 85, label: 'Emerging Professional' },
+  { huruf: 'B+', min: 75, max: 80, label: 'Developing Professional Skills' },
+  { huruf: 'B', min: 70, max: 75, label: 'Developing Professional Skills' },
+  { huruf: 'B-', min: 65, max: 70, label: 'Basic Professional Awareness' },
+  { huruf: 'C+', min: 60, max: 65, label: 'Basic Professional Awareness' },
+  { huruf: 'C', min: 55, max: 60, label: 'Basic Professional Awareness' },
+  { huruf: 'D', min: 0, max: 55, label: 'Belum Memenuhi' },
 ]
 
-export const BELUM_MEMENUHI = {
-  huruf: null,
-  min: 0,
-  max: 59,
-  label: 'Belum Memenuhi',
-  deskripsi: 'Capaian belum mencapai ambang huruf mutu terendah.',
-  warna: 'var(--critical)',
-}
+/** Lima kategori kompetensi, urut dari yang terbaik; donat sebaran dan warna lencana memakai kelompok ini. */
+export const KATEGORI_KOMPETENSI = [
+  'Professional & Competent',
+  'Emerging Professional',
+  'Developing Professional Skills',
+  'Basic Professional Awareness',
+  'Belum Memenuhi',
+]
 
 export function hurufMutu(nilai) {
   if (nilai == null || Number.isNaN(nilai)) return null
-  return RUBRIK.find((r) => nilai >= r.min) ?? BELUM_MEMENUHI
+  return RUBRIK.find((r) => nilai >= r.min) ?? RUBRIK[RUBRIK.length - 1]
 }
+
+/** Rentang seperti kotak Keterangan: "85–100" bila sampai nilai tertinggi, selain itu "80–<85" (batas atas tidak
+    termasuk). Lembar cetak memakai tanda hubung biasa ("85-100"), seperti contohnya. */
+export const tulisRentang = (min, max, pemisah = '–') => min + pemisah + (max >= 100 ? '' : '<') + max
 
 /* ------------------------------ bobot komponen ---------------------------- */
 

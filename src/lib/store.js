@@ -276,18 +276,28 @@ let urutSertifikat = 0
 // Yang menghalangi permintaan baru, sama dengan BERJALAN di src/server/sertifikat.js; ditolak dan dicabut boleh diulang.
 const SERTIFIKAT_BERJALAN = ['menunggu_admin', 'menunggu_superadmin', 'siap_dicetak']
 
-function mintaSertifikatLokal({ student }) {
+// Panjang maksimal penjelasan peninjauan cetak; sama dengan PENJELASAN_MAKS di src/server/sertifikat.js.
+const PENJELASAN_MAKS = 1000
+
+function mintaSertifikatLokal({ student, penjelasan }) {
   const k = kelayakanSertifikat(student)
   if (!k.layak) throw new Error('Sertifikat belum bisa diminta: syaratnya belum terpenuhi.')
   if (PERMINTAAN_SERTIFIKAT.some((p) => p.nim === student.nim && SERTIFIKAT_BERJALAN.includes(p.status))) {
     throw new Error('Permintaan akses cetak Anda sudah ada.')
   }
+  // Sama dengan server: permintaan sesudah ditolak atau dicabut adalah peninjauan cetak dan wajib berpenjelasan.
+  const teks = String(penjelasan ?? '').trim()
+  if (PERMINTAAN_SERTIFIKAT.some((p) => p.nim === student.nim) && teks.length < ALASAN_TOLAK_MIN) {
+    throw new Error('Penjelasan wajib diisi, minimal 10 karakter, supaya Kemahasiswaan tahu kenapa kamu mengajukan peninjauan cetak.')
+  }
+  if (teks.length > PENJELASAN_MAKS) throw new Error('Penjelasan terlalu panjang, maksimal 1000 karakter.')
   const p = {
     id: 'S-' + ++urutSertifikat,
     nim: student.nim,
     nama: student.name,
     status: 'menunggu_admin',
     diajukan: new Date().toISOString().slice(0, 10),
+    penjelasan: teks || null,
     lapis1: null,
     lapis2: null,
     ditolak: null,
@@ -300,10 +310,13 @@ function mintaSertifikatLokal({ student }) {
   return { id: p.id }
 }
 
-/** Mahasiswa yang layak meminta akses cetak; `isi.student` hanya dipakai mode lokal. */
+/**
+ * Mahasiswa yang layak meminta akses cetak; `isi.student` hanya dipakai mode lokal. `isi.penjelasan` wajib untuk
+ * peninjauan cetak (sesudah ditolak atau dicabut) dan diperiksa lagi di server.
+ */
 export async function mintaSertifikat(isi = {}) {
   if (modeLokal()) return mintaSertifikatLokal(isi)
-  return tulis('/api/sertifikat', {})
+  return tulis('/api/sertifikat', isi.penjelasan ? { penjelasan: isi.penjelasan } : {})
 }
 
 // Rekomendasi admin biasa di lapis pertama; sama dengan SARAN di src/server/sertifikat.js.
