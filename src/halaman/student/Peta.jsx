@@ -250,7 +250,9 @@ function Semester({ s, aspek, terbuka, onToggle, terakhir }) {
                     : t('{n} dari {total} dinilai', { n: kegiatanDinilai, total: kegiatanTotal })}
                 </span>
               </h3>
-              <div className="mt-2.5 space-y-3">
+              {/* Dua kolom mulai 1280px, supaya baris kegiatan tidak terlalu panjang di kartu yang lebar. Jalur
+                  terakhir dari jumlah ganjil selebar penuh. */}
+              <div className="mt-2.5 grid grid-cols-1 items-start gap-3 xl:grid-cols-2 xl:[&>*:last-child:nth-child(odd)]:col-span-2">
                 {jalur.map((j) => (
                   <Jalur key={j.sumber.id} {...j} terkunci={terkunci} />
                 ))}
@@ -307,7 +309,10 @@ export default function Peta() {
         </p>
       </header>
 
-      <ol className="max-w-4xl">
+      {/* Selebar konten, seperti Dashboard. Dulu max-w-4xl (896px), dan di laptop 1536px sekitar 310px di kanannya
+          kosong (18 Nov 2026). Isinya yang melebar disusun dua kolom di layar lebar: ringkasan aspek dan jalur
+          kegiatan. */}
+      <ol>
         {daftar.map((s, i) => (
           <Semester
             key={s.semester}

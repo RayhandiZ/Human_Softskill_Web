@@ -27,6 +27,7 @@ import {
   IconUpload,
   IconX,
 } from '../../components/Icons'
+import PilihanTurun from '../../components/PilihanTurun'
 import { CONFIG } from '../../lib/config'
 import { KOMPONEN, SUMBER, SUMBER_LIST, getAspekSemester, getKomponen, getKomponenById } from '../../lib/curriculum'
 import { bolehTandaiFinal, validasiBatchImport } from '../../lib/rules'
@@ -262,7 +263,9 @@ export default function Nilai() {
       />
 
       {/* ------------- langkah memilih sasaran: semester, sumber, angkatan ------------- */}
-      <Card className="overflow-hidden">
+      {/* Tanpa overflow-hidden: daftar Angkatan, Fakultas, dan Program studi (PilihanTurun) melayang keluar kartu dan
+          dulu akan terpotong. Sudut bawah bilah saringan dibulatkan sendiri. */}
+      <Card>
         <div className="grid gap-6 px-5 py-5 sm:px-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.8fr)]">
           <Segmen
             nama="semester"
@@ -296,28 +299,29 @@ export default function Nilai() {
           />
 
           <div>
-            <label htmlFor="pilih-angkatan" className="mb-2 block text-[13.5px] font-bold text-ink">
+            <p id="label-angkatan" className="mb-2 block text-[13.5px] font-bold text-ink">
               {t('3. Angkatan')}
-            </label>
-            <span className="relative block">
-              <select
-                id="pilih-angkatan"
-                value={angkatan.label}
-                onChange={(e) => setAngkatanId(COHORTS.find((c) => c.label === e.target.value).id)}
-                className="w-full appearance-none rounded-xl border border-line bg-surface px-3.5 py-3 pr-9 text-[14.5px] font-bold text-ink transition hover:border-line-strong"
-              >
-                {/* Jumlah mahasiswa ikut ditulis supaya angkatan yang masih kosong terlihat sebelum dipilih. */}
-                {COHORTS.map((c) => (
-                  <option key={c.id} value={c.label}>
-                    {t(c.label)} ·{' '}
-                    {semesterKalender(c.intake) < 1
-                      ? t('belum mulai')
-                      : t('{n} mahasiswa', { n: STUDENTS.filter((s) => s.angkatanId === c.id).length.toLocaleString('id-ID') })}
-                  </option>
-                ))}
-              </select>
-              <IconChevronDown size={16} className="pointer-events-none absolute inset-y-0 right-3 my-auto text-ink-3" />
-            </span>
+            </p>
+            {/* Dropdown buatan sendiri, bukan <select>: di Firefox daftar <select> tidak bisa diberi animasi dan arah
+                bukanya tidak bisa diatur (lihat PilihanTurun.jsx). Jumlah mahasiswa ikut ditulis supaya angkatan yang
+                masih kosong terlihat sebelum dipilih. */}
+            <PilihanTurun
+              id="pilih-angkatan"
+              labelOleh="label-angkatan"
+              value={angkatan.id}
+              onChange={setAngkatanId}
+              options={COHORTS.map((c) => c.id)}
+              tampilkan={(id) => {
+                const c = getAngkatan(id)
+                return (
+                  t(c.label) +
+                  ' · ' +
+                  (semesterKalender(c.intake) < 1
+                    ? t('belum mulai')
+                    : t('{n} mahasiswa', { n: STUDENTS.filter((s) => s.angkatanId === c.id).length.toLocaleString('id-ID') }))
+                )
+              }}
+            />
             <p className="mt-2 text-[13px] text-ink-2">
               {/* Dulu "Kini di Semester {semesterAktif}": angkatan yang belum mulai terbaca Semester 1, dan yang sudah
                   selesai terbaca Semester 3. */}
@@ -334,8 +338,8 @@ export default function Nilai() {
         </div>
 
         {/* Penyaring mahasiswa: menyempitkan baris yang tampil, bukan sasaran nilainya. */}
-        <div className="flex flex-wrap items-center gap-2.5 border-t border-line bg-surface-2 px-5 py-3 sm:px-6">
-          <Select
+        <div className="flex flex-wrap items-center gap-2.5 rounded-b-[15px] border-t border-line bg-surface-2 px-5 py-3 sm:px-6">
+          <PilihanTurun
             ringkas
             label={t('Fakultas')}
             value={faculty}
@@ -347,7 +351,7 @@ export default function Nilai() {
             tampilkan={(o) => t(o)}
             className="flex-[1_1_230px] sm:max-w-[320px]"
           />
-          <Select
+          <PilihanTurun
             ringkas
             label={t('Program studi')}
             value={program}

@@ -1,4 +1,5 @@
-import { Cell, Pie, PieChart, Tooltip } from 'recharts'
+import { useState } from 'react'
+import { Cell, Pie, PieChart } from 'recharts'
 import ChartFrame from './ChartFrame'
 import { KATEGORI_KOMPETENSI, RUBRIK, tulisRentang } from '../../lib/scoring'
 import { useTeks } from '../../lib/bahasa'
@@ -14,21 +15,14 @@ const WARNA = {
   'Belum Memenuhi': 'var(--critical)',
 }
 
-function Keterangan({ active, payload, total }) {
-  if (!active || !payload?.length) return null
-  const d = payload[0].payload
-  return (
-    <div className="rounded-xl border border-line bg-surface px-4 py-3 shadow-pop">
-      <p className="text-[14px] font-bold text-ink">{d.judul}</p>
-      <p className="mt-1 text-[13.5px] text-ink-2">
-        {d.jumlah.toLocaleString('id-ID')} mahasiswa · {Math.round((d.jumlah / total) * 100)}%
-      </p>
-    </div>
-  )
-}
+/* Rincian irisan yang disorot tampil di label tengah, bukan di kotak keterangan melayang. Kotak Tooltip Recharts
+   dulu menimpa label tengah (19 Nov 2026): Recharts menjangkarkannya di titik tengah irisan dan menahannya di dalam
+   kotak grafik 230px, jadi kotak selebar ~150px selalu jatuh ke lubang donat; label tengah juga tergambar di atasnya
+   karena sama-sama absolute tanpa z-index dan letaknya sesudah grafik di DOM. */
 
 export default function MutuDonut({ huruf, totalMahasiswa, height = 260 }) {
   const t = useTeks()
+  const [sorot, setSorot] = useState(null)
   const data = KATEGORI_KOMPETENSI.map((kategori) => {
     // RUBRIK urut dari yang tertinggi: anggota pertama memegang batas atas, yang terakhir batas bawah.
     const anggota = RUBRIK.filter((r) => r.label === kategori)
@@ -46,6 +40,7 @@ export default function MutuDonut({ huruf, totalMahasiswa, height = 260 }) {
   const total = data.reduce((a, d) => a + d.jumlah, 0)
   const belumDinilai = Math.max(0, (totalMahasiswa ?? total) - total)
   const persen = (n) => (total ? Math.round((n / total) * 100) : 0)
+  const aktif = sorot != null ? (data[sorot] ?? null) : null
 
   return (
     <ChartFrame
@@ -78,19 +73,33 @@ export default function MutuDonut({ huruf, totalMahasiswa, height = 260 }) {
               stroke="var(--surface)"
               strokeWidth={2}
               isAnimationActive={false}
+              onMouseEnter={(_, i) => setSorot(i)}
+              onMouseLeave={() => setSorot(null)}
             >
+              {/* Irisan lain diredupkan supaya jelas irisan mana yang sedang dibaca di tengah. */}
               {data.map((d) => (
-                <Cell key={d.kunci} fill={d.warna} />
+                <Cell key={d.kunci} fill={d.warna} fillOpacity={aktif && aktif !== d ? 0.45 : 1} />
               ))}
             </Pie>
-            <Tooltip content={<Keterangan total={total} />} />
           </PieChart>
 
           <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
-            <p className="text-[30px] font-extrabold leading-none tabular-nums text-ink">
-              {total.toLocaleString('id-ID')}
-            </p>
-            <p className="mt-1 text-[13px] text-ink-2">{t('sudah dinilai')}</p>
+            {aktif ? (
+              <>
+                <p className="text-[30px] font-extrabold leading-none tabular-nums text-ink">{persen(aktif.jumlah)}%</p>
+                <p className="mt-1.5 text-[13px] font-bold text-ink">{aktif.judul}</p>
+                <p className="text-[13px] text-ink-2">
+                  {t('{n} mahasiswa', { n: aktif.jumlah.toLocaleString('id-ID') })}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-[30px] font-extrabold leading-none tabular-nums text-ink">
+                  {total.toLocaleString('id-ID')}
+                </p>
+                <p className="mt-1 text-[13px] text-ink-2">{t('sudah dinilai')}</p>
+              </>
+            )}
           </div>
         </div>
 

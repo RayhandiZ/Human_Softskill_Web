@@ -48,9 +48,11 @@ function Baris({ label, htmlFor, children, catatan }) {
       >
         {label}
       </label>
-      <div className="min-w-0 max-w-[420px]">
+      {/* Isian mengikuti lebar kartu (dulu dibatasi 420px, 18 Nov 2026); catatan tetap 420px supaya barisnya
+          tidak terlalu panjang untuk dibaca. */}
+      <div className="min-w-0">
         {children}
-        {catatan ? <p className="mt-1.5 text-[13px] leading-relaxed text-ink-3">{catatan}</p> : null}
+        {catatan ? <p className="mt-1.5 max-w-[420px] text-[13px] leading-relaxed text-ink-3">{catatan}</p> : null}
       </div>
     </div>
   )
@@ -176,7 +178,9 @@ export default function Profil() {
   }
 
   return (
-    <form onSubmit={simpan} className="max-w-4xl space-y-5">
+    // Selebar area konten seperti Peta Perjalanan. Dulu max-w-4xl (896px), dan di laptop 1536px sekitar 310px di
+    // kanannya kosong (18 Nov 2026).
+    <form onSubmit={simpan} className="space-y-5">
       {/* --------------------------------- judul -------------------------------- */}
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">

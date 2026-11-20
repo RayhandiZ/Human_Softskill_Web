@@ -343,7 +343,8 @@ public/           kampus-umn.webp: foto udara kampus UMN di latar halaman masuk 
 
 src/components/   Ui (termasuk pola halaman Kemahasiswaan: JudulHalaman, KartuAngka, TabSaring,
                   Paginasi, GulirTabel, JUDUL_KOLOM), Icons, Navbar, Laci, MenuAkun, Footer, FilterBar, ErrorBoundary,
-                  TombolBahasa, PilihanMengambang, PenyuntingFoto, LihatFoto, LayananTambahan,
+                  TombolBahasa, PilihanMengambang, PilihanTurun (dropdown Nilai Mahasiswa), PenyuntingFoto, LihatFoto,
+                  LayananTambahan,
                   LogoPdp, PanjiPdp (panji logo halaman masuk), Lipat, MenuSamping (menu samping mahasiswa, dosen, Kemahasiswaan, dan
                   super admin, juga isi laci HP), MenuAksesibilitas (semua panel),
                   TombolTema, CariCepat
@@ -1201,8 +1202,12 @@ hanya `transform` dan `opacity`, dan sekali jalan saat sesuatu muncul atau ditek
   dengan `animate-rise`; panah bagian yang bisa dilipat di penyunting penilaian Input Manual berputar saat
   dibuka.
 - **Daftar pilihan setiap `<select>`** muncul seperti menu akun dan pemilih periode super admin. Bentuknya
-  kartu bersudut 16px dengan bayangan, naik 10px sambil memudar (`rise`, 0,35 detik), dengan centang di kanan
-  pilihan terpilih dan panah yang berputar saat terbuka. Caranya memakai `<select>` yang bisa diberi gaya
+  kartu bersudut 16px dengan bayangan, dengan centang di kanan pilihan terpilih dan panah yang berputar saat
+  terbuka. Sejak 20 Nov 2026 daftarnya turun 8px dari tepi kotak sambil membesar dari 96% dan muncul
+  (`buka-pilihan`, 0,28 detik), pilihannya menyusul satu per satu (`pilihan-masuk`, jeda 25ms per baris, paling
+  lama 200ms), dan saat ditutup daftarnya memudar 0,15 detik. Sebelumnya `rise` 0,35 detik (naik 10px sambil
+  memudar, tanpa gerak tutup) hampir tidak terasa: terukur, gerakannya sudah 75% selesai di 120ms pertama dan
+  arahnya naik, berlawanan dengan arah daftar membuka. Caranya memakai `<select>` yang bisa diberi gaya
   (`appearance: base-select`, Chrome dan Edge 135 ke atas), jadi tetap select bawaan: papan ketik, pembaca layar,
   dan `onChange` tidak berubah. Peramban lain memakai daftar bawaannya tanpa animasi; karena itu semua aturannya
   ada di dalam `@supports` (`index.css` › pilihan (select) panel Kemahasiswaan, panel dosen, dan panel super admin).
@@ -1213,9 +1218,13 @@ hanya `transform` dan `opacity`, dan sekali jalan saat sesuatu muncul atau ditek
   memakai `animate-rise` dan membuka ke bawah. Kalender `<input type="date">` di Log digambar sistem operasi dan
   tidak bisa diberi animasi. Hal yang sudah terbukti di sini:
   - Pengurai CSS Turbopack menolak pseudo-class sesudah `::picker(select)` (misalnya `:popover-open`), dan
-    galatnya membuat seluruh `index.css` gagal dimuat. Animasinya dipasang langsung di `::picker(select)`: daftar
-    itu `display: none` saat tertutup, jadi animasinya diputar ulang setiap kali dibuka. Uji dulu sintaks CSS
-    baru di rute sementara sebelum memasukkannya ke `index.css`.
+    galatnya membuat seluruh `index.css` gagal dimuat. Keadaan terbuka ditulis `select:open::picker(select)`
+    (pseudo-class sebelum `::picker`, diterima). Animasi buka dipasang di situ, jadi terlepas saat ditutup dan
+    pemudaran lewat `transition` (dengan `display` dan `overlay` `allow-discrete`) bisa berjalan. Daftar itu
+    `display: none` saat tertutup, jadi animasi daftar dan pilihannya diputar ulang setiap kali dibuka. Uji dulu
+    sintaks CSS baru sebelum memasukkannya ke `index.css`, misalnya dengan
+    `getBindingsSync().css.lightning.transform` dari `next/dist/build/swc` (pengurai lightningcss yang sama;
+    `::picker(select):popover-open` ditolak di sana dengan pesan yang sama).
   - Di base-select teks terpilih ada di elemen bawaan yang tidak bisa menyempit, sehingga `truncate` milik
     `<select>` tidak berlaku dan teks panjang menimpa panah. Penggantinya `-webkit-line-clamp: 1`,
     `word-break: break-all`, dan `overflow-clip-margin: content-box`, yang menghasilkan "Desain Ko…", sama
@@ -1246,6 +1255,20 @@ hanya `transform` dan `opacity`, dan sekali jalan saat sesuatu muncul atau ditek
     peramban, jadi tanpa aturan ini Sumber yang "sudah dinilai" tampak bisa dipilih.
   - Pilihan yang difokus dengan papan ketik diberi latar `--brand-soft`, seperti pemilih periode, bukan cincin
     fokus global. Bila daftar dibuka dengan tetikus, pilihan itu tidak disorot; centang menandai yang terpilih.
+- **Angkatan, Fakultas, dan Program studi di Nilai Mahasiswa** memakai `PilihanTurun`
+  (`src/components/PilihanTurun.jsx`), dropdown buatan sendiri berpola listbox seperti pemilih periode, bukan
+  `<select>` (20 Nov 2026). Firefox (terukur di versi 160) tidak mengenal `appearance: base-select`, jadi semua
+  aturan di atas tidak berlaku di sana: daftarnya bawaan Firefox, tanpa animasi, dan membuka ke sisi yang paling
+  lega. Program studi (15 pilihan) membuka ke atas menutupi bilah atas, sementara Fakultas dan Angkatan ke bawah.
+  - Rupa dan geraknya sama dengan daftar base-select. Keyframes `buka-pilihan` dan `pilihan-masuk` kini di luar
+    `@supports` supaya ada juga di Firefox; saat ditutup daftar memudar 0,15 detik (`tutup-pilihan`) lalu dilepas.
+  - Arah bukanya juga sama: ke bawah, tinggi dibatasi ruang di bawah kotak (paling sedikit 160px, paling banyak
+    320px, berjarak 8px dari tepi layar), dan baru membalik ke atas bila ruang itu kurang dari 160px.
+  - Papan ketik: panah, Home/End, PageUp/PageDown, Enter atau Spasi memilih, Escape menutup dan mengembalikan
+    fokus, Tab menutup, dan mengetik huruf melompat ke pilihan yang cocok, seperti `<select>`.
+  - Kartu sasaran di halaman itu tidak lagi `overflow-hidden` (daftarnya akan terpotong); sudut bawah bilah
+    saringannya dibulatkan sendiri (`rounded-b-[15px]`, 1px di dalam sudut kartu).
+  - Select lain di aplikasi masih `<select>`, jadi di Firefox masih memakai daftar bawaannya.
 - Saat kurangi gerak aktif, animasi muncul, tumbuh, dan daftar pilihan dilepas sama sekali (`animation: none`),
   seperti panji logo di halaman masuk. Blok `prefers-reduced-motion` di akhir `index.css` hanya memendekkan durasi, dan
   jedanya (50 sampai 360 md) tetap berjalan; karena isiannya `backwards`, bagian halaman dan batang grafik
@@ -1576,6 +1599,13 @@ monoton, jarak antarlangkah ≥ 0,06, dan ujung terangnya 2,11:1 terhadap latar.
 Penyebut persentasenya adalah **jumlah mahasiswa yang sudah punya nilai**, bukan seluruh
 mahasiswa — kalau ada yang belum dinilai sama sekali, jumlahnya disebutkan di bawah grafik
 supaya persentasenya tetap genap 100%.
+
+Saat kursor di atas sebuah irisan, **rincian irisannya tampil di label tengah** (persentase,
+huruf, jumlah mahasiswa) dan irisan lain diredupkan; tanpa kotak keterangan melayang. Sampai
+19 Nov 2026 kotak Tooltip Recharts menimpa label tengah: Recharts menjangkarkannya di titik
+tengah irisan dan menahannya di dalam kotak grafik 230 px, jadi kotaknya selalu jatuh ke lubang
+donat, dan label tengah ikut tergambar di atasnya. Teks terpanjang ("100%", "Huruf B-, C+, C",
+"1.234 mahasiswa") masih muat di lubang berjari-jari 72 px.
 
 ## Program studi
 

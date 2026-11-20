@@ -326,14 +326,58 @@ body {
 /* Tombol sedikit mengecil saat ditekan, umpan balik yang terasa juga di HP. */
 .panel-admin :is(.btn, .btn-primary, .btn-ghost):active:not(:disabled) { transform: scale(.97); }
 
+/* ---------- gerak daftar pilihan: daftar base-select (di bawah) dan PilihanTurun.jsx ---------- */
+/* Keyframes di luar @supports supaya tetap ada di Firefox, yang tidak mengenal base-select; di sana dropdown
+   Angkatan, Fakultas, dan Program studi halaman Nilai Mahasiswa memakai PilihanTurun (20 Nov 2026). */
+@keyframes buka-pilihan {
+  from { opacity: 0; transform: translateY(var(--geser-buka, -8px)) scale(0.96); }
+}
+@keyframes pilihan-masuk {
+  from { opacity: 0; transform: translateY(-6px); }
+}
+@keyframes tutup-pilihan {
+  to { opacity: 0; }
+}
+/* Daftar PilihanTurun: turun 8px sambil membesar dari 96% dan muncul; yang membalik ke atas (ruang di bawah kurang
+   dari 160px) naik 8px. Saat ditutup memudar 0,15 s, lalu komponennya melepas daftar. */
+.daftar-turun {
+  transform-origin: top center;
+  animation: buka-pilihan 0.28s cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+.daftar-turun[data-arah='atas'] {
+  --geser-buka: 8px;
+  transform-origin: bottom center;
+}
+.daftar-turun-tutup {
+  animation: tutup-pilihan 0.15s ease forwards;
+}
+.pilihan-turun {
+  animation: pilihan-masuk 0.26s cubic-bezier(0.2, 0.8, 0.25, 1) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .daftar-turun,
+  .pilihan-turun {
+    animation: none;
+  }
+  /* Tanpa animasi, daftar yang ditutup langsung hilang, tidak menunggu pengaman 220ms di komponennya. */
+  .daftar-turun-tutup {
+    animation: none;
+    opacity: 0;
+  }
+}
+/* Menu aksesibilitas › Hentikan animasi mematikan animasi lewat *; daftar yang ditutup langsung disembunyikan. */
+.akar-a11y.a11y-diam .daftar-turun-tutup {
+  opacity: 0;
+}
+
 /* ---------- pilihan (select) panel Kemahasiswaan, panel dosen, dan panel super admin ---------- */
 /* Daftar pilihan setiap <select> muncul dengan gerak dan rupa yang sama dengan menu akun dan pemilih periode super
    admin (rise, kartu bersudut 16px, centang di kanan), dan panahnya berputar saat terbuka. Memakai <select> yang bisa
    diberi gaya (appearance: base-select, Chrome dan Edge 135 ke atas); peramban lain tetap memakai daftar bawaannya
    tanpa animasi, jadi semuanya di dalam @supports. Lihat README.md › Panel Kemahasiswaan › Gerak.
    Pengurai CSS Turbopack menolak pseudo-class yang ditulis sesudah ::picker(select) (misalnya
-   ::picker(select):popover-open) dan galatnya menggagalkan seluruh berkas ini, jadi animasinya dipasang langsung di
-   ::picker(select). Daftar itu display: none saat tertutup, sehingga animasinya diputar ulang setiap kali dibuka. */
+   ::picker(select):popover-open) dan galatnya menggagalkan seluruh berkas ini, jadi keadaan terbuka ditulis
+   select:open::picker(select) (pseudo-class sebelum ::picker, diterima). */
 @supports (appearance: base-select) {
   :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select,
   :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select::picker(select) {
@@ -393,7 +437,18 @@ body {
        atas, karena daftar setipis itu tidak terpakai. */
     max-block-size: max(160px, min(320px, 100% - 16px));
     position-try-order: normal;
-    animation: rise 0.35s cubic-bezier(0.22, 0.68, 0.35, 1) both;
+    /* Tertutup: transparan. Daftar memudar 0,15 s saat ditutup; display dan overlay allow-discrete menahannya di
+       layar sampai pudarnya selesai. */
+    opacity: 0;
+    transform-origin: top center;
+    transition: opacity 0.15s ease, display 0.15s allow-discrete, overlay 0.15s allow-discrete;
+  }
+  /* Terbuka: daftar turun 8px dari tepi kotak sambil membesar dari 96%, lalu pilihannya menyusul satu per satu (di
+     bawah). Dulu rise 0,35 s (naik 10px dan muncul) yang hampir tidak terasa dan tanpa gerak tutup (20 Nov 2026).
+     Animasinya dipasang di :open supaya terlepas saat ditutup dan pemudaran di atas bisa berjalan. */
+  :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select:open::picker(select) {
+    opacity: 1;
+    animation: buka-pilihan 0.28s cubic-bezier(0.2, 0.8, 0.25, 1);
   }
 
   /* Select ringkas: labelnya di dalam kotak, jadi <select> baru mulai sesudah label. Daftarnya ditempelkan ke tepi
@@ -417,7 +472,19 @@ body {
        Pilihan yang terlipat di HP dipatahkan di antara kata, bukan "SL H" atau "revie w". */
     word-break: normal;
     overflow-wrap: anywhere;
+    /* Pilihan muncul berurutan, 25ms per baris, paling lama 200ms (baris ke-9 dan seterusnya bersamaan). Diputar
+       ulang setiap kali dibuka karena daftarnya display: none saat tertutup. */
+    animation: pilihan-masuk 0.26s cubic-bezier(0.2, 0.8, 0.25, 1) backwards;
+    transition: background-color 0.15s ease, color 0.15s ease;
   }
+  :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select option:nth-child(2) { animation-delay: 25ms; }
+  :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select option:nth-child(3) { animation-delay: 50ms; }
+  :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select option:nth-child(4) { animation-delay: 75ms; }
+  :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select option:nth-child(5) { animation-delay: 100ms; }
+  :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select option:nth-child(6) { animation-delay: 125ms; }
+  :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select option:nth-child(7) { animation-delay: 150ms; }
+  :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select option:nth-child(8) { animation-delay: 175ms; }
+  :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select option:nth-child(n + 9) { animation-delay: 200ms; }
   :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select option:hover {
     background: var(--surface-2);
   }
@@ -442,13 +509,19 @@ body {
   }
 
   @media (prefers-reduced-motion: reduce) {
-    :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select::picker(select) {
+    :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select::picker(select),
+    :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select:open::picker(select),
+    :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select option {
       animation: none;
+      transition: none;
     }
   }
-  /* Menu aksesibilitas › Hentikan animasi: aturan a11y-diam memakai *, dan * tidak mengenai pseudo-elemen ::picker. */
-  .akar-a11y.a11y-diam select::picker(select) {
+  /* Menu aksesibilitas › Hentikan animasi: aturan a11y-diam memakai *, dan * tidak mengenai pseudo-elemen ::picker.
+     Pilihannya (elemen biasa) sudah kena aturan *. */
+  .akar-a11y.a11y-diam select::picker(select),
+  .akar-a11y.a11y-diam select:open::picker(select) {
     animation: none;
+    transition: none;
   }
 }
 

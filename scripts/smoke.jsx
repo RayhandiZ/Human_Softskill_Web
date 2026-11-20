@@ -758,17 +758,24 @@ export async function ujiSasaranDanTanda(alamat, prodi, fakultasHarapan) {
   const { el, lepas } = await pasang(alamat)
   const hasil = {}
 
-  const label = (teks) =>
-    [...el.querySelectorAll('label')].find((l) => l.textContent.trim().startsWith(teks))
-  const selectDi = (teks) => label(teks)?.querySelector('select')
+  /* Sejak 20 Nov 2026 Fakultas dan Program studi di halaman ini dropdown buatan sendiri (PilihanTurun), bukan
+     <select>: di Firefox daftar <select> tidak bisa diberi animasi dan arah bukanya tidak bisa diatur. Dipilih
+     seperti pengguna: tekan kotaknya, lalu tekan pilihannya. data-nilai berisi nilai mentah pilihan saat ini. */
+  const kotakDi = (teks) =>
+    [...el.querySelectorAll('button[aria-haspopup="listbox"]')].find((b) => b.textContent.trim().startsWith(teks))
+  const pilihDi = async (teks, nilai) => {
+    await act(async () => kotakDi(teks).click())
+    const opsi = [...el.querySelectorAll('[role="option"]')].find((o) => o.textContent.trim() === nilai)
+    await act(async () => opsi.click())
+  }
 
-  const selProdi = selectDi('Program studi')
-  const selFakultas = selectDi('Fakultas')
-  hasil.adaKeduaKotak = !!selProdi && !!selFakultas
-  hasil.fakultasAwal = selFakultas?.value
+  const kotakProdi = kotakDi('Program studi')
+  const kotakFakultas = kotakDi('Fakultas')
+  hasil.adaKeduaKotak = !!kotakProdi && !!kotakFakultas
+  hasil.fakultasAwal = kotakFakultas?.dataset.nilai
 
-  await pilih(selProdi, prodi)
-  hasil.fakultasSesudah = selectDi('Fakultas')?.value
+  await pilihDi('Program studi', prodi)
+  hasil.fakultasSesudah = kotakDi('Fakultas')?.dataset.nilai
   hasil.fakultasIkut = hasil.fakultasSesudah === fakultasHarapan
 
   /* Identitas mahasiswa: nama saja tidak cukup untuk tahu prodi dan fakultasnya. */

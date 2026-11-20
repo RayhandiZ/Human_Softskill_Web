@@ -28,7 +28,7 @@ import { useTeks } from '../../lib/bahasa'
 
 const KELOMPOK = {
   dosen: { label: 'Dosen', peran: ['dosen'], kosong: 'Belum ada akun dosen.', cari: 'Cari nama, email, atau NIP', tambah: 'Tambah dosen' },
-  admin: { label: 'Admin Kemahasiswaan', peran: ['admin', 'superadmin'], kosong: 'Belum ada akun admin.', cari: 'Cari email', tambah: 'Tambah admin' },
+  admin: { label: 'Admin', peran: ['admin', 'superadmin'], kosong: 'Belum ada akun admin.', cari: 'Cari email', tambah: 'Tambah admin' },
   mahasiswa: { label: 'Mahasiswa', peran: ['mahasiswa'], kosong: 'Belum ada akun mahasiswa.', cari: 'Cari nama, email, atau NIM', tambah: 'Tambah mahasiswa' },
 }
 const LABEL_STATUS = { semua: 'Semua status', aktif: 'Punya akses', dicabut: 'Akses dicabut' }

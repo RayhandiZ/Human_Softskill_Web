@@ -121,8 +121,8 @@ export default function AdminLayout({ children }) {
     <KerangkaKerja
       panel="panel-admin"
       beranda="/admin"
-      peran={t('Kemahasiswaan')}
-      labelMenu={t('Menu Kemahasiswaan')}
+      peran={t('admin')}
+      labelMenu={t('Menu Admin')}
       menu={menu}
       kakiMenu={superAdmin ? <KeSuperAdmin /> : null}
       kiriAtas={
