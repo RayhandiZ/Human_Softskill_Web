@@ -172,6 +172,7 @@ model Mahasiswa {
   koreksi    PengajuanKoreksi[]
   pengumpulan Pengumpulan[]
   sertifikat PermintaanSertifikat[]
+  syaratTanda SyaratMahasiswa[]
   @@index([angkatanId, prodiId])
   @@index([kelasId])
 }
@@ -377,6 +378,16 @@ model PermintaanSertifikat {     // mahasiswa yang layak meminta akses cetak; ad
   cetakTerakhirOleh Int?
   mahasiswa   Mahasiswa        @relation(fields: [mahasiswaId], references: [id])
   @@index([status])
+  @@index([mahasiswaId])
+}
+
+model SyaratMahasiswa {         // syarat sertifikat tambahan berjenis manual yang sudah ditandai Super Admin untuk mahasiswa ini
+  syaratId     String    @db.VarChar(32)  // id di Konfigurasi SYARAT_TAMBAHAN (src/lib/syaratSertifikat.js)
+  mahasiswaId  Int
+  ditandaiOleh Int
+  ditandaiPada DateTime  @default(now())
+  mahasiswa    Mahasiswa @relation(fields: [mahasiswaId], references: [id], onDelete: Cascade)
+  @@id([syaratId, mahasiswaId])
   @@index([mahasiswaId])
 }
 

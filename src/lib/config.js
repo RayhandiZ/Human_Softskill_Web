@@ -27,6 +27,10 @@ export const CONFIG = {
   /* ---- ambang dan durasi program ----------------------------------------- */
 
   AMBANG_SERTIFIKAT: 70, // nilai minimum untuk berhak atas sertifikat
+  // Syarat yang bisa dimatikan Super Admin di Aturan Sistem; lihat README.md › Sertifikat › Mengubah syarat kelayakan.
+  SYARAT_SERTIFIKAT: { semester: true, terkunci: true },
+  // Syarat yang ditambah Super Admin di Aturan Sistem; bentuknya di src/lib/syaratSertifikat.js.
+  SYARAT_TAMBAHAN: [],
   TOTAL_SEMESTER_PROGRAM: 3,
 
   /* 'otomatis' | 'manual' | 'semester'; lihat README.md › Kapan aspek berubah dari sementara menjadi final. */
@@ -90,9 +94,15 @@ export const KUNCI_DAPAT_DIUBAH = [
   'BOBOT_ASPEK_KUSTOM',
   'MODE_AGREGASI',
   'AMBANG_SERTIFIKAT',
+  'SYARAT_SERTIFIKAT',
+  'SYARAT_TAMBAHAN',
   'PENGUNCIAN_ASPEK',
   'IZINKAN_FINAL_DRAFT',
 ]
+
+/* id syarat di kelayakanSertifikat (rules.js) yang boleh dimatikan. Aspek final dan komponen lengkap tidak, karena lembar
+   sertifikat menyatakan mahasiswa menyelesaikan seluruh aspek; nilai minimum juga tidak, karena lembarnya memuat nilai. */
+export const SYARAT_BISA_DIMATIKAN = ['semester', 'terkunci']
 
 /** Kunci yang saat ini ditimpa tabel Konfigurasi; sisanya memakai bawaan dari kode (halaman Aturan Sistem). */
 export const DARI_BASIS_DATA = new Set()

@@ -327,7 +327,7 @@ const RUTE = [
 ;(async () => {
   const bundle = require('./bundle.cjs')
   const mod = require(bundle('smoke.jsx', '.smoke.cjs', { platform: 'browser', format: 'cjs', loader: { '.jsx': 'jsx' }, jsx: 'automatic' }))
-  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiPembaruanAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiLayarUnggah, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAlurSertifikat,ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiRincianLog, ujiSakelarWewenang, ujiMatriksWewenang, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
+  const { render, daftarUji, ujiMenuHp, ujiAspek, ujiRingkasHp, ujiPeta, ujiRiwayat, ujiLoncengAdmin, ujiPembaruanAdmin, ujiSasaranInput, ujiKeputusanKoreksi, ujiSasaranDanTanda, ujiPenyuntingFoto, ujiLihatFoto, ujiSegarkanData, ujiLaciAdmin, ujiStatusData, ujiLipatOverview, ujiAlurDosen, ujiLayarUnggah, ujiBahasa, ujiSeretBahasa, ujiLayanan, ujiPanelLain, ujiKamus, ujiOtomatis, ujiStatusPolos, ujiCetakTranskrip, ujiTandaDraft, ujiTrenSemester, ujiKurva, ujiPerkembangan, ujiPenandaMenu, ujiSertifikat, ujiSertifikatAdmin, ujiAlurSertifikat,ujiAngkatan, ujiKurikulum, ujiSuperAdmin, ujiPanelSuper, ujiRincianLog, ujiSakelarWewenang, ujiMatriksWewenang, ujiSyaratSertifikat, ujiMataSandi, ujiBahasaMasuk, ujiPenilaian, perAngkatan, BATAS_BARIS_ASPEK } = mod
   let gagal = 0
 
   /* ----------------------------- tanpa data ------------------------------ */
@@ -1538,6 +1538,46 @@ const RUTE = [
   gagal += rusakMw.length
   console.log((rusakMw.length ? 'GAGAL  ' : 'OK     ') + 'Matriks wewenang yang bisa diedit')
   for (const [ket, ok, rinci] of cekMw) console.log('       ' + (ok ? 'v ' : 'x ') + ket + (!ok && rinci ? '  → ' + rinci : ''))
+
+  /* Syarat kelayakan cetak sertifikat yang bisa diubah Super Admin di Aturan Sistem. */
+  const sy = await ujiSyaratSertifikat()
+  const cekSy = [
+    ['berjalan tanpa galat', !sy.galat, sy.galat],
+    ['daftar lima syarat: tiga Wajib, dua Aktif, formulir belum tampil', sy.daftarAwal],
+    ['klik Ubah syarat memunculkan isian berisi syarat yang berlaku (langsung difokus)', sy.formMuncul],
+    ['tanpa perubahan tombol simpan mati', sy.simpanMatiTanpaUbah],
+    ['nilai di luar 0 sampai 100 ditolak di layar', sy.angkaDitolak],
+    ['dampak ke mahasiswa tampil sebelum disimpan', sy.dampakTampil],
+    ['alasan minimal 10 karakter wajib', sy.alasanWajib],
+    ['Batal tidak mengubah syarat dan mengembalikan fokus', sy.batalTidakMengubah],
+    ['nilai minimum tersimpan dan langsung memengaruhi kelayakan', sy.nilaiTersimpan],
+    ['semester dan pengesahan bisa dimatikan; aspek final, komponen, dan nilai tetap diperiksa', sy.duaSyaratMati],
+    ['halaman mahasiswa hanya memuat syarat yang aktif', sy.mahasiswaTigaSyarat],
+    ['Tambah syarat membuka baris baru (langsung difokus), simpan masih mati', sy.tambahMuncul],
+    ['nama syarat terlalu pendek ditahan dengan pesannya', sy.tambahNamaPendek],
+    ['syarat baru: dampak tampil dan tombol simpan aktif sesudah alasan diisi', sy.tambahDampak],
+    ['syarat manual tersimpan, tampil di daftar, dan menahan mahasiswa yang belum ditandai', sy.tambahTersimpan],
+    ['Atur mahasiswa: panel memuat mahasiswa dengan centang sesuai tanda tersimpan', sy.panelTandaMuncul],
+    ['Atur mahasiswa: yang dikirim hanya selisih tanda', sy.panelMenghitungSelisih],
+    ['tanda membuat mahasiswa layak lagi, jumlahnya naik, fokus kembali ke tombol', sy.tandaMembuatLayak],
+    ['halaman mahasiswa memuat syarat tambahan', sy.mahasiswaMelihatSyaratBaru],
+    ['syarat nilai aspek diperiksa otomatis dari nilai aspeknya', sy.syaratNilaiBerlaku],
+    ['syarat yang dinonaktifkan tidak menghalangi lagi', sy.nonaktifTidakMenghalangi],
+    ['menghapus syarat menyebut tanda yang ikut terhapus', sy.hapusMenyebutTanda],
+    ['syarat tambahan bisa dihapus dan daftar kembali lima', sy.hapusTersimpan],
+    ['syarat baru bawaannya berlaku saat ini juga', sy.mulaiBawaanSekarang],
+    ['mulai semester berikutnya: formulir menyebut periodenya dan dampak nanti, tanpa dampak sekarang', sy.jadwalMenyebutDampak],
+    ['syarat terjadwal tersimpan, berlencana Mulai, dan belum menahan mahasiswa', sy.jadwalTersimpan],
+    ['kartu Periode akademik menyebut syarat yang akan mulai berlaku', sy.pindahMenyebutSyarat],
+    ['begitu periodenya tiba, syarat terjadwal otomatis menahan mahasiswa', sy.jadwalTiba],
+    ['periode dimundurkan: syarat terjadwal kembali menunggu', sy.jadwalMenungguLagi],
+    ['isian syarat yang rusak dibaca aktif (tidak melonggarkan)', sy.isianRusakTetapKetat],
+    ['syarat dikembalikan sesudah uji', sy.pulih],
+  ]
+  const rusakSy = cekSy.filter(([, ok]) => !ok)
+  gagal += rusakSy.length
+  console.log((rusakSy.length ? 'GAGAL  ' : 'OK     ') + 'Syarat kelayakan cetak sertifikat')
+  for (const [ket, ok, rinci] of cekSy) console.log('       ' + (ok ? 'v ' : 'x ') + ket + (!ok && rinci ? '  → ' + rinci : ''))
 
   const ms = await ujiMataSandi()
   const cekMs = [

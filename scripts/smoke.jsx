@@ -4,9 +4,11 @@ import { createRoot } from 'react-dom/client'
 import { act } from 'react'
 import Penyedia from '../app/penyedia'
 import { RequireRole, panelPengguna } from '../src/lib/auth'
-import { AUDIT_LOG, COHORTS, MASTER_AWAL, PENGAJUAN_KOREKSI, STUDENTS, batasiAngkatan, getStudent, getStudentByNim, isiData, isiMaster, komponenDosen, mahasiswaKelas, programSelesai, resetTranskripCache } from '../src/lib/data'
+import { AUDIT_LOG, COHORTS, MASTER_AWAL, PENGAJUAN_KOREKSI, STUDENTS, batasiAngkatan, getStudent, getStudentByNim, isiData, isiMaster, komponenDosen, mahasiswaKelas, pasangPeriode, periodeSetelah, labelPeriode, programSelesai, resetTranskripCache, samaPeriode, PERIODE_AKTIF } from '../src/lib/data'
 import { getAspekList, getKomponen, getKomponenById, isiKurikulum } from '../src/lib/curriculum'
 import { bobotKomponen } from '../src/lib/scoring'
+import { CONFIG, updateConfig } from '../src/lib/config'
+import { kelayakanSertifikat } from '../src/lib/rules'
 import { DATA_CONTOH, DOSEN, PERSONA_SEMESTER, getDosenByEmail, getStudentByEmail } from './dataContoh'
 import {
   AKUN_LOKAL,
@@ -3935,5 +3937,259 @@ export function perAngkatan() {
   for (const m of STUDENTS) {
     if (!hasil.some((x) => x.angkatanId === m.angkatanId)) hasil.push(m)
   }
+  return hasil
+}
+
+/* Syarat kelayakan cetak sertifikat di Aturan Sistem. Mode lokal mengganti CONFIG di memori, jadi alurnya bisa diuji
+   dari layar sampai ke aturan kelayakan; pintu server-nya diuji di db-test. */
+export async function ujiSyaratSertifikat() {
+  const lama = window.localStorage.getItem('sk5c.session')
+  const asli = {
+    AMBANG_SERTIFIKAT: CONFIG.AMBANG_SERTIFIKAT,
+    SYARAT_SERTIFIKAT: { ...CONFIG.SYARAT_SERTIFIKAT },
+    SYARAT_TAMBAHAN: [...CONFIG.SYARAT_TAMBAHAN],
+  }
+  const SUPER = { role: 'admin', superAdmin: true, email: 'super.admin@umn.ac.id', name: 'Super Admin', initials: 'SA' }
+  const m = getStudent('DEMO-LAYAK')
+  const hasil = {}
+  let lepasHalaman = null
+
+  try {
+    window.localStorage.setItem('sk5c.session', JSON.stringify(SUPER))
+    let { el, lepas } = await pasang('/super/aturan')
+    lepasHalaman = lepas
+    const tombol = (teks) => [...el.querySelectorAll('button')].find((b) => b.textContent.trim() === teks)
+    const daftar = () => [...el.querySelectorAll('ul')].find((u) => /Seluruh aspek berstatus final/.test(u.textContent))
+    const nilai = () => el.querySelector('#syarat-nilai-minimum')
+    const alasan = () => el.querySelector('#syarat-alasan')
+    const tunggu = () => act(async () => { await new Promise((r) => setTimeout(r, 10)) })
+    const isi = async (node, teks) => {
+      await ketik(node, teks)
+      await tunggu()
+    }
+
+    hasil.daftarAwal =
+      daftar()?.querySelectorAll('li').length === 5 &&
+      (daftar().textContent.match(/Wajib/g) ?? []).length === 3 &&
+      (daftar().textContent.match(/Aktif/g) ?? []).length === 2 &&
+      !nilai()
+
+    await klik(tombol('Ubah syarat'))
+    await tunggu()
+    hasil.formMuncul =
+      nilai()?.value === String(asli.AMBANG_SERTIFIKAT) &&
+      document.activeElement === nilai() &&
+      el.querySelector('#syarat-semester')?.checked === true &&
+      el.querySelector('#syarat-pengesahan')?.checked === true
+    hasil.simpanMatiTanpaUbah = tombol('Simpan syarat')?.disabled === true
+
+    await isi(nilai(), '101')
+    hasil.angkaDitolak = /harus bilangan bulat 0 sampai 100/.test(el.textContent) && tombol('Simpan syarat').disabled
+
+    await isi(nilai(), '100')
+    hasil.dampakTampil =
+      /Dampak bila disimpan/.test(el.textContent) && /tidak lagi berhak/.test(el.textContent) && tombol('Simpan syarat').disabled
+    await isi(alasan(), 'pendek')
+    const matiAlasanPendek = tombol('Simpan syarat').disabled
+    await isi(alasan(), 'Uji menaikkan nilai minimum')
+    hasil.alasanWajib = matiAlasanPendek && !tombol('Simpan syarat').disabled
+
+    await klik(tombol('Batal'))
+    await tunggu()
+    hasil.batalTidakMengubah =
+      !nilai() && CONFIG.AMBANG_SERTIFIKAT === asli.AMBANG_SERTIFIKAT && document.activeElement === tombol('Ubah syarat')
+
+    await klik(tombol('Ubah syarat'))
+    await tunggu()
+    await isi(nilai(), '100')
+    await isi(alasan(), 'Uji menaikkan nilai minimum')
+    await klik(tombol('Simpan syarat'))
+    await tunggu()
+    hasil.nilaiTersimpan =
+      CONFIG.AMBANG_SERTIFIKAT === 100 &&
+      !kelayakanSertifikat(m).layak &&
+      /Nilai akhir minimal 100/.test(daftar().textContent) &&
+      /tersimpan dan langsung berlaku/.test(el.textContent) &&
+      !nilai()
+
+    await klik(tombol('Ubah syarat'))
+    await tunggu()
+    await isi(nilai(), String(asli.AMBANG_SERTIFIKAT))
+    await klik(el.querySelector('#syarat-semester'))
+    await klik(el.querySelector('#syarat-pengesahan'))
+    await tunggu()
+    await isi(alasan(), 'Uji mematikan dua syarat')
+    await klik(tombol('Simpan syarat'))
+    await tunggu()
+    hasil.duaSyaratMati =
+      CONFIG.SYARAT_SERTIFIKAT.semester === false &&
+      CONFIG.SYARAT_SERTIFIKAT.terkunci === false &&
+      kelayakanSertifikat(m).syarat.map((s) => s.id).join() === 'final,lengkap,ambang' &&
+      kelayakanSertifikat({ ...m, statusAngkatan: 'aktif' }).layak &&
+      (daftar().textContent.match(/Nonaktif/g) ?? []).length === 2
+    lepas()
+    lepasHalaman = null
+
+    hasil.mahasiswaTigaSyarat = (await ujiSertifikat('DEMO-LAYAK')).jumlahSyarat === 3
+
+    // Syarat tambahan: dua syarat bawaan dinyalakan lagi supaya yang diuji hanya syarat barunya.
+    updateConfig({ SYARAT_SERTIFIKAT: { ...asli.SYARAT_SERTIFIKAT } })
+    window.localStorage.setItem('sk5c.session', JSON.stringify(SUPER))
+    ;({ el, lepas } = await pasang('/super/aturan'))
+    lepasHalaman = lepas
+    const dalamLabel = (awalan, pemilih) =>
+      [...el.querySelectorAll('label')].find((l) => l.textContent.trim().startsWith(awalan))?.querySelector(pemilih)
+    const namaSyarat = () => dalamLabel('Nama syarat', 'input')
+    const pilihNilai = async (node, nilai) => {
+      const atur = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
+      await act(async () => {
+        atur.call(node, nilai)
+        node.dispatchEvent(new window.Event('change', { bubbles: true }))
+      })
+      await tunggu()
+    }
+    const NAMA = 'Mengikuti seminar uji'
+    const manual = () => CONFIG.SYARAT_TAMBAHAN.find((s) => s.nama === NAMA)
+
+    await klik(tombol('Tambah syarat'))
+    await tunggu()
+    hasil.tambahMuncul = Boolean(namaSyarat()) && document.activeElement === namaSyarat() && tombol('Simpan syarat').disabled
+    await isi(namaSyarat(), 'abc')
+    hasil.tambahNamaPendek = /Nama syarat harus 5 sampai 120 karakter/.test(el.textContent) && tombol('Simpan syarat').disabled
+    await isi(namaSyarat(), NAMA)
+    await isi(alasan(), 'Uji menambah syarat manual')
+    hasil.tambahDampak =
+      /Dampak bila disimpan/.test(el.textContent) && /1 tidak lagi berhak|\d+ tidak lagi berhak/.test(el.textContent) && !tombol('Simpan syarat').disabled
+    await klik(tombol('Simpan syarat'))
+    await tunggu()
+    hasil.tambahTersimpan =
+      Boolean(manual()?.id) &&
+      !kelayakanSertifikat(m).layak &&
+      kelayakanSertifikat(m).gagal.some((g) => g.label === NAMA) &&
+      daftar().querySelectorAll(':scope > li').length === 6 &&
+      daftar().textContent.includes(NAMA) &&
+      /Ditandai Super Admin: 0 dari/.test(daftar().textContent)
+
+    await klik(tombol('Atur mahasiswa'))
+    await tunggu()
+    await ketik(el.querySelector('input[type="search"]'), m.nim)
+    await tunggu()
+    const barisMhs = () => [...el.querySelectorAll('form li label')].find((l) => l.textContent.includes(m.nim))
+    const simpanTanda = () => tombol('Simpan tanda')
+    hasil.panelTandaMuncul = Boolean(barisMhs()) && barisMhs().querySelector('input').checked === false && simpanTanda().disabled
+    await klik(barisMhs().querySelector('input'))
+    await tunggu()
+    const panelAlasan = () => dalamLabel('Alasan', 'input')
+    await isi(panelAlasan(), 'Sudah hadir di seminar')
+    hasil.panelMenghitungSelisih = /Akan ditandai: 1 mahasiswa\. Tanda dibatalkan: 0 mahasiswa\./.test(el.textContent) && !simpanTanda().disabled
+    await klik(simpanTanda())
+    await tunggu()
+    hasil.tandaMembuatLayak =
+      m.syaratTerpenuhi?.includes(manual().id) &&
+      kelayakanSertifikat(m).layak &&
+      /Ditandai Super Admin: 1 dari/.test(daftar().textContent) &&
+      /Tanda "Mengikuti seminar uji" tersimpan: 1 ditandai, 0 dibatalkan/.test(el.textContent) &&
+      document.activeElement === tombol('Atur mahasiswa')
+    lepas()
+    lepasHalaman = null
+    hasil.mahasiswaMelihatSyaratBaru = (await ujiSertifikat('DEMO-LAYAK')).jumlahSyarat === 6
+    window.localStorage.setItem('sk5c.session', JSON.stringify(SUPER))
+    ;({ el, lepas } = await pasang('/super/aturan'))
+    lepasHalaman = lepas
+
+    // Syarat nilai aspek: otomatis, tanpa tombol Atur mahasiswa.
+    const aspekA1 = kelayakanSertifikat(m).transkrip.aspekById.A1
+    await klik(tombol('Ubah syarat'))
+    await tunggu()
+    await klik(tombol('Tambah syarat'))
+    await tunggu()
+    const jenisBaru = () => [...el.querySelectorAll('label')].filter((l) => l.textContent.trim().startsWith('Jenis syarat')).at(-1)?.querySelector('select')
+    await pilihNilai(jenisBaru(), 'nilai')
+    await pilihNilai(dalamLabel('Aspek', 'select'), 'A1')
+    await isi(dalamLabel('Nilai minimal', 'input'), String(Math.min(100, aspekA1.nilai + 1)))
+    await isi(alasan(), 'Uji menambah syarat nilai aspek')
+    await klik(tombol('Simpan syarat'))
+    await tunggu()
+    const syaratNilai = CONFIG.SYARAT_TAMBAHAN.find((s) => s.jenis === 'nilai')
+    hasil.syaratNilaiBerlaku =
+      syaratNilai?.aspekId === 'A1' &&
+      !kelayakanSertifikat(m).layak &&
+      kelayakanSertifikat(m).gagal.some((g) => g.id === 'tambahan-' + syaratNilai.id) &&
+      /Nilai aspek A\.1 minimal/.test(daftar().textContent) &&
+      /Diperiksa otomatis dari nilai aspek/.test(daftar().textContent)
+
+    // Dinonaktifkan: tidak menghalangi lagi, tandanya tetap.
+    await klik(tombol('Ubah syarat'))
+    await tunggu()
+    const aktifSyarat = () => [...el.querySelectorAll('form label')].filter((l) => l.textContent.trim() === 'Aktif').map((l) => l.querySelector('input'))
+    await klik(aktifSyarat()[1])
+    await tunggu()
+    await isi(alasan(), 'Uji menonaktifkan syarat nilai')
+    await klik(tombol('Simpan syarat'))
+    await tunggu()
+    hasil.nonaktifTidakMenghalangi =
+      CONFIG.SYARAT_TAMBAHAN.find((s) => s.jenis === 'nilai')?.aktif === false && kelayakanSertifikat(m).layak
+
+    // Dihapus: tanda yang ikut hilang disebut sebelum disimpan.
+    await klik(tombol('Ubah syarat'))
+    await tunggu()
+    for (const b of [...el.querySelectorAll('form button')].filter((x) => x.textContent.trim() === 'Hapus')) await klik(b)
+    await tunggu()
+    hasil.hapusMenyebutTanda = /1 tanda mahasiswa pada syarat yang dihapus ikut terhapus/.test(el.textContent)
+    await isi(alasan(), 'Uji menghapus semua syarat tambahan')
+    await klik(tombol('Simpan syarat'))
+    await tunggu()
+    hasil.hapusTersimpan = CONFIG.SYARAT_TAMBAHAN.length === 0 && daftar().querySelectorAll(':scope > li').length === 5
+
+    // Dijadwalkan mulai semester berikutnya: belum menahan siapa pun sampai periodenya tiba.
+    const JADWAL = 'Seminar semester depan'
+    const berikut = periodeSetelah(PERIODE_AKTIF, 1)
+    const terjadwal = () => CONFIG.SYARAT_TAMBAHAN.find((s) => s.nama === JADWAL)
+    const pilihMulai = () => dalamLabel('Mulai berlaku', 'select')
+    await klik(tombol('Tambah syarat'))
+    await tunggu()
+    await isi(namaSyarat(), JADWAL)
+    hasil.mulaiBawaanSekarang = pilihMulai()?.value === 'sekarang'
+    await pilihNilai(pilihMulai(), 'berikutnya')
+    await isi(alasan(), 'Uji menjadwalkan syarat baru')
+    hasil.jadwalMenyebutDampak =
+      el.textContent.includes('Mulai diperiksa saat periode akademik dipindah ke ' + labelPeriode(berikut)) &&
+      /Saat mulai berlaku, \d+ mahasiswa yang sekarang berhak akan tertahan/.test(el.textContent) &&
+      /0 menjadi berhak, 0 tidak lagi berhak/.test(el.textContent)
+    await klik(tombol('Simpan syarat'))
+    await tunggu()
+    hasil.jadwalTersimpan =
+      Boolean(terjadwal()?.mulai) &&
+      samaPeriode(terjadwal().mulai, berikut) &&
+      kelayakanSertifikat(m).layak &&
+      kelayakanSertifikat(m).syarat.length === 5 &&
+      daftar().textContent.includes('Mulai ' + labelPeriode(berikut))
+    await klik(tombol('Pindah ke ' + labelPeriode(berikut)))
+    await tunggu()
+    hasil.pindahMenyebutSyarat =
+      el.textContent.includes('Syarat sertifikat yang mulai berlaku: ' + JADWAL) &&
+      /\d+ mahasiswa yang sekarang berhak akan tertahan sampai memenuhinya/.test(el.textContent)
+    await klik(tombol('Batal'))
+    await tunggu()
+    pasangPeriode(berikut)
+    hasil.jadwalTiba = !kelayakanSertifikat(m).layak && kelayakanSertifikat(m).syarat.length === 6
+    pasangPeriode(null)
+    hasil.jadwalMenungguLagi = kelayakanSertifikat(m).layak && kelayakanSertifikat(m).syarat.length === 5
+    lepas()
+    lepasHalaman = null
+
+    updateConfig({ SYARAT_SERTIFIKAT: null, SYARAT_TAMBAHAN: [null] })
+    hasil.isianRusakTetapKetat = kelayakanSertifikat(m).syarat.length === 5
+  } catch (e) {
+    hasil.galat = e?.stack ?? String(e)
+  } finally {
+    lepasHalaman?.()
+    pasangPeriode(null)
+    updateConfig(asli)
+    delete m.syaratTerpenuhi
+    if (lama) window.localStorage.setItem('sk5c.session', lama)
+    else window.localStorage.removeItem('sk5c.session')
+  }
+  hasil.pulih = kelayakanSertifikat(m).syarat.length === 5 && CONFIG.AMBANG_SERTIFIKAT === asli.AMBANG_SERTIFIKAT
   return hasil
 }

@@ -54,6 +54,8 @@ const BENAR_SALAH = {
   UBAH_AKSES: ['Dicabut', 'Aktif'],
   UBAH_IZIN: ['Tidak ada', 'Diberi'],
   UBAH_WEWENANG: ['Ditutup', 'Dibuka'],
+  UBAH_SYARAT_SERTIFIKAT: ['Nonaktif', 'Aktif'],
+  TANDAI_SYARAT_SERTIFIKAT: ['Belum', 'Terpenuhi'],
 }
 
 /* Nama isian rincian (src/server/*) dalam bahasa layar. Yang tidak terdaftar tampil dengan huruf kecil apa adanya. */
@@ -165,6 +167,22 @@ const LABEL_RINCIAN = {
   berubah: 'Nilai berubah',
   jadiBelumLengkap: 'Menjadi belum lengkap',
   tidakLagiLayak: 'Tidak lagi berhak sertifikat',
+  // Syarat kelayakan cetak sertifikat (UBAH_SYARAT_SERTIFIKAT) dan dampaknya, lalu tanda per mahasiswa pada syarat manual
+  // (TANDAI_SYARAT_SERTIFIKAT).
+  nilaiMinimum: 'Nilai akhir minimal',
+  syaratSemester: 'Syarat semester',
+  syaratPengesahan: 'Syarat pengesahan angkatan',
+  syaratTambahan: 'Syarat tambahan',
+  tandaDihapus: 'Tanda mahasiswa yang ikut terhapus',
+  syarat: 'Syarat',
+  ditandai: 'Ditandai terpenuhi',
+  dibatalkan: 'Tanda dibatalkan',
+  terpenuhi: 'Terpenuhi',
+  layakSebelum: 'Berhak sebelum diubah',
+  layakSesudah: 'Berhak sesudah diubah',
+  jadiLayak: 'Menjadi berhak sertifikat',
+  aksesTerhenti: 'Akses cetak yang terhenti',
+  akanTertahan: 'Tertahan saat syarat terjadwal mulai berlaku',
   angkatanTerkunci: 'Angkatan disahkan',
   dilewati: 'Dilewati (nilai sama)',
   diajukan: 'Diajukan ke Super Admin',
@@ -462,6 +480,10 @@ export function ringkasan(b, t) {
         ? t('{n} mahasiswa dimasukkan ke Kelas {kelas}', { n: r.jumlah, kelas: r.kelas })
         : t('{n} mahasiswa dikeluarkan dari kelasnya', { n: r.jumlah }),
     )
+  }
+  // Tanda syarat sertifikat manual (tandaiSyaratSertifikat di src/server/syaratSertifikat.js).
+  if (b.aksi === 'TANDAI_SYARAT_SERTIFIKAT' && typeof r.ditandai === 'number') {
+    baris.push(t('{a} mahasiswa ditandai, {b} dibatalkan', { a: r.ditandai, b: r.dibatalkan }))
   }
   const alasan = typeof r.alasan === 'string' && r.alasan ? ['Alasan', r.alasan] : typeof r.catatan === 'string' && r.catatan ? ['Catatan', r.catatan] : null
   if (alasan) baris.push(t(alasan[0]) + ': ' + potong(alasan[1], 90))

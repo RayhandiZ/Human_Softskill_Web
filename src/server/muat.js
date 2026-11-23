@@ -145,6 +145,7 @@ export const SERTA_MAHASISWA = {
   pengguna: { select: { email: true } },
   nilai: true,
   penguncian: true,
+  syaratTanda: { select: { syaratId: true } },
 }
 
 /** Satu mahasiswa dalam bentuk yang dibaca halaman dan aturan penilaian. */
@@ -191,6 +192,8 @@ export function susunMahasiswa(m, nama = new Map(), { komponenBoleh = null, deng
     periode: periodeAngkatan(intakeDari(m.angkatan)),
     nilai,
     penguncian,
+    // Syarat sertifikat tambahan berjenis manual yang sudah ditandai Super Admin (src/lib/syaratSertifikat.js).
+    syaratTerpenuhi: (m.syaratTanda ?? []).map((s) => s.syaratId),
   }
 }
 

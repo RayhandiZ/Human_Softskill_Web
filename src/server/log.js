@@ -36,6 +36,9 @@ export const AKSI_LOG = [
   'UBAH_PENILAIAN',
   'UBAH_AKSES',
   'UBAH_PERIODE',
+  // Nilai minimum dan syarat kelayakan cetak sertifikat dari Aturan Sistem (src/server/syaratSertifikat.js).
+  'UBAH_SYARAT_SERTIFIKAT',
+  'TANDAI_SYARAT_SERTIFIKAT',
   // Sakelar wewenang yang ditutup atau dibuka lagi Super Admin di Peran & Wewenang (src/server/wewenang.js), lalu
   // keterangan per sel dan baris kebijakan tertulis di matriksnya (ubahMatriks di file yang sama).
   'UBAH_WEWENANG',

@@ -268,7 +268,7 @@ export default function Sertifikat() {
           </h2>
           <p className="mt-1 text-[14px] leading-relaxed text-ink-2">
             {k.layak
-              ? teks('Semua syarat nilai dan aspek terpenuhi.') +
+              ? teks('Semua syarat terpenuhi.') +
                 ' ' +
                 teks('Nilai akhir {nilai}, predikat {huruf}.', { nilai: t.akhir.nilai, huruf: hurufMutu(t.akhir.nilai)?.huruf })
               : teks('{n} dari {total} syarat belum terpenuhi.', { n: k.gagal.length, total: k.syarat.length })}

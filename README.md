@@ -246,6 +246,9 @@ src/lib/
   aspek.js        aspek CPMK itu sendiri: pemeriksaan tambah/ubah/arsip/pulihkan, ID dan kode baru,
                   dampakAspek() untuk pratinjau; dipakai layar dan server (lihat Mengelola aspek CPMK)
   rules.js        R1–R9 sebagai fungsi murni + validasi import
+  syaratSertifikat.js
+                  syarat kelayakan cetak yang diatur Super Admin, termasuk syarat tambahan: pemeriksaan isian
+                  dan pratinjau dampak
   duaLapis.js     label status dan giliran persetujuan dua lapis (koreksi, akses cetak sertifikat);
                   keadaanSertifikat() untuk layar mahasiswa dan admin (lihat Persetujuan dua lapis)
   labelLog.js     label jenis tindakan (LABEL_LOG) dan sasaran log (labelSasaran) untuk Log Aktivitas,
@@ -310,6 +313,9 @@ src/server/       hanya berjalan di server, tidak pernah dikirim ke peramban
   penilaian.js    menyimpan penilaian satu aspek (POST /api/kurikulum/penilaian)
   aspek.js        tambah, ubah struktur, arsipkan, pulihkan aspek CPMK (POST /api/kurikulum/aspek)
   periode.js      memindahkan periode akademik, hanya super admin (POST /api/periode)
+  syaratSertifikat.js
+                  mengubah dan menambah syarat kelayakan cetak sertifikat (POST /api/sertifikat/syarat) dan
+                  menandai mahasiswa pada syarat manual (POST /api/sertifikat/syarat/tanda); hanya super admin
   wewenang.js     sakelar wewenang: denganWewenang() menjaga pintu yang bisa ditutup, ubahWewenang()
                   menutup atau membuka lagi (POST /api/wewenang); matriks: ambilMatriks() dan
                   ubahMatriks() untuk keterangan per sel dan kebijakan tertulis (POST
@@ -642,7 +648,7 @@ admin biasa ke `/admin`; itu hanya penjaga tampilan, pintu API tetap memeriksa u
 | `/super/akses` | Akses Pengguna: mencabut dan memulihkan akses mahasiswa, dosen, dan admin, menambah akun, dan menghapus akun yang aksesnya sudah dicabut (lihat di bawah) | `/api/akses`, `/api/akses/ubah`, `/api/akses/tambah`, `/api/akses/hapus` |
 | `/super/log` | Log Aktivitas (lihat di bawah) | `/api/log` |
 | `/super/wewenang` | kartu tiap peran beserta jumlah tindakan yang boleh dilakukannya, matriks siapa boleh melakukan apa (kolom Super Admin disorot), tombol *Tutup sementara* / *Buka lagi* di empat sel bersakelar dengan alasan wajib, dan tombol *Ubah matriks* untuk keterangan per sel serta kebijakan tertulis (lihat Peran & Wewenang di bawah), plus prinsip yang dipakai | `MATRIKS` dan sakelar di `src/lib/wewenang.js`, diturunkan dari aturan server; `/api/wewenang`, `/api/wewenang/matriks`, `matriks` di `/api/data` |
-| `/super/aturan` | kartu periode akademik (pindah satu semester maju atau mundur, dengan pratinjau semester tiap angkatan dan alasan; lihat Periode akademik), ringkasan berapa aturan yang masih menunggu konfirmasi, lalu aturan perhitungan yang berlaku, sumbernya (bawaan kode atau tabel Konfigurasi), dan statusnya; selain periode hanya bacaan, tautannya ke Penilaian & Bobot | `CONFIG`, `DARI_BASIS_DATA` di `src/lib/config.js`; `PERIODE_AKTIF`, `/api/periode` |
+| `/super/aturan` | kartu periode akademik (pindah satu semester maju atau mundur, dengan pratinjau semester tiap angkatan dan alasan; lihat Periode akademik), kartu syarat kelayakan cetak sertifikat, tempat mengubah, menambah, dan menandai syarat (lihat Sertifikat › Mengubah syarat kelayakan), ringkasan berapa aturan yang masih menunggu konfirmasi, lalu aturan perhitungan yang berlaku, sumbernya (bawaan kode atau tabel Konfigurasi), dan statusnya; selain periode dan syarat sertifikat hanya bacaan, tautannya ke Penilaian & Bobot | `CONFIG`, `DARI_BASIS_DATA` di `src/lib/config.js`; `PERIODE_AKTIF`, `/api/periode`, `/api/sertifikat/syarat`, `/api/sertifikat/syarat/tanda` |
 
 Rancangannya mengikuti praktik umum panel admin: wewenang secukupnya dan pemisahan tugas (yang
 meminta tidak menyetujui) dari OWASP Authorization Cheat Sheet, pola maker-checker untuk antrean
@@ -2203,6 +2209,8 @@ karena `AuditLog` tidak mendapat baris baru saat batch dibatalkan.
 | `UBAH_PENILAIAN` | penilaian satu aspek disimpan dari Input Manual | alasan, teks aspek sebelum/sesudah, komponen ditambah/diubah/diarsipkan/dipulihkan, bobot sebelum/sesudah, ringkasan dampak |
 | `TAMBAH_ASPEK`, `UBAH_ASPEK`, `ARSIPKAN_ASPEK`, `PULIHKAN_ASPEK` | aspek CPMK ditambah, diubah strukturnya, diarsipkan, atau dipulihkan (lihat Mengelola aspek CPMK) | alasan, ID, kode, nama, struktur sebelum/sesudah (kode, cluster, semester, aktif), komponen yang ditambah, ringkasan dampak |
 | `UBAH_PERIODE` | super admin memindahkan periode akademik (lihat Periode akademik) | periode sebelum/sesudah, alasan |
+| `UBAH_SYARAT_SERTIFIKAT` | super admin mengubah syarat kelayakan cetak sertifikat (lihat Sertifikat › Mengubah syarat kelayakan) | nilai minimum, syarat aktif, dan syarat tambahan sebelum/sesudah, alasan, dampak ke mahasiswa, jumlah tanda yang ikut terhapus |
+| `TANDAI_SYARAT_SERTIFIKAT` | super admin menandai mahasiswa pada syarat tambahan manual, atau membatalkannya | nama syarat, jumlah ditandai dan dibatalkan, NIM dan nama tiap mahasiswa, alasan |
 | `UBAH_AKSES` | super admin mencabut atau memulihkan akses akun (lihat Panel Super Admin › Akses Pengguna) | email, peran, aktif sebelum/sesudah, alasan |
 | `HAPUS_AKUN` | super admin menghapus permanen akun yang aksesnya sudah dicabut: akun mahasiswa beserta datanya, akun dosen tanpa menghapus nilai yang pernah ia masukkan, akun admin hanya bila belum punya data | email, peran, nama, NIM/NIP, prodi, angkatan, alasan, ID akun; akun mahasiswa juga ID data mahasiswa dan jumlah data yang ikut terhapus; akun dosen juga ID data dosen |
 | `TAMBAH_AKUN` | akun baru dibuat dari Akses Pengguna atau Data Master | email, peran, nama, NIM/NIP, prodi, angkatan (tanpa sandi) |
@@ -2246,9 +2254,10 @@ admin itu (lihat Panel Kemahasiswaan › Lonceng).
 
 ## Sertifikat
 
-Kelayakan dihitung `kelayakanSertifikat()` di `src/lib/rules.js`, dengan lima syarat: sudah menempuh Semester 3,
+Kelayakan dihitung `kelayakanSertifikat()` di `src/lib/rules.js`, dengan lima syarat bawaan: sudah menempuh Semester 3,
 seluruh aspek final, tidak ada komponen kosong, nilai akhir minimal `CONFIG.AMBANG_SERTIFIKAT`, dan nilai
-angkatannya sudah disahkan. Sejak rapat 24 Okt 2026 memenuhi syarat saja belum cukup:
+angkatannya sudah disahkan (nilai minimum dan dua syarat di antaranya bisa diubah, lihat Mengubah syarat kelayakan).
+Sejak rapat 24 Okt 2026 memenuhi syarat saja belum cukup:
 
 1. Mahasiswa yang layak menekan **Minta akses cetak** di halaman Sertifikat (`POST /api/sertifikat`). Server
    menghitung ulang kelayakannya; yang belum layak dijawab 409 beserta sebabnya.
@@ -2264,7 +2273,7 @@ yang semuanya tercentang:
 
 - **Izin cetak** (dikelola Kemahasiswaan) menyebut keadaannya (`keadaanSertifikat()` di `src/lib/duaLapis.js`): belum bisa
   diminta, belum diminta, sedang ditinjau (admin atau Super Admin), siap dicetak, ditolak, atau dicabut.
-- **Kelayakan akademik** memuat kelima syarat beserta statusnya.
+- **Kelayakan akademik** memuat syarat yang aktif beserta statusnya.
 
 Ditolak dan dicabut tampil sebagai peringatan padat, tanpa kaca, dan keduanya hanya memuat judul, *Alasan*, dan tombol
 *Ajukan peninjauan cetak* (dicabut sejak 12 Nov 2026, ditolak sejak 18 Nov 2026, permintaan pengguna): tanpa siapa dan kapan
@@ -2288,6 +2297,50 @@ Sertifikat dicetak, atau disimpan sebagai PDF lewat dialog cetak, dari tombol di
 surel. Setiap pembukaan dialog cetak tercatat, dan lembarnya baru dipasang sesudah server mengizinkan, jadi Ctrl+P
 biasa tidak mencetak sertifikat (lihat Catatan kode › Cetak). Aturan keputusan, pencabutan, catatan cetak, log, dan
 migrasinya ada di Persetujuan dua lapis.
+
+### Mengubah syarat kelayakan
+
+Super Admin mengubahnya dari **Aturan Sistem › Syarat kelayakan cetak sertifikat** (sejak 23 Nov 2026):
+
+| Syarat | Yang bisa diubah |
+|---|---|
+| Nilai akhir minimal | angkanya, bilangan bulat 0 sampai 100 (`AMBANG_SERTIFIKAT`); tidak bisa dimatikan karena lembar sertifikat memuat nilai |
+| Seluruh aspek final | tidak bisa dimatikan, karena lembar sertifikat menyatakan seluruh aspek sudah diselesaikan |
+| Tidak ada komponen kosong | tidak bisa dimatikan, alasannya sama |
+| Sudah menempuh Semester 3 | bisa dimatikan (`SYARAT_SERTIFIKAT.semester`) |
+| Nilai angkatan sudah disahkan | bisa dimatikan (`SYARAT_SERTIFIKAT.terkunci`); nilainya lalu masih bisa berubah sesudah dicetak |
+
+Selain lima syarat itu, Super Admin bisa **menambah syarat** lewat tombol *Tambah syarat*, paling banyak 10. Jenisnya dipilih
+saat dibuat dan tidak bisa diganti:
+
+| Jenis | Cara diperiksa |
+|---|---|
+| Ditandai Super Admin per mahasiswa | bernama bebas (5 sampai 120 karakter), misalnya "Mengikuti seminar antikorupsi". Mahasiswa dianggap belum memenuhi sampai Super Admin mencentangnya lewat *Atur mahasiswa* (tabel `SyaratMahasiswa`, `POST /api/sertifikat/syarat/tanda`) |
+| Nilai aspek minimal | satu aspek dan nilai minimalnya, diperiksa otomatis. Aspek yang bukan bagian transkrip mahasiswa (diarsipkan, atau ditambah sesudah angkatannya disahkan) tidak berlaku baginya |
+
+Syarat tambahan bisa dinonaktifkan (tandanya tetap) atau dihapus (tandanya ikut terhapus dan jumlahnya tercatat di log).
+Supaya syarat manual yang baru tidak langsung menahan semua mahasiswa, jadwalkan mulai semester berikutnya atau simpan dulu
+sebagai nonaktif, tandai mahasiswanya, lalu aktifkan. Daftarnya ada di tabel `Konfigurasi` (`SYARAT_TAMBAHAN`) dengan id acak yang tidak pernah dipakai ulang, jadi tanda
+lama tidak bisa berpindah ke syarat lain. Tanda ikut terhapus bila mahasiswanya dihapus (migrasi
+`20261123100000_syarat_mahasiswa`).
+
+Setiap syarat tambahan punya pilihan **Mulai berlaku**: *Saat ini juga* (`mulai: null`) atau *Semester berikutnya* (`mulai: { tahun,
+semester }`, periode sesudah periode aktif saat disimpan). Syarat terjadwal belum dihitung dan belum tampil di daftar mahasiswa.
+Ia berlaku sendiri untuk seluruh mahasiswa saat Super Admin memindahkan periode akademik ke semester itu (`syaratSudahMulai` di
+`src/lib/rules.js`), dan kembali menunggu bila periodenya dimundurkan. Mahasiswanya sudah bisa ditandai selama menunggu. Formulir
+syarat menyebut berapa mahasiswa yang nanti tertahan, dan kartu Periode akademik menyebut syarat yang mulai berlaku sebelum
+periodenya dipindah.
+
+`POST /api/sertifikat/syarat` (`src/server/syaratSertifikat.js`) dengan isi `{ versi, nilaiMinimum, syaratSemester,
+syaratPengesahan, tambahan, alasan }` hanya untuk Super Admin dan wajib beralasan minimal 10 karakter. Pemeriksaan dan pratinjaunya
+ada di `src/lib/syaratSertifikat.js`, dipakai layar dan server; server menghitung ulang dampaknya dari seluruh mahasiswa.
+Nilainya disimpan di tabel `Konfigurasi` dan menaikkan `VERSI_KURIKULUM`, jadi setiap proses server membacanya ulang, dan
+versi yang sudah kedaluwarsa ditolak 409. Perubahan tercatat sebagai `UBAH_SYARAT_SERTIFIKAT`.
+
+Syarat baru langsung berlaku untuk **seluruh** mahasiswa, juga yang aksesnya sudah disetujui: kelayakan dihitung ulang saat
+dicetak, jadi yang tidak lagi memenuhi syarat tidak bisa mencetak sampai memenuhinya. Formulirnya menyebut jumlah mahasiswa
+yang terdampak sebelum disimpan. Isian `SYARAT_SERTIFIKAT` yang hilang atau rusak dibaca aktif, supaya kesalahan data tidak
+melonggarkan syarat.
 
 ## Penyimpanan perubahan
 
@@ -2883,7 +2936,7 @@ Klik, seret, dan gerak lensanya milik pustaka. Yang ditambahkan di sini, dan mud
 | — | Panel dosen: Beranda (pantau) dan Unggah Nilai (rekap Excel, langsung tersimpan) | selesai, sesuai rapat 24 Okt 2026; Penilaian tiga langkah dan Riwayat Pengiriman dihapus (lihat Panel Dosen) |
 | — | Hak peran rapat 24 Okt 2026: admin hanya melihat nilai, tanda final dan bobot dari admin diajukan, data master hanya super admin | selesai (lihat Hak peran) |
 | — | Persetujuan dua lapis rapat 24 Okt 2026: pengajuan ubah nilai dan akses cetak sertifikat, beserta pencabutan akses cetak dan catatan cetak | selesai (lihat Persetujuan dua lapis) |
-| — | Basis data MySQL: 29 tabel, 25 migrasi, 44 pintu API, sesi cookie | selesai |
+| — | Basis data MySQL: 30 tabel, 26 migrasi, 46 pintu API, sesi cookie | selesai |
 | — | Kerangka dan susunan panel dosen, Kemahasiswaan, dan Super Admin mengikuti video referensi; warnanya tetap navy dan toska (lihat Panel kerja) | selesai 3 Nov 2026 |
 | — | Cek ulang semua halaman rapat 24 Okt 2026: bahasa Inggris, tampilan HP 360px sampai 1536px, kontras terang dan gelap, papan ketik | selesai 3 Nov 2026 |
 | — | Bahasa Inggris untuk isi kurikulum, pesan server, serta nama fakultas, prodi, dan angkatan (rapat 24 Okt 2026, keputusan 3 Nov 2026) | selesai; draf terjemahan isi kurikulum dan nama prodi menunggu diperiksa tim (lihat Kamus dan terjemahan) |
@@ -2900,7 +2953,7 @@ Klik, seret, dan gerak lensanya milik pustaka. Yang ditambahkan di sini, dan mud
 
 Yang belum dikerjakan:
 
-- mengubah indikator perilaku dan pengaturan selain bobot (ambang sertifikat, mode penguncian,
+- mengubah indikator perilaku dan pengaturan selain bobot dan syarat sertifikat (mode penguncian,
   mode agregasi, dan lain-lain) dari layar; menambah cluster, area, atau fase baru. Aspek (tambah,
   kode, semester, cluster, arsip), teks aspek, komponen, dan bobot sudah bisa diubah;
 - penerbitan sertifikat yang membekukan nomor, tanggal, dan nilai — kini kelayakan dihitung

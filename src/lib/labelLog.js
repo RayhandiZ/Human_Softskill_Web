@@ -15,6 +15,8 @@ export const LABEL_LOG = {
   // Dicatat /api/akses/ubah setelah dibuat di back-end; lihat README.md › Panel Super Admin › Akses Pengguna.
   UBAH_AKSES: 'Ubah akses akun',
   UBAH_PERIODE: 'Ubah periode akademik',
+  UBAH_SYARAT_SERTIFIKAT: 'Ubah syarat kelayakan sertifikat',
+  TANDAI_SYARAT_SERTIFIKAT: 'Tandai syarat sertifikat',
   // Sakelar, keterangan per sel, dan kebijakan tertulis di halaman Peran & Wewenang (src/server/wewenang.js).
   UBAH_WEWENANG: 'Ubah wewenang peran',
   UBAH_KETERANGAN_WEWENANG: 'Ubah keterangan wewenang',
@@ -77,6 +79,8 @@ const POLA_SASARAN = [
   [/^aspek (\S+) \(kurikulum versi (\S+)\)$/, (m, t) => t('aspek {kode} (kurikulum versi {v})', { kode: m[1], v: m[2] })],
   [/^kurikulum versi (\S+)$/, (m, t) => t('kurikulum versi {v}', { v: m[1] })],
   [/^periode (Ganjil|Genap) (\S+)$/, (m, t) => t('periode {nama}', { nama: t(m[1]) + ' ' + m[2] })],
+  [/^syarat sertifikat$/, (m, t) => t('syarat sertifikat')],
+  [/^syarat sertifikat (.+)$/, (m, t) => t('syarat sertifikat {nama}', { nama: m[1] })],
   [/^akun (.+)$/, (m, t) => t('akun {nama}', { nama: m[1] })],
   [/^angkatan (.+)$/, (m, t) => t('angkatan {nama}', { nama: m[1] })],
   [/^batch (.+)$/, (m, t) => t('batch {nama}', { nama: m[1] })],

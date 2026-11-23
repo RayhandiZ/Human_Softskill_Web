@@ -3,6 +3,7 @@ import { KOMPONEN, KURIKULUM_TERPASANG, getAspek, getKomponenById, isiKurikulum 
 import { updateConfig } from './config.js'
 import { periksaBobot } from './bobot.js'
 import { kelayakanSertifikat, periksaUsulan } from './rules.js'
+import { keKonfigurasi, periksaSyarat, rapikanTambahan, susunanSyarat } from './syaratSertifikat.js'
 import {
   AUDIT_LOG,
   COHORTS,
@@ -1156,6 +1157,46 @@ export async function ubahPeriode({ tahun, semester, alasan }) {
   pasangPeriode(hasil.periode)
   await muatDariServer()
   return hasil
+}
+
+/* ------------------------------ syarat sertifikat -------------------------- */
+
+let urutSyaratLokal = 0
+
+/**
+ * Super admin mengubah atau menambah syarat kelayakan cetak sertifikat (src/server/syaratSertifikat.js). Kelayakan dihitung
+ * di layar dari CONFIG, dan tanda syarat yang dihapus ikut hilang, jadi data dimuat ulang. Mode lokal hanya mengganti CONFIG
+ * di memori.
+ */
+export async function ubahSyaratSertifikat({ alasan, ...syarat }) {
+  if (modeLokal()) {
+    const masalah = periksaSyarat(syarat, susunanSyarat().tambahan)
+    if (masalah) throw new Error(masalah)
+    const tambahan = syarat.tambahan.map((s) => ({ ...rapikanTambahan(s), id: s.id ?? 'lokal-' + ++urutSyaratLokal }))
+    updateConfig(keKonfigurasi({ ...syarat, tambahan }))
+    berubah()
+    return { ok: true, syarat: { ...syarat, tambahan } }
+  }
+  const hasil = await kirim('/api/sertifikat/syarat', { isi: { versi: KURIKULUM_TERPASANG.versi, ...syarat, alasan } })
+  isiKurikulum(hasil.kurikulum ?? {})
+  await muatDariServer()
+  return hasil
+}
+
+/**
+ * Super admin menandai mahasiswa sudah memenuhi satu syarat manual (`tandai`: NIM) atau membatalkannya (`batalkan`: NIM).
+ * Jawabannya { jumlah } mahasiswa yang berubah.
+ */
+export async function tandaiSyaratSertifikat({ syaratId, tandai = [], batalkan = [], alasan }) {
+  if (modeLokal()) {
+    for (const s of STUDENTS) {
+      if (tandai.includes(s.nim)) s.syaratTerpenuhi = [...new Set([...(s.syaratTerpenuhi ?? []), syaratId])]
+      if (batalkan.includes(s.nim)) s.syaratTerpenuhi = (s.syaratTerpenuhi ?? []).filter((x) => x !== syaratId)
+    }
+    berubah()
+    return { jumlah: tandai.length + batalkan.length }
+  }
+  return tulis('/api/sertifikat/syarat/tanda', { syaratId, tandai, batalkan, alasan })
 }
 
 /* ------------------------------ sakelar wewenang --------------------------- */

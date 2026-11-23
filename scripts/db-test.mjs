@@ -60,6 +60,8 @@ import * as sertifikat from '../app/api/sertifikat/route.js'
 import * as keputusanSertifikat from '../app/api/sertifikat/keputusan/route.js'
 import * as cabutSertifikat from '../app/api/sertifikat/cabut/route.js'
 import * as cetakSertifikat from '../app/api/sertifikat/cetak/route.js'
+import * as syaratSertifikat from '../app/api/sertifikat/syarat/route.js'
+import * as tandaSyarat from '../app/api/sertifikat/syarat/tanda/route.js'
 import * as nilaiDosen from '../app/api/nilai/dosen/route.js'
 import * as keputusanUsulan from '../app/api/usulan/keputusan/route.js'
 import * as profil from '../app/api/profil/route.js'
@@ -109,7 +111,8 @@ import { susunanBobot } from '../src/lib/bobot.js'
 import { susunanPenilaian } from '../src/lib/penilaian.js'
 import { bobotKomponen } from '../src/lib/scoring.js'
 import { CONFIG } from '../src/lib/config.js'
-import { KUNCI_PERIODE, PERIODE_AKTIF, periodeSetelah, programSelesai, samaPeriode } from '../src/lib/data.js'
+import { susunanSyarat } from '../src/lib/syaratSertifikat.js'
+import { KUNCI_PERIODE, PERIODE_AKTIF, labelPeriode, periodeSetelah, programSelesai, samaPeriode } from '../src/lib/data.js'
 import { ambilKurikulum, ambilPeriode } from '../src/server/kurikulum.js'
 import { ambilMaster } from '../src/server/master.js'
 import { tangani } from '../src/server/api.js'
@@ -129,6 +132,8 @@ const PINTU = {
   '/api/sertifikat/keputusan': keputusanSertifikat,
   '/api/sertifikat/cabut': cabutSertifikat,
   '/api/sertifikat/cetak': cetakSertifikat,
+  '/api/sertifikat/syarat': syaratSertifikat,
+  '/api/sertifikat/syarat/tanda': tandaSyarat,
   '/api/nilai/dosen': nilaiDosen,
   '/api/usulan/keputusan': keputusanUsulan,
   '/api/profil': profil,
@@ -219,6 +224,11 @@ const logPenilaianUji = []
 /* Bagian "periode": baris Konfigurasi PERIODE_AKTIF sebelum disentuh uji (null = belum ada), dan log-nya. */
 let periodeAsli
 const logPeriodeUji = []
+/* Bagian "syarat sertifikat": baris Konfigurasi sebelum disentuh uji (null = belum ada), dan log-nya. */
+const KUNCI_SYARAT = ['AMBANG_SERTIFIKAT', 'SYARAT_SERTIFIKAT', 'SYARAT_TAMBAHAN']
+let syaratAsli
+const logSyaratUji = []
+const syaratUji = [] // id syarat tambahan buatan uji; tandanya dihapus bersama bagian ini
 /* Bagian "hapus akun": tiga akun sementara tanpa data. NIM wajib angka, jadi berawalan 99999, bukan UJI. */
 const HAPUS_UJI = {
   admin: { email: 'uji.hapus.admin.' + SUF + '@umn.ac.id' },
@@ -376,6 +386,20 @@ async function pulihkanPeriode() {
   if (logPeriodeUji.length) await db.logAktivitas.deleteMany({ where: { id: { in: logPeriodeUji } } })
 }
 
+/** Syarat sertifikat dikembalikan persis seperti sebelum uji, lalu versi dinaikkan supaya pemuat membacanya ulang. */
+async function pulihkanSyarat() {
+  if (logSyaratUji.length) await db.logAktivitas.deleteMany({ where: { id: { in: logSyaratUji } } })
+  if (syaratUji.length) await db.syaratMahasiswa.deleteMany({ where: { syaratId: { in: syaratUji } } })
+  if (syaratAsli === undefined) return
+  for (const kunci of KUNCI_SYARAT) {
+    const baris = syaratAsli[kunci]
+    if (baris) await db.konfigurasi.upsert({ where: { kunci }, update: { nilai: baris.nilai }, create: baris })
+    else await db.konfigurasi.deleteMany({ where: { kunci } })
+  }
+  syaratAsli = undefined
+  await naikkanVersi()
+}
+
 /** Izin admin uji dikembalikan, lalu mahasiswa, angkatan, prodi, fakultas, dan log buatan bagian data master dihapus. */
 async function pulihkanDataMaster() {
   if (izinAdminAsli !== undefined) {
@@ -475,6 +499,7 @@ async function pulihkanMatriks() {
 }
 
 async function bersihkan() {
+  await pulihkanSyarat()
   await pulihkanMatriks()
   await pulihkanWewenang()
   await pulihkanAksesAngkatan()
@@ -3272,7 +3297,321 @@ try {
     rKebijakanNilai.status === 200 && (await mhs('/api/nilai', { metode: 'POST', isi: {} })).status === 403,
   )
 
-  garis('26. KELUAR')
+  garis('26. SYARAT KELAYAKAN SERTIFIKAT')
+  await sa('/api/data') // CONFIG proses ini mengikuti versi terakhir
+  syaratAsli = Object.fromEntries(
+    await Promise.all(KUNCI_SYARAT.map(async (kunci) => [kunci, await db.konfigurasi.findUnique({ where: { kunci } })])),
+  )
+  const awalSyarat = susunanSyarat()
+  const ALASAN_SYARAT = 'Uji otomatis syarat sertifikat'
+  const versiKini = async () => Number((await db.konfigurasi.findUnique({ where: { kunci: KUNCI_VERSI_KURIKULUM } })).nilai)
+  const ubahSyarat = async (pelaku, ubah = {}) =>
+    pelaku('/api/sertifikat/syarat', {
+      metode: 'POST',
+      isi: { versi: await versiKini(), ...susunanSyarat(), alasan: ALASAN_SYARAT, ...ubah },
+    })
+  const jumlahLogSyarat = () => db.logAktivitas.count({ where: { aksi: 'UBAH_SYARAT_SERTIFIKAT' } })
+  const logSyaratTerakhir = async () => {
+    const l = await db.logAktivitas.findFirst({ where: { aksi: 'UBAH_SYARAT_SERTIFIKAT' }, orderBy: { id: 'desc' } })
+    if (l && !logSyaratUji.includes(l.id)) logSyaratUji.push(l.id)
+    return l
+  }
+  const nilaiKonfigurasi = async (kunci) => (await db.konfigurasi.findUnique({ where: { kunci } }))?.nilai
+  const mhsLengkap = await db.mahasiswa.findUnique({ where: { nim: NIM3 } })
+  await db.permintaanSertifikat.deleteMany({ where: { mahasiswaId: mhsLengkap.id } })
+
+  cek('tanpa sesi ditolak 401', (await ubahSyarat(tamu, { nilaiMinimum: 75 })).status === 401)
+  cek('admin biasa ditolak 403', (await ubahSyarat(admin, { nilaiMinimum: 75 })).status === 403)
+  cek('dosen ditolak 403', (await ubahSyarat(dosen, { nilaiMinimum: 75 })).status === 403)
+  cek('mahasiswa ditolak 403', (await ubahSyarat(mhs3, { nilaiMinimum: 75 })).status === 403)
+  const logSyaratAwal = await jumlahLogSyarat()
+  cek('alasan kurang dari 10 karakter ditolak 400', (await ubahSyarat(sa, { nilaiMinimum: 75, alasan: 'pendek' })).status === 400)
+  cek('nilai di atas 100 ditolak 400', (await ubahSyarat(sa, { nilaiMinimum: 101 })).status === 400)
+  cek('nilai negatif ditolak 400', (await ubahSyarat(sa, { nilaiMinimum: -1 })).status === 400)
+  cek('nilai desimal ditolak 400', (await ubahSyarat(sa, { nilaiMinimum: 70.5 })).status === 400)
+  cek('nilai berupa teks ditolak 400', (await ubahSyarat(sa, { nilaiMinimum: '75' })).status === 400)
+  cek('pilihan syarat bukan benar/salah ditolak 400', (await ubahSyarat(sa, { syaratPengesahan: 'tidak' })).status === 400)
+  cek('tanpa perubahan ditolak 400', (await ubahSyarat(sa)).status === 400)
+  cek('versi kurikulum lama ditolak 409', (await ubahSyarat(sa, { nilaiMinimum: 75, versi: (await versiKini()) - 1 })).status === 409)
+  cek(
+    'penolakan tidak menulis apa pun',
+    (await jumlahLogSyarat()) === logSyaratAwal && (await nilaiKonfigurasi('AMBANG_SERTIFIKAT')) === syaratAsli.AMBANG_SERTIFIKAT?.nilai,
+  )
+
+  // Akses yang sudah disetujui ikut diperiksa saat dicetak.
+  const aksesSiap = await db.permintaanSertifikat.create({ data: { mahasiswaId: mhsLengkap.id, status: 'SIAP_DICETAK' } })
+  const versiAwalSyarat = await versiKini()
+  const naik = await ubahSyarat(sa, { nilaiMinimum: 100 })
+  const logNaik = await logSyaratTerakhir()
+  cek('super admin mengubah nilai minimum', naik.status === 200 && naik.isi.syarat?.nilaiMinimum === 100, JSON.stringify(naik.isi?.galat ?? ''))
+  cek('tersimpan di Konfigurasi dan berlaku di server', (await nilaiKonfigurasi('AMBANG_SERTIFIKAT')) === 100 && CONFIG.AMBANG_SERTIFIKAT === 100)
+  cek('versi kurikulum naik satu', (await versiKini()) === versiAwalSyarat + 1)
+  cek(
+    'dampak dihitung server: seluruh mahasiswa dan akses yang terhenti',
+    naik.isi.dampak?.total === (await db.mahasiswa.count()) && naik.isi.dampak?.aksesTerhenti >= 1,
+    JSON.stringify(naik.isi.dampak ?? null),
+  )
+  cek(
+    'log mencatat sebelum, sesudah, alasan, dan dampak',
+    logNaik?.target === 'syarat sertifikat' &&
+      logNaik.rincian?.alasan === ALASAN_SYARAT &&
+      logNaik.rincian.sebelum?.nilaiMinimum === awalSyarat.nilaiMinimum &&
+      logNaik.rincian.sesudah?.nilaiMinimum === 100 &&
+      logNaik.rincian.dampak?.total === naik.isi.dampak?.total,
+    JSON.stringify(logNaik?.rincian ?? null),
+  )
+  cek(
+    'akses yang sudah disetujui tidak bisa mencetak bila syarat baru tidak terpenuhi (409)',
+    (await mhs3('/api/sertifikat/cetak', { metode: 'POST', isi: { id: 'S-' + aksesSiap.id } })).status === 409,
+  )
+  await db.permintaanSertifikat.delete({ where: { id: aksesSiap.id } })
+  const mintaTinggi = await minta(mhs3)
+  cek('permintaan baru tertahan nilai minimum yang baru (409)', mintaTinggi.status === 409 && /nilai akhir/.test(mintaTinggi.isi.galat ?? ''), JSON.stringify(mintaTinggi.isi))
+
+  await ubahSyarat(sa, { nilaiMinimum: awalSyarat.nilaiMinimum })
+  await logSyaratTerakhir()
+  await db.angkatan.update({ where: { id: ANG_C }, data: { status: 'AKTIF' } })
+  const mintaBelumSah = await minta(mhs3)
+  cek('angkatan belum disahkan tetap tertahan selama syaratnya aktif (409)', mintaBelumSah.status === 409 && /belum disahkan/.test(mintaBelumSah.isi.galat ?? ''), JSON.stringify(mintaBelumSah.isi))
+  const matikan = await ubahSyarat(sa, { syaratPengesahan: false })
+  await logSyaratTerakhir()
+  cek(
+    'syarat pengesahan bisa dimatikan',
+    matikan.status === 200 && JSON.stringify(await nilaiKonfigurasi('SYARAT_SERTIFIKAT')) === JSON.stringify({ semester: true, terkunci: false }),
+    JSON.stringify(matikan.isi?.galat ?? ''),
+  )
+  const mintaTanpaSah = await minta(mhs3)
+  cek('sesudah dimatikan, angkatan belum disahkan bisa meminta akses', mintaTanpaSah.status === 200, JSON.stringify(mintaTanpaSah.isi))
+  await db.permintaanSertifikat.deleteMany({ where: { mahasiswaId: mhsLengkap.id } })
+  await db.angkatan.update({ where: { id: ANG_C }, data: { status: 'TERKUNCI' } })
+  const nyalakan = await ubahSyarat(sa, { syaratPengesahan: awalSyarat.syaratPengesahan })
+  await logSyaratTerakhir()
+  cek('syarat bisa dinyalakan lagi', nyalakan.status === 200 && JSON.stringify(susunanSyarat()) === JSON.stringify(awalSyarat), JSON.stringify(susunanSyarat()))
+  const logAdmin = await admin('/api/log', { metode: 'POST', isi: { jenis: 'aktivitas', aksi: 'UBAH_SYARAT_SERTIFIKAT' } })
+  cek('admin biasa tidak membaca tindakan Super Admin ini di log', logAdmin.status === 200 && !logAdmin.isi.baris?.some((b) => logSyaratUji.includes(b.id)))
+
+  /* ---------------------------- syarat tambahan ---------------------------- */
+  garis('26B. SYARAT TAMBAHAN SERTIFIKAT')
+  const tandaiS = (pelaku, isi) => pelaku('/api/sertifikat/syarat/tanda', { metode: 'POST', isi })
+  const ALASAN_TANDA = 'Uji otomatis tanda syarat'
+  const NAMA_MANUAL = 'Uji seminar antikorupsi ' + SUF
+  const manualBaru = { id: null, jenis: 'manual', nama: NAMA_MANUAL, aktif: true }
+  const kosongkanPermintaan = () => db.permintaanSertifikat.deleteMany({ where: { mahasiswaId: mhsLengkap.id } })
+  const catatTambahan = () => {
+    for (const s of susunanSyarat().tambahan) if (!syaratUji.includes(s.id)) syaratUji.push(s.id)
+  }
+  const logTandaTerakhir = async () => {
+    const l = await db.logAktivitas.findFirst({ where: { aksi: 'TANDAI_SYARAT_SERTIFIKAT' }, orderBy: { id: 'desc' } })
+    if (l && !logSyaratUji.includes(l.id)) logSyaratUji.push(l.id)
+    return l
+  }
+  const jumlahLogTanda = () => db.logAktivitas.count({ where: { aksi: 'TANDAI_SYARAT_SERTIFIKAT' } })
+  await kosongkanPermintaan()
+
+  const logAwalTambahan = await jumlahLogSyarat()
+  cek('tambahan bukan larik ditolak 400', (await ubahSyarat(sa, { tambahan: 'seminar' })).status === 400)
+  cek('nama syarat terlalu pendek ditolak 400', (await ubahSyarat(sa, { tambahan: [{ ...manualBaru, nama: 'abc' }] })).status === 400)
+  cek('nama syarat terlalu panjang ditolak 400', (await ubahSyarat(sa, { tambahan: [{ ...manualBaru, nama: 'x'.repeat(121) }] })).status === 400)
+  cek(
+    'nama syarat kembar ditolak 400',
+    (await ubahSyarat(sa, { tambahan: [manualBaru, { ...manualBaru, nama: '  ' + NAMA_MANUAL.toUpperCase() }] })).status === 400,
+  )
+  cek('jenis syarat tidak dikenal ditolak 400', (await ubahSyarat(sa, { tambahan: [{ ...manualBaru, jenis: 'bebas' }] })).status === 400)
+  cek('isian aktif bukan benar/salah ditolak 400', (await ubahSyarat(sa, { tambahan: [{ ...manualBaru, aktif: 'ya' }] })).status === 400)
+  const nilaiBaru = (aspekId, nilaiMin) => ({ id: null, jenis: 'nilai', aspekId, nilaiMin, aktif: true })
+  cek('aspek tidak dikenal ditolak 400', (await ubahSyarat(sa, { tambahan: [nilaiBaru('ZZ9', 70)] })).status === 400)
+  cek('nilai aspek di atas 100 ditolak 400', (await ubahSyarat(sa, { tambahan: [nilaiBaru('A1', 101)] })).status === 400)
+  cek('nilai aspek desimal ditolak 400', (await ubahSyarat(sa, { tambahan: [nilaiBaru('A1', 70.5)] })).status === 400)
+  cek('dua syarat untuk aspek yang sama ditolak 400', (await ubahSyarat(sa, { tambahan: [nilaiBaru('A1', 70), nilaiBaru('A1', 75)] })).status === 400)
+  cek('id syarat yang tidak dikenal ditolak 400', (await ubahSyarat(sa, { tambahan: [{ ...manualBaru, id: 'Spalsu' }] })).status === 400)
+  cek(
+    'lebih dari 10 syarat ditolak 400',
+    (await ubahSyarat(sa, { tambahan: Array.from({ length: 11 }, (_, i) => ({ ...manualBaru, nama: NAMA_MANUAL + ' ' + i })) })).status === 400,
+  )
+  cek('admin biasa tidak bisa menambah syarat (403)', (await ubahSyarat(admin, { tambahan: [manualBaru] })).status === 403)
+  cek('penolakan tidak menulis apa pun', (await jumlahLogSyarat()) === logAwalTambahan && susunanSyarat().tambahan.length === awalSyarat.tambahan.length)
+
+  const tambahManual = await ubahSyarat(sa, { tambahan: [...susunanSyarat().tambahan, manualBaru] })
+  catatTambahan()
+  const logManual = await logSyaratTerakhir()
+  const syaratManual = susunanSyarat().tambahan.find((s) => s.nama === NAMA_MANUAL)
+  cek('super admin menambah syarat manual', tambahManual.status === 200 && Boolean(syaratManual), JSON.stringify(tambahManual.isi?.galat ?? ''))
+  cek('id syarat dibuat server', typeof syaratManual?.id === 'string' && syaratManual.id.length <= 32 && syaratManual.id !== 'null')
+  cek(
+    'tersimpan di Konfigurasi SYARAT_TAMBAHAN',
+    (await nilaiKonfigurasi('SYARAT_TAMBAHAN'))?.some?.((s) => s.id === syaratManual?.id && s.nama === NAMA_MANUAL),
+  )
+  cek('log mencatat syarat yang ditambah', logManual?.rincian?.sesudah?.syaratTambahan?.includes(NAMA_MANUAL), JSON.stringify(logManual?.rincian?.sesudah ?? null))
+  cek('dampak menghitung mahasiswa yang jadi tidak layak', tambahManual.isi.dampak?.tidakLagiLayak >= 1, JSON.stringify(tambahManual.isi.dampak ?? null))
+  const mintaBelumTanda = await minta(mhs3)
+  cek(
+    'mahasiswa yang belum ditandai tertahan beserta nama syaratnya (409)',
+    mintaBelumTanda.status === 409 && (mintaBelumTanda.isi.galat ?? '').includes(NAMA_MANUAL),
+    JSON.stringify(mintaBelumTanda.isi),
+  )
+
+  const tandaDasar = { syaratId: syaratManual.id, tandai: [NIM3], alasan: ALASAN_TANDA }
+  cek('tandai tanpa sesi ditolak 401', (await tandaiS(tamu, tandaDasar)).status === 401)
+  cek('tandai oleh admin biasa ditolak 403', (await tandaiS(admin, tandaDasar)).status === 403)
+  cek('tandai oleh dosen ditolak 403', (await tandaiS(dosen, tandaDasar)).status === 403)
+  cek('mahasiswa tidak bisa menandai dirinya sendiri (403)', (await tandaiS(mhs3, tandaDasar)).status === 403)
+  const logTandaAwal = await jumlahLogTanda()
+  cek('tandai tanpa alasan cukup ditolak 400', (await tandaiS(sa, { ...tandaDasar, alasan: 'pendek' })).status === 400)
+  cek('tandai tanpa mahasiswa ditolak 400', (await tandaiS(sa, { ...tandaDasar, tandai: [] })).status === 400)
+  cek('NIM yang tidak dikenal ditolak 404', (await tandaiS(sa, { ...tandaDasar, tandai: ['NIMTIDAKADA' + SUF] })).status === 404)
+  cek('syarat yang tidak dikenal ditolak 404', (await tandaiS(sa, { ...tandaDasar, syaratId: 'Spalsu' })).status === 404)
+  cek('NIM yang sama di tandai dan batalkan ditolak 400', (await tandaiS(sa, { ...tandaDasar, batalkan: [NIM3] })).status === 400)
+  cek('penolakan tanda tidak menulis apa pun', (await jumlahLogTanda()) === logTandaAwal && (await db.syaratMahasiswa.count({ where: { syaratId: syaratManual.id } })) === 0)
+
+  const tandaPertama = await tandaiS(sa, tandaDasar)
+  const logTanda = await logTandaTerakhir()
+  const barisTanda = await db.syaratMahasiswa.findUnique({ where: { syaratId_mahasiswaId: { syaratId: syaratManual.id, mahasiswaId: mhsLengkap.id } } })
+  cek('super admin menandai mahasiswa', tandaPertama.status === 200 && tandaPertama.isi.jumlah === 1, JSON.stringify(tandaPertama.isi))
+  cek('tanda menyimpan siapa yang menandai', barisTanda?.ditandaiOleh === idSA)
+  cek(
+    'log mencatat syarat, jumlah, mahasiswa, dan alasan',
+    logTanda?.target === 'syarat sertifikat ' + NAMA_MANUAL &&
+      logTanda.rincian?.ditandai === 1 &&
+      logTanda.rincian.mahasiswa?.[0]?.nim === NIM3 &&
+      logTanda.rincian.alasan === ALASAN_TANDA,
+    JSON.stringify(logTanda?.rincian ?? null),
+  )
+  cek('/api/data mahasiswa membawa tandanya', (await mhs3('/api/data')).isi.mahasiswa?.[0]?.syaratTerpenuhi?.includes(syaratManual.id))
+  const logSesudahTanda = await jumlahLogTanda()
+  const tandaUlang = await tandaiS(sa, tandaDasar)
+  cek('menandai ulang tidak mengubah apa pun dan tidak dicatat', tandaUlang.isi.jumlah === 0 && (await jumlahLogTanda()) === logSesudahTanda)
+  const mintaSesudahTanda = await minta(mhs3)
+  cek('sesudah ditandai, mahasiswa bisa meminta akses', mintaSesudahTanda.status === 200, JSON.stringify(mintaSesudahTanda.isi))
+  await kosongkanPermintaan()
+
+  const batal = await tandaiS(sa, { syaratId: syaratManual.id, batalkan: [NIM3], alasan: ALASAN_TANDA })
+  await logTandaTerakhir()
+  cek('tanda bisa dibatalkan', batal.isi.jumlah === 1 && (await db.syaratMahasiswa.count({ where: { syaratId: syaratManual.id } })) === 0)
+  cek('sesudah dibatalkan, mahasiswa tertahan lagi (409)', (await minta(mhs3)).status === 409)
+
+  const syaratNonaktif = await ubahSyarat(sa, { tambahan: susunanSyarat().tambahan.map((s) => (s.id === syaratManual.id ? { ...s, aktif: false } : s)) })
+  await logSyaratTerakhir()
+  const mintaNonaktif = await minta(mhs3)
+  cek('syarat yang dinonaktifkan tidak menahan mahasiswa', syaratNonaktif.status === 200 && mintaNonaktif.status === 200, JSON.stringify(mintaNonaktif.isi))
+  await kosongkanPermintaan()
+  cek(
+    'syarat nonaktif tetap bisa ditandai',
+    (await tandaiS(sa, tandaDasar)).isi.jumlah === 1,
+  )
+  await logTandaTerakhir()
+  const syaratAktifLagi = await ubahSyarat(sa, { tambahan: susunanSyarat().tambahan.map((s) => (s.id === syaratManual.id ? { ...s, aktif: true } : s)) })
+  await logSyaratTerakhir()
+  cek('sesudah diaktifkan lagi tandanya masih berlaku', syaratAktifLagi.status === 200 && (await minta(mhs3)).status === 200)
+  await kosongkanPermintaan()
+  cek(
+    'jenis syarat yang sudah ada tidak bisa diganti (400)',
+    (await ubahSyarat(sa, { tambahan: susunanSyarat().tambahan.map((s) => (s.id === syaratManual.id ? { id: s.id, jenis: 'nilai', aspekId: 'A1', nilaiMin: 70, aktif: true } : s)) })).status === 400,
+  )
+
+  // Syarat nilai aspek: diperiksa otomatis dari nilai aspek mahasiswanya.
+  const nilaiA1 = hitungTranskrip((await mhs3('/api/data')).isi.mahasiswa[0]).aspekById.A1.nilai
+  cek('mahasiswa uji punya nilai aspek A1 di bawah 100', nilaiA1 != null && nilaiA1 < 100, String(nilaiA1))
+  const tambahNilai = await ubahSyarat(sa, { tambahan: [...susunanSyarat().tambahan, nilaiBaru('A1', nilaiA1 + 1)] })
+  catatTambahan()
+  await logSyaratTerakhir()
+  const syaratNilai = susunanSyarat().tambahan.find((s) => s.jenis === 'nilai')
+  cek('super admin menambah syarat nilai aspek', tambahNilai.status === 200 && syaratNilai?.aspekId === 'A1', JSON.stringify(tambahNilai.isi?.galat ?? ''))
+  const mintaNilaiKurang = await minta(mhs3)
+  cek('nilai aspek di bawah batas menahan mahasiswa (409)', mintaNilaiKurang.status === 409 && /nilai aspek A\.1/.test(mintaNilaiKurang.isi.galat ?? ''), JSON.stringify(mintaNilaiKurang.isi))
+  cek(
+    'syarat nilai tidak bisa ditandai manual (400)',
+    (await tandaiS(sa, { syaratId: syaratNilai.id, tandai: [NIM3], alasan: ALASAN_TANDA })).status === 400,
+  )
+  await ubahSyarat(sa, { tambahan: susunanSyarat().tambahan.map((s) => (s.id === syaratNilai.id ? { ...s, nilaiMin: nilaiA1 } : s)) })
+  await logSyaratTerakhir()
+  cek('nilai aspek tepat di batas memenuhi syarat', (await minta(mhs3)).status === 200)
+  await kosongkanPermintaan()
+
+  // Menghapus syarat ikut menghapus tandanya.
+  const hapusSemua = await ubahSyarat(sa, { tambahan: awalSyarat.tambahan })
+  const logHapusSyarat = await logSyaratTerakhir()
+  cek('syarat tambahan bisa dihapus', hapusSemua.status === 200 && JSON.stringify(susunanSyarat()) === JSON.stringify(awalSyarat), JSON.stringify(susunanSyarat().tambahan))
+  cek('tanda syarat yang dihapus ikut hilang', (await db.syaratMahasiswa.count({ where: { syaratId: syaratManual.id } })) === 0)
+  cek('log mencatat jumlah tanda yang ikut terhapus', logHapusSyarat?.rincian?.tandaDihapus === 1, JSON.stringify(logHapusSyarat?.rincian ?? null))
+  cek('syarat yang sudah dihapus tidak bisa ditandai (404)', (await tandaiS(sa, tandaDasar)).status === 404)
+
+  /* ---------------------- syarat tambahan: mulai berlaku ---------------------- */
+  garis('26C. SYARAT TAMBAHAN: MULAI BERLAKU')
+  const periodeKini = { ...PERIODE_AKTIF }
+  const periodeDepan = periodeSetelah(periodeKini, 1)
+  const NAMA_JADWAL = 'Uji syarat semester depan ' + SUF
+  const jadwalBaru = (mulai) => ({ id: null, jenis: 'manual', nama: NAMA_JADWAL, aktif: true, mulai })
+  const ubahJadwal = (isi) => susunanSyarat().tambahan.map((s) => (s.nama === NAMA_JADWAL ? { ...s, ...isi } : s))
+  await kosongkanPermintaan()
+
+  cek('periode mulai yang tidak sah ditolak 400', (await ubahSyarat(sa, { tambahan: [jadwalBaru({ tahun: '2026', semester: 'Genap' })] })).status === 400)
+  cek('jadwal dua semester ke depan ditolak 400', (await ubahSyarat(sa, { tambahan: [jadwalBaru(periodeSetelah(periodeKini, 2))] })).status === 400)
+  cek('jadwal di periode yang sedang berjalan ditolak 400', (await ubahSyarat(sa, { tambahan: [jadwalBaru(periodeKini)] })).status === 400)
+  cek('jadwal di periode lampau ditolak 400', (await ubahSyarat(sa, { tambahan: [jadwalBaru(periodeSetelah(periodeKini, -1))] })).status === 400)
+
+  const tambahJadwal = await ubahSyarat(sa, { tambahan: [...awalSyarat.tambahan, jadwalBaru(periodeDepan)] })
+  catatTambahan()
+  const logJadwal = await logSyaratTerakhir()
+  const syaratJadwal = susunanSyarat().tambahan.find((s) => s.nama === NAMA_JADWAL)
+  cek(
+    'super admin menjadwalkan syarat mulai semester berikutnya',
+    tambahJadwal.status === 200 && Boolean(syaratJadwal?.mulai) && samaPeriode(syaratJadwal.mulai, periodeDepan),
+    JSON.stringify(tambahJadwal.isi?.galat ?? syaratJadwal ?? ''),
+  )
+  cek(
+    'syarat terjadwal belum berdampak, dampak nantinya sudah terhitung',
+    tambahJadwal.isi.dampak?.tidakLagiLayak === 0 && tambahJadwal.isi.dampak?.akanTertahan >= 1,
+    JSON.stringify(tambahJadwal.isi.dampak ?? null),
+  )
+  cek(
+    'log menyebut periode mulainya',
+    logJadwal?.rincian?.sesudah?.syaratTambahan?.some((x) => x.includes(NAMA_JADWAL) && x.includes('mulai ' + labelPeriode(periodeDepan))),
+    JSON.stringify(logJadwal?.rincian?.sesudah ?? null),
+  )
+  const mintaSebelumMulai = await minta(mhs3)
+  cek('sebelum periodenya tiba, mahasiswa tidak tertahan', mintaSebelumMulai.status === 200, JSON.stringify(mintaSebelumMulai.isi))
+  await kosongkanPermintaan()
+
+  const majuJadwal = await pindah(sa, { ...periodeDepan, alasan: ALASAN })
+  await logPeriodeTerakhir()
+  const mintaSesudahMulai = await minta(mhs3)
+  cek(
+    'begitu periode dipindah, syaratnya otomatis berlaku (409)',
+    majuJadwal.status === 200 && mintaSesudahMulai.status === 409 && (mintaSesudahMulai.isi.galat ?? '').includes(NAMA_JADWAL),
+    JSON.stringify(mintaSesudahMulai.isi),
+  )
+  cek(
+    'jadwal yang sudah tercapai diganti saat ini juga bukan perubahan (400)',
+    (await ubahSyarat(sa, { tambahan: ubahJadwal({ mulai: null }) })).status === 400,
+  )
+  const tandaJadwal = await tandaiS(sa, { syaratId: syaratJadwal.id, tandai: [NIM3], alasan: ALASAN_TANDA })
+  await logTandaTerakhir()
+  const mintaJadwalDitandai = await minta(mhs3)
+  cek('sesudah ditandai, mahasiswa lolos syarat terjadwal', tandaJadwal.isi.jumlah === 1 && mintaJadwalDitandai.status === 200, JSON.stringify(mintaJadwalDitandai.isi))
+  await kosongkanPermintaan()
+  await tandaiS(sa, { syaratId: syaratJadwal.id, batalkan: [NIM3], alasan: ALASAN_TANDA })
+  await logTandaTerakhir()
+
+  const mundurJadwal = await pindah(sa, { ...periodeKini, alasan: ALASAN })
+  await logPeriodeTerakhir()
+  const mintaSesudahMundur = await minta(mhs3)
+  cek('periode dimundurkan: syaratnya kembali menunggu', mundurJadwal.status === 200 && mintaSesudahMundur.status === 200, JSON.stringify(mintaSesudahMundur.isi))
+  await kosongkanPermintaan()
+
+  const jadiLangsung = await ubahSyarat(sa, { tambahan: ubahJadwal({ mulai: null }) })
+  await logSyaratTerakhir()
+  const mintaLangsung = await minta(mhs3)
+  cek('jadwal bisa diganti menjadi saat ini juga', jadiLangsung.status === 200 && mintaLangsung.status === 409, JSON.stringify(mintaLangsung.isi))
+  const jadiJadwal = await ubahSyarat(sa, { tambahan: ubahJadwal({ mulai: periodeDepan }) })
+  await logSyaratTerakhir()
+  const mintaJadwalLagi = await minta(mhs3)
+  cek('syarat yang sudah berlaku bisa dijadwalkan ke semester berikutnya', jadiJadwal.status === 200 && mintaJadwalLagi.status === 200, JSON.stringify(mintaJadwalLagi.isi))
+  await kosongkanPermintaan()
+  const hapusJadwal = await ubahSyarat(sa, { tambahan: awalSyarat.tambahan })
+  await logSyaratTerakhir()
+  cek('syarat terjadwal bisa dihapus', hapusJadwal.status === 200 && JSON.stringify(susunanSyarat()) === JSON.stringify(awalSyarat))
+
+  garis('27. KELUAR')
   await sa('/api/keluar', { metode: 'POST' })
   await mhs('/api/keluar', { metode: 'POST' })
   cek('setelah keluar, sesi tidak berlaku', (await mhs('/api/sesi')).status === 401)

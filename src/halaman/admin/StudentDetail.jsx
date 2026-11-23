@@ -181,7 +181,7 @@ function RiwayatPerubahan({ nim }) {
 
 /* -------------------------- kelayakan sertifikat -------------------------- */
 
-/** Lima syarat sertifikat. `tinjau`: permintaan akses cetak yang sedang ditinjau akun ini (mode tinjau), keputusannya
+/** Syarat sertifikat yang aktif (diatur Super Admin di Aturan Sistem). `tinjau`: permintaan akses cetak yang sedang ditinjau akun ini (mode tinjau), keputusannya
     dipasang di bawah syarat. */
 function KartuSertifikat({ student, tinjau = null, superAdmin = false, aktor, onSelesai }) {
   const teks = useTeks()
@@ -191,7 +191,7 @@ function KartuSertifikat({ student, tinjau = null, superAdmin = false, aktor, on
     <Card className="print:hidden">
       <CardHeader
         title={teks('Kelayakan sertifikat')}
-        subtitle={teks('Lima syarat yang diperiksa sistem')}
+        subtitle={teks('{n} syarat yang diperiksa sistem', { n: k.syarat.length })}
       />
 
       <ul className="divide-y divide-line">

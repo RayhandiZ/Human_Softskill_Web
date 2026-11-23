@@ -1,5 +1,6 @@
-import { CONFIG } from './config.js'
+import { CONFIG, SYARAT_BISA_DIMATIKAN } from './config.js'
 import { KOMPONEN, aspekPunyaDraft, aspekUntuk, getAspek, getKomponenById } from './curriculum.js'
+import { PERIODE_AKTIF, periodeSah, periodeSudahSampai } from './data.js'
 import { hitungTranskrip, semesterDitutup } from './scoring.js'
 
 /* Aturan bisnis sebagai fungsi murni; halaman tidak boleh menyimpulkan sendiri. */
@@ -66,6 +67,62 @@ export function bolehTandaiFinal(student, aspekId) {
 }
 
 /* ---- R5 & R6: kelayakan sertifikat dengan alasan yang bisa ditindaklanjuti */
+
+/* Syarat yang dimatikan Super Admin (Aturan Sistem) tidak dihitung dan tidak ditampilkan. Isian yang hilang atau rusak
+   dibaca aktif, supaya kesalahan data tidak pernah melonggarkan syarat. */
+const syaratBerlaku = (s) => !SYARAT_BISA_DIMATIKAN.includes(s.id) || CONFIG.SYARAT_SERTIFIKAT?.[s.id] !== false
+
+/** [kunci kamus, isian] nama satu syarat tambahan. Syarat manual bernama bebas, jadi tampil seperti yang diketik. */
+export const labelSyaratTambahan = (s) =>
+  s.jenis === 'nilai'
+    ? ['Nilai aspek {kode} minimal {n}', { kode: getAspek(s.aspekId)?.kode.replace(/\.$/, '') ?? s.aspekId, n: s.nilaiMin }]
+    : [s.nama, null]
+
+/** Sudah masuk periode mulainya? Tanpa `mulai`, atau isinya rusak, berarti langsung berlaku, supaya tidak melonggarkan syarat. */
+export const syaratSudahMulai = (s, aktif = PERIODE_AKTIF) => {
+  const mulai = periodeSah(s?.mulai)
+  return !mulai || periodeSudahSampai(mulai, aktif)
+}
+
+/* Syarat yang ditambah Super Admin (CONFIG.SYARAT_TAMBAHAN, lihat src/lib/syaratSertifikat.js), dalam bentuk yang sama dengan
+   syarat bawaan. Yang dijadwalkan baru ikut dihitung sesudah periode akademik sampai ke `mulai`. Jenis 'nilai' dibaca dari nilai
+   satu aspek; aspek yang bukan bagian transkrip mahasiswa ini (diarsipkan, atau ditambah sesudah angkatannya disahkan) tidak
+   berlaku baginya. Jenis 'manual' dibaca dari tanda per mahasiswa. */
+function syaratTambahan(student, t) {
+  const tanda = new Set(student.syaratTerpenuhi ?? [])
+  const daftar = Array.isArray(CONFIG.SYARAT_TAMBAHAN) ? CONFIG.SYARAT_TAMBAHAN : []
+  return daftar
+    .filter((s) => s && s.aktif !== false && syaratSudahMulai(s))
+    .flatMap((s) => {
+      const dasar = { id: 'tambahan-' + s.id, labelT: labelSyaratTambahan(s) }
+      if (s.jenis !== 'nilai') {
+        return {
+          ...dasar,
+          label: s.nama,
+          lolos: tanda.has(s.id),
+          alasan: 'Belum ditandai terpenuhi oleh Super Admin',
+          alasanT: ['Belum ditandai terpenuhi oleh Super Admin', null],
+          ringkas: 'syarat "' + s.nama + '" belum terpenuhi',
+          ringkasT: ['syarat "{nama}" belum terpenuhi', { nama: s.nama }],
+        }
+      }
+      const a = t.aspekById[s.aspekId]
+      if (!a) return []
+      const kode = a.aspek.kode.replace(/\.$/, '')
+      const kosong = a.nilai == null
+      return {
+        ...dasar,
+        label: 'Nilai aspek ' + kode + ' minimal ' + s.nilaiMin,
+        lolos: !kosong && a.nilai >= s.nilaiMin,
+        alasan: kosong ? 'Aspek ' + kode + ' belum punya nilai' : 'Nilai aspek ' + kode + ' baru ' + a.nilai,
+        alasanT: kosong ? ['Aspek {kode} belum punya nilai', { kode }] : ['Nilai aspek {kode} baru {nilai}', { kode, nilai: a.nilai }],
+        ringkas: kosong ? 'aspek ' + kode + ' belum punya nilai' : 'nilai aspek ' + kode + ' ' + a.nilai + ' di bawah minimal ' + s.nilaiMin,
+        ringkasT: kosong
+          ? ['aspek {kode} belum punya nilai', { kode }]
+          : ['nilai aspek {kode} {nilai} di bawah minimal {n}', { kode, nilai: a.nilai, n: s.nilaiMin }],
+      }
+    })
+}
 
 export function kelayakanSertifikat(student) {
   const t = hitungTranskrip(student)
@@ -157,6 +214,8 @@ export function kelayakanSertifikat(student) {
       ringkasT: ['nilai angkatan {label} belum disahkan', { label: student.angkatanLabel }],
     },
   ]
+    .filter(syaratBerlaku)
+    .concat(syaratTambahan(student, t))
 
   const gagal = syarat.filter((s) => !s.lolos)
   const layak = gagal.length === 0

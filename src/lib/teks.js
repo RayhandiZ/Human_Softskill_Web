@@ -557,7 +557,6 @@ export const EN = {
   'Kembali ke daftar': 'Back to the list',
   'Kembali ke data mahasiswa': 'Back to student data',
   'Kelayakan sertifikat': 'Certificate eligibility',
-  'Lima syarat yang diperiksa sistem': 'The five requirements the system checks',
   'Buka di Cetak Sertifikat': 'Open in Print Certificates',
   'Riwayat perubahan nilai': 'Score change history',
 
@@ -1513,8 +1512,132 @@ export const EN = {
   'Pulihkan kebijakan wewenang': 'Restore permission policy',
   'Kode baris': 'Row code',
   'kebijakan wewenang {tindakan}': 'permission policy {tindakan}',
-  'Aturan perhitungan yang sedang berlaku. Periode akademik dipindah dari halaman ini; aturan lainnya diubah lewat tabel Konfigurasi di basis data, sedangkan bobot dan penilaian aspek lewat halaman Penilaian & Bobot.':
-    'The calculation rules currently in effect. The academic period is moved from this page; other rules are changed through the Konfigurasi table in the database, while weights and aspect assessments are changed on the Assessment & Weights page.',
+  'Aturan perhitungan yang sedang berlaku. Periode akademik dan syarat kelayakan sertifikat diubah dari halaman ini; aturan lainnya diubah lewat tabel Konfigurasi di basis data, sedangkan bobot dan penilaian aspek lewat halaman Penilaian & Bobot.':
+    'The calculation rules currently in effect. The academic period and certificate requirements are changed from this page; other rules are changed through the Konfigurasi table in the database, while weights and aspect assessments are changed on the Assessment & Weights page.',
+  // Syarat kelayakan cetak sertifikat di Aturan Sistem (src/lib/syaratSertifikat.js).
+  Wajib: 'Required',
+  Nonaktif: 'Inactive',
+  'Nonaktif: {daftar}': 'Inactive: {daftar}',
+  'Semua aktif': 'All active',
+  'Pengesahan angkatan': 'Cohort ratification',
+  'Syarat sertifikat yang bisa dimatikan': 'Certificate requirements that can be turned off',
+  'Semester dan pengesahan angkatan.': 'Semester and cohort ratification.',
+  'Syarat kelayakan cetak sertifikat': 'Certificate printing requirements',
+  'Berlaku untuk seluruh mahasiswa dan diperiksa ulang saat akses cetak diminta, diputuskan, dan dicetak.':
+    'Applies to all students and is rechecked when print access is requested, decided, and used.',
+  'Seluruh aspek berstatus final': 'All aspects are final',
+  'Nilai akhir minimal': 'Minimum final score',
+  'Nilai akhir minimal (0 sampai 100)': 'Minimum final score (0 to 100)',
+  'Nilai akhir minimal harus bilangan bulat 0 sampai 100.':
+    'The minimum final score must be a whole number from 0 to 100.',
+  'Syarat yang bisa dimatikan': 'Requirements that can be turned off',
+  'Bila dimatikan, semester mahasiswa tidak lagi diperiksa.':
+    "When turned off, the student's semester is no longer checked.",
+  'Bila dimatikan, sertifikat bisa dicetak sebelum nilai angkatan disahkan, jadi nilainya masih bisa berubah sesudah dicetak.':
+    'When turned off, certificates can be printed before cohort scores are ratified, so scores can still change after printing.',
+  'Dampak bila disimpan': 'Impact if saved',
+  'Mahasiswa yang berhak: {sebelum} menjadi {sesudah} dari {total}.':
+    'Eligible students: {sebelum} becomes {sesudah} out of {total}.',
+  '{naik} menjadi berhak, {turun} tidak lagi berhak.': '{naik} become eligible, {turun} no longer eligible.',
+  '{n} mahasiswa yang sudah punya akses cetak tidak bisa mencetak sampai memenuhi syarat ini.':
+    '{n} students who already have print access cannot print until they meet these requirements.',
+  'Simpan syarat': 'Save requirements',
+  'Ubah syarat': 'Edit requirements',
+  'Syarat kelayakan tersimpan dan langsung berlaku.': 'The requirements are saved and take effect immediately.',
+  'Syarat bertanda Wajib tidak bisa dimatikan karena lembar sertifikat memuat nilai akhir dan menyatakan seluruh aspek sudah diselesaikan. Setiap perubahan tercatat di Log Aktivitas beserta alasannya.':
+    'Requirements marked Required cannot be turned off because the certificate states the final score and that every aspect has been completed. Every change is recorded in the Activity Log with its reason.',
+  'Pilihan syarat tidak valid.': 'Invalid requirement selection.',
+  'Tidak ada perubahan syarat untuk disimpan.': 'There are no requirement changes to save.',
+  'Ubah syarat kelayakan sertifikat': 'Change certificate requirements',
+  'syarat sertifikat': 'certificate requirements',
+  'Syarat semester': 'Semester requirement',
+  'Syarat pengesahan angkatan': 'Cohort ratification requirement',
+  'Berhak sebelum diubah': 'Eligible before the change',
+  'Berhak sesudah diubah': 'Eligible after the change',
+  'Menjadi berhak sertifikat': 'Became eligible for a certificate',
+  'Akses cetak yang terhenti': 'Print access on hold',
+  'Syarat sertifikat tambahan': 'Additional certificate requirements',
+  'Ditambah Super Admin di kartu syarat di atas.': 'Added by the Super Admin in the requirements card above.',
+  '{n} syarat, {aktif} aktif': '{n} requirements, {aktif} active',
+  'Belum ada syarat tambahan': 'No additional requirements yet',
+  'Syarat tambahan': 'Additional requirements',
+  'Tambah syarat': 'Add requirement',
+  'Jenis syarat': 'Requirement type',
+  'Ditandai Super Admin per mahasiswa': 'Marked by the Super Admin per student',
+  'Nilai aspek minimal (otomatis)': 'Minimum aspect score (automatic)',
+  'Nama syarat': 'Requirement name',
+  'Contoh: Mengikuti seminar antikorupsi': 'Example: Attended the anti-corruption seminar',
+  'Pilih aspek': 'Choose an aspect',
+  'Nilai minimal': 'Minimum score',
+  'Hapus syarat: {nama}': 'Remove requirement: {nama}',
+  'Mahasiswa dianggap belum memenuhi sampai ditandai. Supaya tidak ada yang tertahan, pilih mulai semester berikutnya atau matikan Aktif dulu, lalu tandai mahasiswanya.':
+    'Students count as not meeting this until they are marked. So nobody is held back, start it next semester or turn off Active first, then mark the students.',
+  'Mulai berlaku': 'Takes effect',
+  'Saat ini juga': 'Right away',
+  'Semester berikutnya ({periode})': 'Next semester ({periode})',
+  'Mulai {periode}': 'From {periode}',
+  'Mulai diperiksa saat periode akademik dipindah ke {periode}.':
+    'Checked once the academic period is moved to {periode}.',
+  'Periode mulai berlaku tidak valid.': 'The start period is not valid.',
+  'Syarat hanya bisa dijadwalkan mulai semester berikutnya.':
+    'A requirement can only be scheduled to start next semester.',
+  'Saat mulai berlaku, {n} mahasiswa yang sekarang berhak akan tertahan sampai memenuhinya.':
+    'When it takes effect, {n} students who are eligible now will be held back until they meet it.',
+  'Syarat sertifikat yang mulai berlaku: {daftar}.': 'Certificate requirements taking effect: {daftar}.',
+  'Syarat sertifikat yang kembali belum berlaku: {daftar}.':
+    'Certificate requirements going back to not in effect: {daftar}.',
+  '{n} mahasiswa yang sekarang berhak akan tertahan sampai memenuhinya.':
+    '{n} students who are eligible now will be held back until they meet them.',
+  '{n} syarat, {aktif} berlaku, {jadwal} terjadwal': '{n} requirements, {aktif} in effect, {jadwal} scheduled',
+  'Tertahan saat syarat terjadwal mulai berlaku': 'Held back when the scheduled requirement takes effect',
+  'Syarat tambahan sudah {n}, batasnya. Hapus yang tidak dipakai untuk menambah yang baru.':
+    'There are already {n} additional requirements, the limit. Remove one you no longer use to add a new one.',
+  '{n} tanda mahasiswa pada syarat yang dihapus ikut terhapus.':
+    '{n} student marks on the removed requirements will be deleted too.',
+  'Ditandai Super Admin: {n} dari {total} mahasiswa': 'Marked by the Super Admin: {n} of {total} students',
+  'Diperiksa otomatis dari nilai aspek': 'Checked automatically from the aspect score',
+  'Centang mahasiswa yang sudah memenuhi "{nama}". Yang tidak dicentang dianggap belum memenuhi syarat ini.':
+    'Tick the students who have met "{nama}". Students left unticked count as not meeting this requirement.',
+  'Sudah ditandai': 'Marked',
+  'Belum ditandai': 'Not marked',
+  'Akan ditandai: {a} mahasiswa. Tanda dibatalkan: {b} mahasiswa.':
+    'To be marked: {a} students. Marks removed: {b} students.',
+  'Simpan tanda': 'Save marks',
+  'Tanda "{nama}" tersimpan: {a} ditandai, {b} dibatalkan.': 'Marks for "{nama}" saved: {a} marked, {b} removed.',
+  'Nilai aspek {kode} minimal {n}': 'Aspect {kode} score of at least {n}',
+  'Aspek {kode} belum punya nilai': 'Aspect {kode} has no score yet',
+  'Nilai aspek {kode} baru {nilai}': 'Aspect {kode} score is only {nilai}',
+  'aspek {kode} belum punya nilai': 'aspect {kode} has no score yet',
+  'nilai aspek {kode} {nilai} di bawah minimal {n}': 'aspect {kode} score {nilai} is below the minimum of {n}',
+  'Belum ditandai terpenuhi oleh Super Admin': 'Not yet marked as met by the Super Admin',
+  'syarat "{nama}" belum terpenuhi': 'requirement "{nama}" not met yet',
+  '{n} syarat yang diperiksa sistem': '{n} requirements checked by the system',
+  'Semua syarat terpenuhi.': 'All requirements are met.',
+  'Syarat tambahan tidak valid.': 'The additional requirement is not valid.',
+  'Syarat tambahan paling banyak 10.': 'There can be at most 10 additional requirements.',
+  'Syarat tambahan sudah berubah. Muat ulang halaman, lalu ulangi perubahan Anda.':
+    'The additional requirements have changed. Reload the page, then repeat your change.',
+  'Jenis syarat yang sudah ada tidak bisa diganti.': 'The type of an existing requirement cannot be changed.',
+  'Nama syarat harus 5 sampai 120 karakter.': 'The requirement name must be 5 to 120 characters.',
+  'Nama syarat tidak boleh kembar.': 'Requirement names must be unique.',
+  'Pilih aspek untuk syarat nilai.': 'Choose an aspect for the score requirement.',
+  'Aspek yang dipilih sudah diarsipkan.': 'The selected aspect is archived.',
+  'Nilai aspek minimal harus bilangan bulat 0 sampai 100.':
+    'The minimum aspect score must be a whole number from 0 to 100.',
+  'Satu aspek hanya boleh punya satu syarat nilai.': 'An aspect can only have one score requirement.',
+  'Syarat tidak ditemukan. Mungkin sudah dihapus. Muat ulang halaman.':
+    'Requirement not found. It may have been removed. Reload the page.',
+  'Syarat nilai diperiksa otomatis, tidak ditandai per mahasiswa.':
+    'Score requirements are checked automatically and are not marked per student.',
+  'Mahasiswa yang sama tidak bisa ditandai dan dibatalkan sekaligus.':
+    'The same student cannot be marked and unmarked at once.',
+  'Tandai syarat sertifikat': 'Mark certificate requirement',
+  'syarat sertifikat {nama}': 'certificate requirement {nama}',
+  Syarat: 'Requirement',
+  'Ditandai terpenuhi': 'Marked as met',
+  'Tanda dibatalkan': 'Marks removed',
+  'Tanda mahasiswa yang ikut terhapus': 'Student marks deleted with it',
+  '{a} mahasiswa ditandai, {b} dibatalkan': '{a} students marked, {b} removed',
   'Periode akademik': 'Academic period',
   'Semester tiap mahasiswa, siapa yang sudah lewat Semester 3, dan angkatan yang nilainya boleh disahkan dihitung dari periode ini.':
     "Each student's semester, who is already past Semester 3, and which cohorts may have their scores ratified are all calculated from this period.",
@@ -2627,7 +2750,6 @@ export const EN = {
   'Halo, saya {nama} (NIM {nim}). Saya ingin meminta penjelasan soal akses cetak sertifikat VIBE saya.':
     'Hello, I am {nama} (student ID {nim}). I would like an explanation about my VIBE certificate print access.',
   'Kelayakan akademik': 'Academic eligibility',
-  'Semua syarat nilai dan aspek terpenuhi.': 'All score and aspect requirements are met.',
   // Panel mahasiswa: riwayat.
   'Ditetapkan oleh {oleh}': 'Set by {oleh}',
   'Dinilai oleh {oleh}': 'Graded by {oleh}',
@@ -2737,6 +2859,9 @@ export const POLA_EN = [
   [/^aspek (.+) belum final$/, 'aspect $1 not final yet'],
   [/^nilai akhir (.+) di bawah rata-rata minimal (\d+)$/, 'final score $1 below the minimum average of $2'],
   [/^nilai angkatan (.+) belum disahkan$/, 'cohort $1 scores not ratified yet'],
+  [/^aspek (\S+) belum punya nilai$/, 'aspect $1 has no score yet'],
+  [/^nilai aspek (\S+) (\S+) di bawah minimal (\d+)$/, 'aspect $1 score $2 is below the minimum of $3'],
+  [/^syarat "(.+)" belum terpenuhi$/, 'requirement "$1" not met yet'],
   // Aspek, komponen, dan bobot (src/lib/aspek.js, penilaian.js, bobot.js).
   [/^Semester harus 1 sampai (\d+)\.$/, 'Semester must be 1 to $1.'],
   [/^Kode (.+) sudah dipakai aspek lain\.$/, 'Code $1 is already used by another aspect.'],

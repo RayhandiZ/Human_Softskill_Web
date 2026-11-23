@@ -56,6 +56,9 @@ export const labelPeriode = (p) => p.semester + ' ' + p.tahun
 
 export const samaPeriode = (a, b) => ordinal(a) === ordinal(b)
 
+/** Apakah periode `aktif` sudah sampai atau melewati periode `mulai`. */
+export const periodeSudahSampai = (mulai, aktif = PERIODE_AKTIF) => ordinal(aktif) >= ordinal(mulai)
+
 /*
  * Rentang tanggal tiap periode, untuk menyaring data per semester (Pusat Kendali super admin). Mengikuti
  * Kalender Akademik UMN 2026/2027 (umn.ac.id): Ganjil dibuka tambah-ganti KRS 19-20 Agustus, kuliah mulai
