@@ -1,35 +1,51 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { IconCheck, IconChevronDown } from './Icons'
 
-/* Dropdown buatan sendiri (pola listbox, sama dengan PilihPeriode di super-admin/Kendali.jsx), pengganti <select>
-   untuk Angkatan, Fakultas, dan Program studi di halaman Nilai Mahasiswa sejak 20 Nov 2026.
+/* Dropdown buatan sendiri (pola listbox, sama dengan PilihPeriode di super-admin/Kendali.jsx), pengganti <select> di
+   seluruh aplikasi sejak 24 Nov 2026 (Select di Ui.jsx memakainya). Mulai 20 Nov 2026 di halaman Nilai Mahasiswa.
 
    Kenapa bukan <select>: rupa dan gerak daftar <select> di index.css memakai appearance: base-select, yang hanya ada
-   di Chrome dan Edge 135 ke atas. Firefox menggambar daftar bawaannya sendiri, tanpa animasi, dan membukanya ke sisi
-   yang paling lega: Program studi (15 pilihan) membuka ke atas menutupi bilah atas, sedangkan Fakultas dan Angkatan
-   membuka ke bawah. Komponen ini menyamakannya di semua peramban, dengan rupa dan gerak yang sama dengan daftar
-   base-select: selalu ke bawah, tingginya paling banyak 320px dan dibatasi ruang di bawah kotak, dan baru membalik
-   ke atas bila ruang itu kurang dari 160px. Lihat README.md › Panel Kemahasiswaan › Gerak.
+   di Chrome dan Edge 135 ke atas. Firefox menggambar daftar bawaannya sendiri, tanpa animasi, membukanya ke sisi yang
+   paling lega, dan memotong teks pilihan terpilih tanpa tanda "…". Komponen ini menyamakannya di semua peramban
+   dengan rupa dan gerak yang sama dengan daftar base-select: selalu ke bawah, tingginya paling banyak 320px dan
+   dibatasi ruang di bawah kotak, dan baru membalik ke atas bila ruang itu kurang dari 160px. Daftarnya popover di
+   top layer (posisinya dihitung dari kotak), jadi tidak terpotong tabel yang bergulir atau kartu overflow-hidden.
+   Lihat README.md › Panel Admin › Gerak.
 
-   ringkas: label di dalam kotak, untuk baris saringan. Tanpa ringkas: kotak besar dengan label di luar; berikan id
-   elemen labelnya lewat labelOleh. */
+   Nama untuk pembaca layar: ringkas memakai label di dalam kotak; selain itu berikan labelOleh (id label di luar)
+   atau ariaLabel (label tak terlihat). Nilai dibandingkan sebagai teks, seperti <select>. */
 
 const RUANG_MIN = 160
 const RUANG_MAKS = 320
+const LEBAR_MAKS = 360
 const JARAK = 8 // celah antara kotak dan daftar
-// Jarak daftar ke tepi layar, sama dengan margin daftar base-select (margin-block: 8px). Dulu 16px: daftar Program
-// studi berisi 6 pilihan kelebihan 4px dan memunculkan batang gulir untuk 4px itu.
+// Jarak daftar ke tepi layar, sama dengan margin daftar base-select (margin-block: 8px).
 const TEPI = 8
+
+export const KOTAK_SEDANG = 'rounded-xl bg-surface px-3.5 py-2.5 text-sm font-semibold'
+export const KOTAK_BESAR = 'rounded-xl bg-surface px-3.5 py-3 text-[14.5px] font-bold'
+export const KOTAK_KECIL = 'rounded-lg bg-surface py-1.5 pl-2.5 pr-2 text-[12.5px] font-semibold'
+// Rupa .field (isian formulir): latar surface-2.
+export const KOTAK_ISIAN = 'rounded-xl bg-surface-2 px-4 py-3 text-sm'
+
+const sama = (a, b) => String(a) === String(b)
 
 export default function PilihanTurun({
   label,
   labelOleh,
+  ariaLabel,
   id,
+  title,
   value,
   onChange,
   options,
   tampilkan,
+  kosong = null,
   ringkas = false,
+  disabled = false,
+  redup = false,
+  kelasTombol = KOTAK_SEDANG,
+  ukuranPanah = 16,
   className = '',
 }) {
   const tampil = tampilkan ?? ((o) => String(o))
@@ -43,7 +59,7 @@ export default function PilihanTurun({
   // Daftar tetap terpasang selama memudar saat ditutup.
   const [pasang, setPasang] = useState(false)
   const [sorot, setSorot] = useState(0)
-  const [ruang, setRuang] = useState({ arah: 'bawah', tinggi: RUANG_MAKS })
+  const [posisi, setPosisi] = useState(null)
   // Sorotan terbaru juga disimpan di ref: panah yang ditekan beruntun lebih cepat dari render berikutnya tetap
   // bergeser satu per satu, dan Enter memilih yang benar-benar tersorot.
   const sorotKini = useRef(0)
@@ -52,23 +68,41 @@ export default function PilihanTurun({
   const tombol = useRef(null)
   const daftar = useRef(null)
 
-  const iTerpilih = Math.max(0, options.indexOf(value))
+  const iTerpilih = options.findIndex((o) => sama(o, value))
+  const adaTerpilih = iTerpilih >= 0
+  // Nilai di luar pilihan: placeholder bila ada, selain itu pilihan pertama, seperti <select>.
+  const teksNilai = adaTerpilih ? tampil(options[iTerpilih]) : (kosong ?? (options.length ? tampil(options[0]) : ''))
+  const namaLabel = labelOleh || (label || ariaLabel ? idLabel : null)
+
   const aturSorot = (i) => {
     sorotKini.current = i
     setSorot(i)
   }
 
-  function ukurRuang() {
-    const r = wadah.current?.getBoundingClientRect()
-    if (!r) return { arah: 'bawah', tinggi: RUANG_MAKS }
-    const bawah = window.innerHeight - r.bottom - JARAK - TEPI
+  function ukurPosisi() {
+    const r = tombol.current?.getBoundingClientRect()
+    const vw = document.documentElement.clientWidth || window.innerWidth || 1024
+    const vh = window.innerHeight || 768
+    if (!r) return { arah: 'bawah', tinggi: RUANG_MAKS, left: TEPI, top: 0, minW: 0, maxW: LEBAR_MAKS }
+    const bawah = vh - r.bottom - JARAK - TEPI
     const atas = r.top - JARAK - TEPI
-    if (bawah < RUANG_MIN && atas > bawah) return { arah: 'atas', tinggi: Math.min(RUANG_MAKS, atas) }
-    return { arah: 'bawah', tinggi: Math.max(RUANG_MIN, Math.min(RUANG_MAKS, bawah)) }
+    const naik = bawah < RUANG_MIN && atas > bawah
+    const minW = Math.max(0, Math.min(r.width, vw - 2 * TEPI))
+    const left = Math.max(TEPI, Math.min(r.left, vw - TEPI - minW))
+    return {
+      arah: naik ? 'atas' : 'bawah',
+      tinggi: naik ? Math.min(RUANG_MAKS, atas) : Math.max(RUANG_MIN, Math.min(RUANG_MAKS, bawah)),
+      left,
+      top: naik ? null : r.bottom + JARAK,
+      bottom: naik ? vh - r.top + JARAK : null,
+      minW,
+      maxW: Math.max(minW, Math.min(LEBAR_MAKS, vw - TEPI - left)),
+    }
   }
 
-  function bukaDaftar(i = iTerpilih) {
-    setRuang(ukurRuang())
+  function bukaDaftar(i = Math.max(0, iTerpilih)) {
+    if (disabled) return
+    setPosisi(ukurPosisi())
     aturSorot(i)
     setPasang(true)
     setBuka(true)
@@ -78,7 +112,7 @@ export default function PilihanTurun({
     if (kembali) tombol.current?.focus()
   }
   function pilih(i) {
-    if (options[i] !== value) onChange(options[i])
+    if (!sama(options[i], value)) onChange(options[i])
     tutup()
   }
 
@@ -101,6 +135,17 @@ export default function PilihanTurun({
   const sedangMengetik = () => ketikan.current.teks !== '' && Date.now() - ketikan.current.waktu < 700
   const hurufBiasa = (e) => e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey
 
+  // Daftar masuk top layer begitu terpasang; dilepas dari DOM, ia keluar dengan sendirinya.
+  useLayoutEffect(() => {
+    const d = daftar.current
+    if (!pasang || !d?.showPopover) return
+    try {
+      if (!d.matches(':popover-open')) d.showPopover()
+    } catch {
+      // Peramban tanpa Popover API: daftar tetap tampil sebagai position: fixed.
+    }
+  }, [pasang])
+
   // Fokus pindah ke daftar saat terbuka; tekanan tetikus di luar menutupnya tanpa memindahkan fokus.
   useEffect(() => {
     if (!buka) return undefined
@@ -112,13 +157,40 @@ export default function PilihanTurun({
     return () => document.removeEventListener('mousedown', luar)
   }, [buka])
 
+  // Posisinya mengikuti kotak saat halaman atau wadah apa pun digulir, dan saat ukuran layar berubah.
+  useEffect(() => {
+    if (!pasang) return undefined
+    let bingkai = 0
+    const ulang = (e) => {
+      if (e?.type === 'scroll' && daftar.current?.contains(e.target)) return
+      cancelAnimationFrame(bingkai)
+      bingkai = requestAnimationFrame(() => setPosisi(ukurPosisi()))
+    }
+    window.addEventListener('scroll', ulang, true)
+    window.addEventListener('resize', ulang)
+    return () => {
+      cancelAnimationFrame(bingkai)
+      window.removeEventListener('scroll', ulang, true)
+      window.removeEventListener('resize', ulang)
+    }
+    // ukurPosisi hanya membaca ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pasang])
+
   useEffect(() => {
     if (buka) document.getElementById(dasar + '-' + sorot)?.scrollIntoView?.({ block: 'nearest' })
   }, [buka, sorot, dasar])
 
-  // Pengaman bila animationend tidak datang (animasi dimatikan, jsdom): daftar dilepas sesudah waktu pudarnya.
+  // Daftar yang ditutup dilepas begitu pudarnya selesai (onAnimationEnd). Tanpa pudar yang berjalan (kurangi gerak,
+  // menu Hentikan animasi, jsdom tanpa getAnimations) daftar langsung dilepas, tidak tertahan 220ms; jeda itu hanya
+  // pengaman bila animationend tidak datang.
   useEffect(() => {
     if (buka || !pasang) return undefined
+    const pudar = daftar.current?.getAnimations?.().some((a) => a.animationName === 'tutup-pilihan')
+    if (!pudar) {
+      setPasang(false)
+      return undefined
+    }
     const jeda = setTimeout(() => setPasang(false), 220)
     return () => clearTimeout(jeda)
   }, [buka, pasang])
@@ -131,9 +203,9 @@ export default function PilihanTurun({
       e.preventDefault()
       bukaDaftar(e.key === 'Home' ? 0 : options.length - 1)
     } else if (hurufBiasa(e)) {
-      sorotKini.current = iTerpilih
+      sorotKini.current = Math.max(0, iTerpilih)
       const i = cariKetik(e.key)
-      bukaDaftar(i >= 0 ? i : iTerpilih)
+      bukaDaftar(i >= 0 ? i : Math.max(0, iTerpilih))
     }
   }
 
@@ -171,11 +243,10 @@ export default function PilihanTurun({
     }
   }
 
-  // focus-visible:rounded-*: aturan global *:focus-visible di index.css memasang sudut 6px pada elemen yang difokus.
-  const bingkai =
-    'rounded-xl border bg-surface transition hover:border-line-strong focus-visible:rounded-xl ' +
-    (buka ? 'border-brand-ink' : 'border-line')
-  const panah = 'shrink-0 text-ink-3 transition-transform duration-200 ' + (buka ? 'rotate-180' : '')
+  const garis = buka ? 'border-brand-ink' : redup ? 'border-dashed border-line-strong' : 'border-line'
+  const panah =
+    'shrink-0 text-ink-3 transition-transform duration-200 ' + (buka ? 'rotate-180 ' : '') + (disabled ? 'opacity-50' : '')
+  const warnaNilai = !adaTerpilih && kosong ? 'text-ink-3' : ''
 
   return (
     <div ref={wadah} className={'relative min-w-0 ' + className}>
@@ -183,70 +254,81 @@ export default function PilihanTurun({
         ref={tombol}
         id={id}
         type="button"
-        data-nilai={value}
+        title={title}
+        disabled={disabled}
+        data-nilai={adaTerpilih ? String(options[iTerpilih]) : String(value ?? '')}
         aria-haspopup="listbox"
         aria-expanded={buka}
         aria-controls={pasang ? idDaftar : undefined}
-        // Kotak besar: nama = label di luar + pilihan saat ini ("3. Angkatan 2023 · 2 mahasiswa"). Kotak ringkas
-        // memakai isinya sendiri ("Fakultas Semua").
-        aria-labelledby={!ringkas && labelOleh ? labelOleh + ' ' + idNilai : undefined}
+        // Nama = label + pilihan saat ini ("Fakultas Semua", "3. Angkatan 2023 · 2 mahasiswa").
+        aria-labelledby={namaLabel ? namaLabel + ' ' + idNilai : undefined}
         onClick={() => (buka ? tutup(false) : bukaDaftar())}
         onKeyDown={tekanTombol}
         className={
-          ringkas
-            ? 'flex w-full min-w-0 items-center text-left ' + bingkai
-            : 'flex w-full min-w-0 items-center gap-2 px-3.5 py-3 text-left text-[14.5px] font-bold text-ink ' + bingkai
+          'flex w-full min-w-0 items-center border text-left transition enabled:hover:border-line-strong disabled:cursor-not-allowed disabled:text-ink-3 ' +
+          garis +
+          ' ' +
+          (redup ? 'text-ink-3 ' : 'text-ink ') +
+          (ringkas ? 'rounded-xl bg-surface' : 'gap-2 ' + kelasTombol)
         }
       >
         {ringkas ? (
-          <>
-            <span id={idLabel} className="shrink-0 whitespace-nowrap pl-3.5 text-[12.5px] font-semibold text-ink-2">
-              {label}
-            </span>
-            <span id={idNilai} className="min-w-0 flex-1 truncate py-2.5 pl-2 pr-1.5 text-sm font-semibold text-ink">
-              {tampil(value)}
-            </span>
-            <IconChevronDown size={16} className={'mr-2.5 ' + panah} />
-          </>
-        ) : (
-          <>
-            <span id={idNilai} className="min-w-0 flex-1 truncate">
-              {tampil(value)}
-            </span>
-            <IconChevronDown size={16} className={panah} />
-          </>
-        )}
+          <span id={idLabel} className="shrink-0 whitespace-nowrap pl-3.5 text-[12.5px] font-semibold text-ink-2">
+            {label}
+          </span>
+        ) : !labelOleh && ariaLabel ? (
+          <span id={idLabel} className="sr-only">
+            {ariaLabel}
+          </span>
+        ) : null}
+        <span
+          id={idNilai}
+          className={
+            'min-w-0 flex-1 truncate ' + (ringkas ? 'py-2.5 pl-2 pr-1.5 text-sm font-semibold ' : '') + warnaNilai
+          }
+        >
+          {teksNilai}
+        </span>
+        <IconChevronDown size={ukuranPanah} className={(ringkas ? 'mr-2.5 ' : '') + panah} />
       </button>
 
       {pasang ? (
         <ul
           ref={daftar}
           id={idDaftar}
+          popover="manual"
           role="listbox"
           tabIndex={-1}
-          aria-labelledby={ringkas ? idLabel : labelOleh}
+          aria-labelledby={namaLabel ?? undefined}
           aria-activedescendant={idPilihan(sorot)}
-          data-arah={ruang.arah}
+          data-arah={posisi?.arah ?? 'bawah'}
           onKeyDown={tekanDaftar}
           onAnimationEnd={(e) => {
             // animationend pilihan (gerak masuk berurutan) ikut naik ke sini; hanya milik daftar yang dihitung.
             if (!buka && e.target === e.currentTarget) setPasang(false)
           }}
-          style={{ maxHeight: ruang.tinggi }}
+          style={{
+            left: posisi?.left,
+            top: posisi?.top ?? 'auto',
+            bottom: posisi?.bottom ?? 'auto',
+            minWidth: posisi?.minW,
+            maxWidth: posisi?.maxW,
+            maxHeight: posisi?.tinggi,
+          }}
           className={
-            'absolute inset-x-0 z-30 overflow-y-auto overscroll-contain rounded-2xl border border-line bg-surface p-1.5 shadow-pop focus-visible:rounded-2xl focus-visible:outline-none ' +
-            (ruang.arah === 'atas' ? 'bottom-[calc(100%+8px)] ' : 'top-[calc(100%+8px)] ') +
+            'fixed inset-auto z-50 m-0 w-max overflow-y-auto overscroll-contain rounded-2xl border border-line bg-surface p-1.5 text-ink shadow-pop focus-visible:outline-none ' +
             (buka ? 'daftar-turun' : 'daftar-turun-tutup pointer-events-none')
           }
         >
           {options.map((o, i) => {
-            const terpilih = o === value
+            const terpilih = i === iTerpilih
             return (
               <li
                 key={String(o)}
                 id={idPilihan(i)}
                 role="option"
                 aria-selected={terpilih}
+                data-nilai={String(o)}
                 // Hanya gerakan tetikus sungguhan yang memindah sorotan. Chrome mengirim mousemove tiruan (tanpa
                 // pergeseran) saat daftar bergulir oleh panah, yang kalau diikuti akan merebut sorotan papan ketik.
                 onMouseMove={(e) => {

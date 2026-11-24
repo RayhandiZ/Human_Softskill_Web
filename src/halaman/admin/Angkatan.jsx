@@ -449,7 +449,7 @@ function PanelKunci({ x }) {
               {t('Nilai angkatan {label} sudah disahkan.', { label: c.label })}
             </p>
             <p className="text-[13px] leading-relaxed text-ink-2">
-              {t('Nilainya masih bisa diubah atau dilengkapi Kemahasiswaan, asal disertai alasan yang tercatat.')}
+              {t('Nilainya masih bisa diubah atau dilengkapi Admin, asal disertai alasan yang tercatat.')}
             </p>
             <Link
               href={'/admin/sertifikat?angkatan=' + encodeURIComponent(c.label)}

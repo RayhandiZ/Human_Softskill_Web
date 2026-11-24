@@ -438,7 +438,7 @@ export async function ujiRiwayat(rute) {
   // Pencarian, saringan, dan urutan bekerja bersama tab Semua.
   await klik(tab('Semua'))
   const kotakCari = el.querySelector('input[type="search"]')
-  const pilihan = (label) => [...el.querySelectorAll('label.pilihan-ringkas')].find((l) => l.textContent.startsWith(label))?.querySelector('select')
+  const pilihan = (label) => kotakPilihan(el).find((b) => b.textContent.trim().startsWith(label))
   const namaTugas = () => baris().map((li) => li.querySelector('span span')?.textContent)
   const urutanAwal = namaTugas()
   const dicari = urutanAwal[0] ?? ''
@@ -612,9 +612,9 @@ export async function ujiPembaruanAdmin() {
 export async function ujiSasaranInput(alamat) {
   const { el, lepas } = await pasang(alamat)
   const teks = el.textContent
-  // Semester dan sumber kini tombol pilihan (radio); angkatan dan penyaring masih <select>.
+  // Semester dan sumber kini tombol pilihan (radio); angkatan dan penyaring dropdown PilihanTurun.
   const pilihan = [
-    ...[...el.querySelectorAll('select')].map((x) => x.value),
+    ...kotakPilihan(el).map((x) => x.dataset.nilai),
     ...[...el.querySelectorAll('input[type="radio"]:checked')].map((x) => x.value),
   ]
   const hasil = {
@@ -687,7 +687,7 @@ export async function ujiKeputusanKoreksi(alamat) {
     await ketik(isian, String(usulan))
     await klik(teruskan[0])
     hasil.diteruskan = k.status === 'menunggu_superadmin'
-    hasil.lapis1Tercatat = k.nilaiUsulan === usulan && k.lapis1?.oleh === 'Biro Kemahasiswaan'
+    hasil.lapis1Tercatat = k.nilaiUsulan === usulan && k.lapis1?.oleh === 'Admin'
     hasil.nilaiBelumBerubah = nilaiKini(k) === nilaiAwal
     const kartuSesudah = [...el.querySelectorAll('li')].find((li) => li.textContent.includes(k.alasan))
     hasil.tombolAdminHilang =
@@ -732,8 +732,55 @@ export async function ujiKeputusanKoreksi(alamat) {
   return hasil
 }
 
-/** Mengubah nilai sebuah <select> lewat peristiwa yang sama dengan pengguna. */
+/* Dropdown sejak 24 Nov 2026 adalah PilihanTurun, bukan <select> (lihat src/components/PilihanTurun.jsx): kotaknya
+   tombol aria-haspopup="listbox" dengan nilai mentah di data-nilai, dan pilihannya ([role="option"], juga dengan
+   data-nilai) baru ada di DOM selama daftar terbuka. Pembantu di bawah memakainya seperti pengguna: tekan kotak, lalu
+   tekan pilihan. */
+const kotakPilihan = (akar) => [...(akar?.querySelectorAll('button[aria-haspopup="listbox"]') ?? [])]
+
+/** Buka daftar sebuah kotak, catat pilihannya ({ value, textContent }), lalu tutup lagi. */
+const bacaPilihan = async (kotak) => {
+  if (!kotak) return []
+  await act(async () => kotak.click())
+  const daftar = kotak.ownerDocument.getElementById(kotak.getAttribute('aria-controls'))
+  const isi = [...(daftar?.querySelectorAll('[role="option"]') ?? [])].map((o) => ({
+    value: o.dataset.nilai,
+    textContent: o.textContent.trim(),
+  }))
+  await act(async () => kotak.click())
+  return isi
+}
+
+/** Kotak-kotak yang labelnya (aria-labelledby pertama) diawali teks tertentu, misalnya "Jenis syarat". */
+const kotakBerlabel = (akar, awalan) =>
+  kotakPilihan(akar).filter((b) =>
+    b.ownerDocument.getElementById((b.getAttribute('aria-labelledby') ?? '').split(' ')[0])?.textContent.trim().startsWith(awalan),
+  )
+
+/** Kotak pertama di akar yang daftarnya memuat pilihan cocok(pilihan) bernilai benar. */
+const kotakDengan = async (akar, cocok) => {
+  for (const kotak of kotakPilihan(akar)) if ((await bacaPilihan(kotak)).some(cocok)) return kotak
+  return null
+}
+
+/** Isi daftar dropdown pertama di sebuah halaman yang memuat pilihan cocok(pilihan), berurutan (teks tertulis). */
+export async function bacaDaftarHalaman(alamat, cocok) {
+  const { el, lepas } = await pasang(alamat)
+  const isi = (await bacaPilihan(await kotakDengan(el, cocok))).map((o) => o.textContent)
+  lepas()
+  return isi
+}
+
+/** Memilih sebuah nilai: kotak PilihanTurun ditekan lalu pilihannya ditekan; <select> lama lewat peristiwa change. */
 const pilih = async (el, nilai) => {
+  if (el?.getAttribute?.('aria-haspopup') === 'listbox') {
+    await act(async () => el.click())
+    const daftar = el.ownerDocument.getElementById(el.getAttribute('aria-controls'))
+    const opsi = [...(daftar?.querySelectorAll('[role="option"]') ?? [])].find((o) => o.dataset.nilai === String(nilai))
+    if (opsi) await act(async () => opsi.click())
+    else await act(async () => el.click())
+    return
+  }
   const asli = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
   await act(async () => {
     asli.call(el, nilai)
@@ -960,7 +1007,7 @@ export async function ujiLaciAdmin() {
   hasil.adaTombol = !!tombol
   // Di layar lebar menu samping yang tampil; garis tiga hanya untuk layar sempit (lihat AdminLayout.jsx).
   hasil.menuSampingDiLayarLebar =
-    !!el.querySelector('aside nav[aria-label="Menu Kemahasiswaan"]') && !!tombol && tombol.className.split(' ').includes('lg:hidden')
+    !!el.querySelector('aside nav[aria-label="Menu Admin"]') && !!tombol && tombol.className.split(' ').includes('lg:hidden')
 
   await klik(tombol)
   const panel = el.querySelector('[role="dialog"][aria-label="Menu navigasi"]')
@@ -1208,28 +1255,32 @@ export async function ujiNamaMaster() {
   const bahasa = window.localStorage.getItem('sk5c.bahasa.pilihan')
   window.localStorage.setItem('sk5c.session', JSON.stringify({ role: 'admin', email: 'a@umn.ac.id', name: 'Y', initials: 'KH' }))
   window.localStorage.setItem('sk5c.bahasa.pilihan', 'en')
-  const setelan = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
-  const pilih = async (sel, nilai) => {
+  // Pilih lalu beri satu putaran, supaya saringan yang ditunda ikut terbarui.
+  const pilihLalu = async (kotak, nilai) => {
+    await pilih(kotak, nilai)
     await act(async () => {
-      setelan.call(sel, nilai)
-      sel.dispatchEvent(new window.Event('change', { bubbles: true }))
       await new Promise((r) => setTimeout(r, 0))
     })
   }
 
   // Saringan Data Mahasiswa: tertulis Inggris, nilainya tetap nama asli, dan angkatan dari basis data bisa dipilih.
   let { el, lepas } = await pasang('/admin/mahasiswa')
-  const pilihanDengan = (nilai) => [...el.querySelectorAll('main select')].find((s) => [...s.options].some((o) => o.value === nilai))
-  const tulisan = (nilai) => [...(pilihanDengan(nilai)?.options ?? [])].find((o) => o.value === nilai)?.textContent
+  const utama = el.querySelector('main')
+  const kotakProdi = await kotakDengan(utama, (o) => o.value === 'Sistem Informasi')
+  const kotakFakultas = await kotakDengan(utama, (o) => o.value === 'Teknik & Informatika')
+  const kotakAngkatan = await kotakDengan(utama, (o) => o.value === '2030 Khusus')
+  const tulisan = async (kotak, nilai) => (await bacaPilihan(kotak)).find((o) => o.value === nilai)?.textContent
   hasil.pilihanTertulisInggris =
-    tulisan('Sistem Informasi') === 'Information Systems' && tulisan('Teknik & Informatika') === 'Engineering & Informatics' && tulisan('2030 Khusus') === '2030 Special'
-  await pilih(pilihanDengan('2030 Khusus'), '2030 Khusus')
-  hasil.angkatanBasisDataBisaDipilih = pilihanDengan('2030 Khusus')?.value === '2030 Khusus'
-  await pilih(pilihanDengan('2030 Khusus'), 'Semua')
-  await pilih(pilihanDengan('Sistem Informasi'), 'Sistem Informasi')
+    (await tulisan(kotakProdi, 'Sistem Informasi')) === 'Information Systems' &&
+    (await tulisan(kotakFakultas, 'Teknik & Informatika')) === 'Engineering & Informatics' &&
+    (await tulisan(kotakAngkatan, '2030 Khusus')) === '2030 Special'
+  await pilihLalu(kotakAngkatan, '2030 Khusus')
+  hasil.angkatanBasisDataBisaDipilih = kotakAngkatan?.dataset.nilai === '2030 Khusus'
+  await pilihLalu(kotakAngkatan, 'Semua')
+  await pilihLalu(kotakProdi, 'Sistem Informasi')
   const kolomProdi = () => [...el.querySelectorAll('main tbody tr')].map((tr) => tr.children[2]?.textContent)
   hasil.saringMemakaiNamaAsli = kolomProdi().length > 0 && kolomProdi().every((x) => x === 'Information Systems')
-  await pilih(pilihanDengan('Sistem Informasi'), 'Semua')
+  await pilihLalu(kotakProdi, 'Semua')
   // Diurutkan menurut yang tertulis di layar, bukan menurut nama Indonesianya.
   await klik([...el.querySelectorAll('main thead button')].find((b) => /Study programme/.test(b.textContent)))
   const menurun = (daftar) => [...new Set(daftar)].sort((a, b) => b.localeCompare(a))[0]
@@ -2066,7 +2117,7 @@ export async function ujiAlurSertifikat() {
       [...(kartuDitolak?.querySelectorAll('dt') ?? [])].map((d) => d.textContent.trim()).join('|') === 'Alasan' &&
       Boolean(penolak) &&
       !(kartuDitolak?.textContent ?? '').includes(penolak + ', ') &&
-      !/Ditolak oleh|Yang perlu dilakukan|Hubungi Kemahasiswaan|Setelah akses disetujui/.test(kartuDitolak?.textContent ?? '') &&
+      !/Ditolak oleh|Yang perlu dilakukan|Hubungi Admin|Setelah akses disetujui/.test(kartuDitolak?.textContent ?? '') &&
       tombolKartu() === 'Ajukan peninjauan cetak' &&
       !isian()
     // Mengklik tombolnya memunculkan isian (langsung difokus) dengan Kirim pengajuan dan Batal, tanpa mengirim apa pun.
@@ -2108,7 +2159,7 @@ export async function ujiAlurSertifikat() {
     await ketik(el.querySelector('input[id^="catatan-S-"]'), 'Semua aspek final dan nilai di atas ambang.')
     await klik(tombol(el, 'Teruskan: disarankan'))
     hasil.diteruskan =
-      milik()?.status === 'menunggu_superadmin' && milik()?.lapis1?.oleh === 'Biro Kemahasiswaan' && milik()?.lapis1?.saran === 'disarankan'
+      milik()?.status === 'menunggu_superadmin' && milik()?.lapis1?.oleh === 'Admin' && milik()?.lapis1?.saran === 'disarankan'
     hasil.adminTakBisaLapisDua =
       (await putuskanSertifikat(milik().id, 'disarankan', { aktor: 'X', catatan: 'Uji: meneruskan dua kali.', superAdmin: false })) === false
     hasil.panelJendelaLainHilang =
@@ -2166,7 +2217,7 @@ export async function ujiAlurSertifikat() {
     hasil.dicabut =
       milik()?.status === 'dicabut' &&
       milik()?.dicabut?.alasan === 'Ada laporan sikap dari dosen wali.' &&
-      milik()?.dicabut?.oleh === 'Biro Kemahasiswaan'
+      milik()?.dicabut?.oleh === 'Admin'
     hasil.barisMenyebutDicabut =
       /Dicabut/.test(el.querySelector('tbody')?.textContent ?? '') &&
       Boolean(el.querySelector('button[aria-label="Cetak sertifikat ' + m.name + '"]')?.disabled) &&
@@ -2181,12 +2232,12 @@ export async function ujiAlurSertifikat() {
       el.textContent.includes('Ada laporan sikap dari dosen wali.') &&
       Boolean(tombol(el, 'Ajukan peninjauan cetak'))
     // Sejak 12 Nov 2026 kartunya hanya memuat alasan dan tombolnya (sejak 18 Nov 2026 Ajukan peninjauan cetak, yang baru
-    // memunculkan isian penjelasan saat diklik): tanpa siapa yang mencabut (Biro Kemahasiswaan), "Yang perlu dilakukan",
-    // tautan Hubungi Kemahasiswaan, dan catatan di bawah kartu.
+    // memunculkan isian penjelasan saat diklik): tanpa siapa yang mencabut (Admin), "Yang perlu dilakukan",
+    // tautan Hubungi Admin, dan catatan di bawah kartu.
     const kartuDicabut = el.querySelector('section[aria-labelledby="judul-izin"]')
     hasil.pencabutanRingkas =
       [...(kartuDicabut?.querySelectorAll('dt') ?? [])].map((d) => d.textContent.trim()).join('|') === 'Alasan' &&
-      !/Dicabut oleh|Yang perlu dilakukan|Biro Kemahasiswaan/.test(kartuDicabut?.textContent ?? '') &&
+      !/Dicabut oleh|Yang perlu dilakukan|\bAdmin\b/.test(kartuDicabut?.textContent ?? '') &&
       [...(kartuDicabut?.querySelectorAll('button, a') ?? [])].map((b) => b.textContent.trim()).join('|') === 'Ajukan peninjauan cetak' &&
       !kartuDicabut?.querySelector('textarea')
     hasil.tanpaCatatanSesudahDicabut = Boolean(kartuDicabut) && !/Setelah akses (dipulihkan|disetujui)/.test(kartuDicabut.textContent)
@@ -2279,7 +2330,7 @@ export async function ujiAngkatan() {
   isiMaster(MASTER_AWAL)
 
   ;({ el, lepas } = await pasang('/admin/sertifikat?angkatan=2024'))
-  hasil.sertifikatTersaring = el.querySelector('select')?.value === '2024'
+  hasil.sertifikatTersaring = kotakPilihan(el).some((b) => b.dataset.nilai === '2024')
   lepas()
 
   // Admin biasa: angkatan yang disembunyikan server (angkatanTersembunyi di /api/data), di sini satu yang sudah lewat
@@ -2355,7 +2406,7 @@ export async function ujiSuperAdmin() {
       JSON.stringify(
         superAdmin
           ? { role: 'admin', superAdmin: true, email: 'super.admin@umn.ac.id', name: 'Super Admin', initials: 'SA' }
-          : { role: 'admin', email: 'admin@umn.ac.id', name: 'Biro Kemahasiswaan & Humaniora', initials: 'KH' },
+          : { role: 'admin', email: 'admin@umn.ac.id', name: 'Admin', initials: 'A' },
       ),
     )
   const lencana = (el) => el.querySelector('main header p span')?.textContent ?? ''
@@ -2370,7 +2421,7 @@ export async function ujiSuperAdmin() {
 
   sesi(false)
   ;({ el, lepas } = await pasang('/admin/profil'))
-  hasil.adminBiasaTetap = lencana(el) === 'Kemahasiswaan'
+  hasil.adminBiasaTetap = lencana(el) === 'Admin'
   lepas()
 
   if (lama) window.localStorage.setItem('sk5c.session', lama)
@@ -2387,7 +2438,7 @@ export async function ujiPanelSuper() {
       JSON.stringify(
         superAdmin
           ? { role: 'admin', superAdmin: true, email: 'super.admin@umn.ac.id', name: 'Super Admin', initials: 'SA' }
-          : { role: 'admin', email: 'admin@umn.ac.id', name: 'Biro Kemahasiswaan & Humaniora', initials: 'KH' },
+          : { role: 'admin', email: 'admin@umn.ac.id', name: 'Admin', initials: 'A' },
       ),
     )
   const hasil = {
@@ -2503,7 +2554,7 @@ export async function ujiPanelSuper() {
   // Kelola aspek: struktur aspek terpilih, pratinjau dampak sebelum mengarsipkan (alasan wajib), dan formulir tambah.
   const adaStruktur = el.textContent.includes('Struktur aspek ' + aspek2 + '.') && /Simpan struktur/.test(el.textContent)
   // Pindah cluster: area ikut berubah, dan sesudah alasan diisi tombol simpan aktif.
-  const pilihCluster = [...el.querySelectorAll('select')].find((s) => [...s.options].some((o) => o.value === 'CL4'))
+  const pilihCluster = await kotakDengan(el, (o) => o.value === 'CL4')
   await pilih(pilihCluster, 'CL4')
   await tunggu()
   const formStruktur = pilihCluster?.closest('form')
@@ -2511,7 +2562,7 @@ export async function ujiPanelSuper() {
   await ketik([...(formStruktur?.querySelectorAll('input') ?? [])].at(-1), 'Uji pindah cluster')
   await tunggu()
   const simpanStrukturAktif =
-    pilihCluster?.value === 'CL4' && formStruktur?.querySelector('button[type="submit"]')?.disabled === false
+    pilihCluster?.dataset.nilai === 'CL4' && formStruktur?.querySelector('button[type="submit"]')?.disabled === false
   hasil.pindahCluster = areaIkut && simpanStrukturAktif
   await klik([...el.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Arsipkan aspek'))
   await tunggu()
@@ -2545,11 +2596,17 @@ export async function ujiPanelSuper() {
     ['Edit', 'Ubah', 'Hapus'].every((x) => tombolKartu(x).length === kodeSemester1.length)
   await klik(tombolKartu('Tambah aspek')[0])
   await tunggu()
-  const pilihArea = [...kartuSemester().querySelectorAll('select')].find((s) => [...s.options].some((o) => o.value === 'B'))
+  const pilihArea = await kotakDengan(kartuSemester(), (o) => o.value === 'B')
+  // Semua pilihan di formulir tambah (dulu dibaca dari textContent <select>, yang memuat semua <option>).
+  let pilihanFormulir = ''
+  for (const kotak of kotakPilihan(kartuSemester()).filter((b) => b.closest('form'))) {
+    pilihanFormulir += (await bacaPilihan(kotak)).map((o) => o.textContent).join(' ') + ' '
+  }
   const tambahDiSemester =
-    pilihArea?.value === 'A' &&
+    pilihArea?.dataset.nilai === 'A' &&
     [...kartuSemester().querySelectorAll('input')].some((i) => i.value === 'A.5.') &&
-    !/Semester 2/.test([...kartuSemester().querySelectorAll('form select')].map((s) => s.textContent).join(' '))
+    pilihanFormulir.trim() !== '' &&
+    !/Semester 2/.test(pilihanFormulir)
   await klik(tombolKartu('Hapus')[1])
   await tunggu()
   const hapusPratinjau =
@@ -2622,25 +2679,20 @@ export async function ujiPanelSuper() {
   const barisD2 = () => barisAkun().find((li) => li.textContent.includes(d2.nama))
   await klik([...barisD2().querySelectorAll('button')].find((b) => /Ubah kelas/.test(b.textContent)))
   const formKelas = barisD2().querySelector('form')
-  const pilihanDi = (teks) => [...formKelas.querySelectorAll('select')].find((s) => [...s.options].some((o) => o.textContent === teks))
+  // Prodi dosen sudah terpilih (data-nilai); kotak kelas masih menampilkan teks "Pilih kelas".
+  const kotakProdiForm = kotakPilihan(formKelas).find((b) => b.dataset.nilai === d2.prodi)
+  const kotakKelasForm = kotakPilihan(formKelas).find((b) => /Pilih kelas/.test(b.textContent))
   const tombolTambahKelas = () => [...formKelas.querySelectorAll('button')].find((b) => /Tambah kelas/.test(b.textContent))
   const kelasDosenAwal =
-    /Belum ada kelas terpilih/.test(formKelas.textContent) &&
-    pilihanDi('Pilih program studi')?.value === d2.prodi &&
-    tombolTambahKelas()?.disabled === true
-  await act(async () => {
-    const sel = pilihanDi('Pilih kelas')
-    sel.value = 'A'
-    sel.dispatchEvent(new window.Event('change', { bubbles: true }))
-  })
+    /Belum ada kelas terpilih/.test(formKelas.textContent) && Boolean(kotakProdiForm) && tombolTambahKelas()?.disabled === true
+  await pilih(kotakKelasForm, 'A')
   await klik(tombolTambahKelas())
   const kelasTerpilih = () => [...formKelas.querySelectorAll('li')].find((li) => /Sistem Informasi Kelas A/.test(li.textContent))
-  const kelasTerpasang =
-    Boolean(kelasTerpilih()) && ![...(pilihanDi('Pilih kelas')?.options ?? [])].some((o) => o.value === 'A')
+  const kelasTerpasang = Boolean(kelasTerpilih()) && !(await bacaPilihan(kotakKelasForm)).some((o) => o.value === 'A')
   await klik(kelasTerpilih()?.querySelector('button'))
   hasil.pilihKelasDosen = kelasDosenAwal && kelasTerpasang && !kelasTerpilih() && /Belum ada kelas terpilih/.test(formKelas.textContent)
   await klik([...barisD2().querySelectorAll('button')].find((b) => /Ubah kelas/.test(b.textContent)))
-  await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /Admin Kemahasiswaan/.test(b.textContent)))
+  await klik([...el.querySelectorAll('[role="tab"]')].find((b) => /^Admin/.test(b.textContent.trim())))
   await ketik(el.querySelector('input[type="search"]'), '')
   const barisSuper = barisAkun().find((li) => li.textContent.includes('super.admin@umn.ac.id'))
   hasil.superTidakBisaDicabut =
@@ -2726,7 +2778,7 @@ export async function ujiPanelSuper() {
   lepas()
   window.localStorage.setItem(
     'sk5c.session',
-    JSON.stringify({ role: 'admin', kelolaMaster: true, email: 'admin@umn.ac.id', name: 'Biro Kemahasiswaan & Humaniora', initials: 'KH' }),
+    JSON.stringify({ role: 'admin', kelolaMaster: true, email: 'admin@umn.ac.id', name: 'Admin', initials: 'A' }),
   )
   ;({ el, lepas } = await pasang('/admin/data-master'))
   const bacaSajaAwal =
@@ -2794,15 +2846,12 @@ export async function ujiPanelSuper() {
   // Tab Mahasiswa: formulir tambah punya pilihan Kelas yang mengikuti prodinya (Tanpa kelas, lalu kelas prodi itu).
   await klik([...el.querySelectorAll('button')].find((b) => /Tambah mahasiswa/.test(b.textContent)))
   const formMhsBaru = [...el.querySelectorAll('form')].find((f) => /Sandi awal/.test(f.textContent))
-  const pilihKelasMhs = () => [...formMhsBaru.querySelectorAll('select')].find((s) => [...s.options].some((o) => o.textContent === 'Tanpa kelas'))
-  const kelasAwalKosong = pilihKelasMhs()?.options.length === 1
-  const pilihProdiMhs = [...formMhsBaru.querySelectorAll('select')].find((s) => [...s.options].some((o) => o.value === 'Sistem Informasi'))
-  await act(async () => {
-    pilihProdiMhs.value = 'Sistem Informasi'
-    pilihProdiMhs.dispatchEvent(new window.Event('change', { bubbles: true }))
-  })
+  const kotakKelasMhs = await kotakDengan(formMhsBaru, (o) => o.textContent === 'Tanpa kelas')
+  const kelasAwalKosong = (await bacaPilihan(kotakKelasMhs)).length === 1
+  const pilihProdiMhs = await kotakDengan(formMhsBaru, (o) => o.value === 'Sistem Informasi')
+  await pilih(pilihProdiMhs, 'Sistem Informasi')
   hasil.kelasIkutProdi =
-    kelasAwalKosong && [...(pilihKelasMhs()?.options ?? [])].map((o) => o.textContent).join() === 'Tanpa kelas,Kelas A,Kelas B'
+    kelasAwalKosong && (await bacaPilihan(kotakKelasMhs)).map((o) => o.textContent).join() === 'Tanpa kelas,Kelas A,Kelas B'
   lepas()
 
   // Pintu API yang belum dibuat (404) dikenali, supaya halaman bisa menjelaskannya.
@@ -3877,7 +3926,7 @@ export async function ujiMatriksWewenang() {
     await klik(tombol(h.el, /^Tambah tindakan$/)[0])
     const formTambah = h.el.querySelector('form#ubah-matriks')
     const tambahkan = () => tombol(formTambah, /Tambahkan ke matriks/)[0]
-    hasil.formulirTambah = formTambah?.querySelectorAll('select').length === 4 && tambahkan()?.disabled === true
+    hasil.formulirTambah = kotakPilihan(formTambah).length === 4 && tambahkan()?.disabled === true
     const isian = formTambah.querySelectorAll('input:not([type="hidden"])')
     await ketik(isian[0], 'Mengisi survei kepuasan layanan')
     await ketik(isian[isian.length - 1], 'Kebijakan baru dari rapat pimpinan')
@@ -4040,12 +4089,8 @@ export async function ujiSyaratSertifikat() {
     const dalamLabel = (awalan, pemilih) =>
       [...el.querySelectorAll('label')].find((l) => l.textContent.trim().startsWith(awalan))?.querySelector(pemilih)
     const namaSyarat = () => dalamLabel('Nama syarat', 'input')
-    const pilihNilai = async (node, nilai) => {
-      const atur = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
-      await act(async () => {
-        atur.call(node, nilai)
-        node.dispatchEvent(new window.Event('change', { bubbles: true }))
-      })
+    const pilihNilai = async (kotak, nilai) => {
+      await pilih(kotak, nilai)
       await tunggu()
     }
     const NAMA = 'Mengikuti seminar uji'
@@ -4103,9 +4148,9 @@ export async function ujiSyaratSertifikat() {
     await tunggu()
     await klik(tombol('Tambah syarat'))
     await tunggu()
-    const jenisBaru = () => [...el.querySelectorAll('label')].filter((l) => l.textContent.trim().startsWith('Jenis syarat')).at(-1)?.querySelector('select')
+    const jenisBaru = () => kotakBerlabel(el, 'Jenis syarat').at(-1)
     await pilihNilai(jenisBaru(), 'nilai')
-    await pilihNilai(dalamLabel('Aspek', 'select'), 'A1')
+    await pilihNilai(kotakBerlabel(el, 'Aspek')[0], 'A1')
     await isi(dalamLabel('Nilai minimal', 'input'), String(Math.min(100, aspekA1.nilai + 1)))
     await isi(alasan(), 'Uji menambah syarat nilai aspek')
     await klik(tombol('Simpan syarat'))
@@ -4145,11 +4190,11 @@ export async function ujiSyaratSertifikat() {
     const JADWAL = 'Seminar semester depan'
     const berikut = periodeSetelah(PERIODE_AKTIF, 1)
     const terjadwal = () => CONFIG.SYARAT_TAMBAHAN.find((s) => s.nama === JADWAL)
-    const pilihMulai = () => dalamLabel('Mulai berlaku', 'select')
+    const pilihMulai = () => kotakBerlabel(el, 'Mulai berlaku')[0]
     await klik(tombol('Tambah syarat'))
     await tunggu()
     await isi(namaSyarat(), JADWAL)
-    hasil.mulaiBawaanSekarang = pilihMulai()?.value === 'sekarang'
+    hasil.mulaiBawaanSekarang = pilihMulai()?.dataset.nilai === 'sekarang'
     await pilihNilai(pilihMulai(), 'berikutnya')
     await isi(alasan(), 'Uji menjadwalkan syarat baru')
     hasil.jadwalMenyebutDampak =

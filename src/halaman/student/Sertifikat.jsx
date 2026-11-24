@@ -89,7 +89,7 @@ export default function Sertifikat() {
     setGalat('')
     // Pengajuan peninjauan cetak (sesudah ditolak atau dicabut) wajib berpenjelasan; server memeriksanya lagi.
     if (peringatan && penjelasan.trim().length < 10) {
-      setGalat(teks('Penjelasan wajib diisi, minimal 10 karakter, supaya Kemahasiswaan tahu kenapa kamu mengajukan peninjauan cetak.'))
+      setGalat(teks('Penjelasan wajib diisi, minimal 10 karakter, supaya Admin tahu kenapa kamu mengajukan peninjauan cetak.'))
       return
     }
     setSibuk(true)
@@ -143,7 +143,7 @@ export default function Sertifikat() {
             {teks('Sertifikat Pembinaan VIBE')}
           </h1>
           <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-ink-2">
-            {teks('Sertifikat butuh dua hal: kelayakan akademik dari nilaimu, dan izin cetak dari Kemahasiswaan.')}
+            {teks('Sertifikat butuh dua hal: kelayakan akademik dari nilaimu, dan izin cetak dari Admin.')}
           </p>
         </header>
 
@@ -212,7 +212,7 @@ export default function Sertifikat() {
                   aria-describedby="penjelasan-peninjauan-bantuan"
                 />
                 <span id="penjelasan-peninjauan-bantuan" className="mt-1.5 block text-[13px] leading-relaxed text-ink-2">
-                  {teks('Jelaskan kenapa kamu mengajukan peninjauan cetak, minimal 10 karakter. Penjelasan ini dibaca admin Kemahasiswaan dan Super Admin.')}
+                  {teks('Jelaskan kenapa kamu mengajukan peninjauan cetak, minimal 10 karakter. Penjelasan ini dibaca Admin dan Super Admin.')}
                 </span>
               </label>
               <div className="flex flex-wrap items-center gap-2.5">

@@ -70,6 +70,8 @@ export const LABEL_LOG = {
   UBAH_PROFIL: 'Ubah profil',
 }
 
+import { namaPeran } from './wewenang.js'
+
 /* Sasaran log ditulis server sebagai teks Indonesia jadi ('akun x@umn.ac.id', 'penguncian (2 mahasiswa)'; lihat
    catatLog di src/server). Polanya sedikit dan tetap, jadi diterjemahkan di sini menurut awalannya; yang tidak
    dikenali tampil apa adanya. 'penguncian' ditampilkan sebagai tanda final, istilah yang dipakai layar sejak
@@ -94,7 +96,7 @@ const POLA_SASARAN = [
   // disebut satu per satu karena 'Super Admin' berspasi. Nama kebijakan tertulis diketik Super Admin, jadi apa adanya.
   [
     /^wewenang (Mahasiswa|Dosen|Kemahasiswaan|Super Admin): (.+)$/,
-    (m, t) => t('wewenang {peran}: {tindakan}', { peran: t(m[1]), tindakan: t(m[2]) }),
+    (m, t) => t('wewenang {peran}: {tindakan}', { peran: t(namaPeran(m[1])), tindakan: t(m[2]) }),
   ],
   [/^kebijakan wewenang (.+)$/, (m, t) => t('kebijakan wewenang {tindakan}', { tindakan: m[1] })],
   [/^usulan (U-\d+)$/, (m, t) => t('usulan {id}', { id: m[1] })],

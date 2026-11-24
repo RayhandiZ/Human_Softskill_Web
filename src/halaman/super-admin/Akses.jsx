@@ -16,7 +16,7 @@ import { COHORTS, PROGRAMS, getAngkatan, programSelesai } from '../../lib/data'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 
-/* Mahasiswa, dosen, dan admin Kemahasiswaan yang boleh masuk (Pengguna.aktif). Daftar dari /api/akses, perubahan
+/* Mahasiswa, dosen, dan admin yang boleh masuk (Pengguna.aktif). Daftar dari /api/akses, perubahan
    lewat /api/akses/ubah (src/server/akses.js); lihat README.md › Panel Super Admin › Akses Pengguna.
    Akun yang dicabut sudah ditolak server: penggunaDari() di src/server/api.js membaca `aktif` setiap permintaan.
    Baris admin juga memberi atau mencabut izin lihat data master lewat /api/akses/izin (sejak rapat 24 Okt 2026 hanya
@@ -84,7 +84,7 @@ export default function Akses() {
       <header>
         <h1 className="text-[26px] font-extrabold tracking-tight text-ink">{t('Akses Pengguna')}</h1>
         <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-ink-2">
-          {t('Tentukan mahasiswa, dosen, dan admin Kemahasiswaan yang boleh masuk ke VIBE. Mencabut akses langsung mengakhiri sesinya dan menolak login berikutnya; datanya tetap tersimpan dan aksesnya bisa dipulihkan kapan saja.')}
+          {t('Tentukan mahasiswa, dosen, dan admin yang boleh masuk ke VIBE. Mencabut akses langsung mengakhiri sesinya dan menolak login berikutnya; datanya tetap tersimpan dan aksesnya bisa dipulihkan kapan saja.')}
         </p>
       </header>
 

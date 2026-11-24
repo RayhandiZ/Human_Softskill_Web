@@ -35,7 +35,7 @@ import { useTeks } from '../../lib/bahasa'
 const PAGE_SIZE = 12
 
 /* Susunannya sama dengan Data Mahasiswa: tab kelayakan berjumlah, alat saring, tabel, kaki bernomor halaman.
-   Lihat README.md › Panel Kemahasiswaan › Tampilan. Sejak rapat 24 Okt 2026 sertifikat hanya bisa dicetak setelah
+   Lihat README.md › Panel Admin › Tampilan. Sejak rapat 24 Okt 2026 sertifikat hanya bisa dicetak setelah
    akses cetaknya melewati dua lapis: mahasiswa meminta, admin Kemahasiswaan meninjau dan meneruskannya dengan
    rekomendasi, Super Admin memutuskan. Tab Menunggu Anda memuat giliran akun ini; tombol Tinjau membuka halaman
    detail mahasiswa dalam mode tinjau (?tinjau=sertifikat), supaya nilai tiap aspek terbaca di tempat yang sama dengan
@@ -339,7 +339,7 @@ export default function CetakSertifikat() {
       </Card>
 
       <CatatanKaki>
-        {t('Tombol cetak hanya aktif untuk sertifikat yang akses cetaknya sudah ditinjau admin Kemahasiswaan dan disetujui Super Admin. Akses itu bisa dicabut lagi, dan setiap pembukaan dialog cetak tercatat. Sertifikat dicetak atau disimpan sebagai PDF dari website ini; jangan kirim lewat surel.')}
+        {t('Tombol cetak hanya aktif untuk sertifikat yang akses cetaknya sudah ditinjau Admin dan disetujui Super Admin. Akses itu bisa dicabut lagi, dan setiap pembukaan dialog cetak tercatat. Sertifikat dicetak atau disimpan sebagai PDF dari website ini; jangan kirim lewat surel.')}
       </CatatanKaki>
 
       {/* Dipasang di <body> hanya selama mencetak; lihat README.md › Cetak. */}
@@ -519,7 +519,7 @@ function PanelCabut({ p, aktor, onBatal, onSelesai }) {
     <div className="max-w-3xl space-y-3 text-left">
       <p className="text-[13.5px] leading-relaxed text-ink">
         {t(
-          'Sesudah dicabut, mahasiswa tidak bisa mencetak lagi sampai permintaan barunya ditinjau admin Kemahasiswaan dan disetujui Super Admin. Sertifikat yang sudah telanjur tercetak tidak ikut tertarik.',
+          'Sesudah dicabut, mahasiswa tidak bisa mencetak lagi sampai permintaan barunya ditinjau Admin dan disetujui Super Admin. Sertifikat yang sudah telanjur tercetak tidak ikut tertarik.',
         )}
       </p>
       <p className="text-[13px] font-semibold text-ink">

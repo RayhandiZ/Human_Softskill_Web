@@ -6,13 +6,46 @@ import { LAYANAN } from '../lib/layanan'
 import { useTeks } from '../lib/bahasa'
 
 /* Tetap di bawah laci navigasi (z-40 < z-50) dan tidak ikut tercetak. Letaknya sama di panel mahasiswa dan dosen; sampai
-   15 Nov 2026 panel dosen menaikkannya di atas bilah bawah HP, yang kini diganti laci. */
+   15 Nov 2026 panel dosen menaikkannya di atas bilah bawah HP, yang kini diganti laci.
+
+   Sejak 24 Nov 2026 tombolnya menyingkir saat halaman digulir ke bawah dan muncul lagi saat digulir ke atas, di puncak,
+   atau di dasar halaman (di sana yang tertutup hanya footer). Isi panel selebar layar, jadi tombol 56px ini menutupi
+   isi di pojok kanan bawah, misalnya nilai Semester 3 di Dashboard mahasiswa pada layar 1536x728. Yang digeser hanya
+   tombolnya, bukan pembungkus panel: pembungkus yang dianimasikan memutus backdrop-filter panel kaca di dalamnya. */
+const AMBANG_GULIR = 24
 
 export default function LayananTambahan() {
   const t = useTeks()
   const [buka, setBuka] = useState(false)
+  const [menyingkir, setMenyingkir] = useState(false)
   const wadah = useRef(null)
   const tombol = useRef(null)
+
+  useEffect(() => {
+    let acuan = window.scrollY
+    let bingkai = 0
+    const gulir = () => {
+      cancelAnimationFrame(bingkai)
+      bingkai = requestAnimationFrame(() => {
+        const y = window.scrollY
+        const dasar = y + window.innerHeight >= document.documentElement.scrollHeight - 40
+        if (y < 80 || dasar || y - acuan < -AMBANG_GULIR) {
+          setMenyingkir(false)
+          acuan = y
+        } else if (y - acuan > AMBANG_GULIR) {
+          // Tombol yang sedang difokus papan ketik tidak disembunyikan.
+          if (document.activeElement !== tombol.current) setMenyingkir(true)
+          acuan = y
+        }
+      })
+    }
+    window.addEventListener('scroll', gulir, { passive: true })
+    return () => {
+      cancelAnimationFrame(bingkai)
+      window.removeEventListener('scroll', gulir)
+    }
+  }, [])
+  const tersembunyi = menyingkir && !buka
 
   useEffect(() => {
     if (!buka) return
@@ -88,7 +121,10 @@ export default function LayananTambahan() {
         aria-expanded={buka}
         aria-controls="panel-layanan"
         aria-label={t(buka ? 'Tutup layanan tambahan' : 'Layanan tambahan')}
-        className="layanan-tombol grid h-14 w-14 place-items-center rounded-full bg-brand text-white"
+        className={
+          'layanan-tombol grid h-14 w-14 place-items-center rounded-full bg-brand text-white transition duration-300 focus-visible:translate-y-0 focus-visible:opacity-100 motion-reduce:transition-none ' +
+          (tersembunyi ? 'pointer-events-none translate-y-[calc(100%+2rem)] opacity-0' : '')
+        }
       >
         <span
           className={

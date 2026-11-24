@@ -14,7 +14,7 @@ import { LABEL_AKSI } from './PersetujuanAdmin'
    Hanya dibaca; dipakai panel Kemahasiswaan dan panel Super Admin. Lihat README.md › Log Aktivitas.
    Susunannya mengikuti halaman daftar lain: kepala halaman, lalu satu kartu berisi jenis catatan, alat saring
    ringkas (label di dalam kotak), tabel, dan kaki bernomor halaman. Setiap baris menjawab siapa (nama, peran, dan
-   email: semua akun admin bernama "Biro Kemahasiswaan"), apa (tindakan, sasaran, dan ringkasan perubahannya), dan
+   email: semua akun admin bernama "Admin"), apa (tindakan, sasaran, dan ringkasan perubahannya), dan
    kapan. Rinciannya dibuka per baris sebagai tabel sebelum dan sesudah, bukan JSON mentah. */
 
 /* Peran pelaku (nilai basis data dari src/server/log.js) dan nilai `peran` di rincian akun (src/server/akses.js). */
@@ -30,7 +30,7 @@ const LABEL_PERAN = {
   // Nama kolom matriks Peran & Wewenang di rincian log src/server/wewenang.js.
   Mahasiswa: 'Mahasiswa',
   Dosen: 'Dosen',
-  Kemahasiswaan: 'Kemahasiswaan',
+  Kemahasiswaan: 'Admin',
   'Super Admin': 'Super Admin',
 }
 
@@ -125,7 +125,7 @@ const LABEL_RINCIAN = {
   keterangan: 'Keterangan',
   Mahasiswa: 'Mahasiswa',
   Dosen: 'Dosen',
-  Kemahasiswaan: 'Kemahasiswaan',
+  Kemahasiswaan: 'Admin',
   'Super Admin': 'Super Admin',
   judul: 'Judul',
   dampak: 'Dampak',

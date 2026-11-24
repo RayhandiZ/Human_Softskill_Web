@@ -44,7 +44,7 @@ export async function mintaTautan({ email, bahasa } = {}, request) {
   const asal = alamatAplikasi(request)
   if (!asal || (!smtpSiap() && !bolehCetakKonsol())) {
     console.error('Lupa kata sandi: ' + (!asal ? 'APP_URL' : 'SMTP_HOST') + ' belum diatur di .env.')
-    throw new GalatApi('Pengiriman email belum disiapkan. Hubungi Biro Kemahasiswaan.', 503)
+    throw new GalatApi('Pengiriman email belum disiapkan. Hubungi Admin.', 503)
   }
 
   const akun = await db.pengguna.findUnique({

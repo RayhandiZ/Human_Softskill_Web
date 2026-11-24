@@ -289,7 +289,7 @@ function mintaSertifikatLokal({ student, penjelasan }) {
   // Sama dengan server: permintaan sesudah ditolak atau dicabut adalah peninjauan cetak dan wajib berpenjelasan.
   const teks = String(penjelasan ?? '').trim()
   if (PERMINTAAN_SERTIFIKAT.some((p) => p.nim === student.nim) && teks.length < ALASAN_TOLAK_MIN) {
-    throw new Error('Penjelasan wajib diisi, minimal 10 karakter, supaya Kemahasiswaan tahu kenapa kamu mengajukan peninjauan cetak.')
+    throw new Error('Penjelasan wajib diisi, minimal 10 karakter, supaya Admin tahu kenapa kamu mengajukan peninjauan cetak.')
   }
   if (teks.length > PENJELASAN_MAKS) throw new Error('Penjelasan terlalu panjang, maksimal 1000 karakter.')
   const p = {
@@ -940,7 +940,7 @@ export async function aturIzinMaster({ id, aktif, alasan }) {
   if (!modeLokal()) return kirim('/api/akses/izin', { isi: { id, aktif, alasan } })
   const a = AKUN_LOKAL.find((x) => x.id === id)
   if (!a) throw new Error('Akun tidak ditemukan.')
-  if (a.peran !== 'admin') throw new Error('Izin lihat data master hanya untuk akun admin Kemahasiswaan.')
+  if (a.peran !== 'admin') throw new Error('Izin lihat data master hanya untuk akun admin.')
   if (String(alasan ?? '').trim().length < ALASAN_AKSES_MIN) throw new Error('Alasan wajib diisi, minimal 10 karakter.')
   a.kelolaMaster = Boolean(aktif)
   return { akun: { ...a } }

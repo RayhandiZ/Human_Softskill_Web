@@ -4,6 +4,7 @@ import LogoPdp from './LogoPdp'
 import MenuSamping from './MenuSamping'
 import { PemanduBaca, useAkarAksesibilitas } from './MenuAksesibilitas'
 import { useTeks } from '../lib/bahasa'
+import { useJudulTab } from '../lib/judulTab'
 
 /* Kerangka bersama panel dosen, Kemahasiswaan, dan Super Admin: menu samping yang menempel di tepi kiri setinggi layar, dan
    bilah atas kapsul.
@@ -52,6 +53,8 @@ export function MerekAtas({ beranda, ringkas = true }) {
  */
 export function RemahKerja({ akar, lapis = [] }) {
   const t = useTeks()
+  // Halaman yang terbuka (lapis terakhir, atau akar) sekaligus menjadi judul tab peramban.
+  useJudulTab(t((lapis.length ? lapis[lapis.length - 1] : akar).label))
   return (
     <nav aria-label={t('Lokasi halaman')} className="hidden min-w-0 lg:block">
       <ol className="flex min-w-0 items-center gap-1.5 text-[14px]">

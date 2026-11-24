@@ -6,11 +6,13 @@ import { modeLokal } from './modeData.js'
 
 const STORAGE_KEY = 'sk5c.session'
 
+/* Panel admin dipegang Biro Kemahasiswaan dan Biro Humaniora, jadi semua akun admin bernama "Admin" (admin1, admin2,
+   dan seterusnya tetap masuk dengan akunnya sendiri dan dibedakan lewat email). Nama ini juga dipakai server sebagai
+   pelaku tindakan admin (petaAkun di src/server/muat.js). */
 const ADMIN_PROFILE = {
-  name: 'Biro Kemahasiswaan & Humaniora',
-  unit: 'Student Development & Humanities',
-  /* Nama ini juga dipakai server sebagai pelaku tindakan admin. */
-  officer: 'Biro Kemahasiswaan',
+  name: 'Admin',
+  unit: 'Biro Kemahasiswaan & Humaniora',
+  officer: 'Admin',
 }
 
 /* Super admin: wewenang tertinggi, berperan admin sehingga seluruh panel admin terbuka untuknya. */
@@ -42,7 +44,7 @@ export const panelUntuk = (role) => PANEL[role] ?? '/masuk'
 /** Panel awal pemilik sesi: super admin punya panelnya sendiri; lihat README.md › Panel Super Admin. */
 export const panelPengguna = (user) => (user?.superAdmin ? '/super' : panelUntuk(user?.role))
 
-export const LABEL_PERAN = { admin: 'Kemahasiswaan', dosen: 'Dosen', student: 'Mahasiswa' }
+export const LABEL_PERAN = { admin: 'Admin', dosen: 'Dosen', student: 'Mahasiswa' }
 
 /** Label peran pemilik sesi; super admin dibedakan dari admin biasa. */
 export const labelPeran = (user) => (user?.superAdmin ? 'Super Admin' : LABEL_PERAN[user?.role])
@@ -77,7 +79,7 @@ function sesiDari(akun) {
       kelolaMaster: akun.kelolaMaster === true,
       email: akun.email,
       name: ADMIN_PROFILE.name,
-      initials: 'KH',
+      initials: 'A',
       subtitle: ADMIN_PROFILE.unit,
     }
   }

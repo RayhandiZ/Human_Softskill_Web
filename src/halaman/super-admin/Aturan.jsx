@@ -582,7 +582,7 @@ function KartuSyaratSertifikat() {
     { id: 'final', label: t('Seluruh aspek berstatus final'), wajib: true },
     { id: 'lengkap', label: t('Tidak ada komponen asesmen yang kosong'), wajib: true },
     { id: 'semester', label: t('Sudah menempuh Semester {n}', { n: semester }), aktif: berlaku.syaratSemester },
-    { id: 'terkunci', label: t('Nilai angkatan sudah disahkan Kemahasiswaan'), aktif: berlaku.syaratPengesahan },
+    { id: 'terkunci', label: t('Nilai angkatan sudah disahkan Admin'), aktif: berlaku.syaratPengesahan },
   ]
   const jumlahTanda = (id) => STUDENTS.filter((m) => m.syaratTerpenuhi?.includes(id)).length
 
@@ -785,7 +785,7 @@ function KartuSyaratSertifikat() {
                   onChange={(e) => ubahIsian('syaratPengesahan', e.target.checked)}
                 />
                 <span>
-                  <span className="block font-semibold">{t('Nilai angkatan sudah disahkan Kemahasiswaan')}</span>
+                  <span className="block font-semibold">{t('Nilai angkatan sudah disahkan Admin')}</span>
                   <span className="block text-[12.5px] text-ink-2">
                     {t('Bila dimatikan, sertifikat bisa dicetak sebelum nilai angkatan disahkan, jadi nilainya masih bisa berubah sesudah dicetak.')}
                   </span>

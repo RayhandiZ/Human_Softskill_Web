@@ -150,7 +150,7 @@ const DARI_DATA = [
   'Setelah akses dipulihkan, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.',
   'Setelah akses disetujui, tombol Cetak / Simpan PDF akan tersedia di halaman ini. Sertifikat tidak dikirim lewat surel.',
   'Alasan', 'Dicabut oleh', 'Ditolak oleh', 'Yang perlu dilakukan',
-  'Ajukan peninjauan cetak', 'Minta akses cetak lagi', 'Minta akses cetak', 'Oleh admin Kemahasiswaan', 'Sedang ditinjau',
+  'Ajukan peninjauan cetak', 'Minta akses cetak lagi', 'Minta akses cetak', 'Oleh Admin', 'Sedang ditinjau',
   /* Kartu nilai akhir mahasiswa: seri grafik dan judul ubin, lalu pilihan urutan Riwayat. */
   'Rata-rata Anda', 'Nilai semester', 'Aspek final', 'Aspek dinilai',
   'Terbaru', 'Terlama', 'Ditetapkan oleh {oleh}', 'Dinilai oleh {oleh}',
@@ -229,7 +229,7 @@ const DARI_ATURAN = [
   'komponen {komponen} pada {kode} belum dinilai',
   'Nilai akhir minimal {n}', 'Nilai akhir belum bisa dihitung', 'Nilai akhir {nilai}, di bawah rata-rata minimal {n}',
   'nilai akhir belum bisa dihitung', 'nilai akhir {nilai} di bawah rata-rata minimal {n}',
-  'Nilai angkatan sudah disahkan Kemahasiswaan', 'Nilai angkatan {label} belum disahkan', 'nilai angkatan {label} belum disahkan',
+  'Nilai angkatan sudah disahkan Admin', 'Nilai angkatan {label} belum disahkan', 'nilai angkatan {label} belum disahkan',
 ]
 
 /* kunci rapi -> { asli, berkas } */

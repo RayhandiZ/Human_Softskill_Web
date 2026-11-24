@@ -156,6 +156,12 @@ body {
 *:focus-visible {
   outline: 2px solid var(--brand-ink);
   outline-offset: 2px;
+}
+/* Sudut 6px hanya untuk elemen yang tidak punya sudut sendiri (tautan, teks). :where() berspesifisitas nol, jadi
+   rounded-* milik elemen tetap berlaku. Dulu sudut ini ada di aturan di atas dan mengalahkan utilitas Tailwind (letaknya
+   sesudah @tailwind utilities): saat difokus dengan Tab, menu samping 16px, kotak cari 12px, dan pil bahasa 999px
+   berubah menjadi 6px (24 Nov 2026). */
+:where(*:focus-visible) {
   border-radius: 6px;
 }
 
@@ -295,7 +301,7 @@ body {
 /* ------------------------- gerak panel Kemahasiswaan ------------------------ */
 /* Sedikit gerak supaya panel tidak terasa kaku, tanpa mengganggu kerja: semuanya pendek (paling lama 0,7 dtk),
    hanya transform dan opacity, sekali jalan saat sesuatu muncul atau ditekan, dan dilepas saat kurangi gerak aktif
-   (blok di bawah). Lihat README.md › Panel Kemahasiswaan › Gerak. */
+   (blok di bawah). Lihat README.md › Panel Admin › Gerak. */
 
 /* Bagian halaman (anak langsung isi halaman) naik berurutan, berselang 50 md. Bagian yang muncul belakangan,
    misalnya area kerja Input Nilai sesudah semester dipilih, ikut naik saat dipasang. backwards, bukan both. */
@@ -374,7 +380,7 @@ body {
 /* Daftar pilihan setiap <select> muncul dengan gerak dan rupa yang sama dengan menu akun dan pemilih periode super
    admin (rise, kartu bersudut 16px, centang di kanan), dan panahnya berputar saat terbuka. Memakai <select> yang bisa
    diberi gaya (appearance: base-select, Chrome dan Edge 135 ke atas); peramban lain tetap memakai daftar bawaannya
-   tanpa animasi, jadi semuanya di dalam @supports. Lihat README.md › Panel Kemahasiswaan › Gerak.
+   tanpa animasi, jadi semuanya di dalam @supports. Lihat README.md › Panel Admin › Gerak.
    Pengurai CSS Turbopack menolak pseudo-class yang ditulis sesudah ::picker(select) (misalnya
    ::picker(select):popover-open) dan galatnya menggagalkan seluruh berkas ini, jadi keadaan terbuka ditulis
    select:open::picker(select) (pseudo-class sebelum ::picker, diterima). */
@@ -917,8 +923,10 @@ body {
   -webkit-user-select: none;
   user-select: none;
 }
-/* Tombolnya persis seukuran ikon (20px), jadi tetikus baru memicunya tepat di atas mata. Ujung jari jauh
-   lebih besar daripada kursor, jadi di layar sentuh area tekannya dilonggarkan 6px di sekeliling ikon. */
+/* Tombolnya 24px, hanya 2px lebih lebar dari ikonnya (20px) di tiap sisi, jadi tetikus tetap memicunya tepat di atas
+   mata. 24px adalah ukuran target minimum WCAG 2.5.8; sampai 24 Nov 2026 tombolnya 20px, satu-satunya target di bawah
+   ukuran itu di seluruh aplikasi. Ujung jari jauh lebih besar daripada kursor, jadi di layar sentuh area tekannya
+   dilonggarkan 6px lagi di sekeliling tombol. */
 @media (pointer: coarse) {
   .mata-sandi::after {
     content: '';
@@ -1579,7 +1587,7 @@ body {
 /* Permintaan pemilik produk (10 Nov 2026): penyempurnaan, bukan desain ulang. Bilah atas, menu aktif, dan menu akun memakai
    aturan bersama di atas; di sini yang khusus panel ini. Yang tidak disentuh: kartu angka, grafik, panel Perlu dikerjakan, tabel,
    formulir, area unggah, tombol utama, pesan galat dan status, serta TabSaring (tetap bergaris bawah). Lihat README.md › Panel
-   Kemahasiswaan › Kaca. */
+   Admin › Kaca. */
 @media screen {
   /* Kendali di kapsul menyatu dengan kacanya, bukan gelembung masing-masing. Kolom cari tetap berupa kolom padat. Super Admin
      sama sejak 16 Nov 2026. */

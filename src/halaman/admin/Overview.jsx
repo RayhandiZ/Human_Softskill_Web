@@ -64,7 +64,7 @@ export default function Overview() {
     <div className="space-y-5">
       {/* --------------------------------- kepala -------------------------------- */}
       <JudulHalaman
-        judul="Overview"
+        judul={teks('Beranda')}
         keterangan={teks('Capaian mahasiswa periode ini. Pekerjaan yang menunggu Anda ada di lonceng di kanan atas.')}
       />
 

@@ -17,6 +17,8 @@ import { useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 import { kunciSesi, useProfil } from '../../lib/profil'
+import { useAksesibilitas } from '../../lib/aksesibilitas'
+import { useGulirHalus } from '../../lib/gulirHalus'
 import LoncengBelumDinilai from './LoncengBelumDinilai'
 
 const PINTASAN = [
@@ -27,7 +29,7 @@ const PINTASAN = [
 ]
 
 const MENU = [
-  { to: '/mahasiswa', label: 'Dashboard', icon: IconGauge, end: true },
+  { to: '/mahasiswa', label: 'Beranda', icon: IconGauge, end: true },
   { to: '/mahasiswa/transkrip', label: 'Transkrip', icon: IconDocument },
   { to: '/mahasiswa/peta', label: 'Peta Perjalanan', icon: IconRoute },
   { to: '/mahasiswa/riwayat', label: 'Riwayat', icon: IconList },
@@ -61,6 +63,9 @@ export default function StudentLayout({ children }) {
   const { foto } = useProfil(kunciSesi(user, student.nim))
   const t = transkripOf(student)
   const a11y = useAkarAksesibilitas()
+  // Gulir roda yang halus; mati saat Hentikan animasi menyala (dan saat sistem meminta gerak dikurangi).
+  const { setelan } = useAksesibilitas()
+  useGulirHalus(!setelan.diam)
 
   return (
     // panel-mahasiswa: teks redup dipertebal seperti tiga panel lain; kelasAkar: setelan menu aksesibilitas; lihat
@@ -114,7 +119,7 @@ export default function StudentLayout({ children }) {
                 </span>
               </Link>
 
-              <RemahKerja akar={{ ke: '/mahasiswa', label: 'Dashboard' }} lapis={lapisRemah(jalurHalaman)} />
+              <RemahKerja akar={{ ke: '/mahasiswa', label: 'Beranda' }} lapis={lapisRemah(jalurHalaman)} />
 
               <div className="ml-auto flex items-center gap-1">
                 <LoncengBelumDinilai t={t} />

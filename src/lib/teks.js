@@ -68,8 +68,8 @@ export const EN = {
     'Enter the campus email of your student or lecturer account. We will send you a link to create a new password.',
   'Kirim tautan': 'Send link',
   'Mengirim…': 'Sending…',
-  'Akun admin Kemahasiswaan dan Super Admin tidak menerima tautan ini. Hubungi pengelola VIBE.':
-    'Student Affairs admin and Super Admin accounts do not receive this link. Contact the VIBE administrator.',
+  'Akun Admin dan Super Admin tidak menerima tautan ini. Hubungi pengelola VIBE.':
+    'Admin and Super Admin accounts do not receive this link. Contact the VIBE administrator.',
   'Kembali ke halaman masuk': 'Back to sign in',
   'Periksa email Anda': 'Check your email',
   'Jika {email} terdaftar sebagai akun mahasiswa atau dosen, tautan untuk membuat kata sandi baru sudah dikirim ke sana. Tautannya berlaku 30 menit dan hanya bisa dipakai sekali.':
@@ -93,7 +93,7 @@ export const EN = {
   'Silakan masuk dengan kata sandi baru Anda.': 'Sign in with your new password.',
   'Kedua kata sandi tidak sama.': 'The two passwords do not match.',
   'Email wajib diisi.': 'Email is required.',
-  'Pengiriman email belum disiapkan. Hubungi Biro Kemahasiswaan.': 'Email sending is not set up yet. Contact the Student Affairs Bureau.',
+  'Pengiriman email belum disiapkan. Hubungi Admin.': 'Email sending is not set up yet. Contact the admin.',
   'Tautan ini sudah tidak berlaku. Minta tautan baru.': 'This link is no longer valid. Request a new one.',
   'Kata sandi baru minimal 8 karakter.': 'The new password must be at least 8 characters.',
   'Kata sandi baru terlalu panjang (paling banyak 72 karakter).': 'The new password is too long (72 characters at most).',
@@ -101,10 +101,10 @@ export const EN = {
   /* Pesan galat masuk, dari src/lib/auth.jsx dan src/server/masuk.js. */
   'Email dan kata sandi wajib diisi.': 'Email and password are required.',
   'Email atau kata sandi salah.': 'Incorrect email or password.',
-  'Akun ini dinonaktifkan. Hubungi Biro Kemahasiswaan.':
-    'This account has been deactivated. Contact the Student Affairs Bureau.',
-  'Data akun ini belum lengkap. Hubungi Biro Kemahasiswaan.':
-    'This account’s details are incomplete. Contact the Student Affairs Bureau.',
+  'Akun ini dinonaktifkan. Hubungi Admin.':
+    'This account has been deactivated. Contact the admin.',
+  'Data akun ini belum lengkap. Hubungi Admin.':
+    'This account’s details are incomplete. Contact the admin.',
   'Server tidak bisa dihubungi. Periksa koneksi, lalu coba lagi.':
     'Cannot reach the server. Check your connection, then try again.',
   'Gagal masuk. Coba lagi.': 'Sign-in failed. Try again.',
@@ -252,8 +252,8 @@ export const EN = {
   'Anda ajukan {tanggal}': 'You submitted this on {tanggal}',
   Diputuskan: 'Decided by',
   pada: 'on',
-  'Belum ada keputusan dari Biro Kemahasiswaan.':
-    'No decision from the Student Affairs Bureau yet.',
+  'Belum ada keputusan dari Admin.':
+    'No decision from the admin yet.',
   'Tanpa tanggal': 'No date',
 
   /* --------------------------------- bulan ------------------------------- */
@@ -299,8 +299,8 @@ export const EN = {
   'Bobot masih bersifat sementara dan dapat berubah.':
     'Weightings are still provisional and may change.',
   'Ada nilai yang menurutmu keliru?': 'Think a score is wrong?',
-  'Kamu tidak bisa mengubah nilai sendiri. Ajukan koreksi dan Biro Kemahasiswaan akan menelusurinya bersama dosen atau unit yang memberi nilai.':
-    'You cannot change a score yourself. Submit a correction request and the Student Affairs Bureau will trace it with the lecturer or unit that gave the score.',
+  'Kamu tidak bisa mengubah nilai sendiri. Ajukan koreksi dan Admin akan menelusurinya bersama dosen atau unit yang memberi nilai.':
+    'You cannot change a score yourself. Submit a correction request and the admin will trace it with the lecturer or unit that gave the score.',
   'Tutup formulir': 'Close the form',
   'Ajukan koreksi nilai': 'Request a score correction',
   'Pengajuan kamu': 'Your requests',
@@ -340,8 +340,8 @@ export const EN = {
   'Belum ada nilai yang masuk dari penilai': 'No score has arrived from the assessor yet',
   'Seluruh komponen sudah dinilai, menunggu semester ini ditutup':
     'All components graded, waiting for this semester to close',
-  'Seluruh komponen sudah dinilai, menunggu ditetapkan final oleh Kemahasiswaan':
-    'All components graded, waiting for Student Affairs to mark it final',
+  'Seluruh komponen sudah dinilai, menunggu ditetapkan final oleh Admin':
+    'All components graded, waiting for the admin to mark it final',
   'Seluruh {total} aspek sudah dinilai dan final.':
     'All {total} aspects have been graded and are final.',
   'Nilai sementara berdasarkan {n} dari {total} aspek. Nilai final terbit setelah Semester {semester}.':
@@ -359,6 +359,7 @@ export const EN = {
   'Nomor induk dosen': 'Lecturer ID number',
   'Unit pengelola': 'Managing unit',
   'Nama resmi': 'Official name',
+  'Pengawas Sistem': 'System Supervisor',
   'Penanggung jawab': 'Person in charge',
   'Alamat email': 'Email address',
   'Foto saat ini': 'Current photo',
@@ -604,8 +605,8 @@ export const EN = {
   'Angkatan yang nilainya sudah disahkan memenuhi syarat sertifikat.':
     'A cohort with ratified scores meets the certificate requirement.',
   'Nilai angkatan {label} sudah disahkan.': 'Cohort {label} scores are ratified.',
-  'Nilainya masih bisa diubah atau dilengkapi Kemahasiswaan, asal disertai alasan yang tercatat.':
-    'Student Affairs can still change or complete its scores, as long as a recorded reason is given.',
+  'Nilainya masih bisa diubah atau dilengkapi Admin, asal disertai alasan yang tercatat.':
+    'The admin can still change or complete its scores, as long as a recorded reason is given.',
   'Cetak sertifikat angkatan ini': 'Print certificates for this cohort',
   'Belum bisa disahkan': 'Cannot be ratified yet',
   'Angkatan ini baru di Semester {n} dari {total}. Pengesahan bisa dilakukan setelah Semester {total} berakhir.':
@@ -842,8 +843,8 @@ export const EN = {
   '{unit} Semester {semester}, {prodi}': '{unit} Semester {semester}, {prodi}',
   'Akun ini belum terdaftar sebagai dosen pengampu':
     'This account is not registered as a course lecturer',
-  'Hubungi Biro Kemahasiswaan untuk didaftarkan pada satu kelas.':
-    'Contact the Student Affairs Bureau to be assigned to a class.',
+  'Hubungi Admin untuk didaftarkan pada satu kelas.':
+    'Contact the admin to be assigned to a class.',
   Manual: 'Manual',
   Otomatis: 'Automatic',
   'Unduh templat': 'Download template',
@@ -1090,7 +1091,6 @@ export const EN = {
   'Pusat Kendali': 'Control Center',
   'Peran & Wewenang': 'Roles & Permissions',
   'Aturan Sistem': 'System Rules',
-  'Panel Kemahasiswaan': 'Student Affairs panel',
   'Panel Admin': 'Admin panel',
   'Panel Super Admin': 'Super Admin panel',
   'Menu super admin': 'Super admin menu',
@@ -1198,8 +1198,8 @@ export const EN = {
   'langsung, wajib beralasan': 'directly, with a required reason',
   // Pencabutan akses cetak dan catatan cetak (student/Sertifikat.jsx, admin/CetakSertifikat.jsx, Dashboard).
   Dicabut: 'Revoked',
-  'Tombol cetak hanya aktif untuk sertifikat yang akses cetaknya sudah ditinjau admin Kemahasiswaan dan disetujui Super Admin. Akses itu bisa dicabut lagi, dan setiap pembukaan dialog cetak tercatat. Sertifikat dicetak atau disimpan sebagai PDF dari website ini; jangan kirim lewat surel.':
-    'The print button is only active for certificates whose print access was reviewed by the Student Affairs admin and approved by the Super Admin. That access can be revoked again, and every time the print dialog opens is recorded. Certificates are printed or saved as PDF from this website; do not send them by email.',
+  'Tombol cetak hanya aktif untuk sertifikat yang akses cetaknya sudah ditinjau Admin dan disetujui Super Admin. Akses itu bisa dicabut lagi, dan setiap pembukaan dialog cetak tercatat. Sertifikat dicetak atau disimpan sebagai PDF dari website ini; jangan kirim lewat surel.':
+    'The print button is only active for certificates whose print access was reviewed by the admin and approved by the Super Admin. That access can be revoked again, and every time the print dialog opens is recorded. Certificates are printed or saved as PDF from this website; do not send them by email.',
   'dicabut {tanggal}': 'revoked {tanggal}',
   'dibuka untuk dicetak {n} kali, terakhir {waktu}': 'opened for printing {n} times, last {waktu}',
   'belum pernah dibuka untuk dicetak': 'never opened for printing',
@@ -1208,8 +1208,8 @@ export const EN = {
     'A revocation reason is required, at least 10 characters, so the student knows why.',
   'Akses cetak ini sudah tidak Siap dicetak, mungkin sudah dicabut di jendela lain.':
     'This print access is no longer Ready to print; it may have been revoked in another window.',
-  'Sesudah dicabut, mahasiswa tidak bisa mencetak lagi sampai permintaan barunya ditinjau admin Kemahasiswaan dan disetujui Super Admin. Sertifikat yang sudah telanjur tercetak tidak ikut tertarik.':
-    'Once revoked, the student cannot print again until a new request is reviewed by the Student Affairs admin and approved by the Super Admin. Certificates already printed are not recalled.',
+  'Sesudah dicabut, mahasiswa tidak bisa mencetak lagi sampai permintaan barunya ditinjau Admin dan disetujui Super Admin. Sertifikat yang sudah telanjur tercetak tidak ikut tertarik.':
+    'Once revoked, the student cannot print again until a new request is reviewed by the admin and approved by the Super Admin. Certificates already printed are not recalled.',
   'Sudah dibuka untuk dicetak {n} kali, terakhir {waktu} oleh {oleh}.': 'Opened for printing {n} times, last on {waktu} by {oleh}.',
   'Belum pernah dibuka untuk dicetak.': 'Never opened for printing.',
   'Alasan pencabutan (wajib, terbaca mahasiswa)': 'Reason for revocation (required, shown to the student)',
@@ -1305,13 +1305,12 @@ export const EN = {
 
   // Akses Pengguna
   'Akses Pengguna': 'User Access',
-  'Tentukan mahasiswa, dosen, dan admin Kemahasiswaan yang boleh masuk ke VIBE. Mencabut akses langsung mengakhiri sesinya dan menolak login berikutnya; datanya tetap tersimpan dan aksesnya bisa dipulihkan kapan saja.':
-    'Decide which students, lecturers, and Student Affairs admins may sign in to VIBE. Revoking access ends their session immediately and blocks later sign-ins; their data stays and access can be restored at any time.',
+  'Tentukan mahasiswa, dosen, dan admin yang boleh masuk ke VIBE. Mencabut akses langsung mengakhiri sesinya dan menolak login berikutnya; datanya tetap tersimpan dan aksesnya bisa dipulihkan kapan saja.':
+    'Decide which students, lecturers, and admins may sign in to VIBE. Revoking access ends their session immediately and blocks later sign-ins; their data stays and access can be restored at any time.',
   'Pengaturan akses belum tersedia': 'Access settings are not available yet',
   'Server belum menyediakan daftar akun. Halaman ini langsung berfungsi begitu pintu /api/akses dibuat; rinciannya ada di README › Akses Pengguna.':
     'The server does not provide the account list yet. This page works as soon as the /api/akses endpoint exists; details are in README › Akses Pengguna.',
   'Daftar akun gagal dimuat': 'The account list could not be loaded',
-  'Admin Kemahasiswaan': 'Student Affairs admins',
   'Cari nama, email, atau NIP': 'Search name, email, or NIP',
   'Cari email': 'Search email',
   'Cari nama, email, atau NIM': 'Search name, email, or student ID (NIM)',
@@ -1785,7 +1784,7 @@ export const EN = {
   // 'Kerja harian' dan 'Detail mahasiswa' dibaca lewat data menu dan lokasi halaman, jadi tidak terlihat pemindai.
   'Kerja harian': 'Daily work',
   'Detail mahasiswa': 'Student details',
-  'Menu Kemahasiswaan': 'Student Affairs menu',
+  'Menu Admin': 'Admin menu',
   'Lokasi halaman': 'Breadcrumb',
   'Cari mahasiswa atau halaman': 'Search students or pages',
   'Pencarian cepat': 'Quick search',
@@ -1899,7 +1898,7 @@ export const EN = {
   'Nilai akhir belum bisa dihitung': 'Final score cannot be calculated yet',
   'nilai akhir belum bisa dihitung': 'final score cannot be calculated yet',
   'nilai akhir {nilai} di bawah rata-rata minimal {n}': 'final score {nilai} below the minimum average of {n}',
-  'Nilai angkatan sudah disahkan Kemahasiswaan': 'Cohort scores ratified by Student Affairs',
+  'Nilai angkatan sudah disahkan Admin': 'Cohort scores ratified by the admin',
   'Nilai angkatan {label} belum disahkan': 'Cohort {label} scores are not ratified yet',
   'nilai angkatan {label} belum disahkan': 'cohort {label} scores not ratified yet',
 
@@ -2091,8 +2090,8 @@ export const EN = {
   'Nilai yang menurutmu benar (opsional)': 'The score you think is correct (optional)',
   'Nilai yang diharapkan harus 0–100.': 'The expected score must be 0–100.',
   'Nilai baru {nilai} sudah masuk transkrip.': 'The new score {nilai} is now on your transcript.',
-  'Admin Kemahasiswaan sudah meneruskannya. Menunggu keputusan Super Admin.':
-    'Student Affairs has forwarded it. Waiting for the Super Admin to decide.',
+  'Admin sudah meneruskannya. Menunggu keputusan Super Admin.':
+    'The admin has forwarded it. Waiting for the Super Admin to decide.',
   // Keputusan koreksi (admin/DaftarKoreksi.jsx).
   'Nilai sekarang': 'Current score',
   'Nilai usulan': 'Proposed score',
@@ -2109,7 +2108,7 @@ export const EN = {
     'Once approved, the new score goes straight onto the transcript as one batch recorded in Batch History.',
   'Meneruskan belum mengubah nilai. Super Admin yang memutuskan dan menerapkan nilai barunya.':
     'Forwarding does not change the score yet. The Super Admin decides and applies the new score.',
-  'Menunggu keputusan admin Kemahasiswaan (lapis pertama).': 'Waiting for Student Affairs to decide (first layer).',
+  'Menunggu keputusan Admin (lapis pertama).': 'Waiting for the admin to decide (first layer).',
   'Diteruskan {oleh} pada {tanggal} dengan nilai usulan {nilai}.': 'Forwarded by {oleh} on {tanggal} with a proposed score of {nilai}.',
   'Disetujui {oleh} pada {tanggal}.': 'Approved by {oleh} on {tanggal}.',
   'Ditolak {oleh} pada {tanggal}.': 'Rejected by {oleh} on {tanggal}.',
@@ -2161,10 +2160,10 @@ export const EN = {
   'Permintaan ini sudah diputuskan, mungkin di jendela lain.': 'This request has already been decided, perhaps in another window.',
   'Akses cetak sertifikat': 'Certificate print access',
   'Pengajuan ubah nilai': 'Score change requests',
-  'Sudah diteruskan admin Kemahasiswaan. Setujui untuk menerapkan nilai barunya, atau tolak dengan alasan.':
-    'Forwarded by Student Affairs. Approve to apply the new score, or reject with a reason.',
-  'Sudah ditinjau admin Kemahasiswaan beserta rekomendasinya. Setujui untuk membuka akses cetak mahasiswa, atau tolak dengan alasan.':
-    'Reviewed by Student Affairs with a recommendation. Approve to open print access for the student, or reject with a reason.',
+  'Sudah diteruskan Admin. Setujui untuk menerapkan nilai barunya, atau tolak dengan alasan.':
+    'Forwarded by the admin. Approve to apply the new score, or reject with a reason.',
+  'Sudah ditinjau Admin beserta rekomendasinya. Setujui untuk membuka akses cetak mahasiswa, atau tolak dengan alasan.':
+    'Reviewed by the admin with a recommendation. Approve to open print access for the student, or reject with a reason.',
   'Tidak ada permintaan akses cetak yang menunggu Anda': 'No print access requests are waiting for you',
   'Nilai akhir {nilai}': 'Final score {nilai}',
   'Permintaan admin dan dosen yang perlu persetujuan Anda, misalnya tanda final, bobot, pengesahan angkatan, akses data master, dan perbaikan nilai untuk angkatan yang sudah disahkan. Setujui untuk menjalankannya persis seperti yang diajukan, atau tolak dengan catatan.':
@@ -2572,11 +2571,11 @@ export const EN = {
   'Akses Super Admin diatur langsung di basis data.': 'Super Admin access is managed directly in the database.',
   'Status izin tidak valid.': 'Invalid permission status.',
   'Super Admin selalu memegang data master.': 'The Super Admin always holds master data.',
-  'Izin lihat data master hanya untuk akun admin Kemahasiswaan.': 'Master data view permission is only for Student Affairs admin accounts.',
+  'Izin lihat data master hanya untuk akun admin.': 'Master data view permission is only for admin accounts.',
   'Pulihkan dulu akses akun ini sebelum memberinya izin.': "Restore this account's access before granting it permission.",
   'Daftar angkatan tidak valid.': 'Invalid cohort list.',
   'Super Admin selalu melihat semua angkatan.': 'The Super Admin always sees every cohort.',
-  'Akses angkatan hanya untuk akun admin Kemahasiswaan.': 'Cohort access is only for Student Affairs admin accounts.',
+  'Akses angkatan hanya untuk akun admin.': 'Cohort access is only for admin accounts.',
   'Pulihkan dulu akses akun ini sebelum membuka angkatan untuknya.': "Restore this account's access before opening cohorts for it.",
   'Program studi tidak ditemukan.': 'Study program not found.',
   // Kelas di dalam prodi (kelolaKelas di src/server/dataMaster.js, sejak 12 Nov 2026).
@@ -2681,7 +2680,7 @@ export const EN = {
   'Angkatan ini belum punya mahasiswa.': 'This cohort has no students yet.',
   'Batch ini sudah dibatalkan sebelumnya.': 'This batch was already cancelled.',
   'Usulan ini sudah diputuskan sebelumnya.': 'This proposal was already decided.',
-  'Akun pengaju bukan admin Kemahasiswaan yang aktif.': 'The requesting account is not an active Student Affairs admin.',
+  'Akun pengaju bukan admin yang aktif.': 'The requesting account is not an active admin.',
   'Datanya sudah berubah sejak permintaan diajukan.': 'The data has changed since the request was submitted.',
   'Tanda final atau sementara dari admin perlu persetujuan Super Admin.': 'Final or provisional marks from an admin need Super Admin approval.',
   'Perubahan bobot oleh admin perlu persetujuan Super Admin.': 'Weight changes by an admin need Super Admin approval.',
@@ -2713,10 +2712,10 @@ export const EN = {
   '{n} aspek belum dinilai': '{n} aspects not graded yet',
   '{n} aspek belum final': '{n} aspects not final yet',
   'Pilih salah satu untuk melihat komponen nilainya': 'Choose one to see its score components',
-  'Oleh admin Kemahasiswaan': 'By the Student Affairs admin',
+  'Oleh Admin': 'By the admin',
   // Panel mahasiswa: sertifikat.
-  'Sertifikat butuh dua hal: kelayakan akademik dari nilaimu, dan izin cetak dari Kemahasiswaan.':
-    'A certificate needs two things: academic eligibility from your scores, and print permission from Student Affairs.',
+  'Sertifikat butuh dua hal: kelayakan akademik dari nilaimu, dan izin cetak dari Admin.':
+    'A certificate needs two things: academic eligibility from your scores, and print permission from the admin.',
   'Izin cetak': 'Print permission',
   'Belum bisa diminta': 'Cannot be requested yet',
   'Belum diminta': 'Not requested yet',
@@ -2731,22 +2730,17 @@ export const EN = {
   'Alasannya belum dicatat.': 'No reason has been recorded.',
   'Dicabut oleh': 'Revoked by',
   'Yang perlu dilakukan': 'What to do',
-  'Rincian langkahnya belum tersedia. Hubungi Kemahasiswaan untuk meminta penjelasan. Bila masalahnya sudah selesai, ajukan peninjauan akses.':
-    'The detailed steps are not available yet. Contact Student Affairs for an explanation. Once the issue is resolved, request an access review.',
-  'Rincian langkahnya belum tersedia. Hubungi Kemahasiswaan untuk meminta penjelasan. Bila sudah sesuai, minta akses cetak lagi.':
-    'The detailed steps are not available yet. Contact Student Affairs for an explanation. Once it is in order, request print access again.',
   'Ajukan peninjauan cetak': 'Request a print review',
   /* Pengajuan peninjauan cetak wajib berpenjelasan (18 Nov 2026): isian mahasiswa, pesannya, dan kotak di panel peninjau. */
   'Penjelasan pengajuan': 'Explanation for your request',
-  'Jelaskan kenapa kamu mengajukan peninjauan cetak, minimal 10 karakter. Penjelasan ini dibaca admin Kemahasiswaan dan Super Admin.':
-    'Explain why you are requesting a print review, at least 10 characters. Student Affairs admins and the Super Admin will read it.',
-  'Penjelasan wajib diisi, minimal 10 karakter, supaya Kemahasiswaan tahu kenapa kamu mengajukan peninjauan cetak.':
-    'An explanation of at least 10 characters is required, so Student Affairs knows why you are requesting a print review.',
+  'Jelaskan kenapa kamu mengajukan peninjauan cetak, minimal 10 karakter. Penjelasan ini dibaca Admin dan Super Admin.':
+    'Explain why you are requesting a print review, at least 10 characters. The admin and the Super Admin will read it.',
+  'Penjelasan wajib diisi, minimal 10 karakter, supaya Admin tahu kenapa kamu mengajukan peninjauan cetak.':
+    'An explanation of at least 10 characters is required, so the admin knows why you are requesting a print review.',
   'Penjelasan terlalu panjang, maksimal 1000 karakter.': 'The explanation is too long; the maximum is 1000 characters.',
   'Penjelasan mahasiswa (pengajuan peninjauan cetak)': "Student's explanation (print review request)",
   'Penjelasan mahasiswa': "Student's explanation",
   'Cetak / Simpan PDF': 'Print / save as PDF',
-  'Hubungi Kemahasiswaan': 'Contact Student Affairs',
   'Halo, saya {nama} (NIM {nim}). Saya ingin meminta penjelasan soal akses cetak sertifikat VIBE saya.':
     'Hello, I am {nama} (student ID {nim}). I would like an explanation about my VIBE certificate print access.',
   'Kelayakan akademik': 'Academic eligibility',
@@ -2757,8 +2751,8 @@ export const EN = {
   Terbaru: 'Newest',
   Terlama: 'Oldest',
   'Menampilkan {n} dari {total} catatan': 'Showing {n} of {total} records',
-  'berarti nilainya sudah disahkan Kemahasiswaan. Perubahan sesudahnya hanya lewat prosedur koreksi.':
-    'means the score has been ratified by Student Affairs. Later changes only go through the correction procedure.',
+  'berarti nilainya sudah disahkan Admin. Perubahan sesudahnya hanya lewat prosedur koreksi.':
+    'means the score has been ratified by the admin. Later changes only go through the correction procedure.',
   'Tidak ada catatan yang cocok dengan saringan ini.': 'No records match these filters.',
   'Hapus saringan': 'Clear filters',
   // Panel mahasiswa: peta perjalanan.

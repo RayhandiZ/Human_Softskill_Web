@@ -1,6 +1,10 @@
 import { Plus_Jakarta_Sans } from 'next/font/google'
 /* Dimuat sebelum index.css supaya warna VIBE untuk pemilih bahasa (index.css › pemilih bahasa) yang menang. */
 import '@zakisheriff/liquid-glass/styles.css'
+/* Aturan Lenis (gulir roda halus panel mahasiswa, src/lib/gulirHalus.js), semuanya terikat ke kelas .lenis di <html>.
+   html.lenis { height: auto } wajib: index.css memasang height 100% di html dan body, dan dengan itu Lenis tidak tahu
+   halaman memanjang, sehingga isi yang dibuka belakangan tidak bisa dicapai sampai bawah. */
+import 'lenis/dist/lenis.css'
 import '../src/index.css'
 import { SKRIP_TEMA } from '../src/lib/theme'
 

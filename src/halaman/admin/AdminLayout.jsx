@@ -38,7 +38,7 @@ const KERJA = 'Kerja harian'
 const RUJUKAN = 'Rujukan & catatan'
 
 const menuAdmin = ({ koreksi, usulan, permintaan, sertifikat, superAdmin, log }) => [
-  { to: '/admin', label: 'Overview', icon: IconGauge, end: true, kelompok: KERJA },
+  { to: '/admin', label: 'Beranda', icon: IconGauge, end: true, kelompok: KERJA },
   { to: '/admin/mahasiswa', label: 'Data Mahasiswa', icon: IconUsers, kelompok: KERJA },
   superAdmin
     ? { to: '/admin/nilai', label: 'Input & Import Nilai', icon: IconUpload, lencana: koreksi || null, kelompok: KERJA }
@@ -64,9 +64,14 @@ const menuAdmin = ({ koreksi, usulan, permintaan, sertifikat, superAdmin, log })
 
 const cocok = (m, jalur) => (m.end ? jalur === m.to : jalur === m.to || jalur.startsWith(m.to + '/'))
 
+// Halaman yang bisa dibuka tetapi tidak selalu ada di menu: Persetujuan Nilai Dosen hanya tampil di menu super admin
+// selama ada usulan menunggu. Tanpa ini lokasinya hanya "Beranda", dan judul tabnya ikut "Beranda · VIBE".
+const DI_LUAR_MENU = { '/admin/usulan': 'Persetujuan Nilai Dosen' }
+
 /** Lapisan lokasi halaman: halaman menu, lalu rincian bila jalurnya lebih dalam dari butir menunya. */
 function lapisRemah(menu, jalur) {
   const butir = menu.find((m) => cocok(m, jalur))
+  if (!butir && DI_LUAR_MENU[jalur]) return [{ label: DI_LUAR_MENU[jalur], ke: null }]
   const rincian =
     jalur === '/admin/profil'
       ? 'Profil'
@@ -137,7 +142,7 @@ export default function AdminLayout({ children }) {
             <IconMenu size={23} />
           </button>
           <MerekAtas beranda="/admin" />
-          <RemahKerja akar={{ ke: '/admin', label: 'Overview' }} lapis={lapisRemah(menu, jalur)} />
+          <RemahKerja akar={{ ke: '/admin', label: 'Beranda' }} lapis={lapisRemah(menu, jalur)} />
         </>
       }
       kananAtas={
@@ -169,7 +174,7 @@ export default function AdminLayout({ children }) {
       lapisan={
         /* --------------------------- laci layar kecil -------------------------- */
         <Laci buka={laci} onTutup={() => setLaci(false)}>
-          <nav aria-label={t('Menu Kemahasiswaan')} className="p-3">
+          <nav aria-label={t('Menu Admin')} className="p-3">
             <MenuSamping items={menu} besar onPilih={() => setLaci(false)} />
 
             <span className="my-3 block h-px bg-line" />

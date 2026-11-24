@@ -182,7 +182,7 @@ function KartuKoreksi({ k, aktor, superAdmin, giliranSaya }) {
       ) : masihMenunggu(k.status) ? (
         <p className="mt-2 text-[12.5px] text-ink-2">
           {k.status === 'menunggu_admin'
-            ? t('Menunggu keputusan admin Kemahasiswaan (lapis pertama).')
+            ? t('Menunggu keputusan Admin (lapis pertama).')
             : t('Menunggu keputusan Super Admin.')}
         </p>
       ) : k.keputusan ? (

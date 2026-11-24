@@ -294,7 +294,7 @@ function PanelPembaruan({ pembaruan }) {
 }
 
 /* nada 'onbrand' untuk bilah biru, 'terang' untuk bilah atas terang panel Kemahasiswaan. Admin biasa juga menerima
-   pembaruan dari Super Admin di tab kedua; lihat README.md › Panel Kemahasiswaan › Lonceng. */
+   pembaruan dari Super Admin di tab kedua; lihat README.md › Panel Admin › Lonceng. */
 export default function LoncengKemahasiswaan({ nada = 'onbrand' }) {
   const t = useTeks()
   const { user } = useAuth()

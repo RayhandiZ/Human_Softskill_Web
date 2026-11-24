@@ -205,8 +205,8 @@ export function kelayakanSertifikat(student) {
     {
       id: 'terkunci',
       // "Disahkan", bukan "dikunci": istilah layar sejak rapat 24 Okt 2026. id dan status di data tetap 'terkunci'.
-      label: 'Nilai angkatan sudah disahkan Kemahasiswaan',
-      labelT: ['Nilai angkatan sudah disahkan Kemahasiswaan', null],
+      label: 'Nilai angkatan sudah disahkan Admin',
+      labelT: ['Nilai angkatan sudah disahkan Admin', null],
       lolos: student.statusAngkatan === 'terkunci',
       alasan: 'Nilai angkatan ' + student.angkatanLabel + ' belum disahkan',
       alasanT: ['Nilai angkatan {label} belum disahkan', { label: student.angkatanLabel }],

@@ -65,6 +65,10 @@ export const boleh = (id) => WEWENANG[id] !== false
 
 export const PERAN = ['Mahasiswa', 'Dosen', 'Kemahasiswaan', 'Super Admin']
 
+/* Nama kolom di layar. 'Kemahasiswaan' tetap menjadi kunci karena tersimpan di basis data (KeteranganWewenang.peran,
+   TindakanWewenang.izin, sasaran log 'wewenang Kemahasiswaan: ...') dan diperiksa server; tulisannya "Admin". */
+export const namaPeran = (p) => (p === 'Kemahasiswaan' ? 'Admin' : p)
+
 // ya: boleh langsung · syarat: boleh, kecuali yang ditulis di catatan · minta: selalu lewat persetujuan Super Admin.
 export const JENIS = ['ya', 'syarat', 'minta', 'tidak']
 export const LABEL_JENIS = { ya: 'Ya', syarat: 'Ya dengan syarat', minta: 'Selalu perlu persetujuan', tidak: 'Tidak' }

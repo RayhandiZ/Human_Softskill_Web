@@ -119,8 +119,8 @@ function Koreksi({ k }) {
       ) : (
         <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-2">
           {k.status === 'menunggu_superadmin'
-            ? t('Admin Kemahasiswaan sudah meneruskannya. Menunggu keputusan Super Admin.')
-            : t('Belum ada keputusan dari Biro Kemahasiswaan.')}
+            ? t('Admin sudah meneruskannya. Menunggu keputusan Super Admin.')
+            : t('Belum ada keputusan dari Admin.')}
         </p>
       )}
     </li>
@@ -261,7 +261,7 @@ export default function Riwayat() {
           </div>
           <p className="mt-0.5 text-[13.5px] leading-relaxed text-ink-2">
             <span className="font-semibold text-ink">{t('Sudah lengkap')}</span>{' '}
-            {t('berarti nilainya sudah disahkan Kemahasiswaan. Perubahan sesudahnya hanya lewat prosedur koreksi.')}
+            {t('berarti nilainya sudah disahkan Admin. Perubahan sesudahnya hanya lewat prosedur koreksi.')}
           </p>
         </div>
 

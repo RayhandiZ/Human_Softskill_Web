@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { IconAlert, IconArrowLeft, IconArrowRight, IconMail } from '../components/Icons'
 import KerangkaMasuk from '../components/KerangkaMasuk'
 import { useBahasa } from '../lib/bahasa'
+import { useJudulTab } from '../lib/judulTab'
 
 /* Lupa kata sandi, langkah 1 (16 Nov 2026): mahasiswa atau dosen mengisi email kampusnya, lalu server mengirim tautan
    /atur-sandi yang berlaku 30 menit. Jawabannya sama untuk email terdaftar dan tidak, jadi halaman ini selalu menulis
@@ -51,6 +52,7 @@ export function KembaliMasuk() {
 
 export default function LupaSandi() {
   const { t, bahasa } = useBahasa()
+  useJudulTab(t('Lupa kata sandi'))
   const [email, setEmail] = useState('')
   const [terkirim, setTerkirim] = useState(false)
   const [galat, setGalat] = useState('')
@@ -159,7 +161,7 @@ export default function LupaSandi() {
 
             <p className="mt-5 text-[12.5px] leading-relaxed text-white/70">
               {/* Super Admin hanya bisa memberi sandi awal saat membuat akun, belum mengatur ulang sandi akun yang ada. */}
-              {t('Akun admin Kemahasiswaan dan Super Admin tidak menerima tautan ini. Hubungi pengelola VIBE.')}
+              {t('Akun Admin dan Super Admin tidak menerima tautan ini. Hubungi pengelola VIBE.')}
             </p>
           </>
         )}

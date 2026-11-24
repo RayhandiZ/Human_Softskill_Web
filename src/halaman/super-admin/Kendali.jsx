@@ -39,7 +39,7 @@ import { LABEL_LOG, labelSasaran } from '../../lib/labelLog'
 
 const RANTAI = [
   { peran: 'Super Admin', tugas: 'Memegang nilai dan data master, menyetujui permintaan admin, dan mengawasi seluruh jejak.' },
-  { peran: 'Kemahasiswaan', tugas: 'Membaca nilai, mengurus koreksi, angkatan, kurikulum, dan sertifikat.' },
+  { peran: 'Admin', tugas: 'Membaca nilai, mengurus koreksi, angkatan, kurikulum, dan sertifikat.' },
   { peran: 'Dosen', tugas: 'Mengunggah nilai kelasnya lewat Excel dan memantau hasilnya.' },
   { peran: 'Mahasiswa', tugas: 'Melihat capaian dan mengajukan koreksi nilai.' },
 ]

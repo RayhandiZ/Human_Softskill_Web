@@ -18,7 +18,6 @@ import {
 import {
   IconAlert,
   IconCheck,
-  IconChevronDown,
   IconDownload,
   IconInfo,
   IconLock,
@@ -27,7 +26,7 @@ import {
   IconUpload,
   IconX,
 } from '../../components/Icons'
-import PilihanTurun from '../../components/PilihanTurun'
+import PilihanTurun, { KOTAK_BESAR, KOTAK_KECIL } from '../../components/PilihanTurun'
 import { CONFIG } from '../../lib/config'
 import { KOMPONEN, SUMBER, SUMBER_LIST, getAspekSemester, getKomponen, getKomponenById } from '../../lib/curriculum'
 import { bolehTandaiFinal, validasiBatchImport } from '../../lib/rules'
@@ -308,6 +307,7 @@ export default function Nilai() {
             <PilihanTurun
               id="pilih-angkatan"
               labelOleh="label-angkatan"
+              kelasTombol={KOTAK_BESAR}
               value={angkatan.id}
               onChange={setAngkatanId}
               options={COHORTS.map((c) => c.id)}
@@ -1296,26 +1296,20 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
               <p className="text-[12px] font-bold uppercase tracking-[.07em] text-ink-3">
                 {tr('Pemetaan kolom, periksa dan koreksi bila perlu')}
               </p>
-              <label className="flex items-center gap-2 text-[12.5px] text-ink-2">
-                {tr('Bila satu komponen menerima beberapa kolom:')}
-                {/* Panah sendiri seperti Select di Ui.jsx, supaya ikut berputar saat daftarnya terbuka. Lebar minimum
-                    setara select bawaan (selebar pilihan terpanjang): di Chrome select ini selebar pilihan terpilih
-                    saja, jadi tanpa min-w ia menyempit di HP dan teksnya terpotong. */}
-                <span className="relative flex">
-                  <select
-                    value={agregasi}
-                    onChange={(e) => setAgregasi(e.target.value)}
-                    className="min-w-[10.25rem] appearance-none rounded-lg border border-line bg-surface py-1.5 pl-2.5 pr-8 text-[12.5px] font-semibold text-ink"
-                  >
-                    {AGREGASI.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {tr(a.label)}
-                      </option>
-                    ))}
-                  </select>
-                  <IconChevronDown size={14} className="pointer-events-none absolute inset-y-0 right-2.5 my-auto text-ink-3" />
-                </span>
-              </label>
+              <div className="flex items-center gap-2 text-[12.5px] text-ink-2">
+                <span id="label-agregasi">{tr('Bila satu komponen menerima beberapa kolom:')}</span>
+                {/* Lebar minimum selebar pilihan terpanjang, supaya kotaknya tidak menyempit di HP. */}
+                <PilihanTurun
+                  labelOleh="label-agregasi"
+                  value={agregasi}
+                  onChange={setAgregasi}
+                  options={AGREGASI.map((a) => a.id)}
+                  tampilkan={(id) => tr(AGREGASI.find((a) => a.id === id)?.label ?? id)}
+                  kelasTombol={KOTAK_KECIL}
+                  ukuranPanah={14}
+                  className="min-w-[10.25rem]"
+                />
+              </div>
             </div>
 
             <GulirTabel>
@@ -1346,52 +1340,40 @@ function ImportCerdas({ semester, sumber, angkatan, komponenSumber, mahasiswa, a
                           {kol.contoh.slice(0, 3).join(' · ') || '—'}
                         </td>
                         <td className="px-3 py-2.5">
-                          {/* Dua pilihan per baris ini dulu tidak bernama bagi pembaca layar. min-w: semua select skala
-                              selebar pilihan terpanjangnya, seperti select bawaan, supaya kolomnya rata. */}
-                          <span className="relative inline-flex">
-                            <select
-                              aria-label={tr('Skala kolom {nama}', { nama: kol.nama })}
-                              value={String(aturan.skala ?? kol.skala)}
-                              onChange={(e) =>
-                                setPeta((p) => ({ ...p, [kol.nama]: { ...p[kol.nama], skala: Number(e.target.value) } }))
-                              }
-                              className="min-w-[11.5rem] appearance-none rounded-lg border border-line bg-surface py-1.5 pl-2 pr-8 text-[12.5px] font-semibold text-ink"
-                            >
-                              {SKALA_PILIHAN.map((s) => (
-                                <option key={s.nilai} value={s.nilai}>
-                                  {tr(s.label)}
-                                </option>
-                              ))}
-                            </select>
-                            <IconChevronDown size={14} className="pointer-events-none absolute inset-y-0 right-2.5 my-auto text-ink-3" />
-                          </span>
+                          {/* min-w: semua kotak skala selebar pilihan terpanjangnya, supaya kolomnya rata. */}
+                          <PilihanTurun
+                            ariaLabel={tr('Skala kolom {nama}', { nama: kol.nama })}
+                            value={aturan.skala ?? kol.skala}
+                            onChange={(v) => setPeta((p) => ({ ...p, [kol.nama]: { ...p[kol.nama], skala: Number(v) } }))}
+                            options={SKALA_PILIHAN.map((s) => s.nilai)}
+                            tampilkan={(n) => tr(SKALA_PILIHAN.find((s) => String(s.nilai) === String(n))?.label ?? String(n))}
+                            kelasTombol={KOTAK_KECIL}
+                            ukuranPanah={14}
+                            className="w-max min-w-[11.5rem]"
+                          />
                           {kol.skalaMaks != null ? (
                             <span className="mt-1 block text-[11px] text-ink-3">{tr('tertinggi {n}', { n: kol.skalaMaks })}</span>
                           ) : null}
                         </td>
                         <td className="px-3 py-2.5">
-                          <span className="relative flex w-full max-w-[320px]">
-                            <select
-                              aria-label={tr('Komponen tujuan kolom {nama}', { nama: kol.nama })}
-                              value={terpilih ? labelKomponen(terpilih) : ABAIKAN}
-                              onChange={(e) => {
-                                const k = komponenSumber.find((x) => labelKomponen(x) === e.target.value)
-                                setPeta((p) => ({ ...p, [kol.nama]: { ...p[kol.nama], komponenId: k?.id ?? null } }))
-                              }}
-                              className={
-                                'w-full appearance-none truncate rounded-lg border bg-surface py-1.5 pl-2.5 pr-8 text-[12.5px] font-semibold text-ink ' +
-                                (terpilih ? 'border-line' : 'border-dashed border-line-strong text-ink-3')
-                              }
-                            >
-                              <option value={ABAIKAN}>{tr(ABAIKAN)}</option>
-                              {komponenSumber.map((k) => (
-                                <option key={k.id} value={labelKomponen(k)}>
-                                  {k.id + ' · ' + tr(k.label)}
-                                </option>
-                              ))}
-                            </select>
-                            <IconChevronDown size={14} className="pointer-events-none absolute inset-y-0 right-2.5 my-auto text-ink-3" />
-                          </span>
+                          {/* Garis putus-putus dan teks redup: kolom ini belum dipetakan ke komponen mana pun. */}
+                          <PilihanTurun
+                            ariaLabel={tr('Komponen tujuan kolom {nama}', { nama: kol.nama })}
+                            value={terpilih ? labelKomponen(terpilih) : ABAIKAN}
+                            onChange={(v) => {
+                              const k = komponenSumber.find((x) => labelKomponen(x) === v)
+                              setPeta((p) => ({ ...p, [kol.nama]: { ...p[kol.nama], komponenId: k?.id ?? null } }))
+                            }}
+                            options={[ABAIKAN, ...komponenSumber.map((k) => labelKomponen(k))]}
+                            tampilkan={(v) => {
+                              const k = komponenSumber.find((x) => labelKomponen(x) === v)
+                              return k ? k.id + ' · ' + tr(k.label) : tr(ABAIKAN)
+                            }}
+                            redup={!terpilih}
+                            kelasTombol={KOTAK_KECIL}
+                            ukuranPanah={14}
+                            className="w-full max-w-[320px]"
+                          />
                         </td>
                         <td className="px-3 py-2.5">
                           {terpilih ? (

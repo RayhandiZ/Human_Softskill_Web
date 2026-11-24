@@ -42,7 +42,7 @@ export async function mintaSertifikat(pengguna, { penjelasan } = {}) {
   const teks = String(penjelasan ?? '').trim()
   if (sebelumnya && teks.length < ALASAN_MIN) {
     throw new GalatApi(
-      'Penjelasan wajib diisi, minimal ' + ALASAN_MIN + ' karakter, supaya Kemahasiswaan tahu kenapa kamu mengajukan peninjauan cetak.',
+      'Penjelasan wajib diisi, minimal ' + ALASAN_MIN + ' karakter, supaya Admin tahu kenapa kamu mengajukan peninjauan cetak.',
     )
   }
   if (teks.length > PENJELASAN_MAKS) throw new GalatApi('Penjelasan terlalu panjang, maksimal ' + PENJELASAN_MAKS + ' karakter.')

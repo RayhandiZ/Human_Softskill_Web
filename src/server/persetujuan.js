@@ -338,7 +338,7 @@ AKSI.KELOLA_ASPEK = {
 AKSI.AKSES_DATA_MASTER = {
   kerja: bukaAksesMaster,
   alasan: (isi) => isi.alasan,
-  bilaTidakOk: 'Akun pengaju bukan admin Kemahasiswaan yang aktif.',
+  bilaTidakOk: 'Akun pengaju bukan admin yang aktif.',
   pesanAlasan:
     'Sebutkan keperluan Anda melihat data master, minimal ' + ALASAN_MIN + ' karakter, supaya Super Admin bisa menimbangnya.',
   async telaah() {

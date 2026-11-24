@@ -1,5 +1,6 @@
 import { useId, useRef } from 'react'
-import { IconChevronDown, IconInfo, IconLock, IconSearch } from './Icons'
+import { IconInfo, IconLock, IconSearch } from './Icons'
+import PilihanTurun from './PilihanTurun'
 import { useTeks } from '../lib/bahasa'
 import { hurufMutu } from '../lib/scoring'
 
@@ -45,7 +46,7 @@ export function SectionTitle({ children, hint }) {
 
 /* --------------------------- pola halaman Kemahasiswaan --------------------------- */
 /* Dipakai seluruh halaman panel Kemahasiswaan supaya kepala halaman, tab penyaring, judul kolom, dan kaki daftar
-   bernomor halaman sama rupa di mana pun; lihat README.md › Panel Kemahasiswaan › Tampilan. */
+   bernomor halaman sama rupa di mana pun; lihat README.md › Panel Admin › Tampilan. */
 
 /** Kepala halaman: judul 26px, keterangan, dan tindakan di kanan yang turun ke bawah di layar sempit. */
 export function JudulHalaman({ judul, keterangan, aksi = null, children = null }) {
@@ -432,68 +433,49 @@ export function ScoreRing({ value, size = 132, stroke = 12, color = 'var(--brand
  * Gerak dan rupa daftarnya ada di index.css › pilihan (select) panel Kemahasiswaan.
  */
 /**
- * `kosong`: teks pilihan kosong ("Pilih …") yang tampil selama value ''. Dipakai isian wajib yang tidak boleh punya
- * nilai bawaan diam-diam: formulir tambah akun dulu mengisi prodi pertama (Informatika) dan mahasiswa tersimpan di prodi
- * yang tidak dipilih. Pilihan itu nonaktif, jadi tidak bisa dipilih kembali setelah ada pilihan lain.
+ * `kosong`: teks yang tampil di kotak selama value '' ("Pilih …"). Dipakai isian wajib yang tidak boleh punya nilai
+ * bawaan diam-diam: formulir tambah akun dulu mengisi prodi pertama (Informatika) dan mahasiswa tersimpan di prodi yang
+ * tidak dipilih. Teks itu tidak ada di daftar, jadi tidak bisa dipilih kembali setelah ada pilihan lain.
+ *
+ * Sejak 24 Nov 2026 memakai PilihanTurun, bukan <select>: di Firefox daftar <select> tidak bisa diberi animasi, arah
+ * bukanya tidak bisa diatur, dan teks terpilihnya terpotong tanpa "…". Pembungkusnya div, bukan <label>: pilihan di
+ * dalam <label> ikut "menekan" tombolnya lagi sehingga daftar langsung terbuka kembali.
  */
 export function Select({ label, value, onChange, options, className = '', tampilkan, ringkas = false, kosong = null }) {
-  const tampil = tampilkan ?? ((x) => x)
-  const pilihanKosong = kosong ? (
-    <option value="" disabled>
-      {kosong}
-    </option>
-  ) : null
+  const idLabel = useId()
+  // Nilai dikembalikan sebagai teks, seperti <select> yang dulu dipakai di sini.
+  const ubah = (o) => onChange(String(o))
   // Ringkas: label di dalam kotak, di kiri pilihannya, untuk baris alat di atas tabel.
   if (ringkas) {
     return (
-      // Cincin fokus digambar di kotak (has-[:focus-visible]), sama rupa dengan cincin fokus global, dan cincin
-      // milik <select> dimatikan. Dulu keduanya muncul: <select> cocok dengan :focus-visible bahkan saat diklik
-      // mouse, dan cincinnya (offset 2px) menimpa ujung label, misalnya "Program stud|i".
-      // pilihan-ringkas: daftar pilihannya menempel ke tepi kotak ini, bukan ke <select> yang mulai sesudah label.
-      <label
-        className={
-          'pilihan-ringkas flex min-w-0 items-center rounded-xl border border-line bg-surface transition hover:border-line-strong focus-within:border-brand-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-ink ' +
-          className
-        }
-      >
-        <span className="shrink-0 whitespace-nowrap pl-3.5 text-[12.5px] font-semibold text-ink-2">{label}</span>
-        <span className="relative min-w-0 flex-1">
-          <select
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full min-w-0 appearance-none truncate bg-transparent py-2.5 pl-2 pr-8 text-sm font-semibold text-ink focus-visible:outline-none"
-          >
-            {pilihanKosong}
-            {options.map((o) => (
-              <option key={o} value={o}>
-                {tampil(o)}
-              </option>
-            ))}
-          </select>
-          <IconChevronDown size={16} className="pointer-events-none absolute inset-y-0 right-2.5 my-auto text-ink-3" />
-        </span>
-      </label>
+      <PilihanTurun
+        ringkas
+        label={label}
+        value={value}
+        onChange={ubah}
+        options={options}
+        tampilkan={tampilkan}
+        kosong={kosong}
+        className={className}
+      />
     )
   }
   return (
-    <label className={'block ' + className}>
-      {label ? <span className="mb-1.5 block label">{label}</span> : null}
-      <span className="relative block">
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full appearance-none rounded-xl border border-line bg-surface px-3.5 py-2.5 pr-9 text-sm font-semibold text-ink transition hover:border-line-strong"
-        >
-          {pilihanKosong}
-          {options.map((o) => (
-            <option key={o} value={o}>
-              {tampil(o)}
-            </option>
-          ))}
-        </select>
-        <IconChevronDown size={16} className="pointer-events-none absolute inset-y-0 right-3 my-auto text-ink-3" />
-      </span>
-    </label>
+    <div className={'block ' + className}>
+      {label ? (
+        <span id={idLabel} className="mb-1.5 block label">
+          {label}
+        </span>
+      ) : null}
+      <PilihanTurun
+        labelOleh={label ? idLabel : undefined}
+        value={value}
+        onChange={ubah}
+        options={options}
+        tampilkan={tampilkan}
+        kosong={kosong}
+      />
+    </div>
   )
 }
 

@@ -3,7 +3,7 @@ import { Select } from '../../components/Ui'
 import { IconAlert, IconCheck, IconHapus, IconPlus, IconUndo } from '../../components/Icons'
 import { useTeks } from '../../lib/bahasa'
 import { MATRIKS_SA, ubahMatriks } from '../../lib/store'
-import { JENIS, KETERANGAN_MAKS, LABEL_JENIS, PERAN, TINDAKAN_MAKS, TINDAKAN_MIN, barisBawaan, kunciSel } from '../../lib/wewenang'
+import { JENIS, KETERANGAN_MAKS, LABEL_JENIS, PERAN, TINDAKAN_MAKS, TINDAKAN_MIN, barisBawaan, kunciSel, namaPeran } from '../../lib/wewenang'
 
 /* Formulir mengubah matriks Peran & Wewenang (pilihan 6 Nov 2026): keterangan per sel, dan baris kebijakan tertulis
    (tambah, ubah, arsipkan, pulihkan). Semuanya hanya tulisan, tidak dijaga server. Muncul di bawah tabel, seperti
@@ -77,7 +77,7 @@ export function FormKeterangan({ baris, peran, onSelesai, onBatal }) {
     : teksIsiSel(t, tambahan?.izin?.[peran] ?? 'tidak')
 
   function simpan(teksBaru) {
-    const isi = { tindakan: nama, peran: t(peran) }
+    const isi = { tindakan: nama, peran: t(namaPeran(peran)) }
     kirimMatriks(
       { aksi: 'keterangan', baris, peran, teks: teksBaru, alasan: alasan.trim() },
       teksBaru
@@ -98,7 +98,7 @@ export function FormKeterangan({ baris, peran, onSelesai, onBatal }) {
       <div>
         <p className="text-[14px] font-bold text-ink">
           {t('Keterangan: {tindakan}', { tindakan: nama })}
-          <span className="ml-2 text-[12.5px] font-semibold text-ink-2">{t(peran)}</span>
+          <span className="ml-2 text-[12.5px] font-semibold text-ink-2">{t(namaPeran(peran))}</span>
         </p>
         <p className="mt-1 max-w-2xl text-[13.5px] leading-relaxed text-ink-2">
           {bawaan
@@ -191,7 +191,7 @@ export function FormTindakan({ id = null, onSelesai, onBatal }) {
         <legend className="mb-2 text-[13px] font-bold text-ink">{t('Izin tiap peran')}</legend>
         {PERAN.map((p) => (
           <div key={p} className="space-y-2 rounded-xl border border-line bg-surface p-3">
-            <Select label={t(p)} value={izin[p]} onChange={(v) => setIzin((s) => ({ ...s, [p]: v }))} options={JENIS} tampilkan={(j) => t(LABEL_JENIS[j])} />
+            <Select label={t(namaPeran(p))} value={izin[p]} onChange={(v) => setIzin((s) => ({ ...s, [p]: v }))} options={JENIS} tampilkan={(j) => t(LABEL_JENIS[j])} />
             {lama ? null : (
               <label className="block">
                 <span className="mb-1 block text-[12px] font-semibold text-ink-2">{t('Keterangan (tidak wajib)')}</span>

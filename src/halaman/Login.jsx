@@ -5,10 +5,12 @@ import { LABEL_PERAN, panelPengguna, roleFromEmail, useAuth } from '../lib/auth'
 import { IconAlert, IconArrowRight, IconEye, IconEyeOff } from '../components/Icons'
 import KerangkaMasuk from '../components/KerangkaMasuk'
 import { useTeks } from '../lib/bahasa'
+import { useJudulTab } from '../lib/judulTab'
 
 export default function Login() {
   const { user, login } = useAuth()
   const t = useTeks()
+  useJudulTab(t('Masuk'))
   const router = useRouter()
   const [form, setForm] = useState({ email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
@@ -103,7 +105,7 @@ export default function Login() {
                     onClick={(e) => {
                       if (e.detail === 0) setShowPassword((v) => !v)
                     }}
-                    className="mata-sandi absolute right-4 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded text-white/75 transition-colors hover:text-white"
+                    className="mata-sandi absolute right-[14px] top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded text-white/75 transition-colors hover:text-white"
                   >
                     {showPassword ? <IconEyeOff size={20} /> : <IconEye size={20} />}
                   </button>

@@ -251,7 +251,7 @@ const ISI = {
   ],
   '/super/akses': [
     [/Akses Pengguna/, 'judul Akses Pengguna'],
-    [/Tentukan mahasiswa, dosen, dan admin Kemahasiswaan/, 'penjelasan siapa yang diatur'],
+    [/Tentukan mahasiswa, dosen, dan admin yang boleh masuk/, 'penjelasan siapa yang diatur'],
     [/Akses Super Admin tidak bisa dicabut atau dihapus dari sini/, 'catatan batas wewenang'],
   ],
   '/super/log': [
@@ -282,7 +282,7 @@ const ISI = {
     [/[0-9]+ dari [0-9]+ mahasiswa sudah berhak atas sertifikat/, 'jumlah yang berhak tertulis'],
     [/Semua [0-9]+[\s\S]{0,40}Berhak [0-9]+[\s\S]{0,40}Belum berhak [0-9]+/, 'tab kelayakan lengkap dengan jumlahnya'],
     /* Rapat 24 Okt 2026: cetak menunggu persetujuan dua lapis, dan sertifikat tidak dikirim lewat surel. */
-    [/hanya aktif untuk sertifikat yang akses cetaknya sudah ditinjau admin Kemahasiswaan dan disetujui Super Admin/, 'petunjuk: tombol cetak menunggu persetujuan dua lapis'],
+    [/hanya aktif untuk sertifikat yang akses cetaknya sudah ditinjau Admin dan disetujui Super Admin/, 'petunjuk: tombol cetak menunggu persetujuan dua lapis'],
     [/jangan kirim lewat surel/, 'petunjuk: sertifikat tidak dikirim lewat surel'],
     [/aria-label="Cetak sertifikat [^"]+"/, 'tiap baris punya tombol cetak berlabel nama mahasiswa', true, true],
   ],
@@ -396,12 +396,14 @@ const RUTE = [
     ],
   })
   const tMaster = (await render('/admin/mahasiswa')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
+  // Pilihan dropdown (PilihanTurun) baru dirender saat daftarnya dibuka, jadi dibaca dengan membukanya.
+  const pilihanAngkatanMaster = (await mod.bacaDaftarHalaman('/admin/mahasiswa', (o) => o.textContent === 'Uji Baru')).join(' | ')
   mod.pakaiMaster({ angkatan: [] })
   const hTanpaAngkatan = await render('/admin/nilai?semester=1')
   mod.pakaiMaster(mod.MASTER_AWAL)
   const cekMaster = [
-    ['filter memakai angkatan dari master, terbaru lebih dulu', /Uji Baru[\s\S]*Uji Lama/.test(tMaster)],
-    ['angkatan isi awal kode tidak tersisa', !/2025 Genap/.test(tMaster)],
+    ['filter memakai angkatan dari master, terbaru lebih dulu', /Uji Baru[\s\S]*Uji Lama/.test(pilihanAngkatanMaster), pilihanAngkatanMaster],
+    ['angkatan isi awal kode tidak tersisa', pilihanAngkatanMaster !== '' && !/2025 Genap/.test(tMaster + ' ' + pilihanAngkatanMaster)],
     ['Input Nilai tanpa angkatan tetap terbuka', !hTanpaAngkatan.includes('Aplikasi gagal dimuat')],
     ['Input Nilai tanpa angkatan menjelaskan sebabnya', hTanpaAngkatan.includes('Belum ada data angkatan')],
   ]
@@ -517,7 +519,7 @@ const RUTE = [
 
   /* Kaca hanya untuk navigasi panel dosen, mahasiswa, Kemahasiswaan (termasuk portal pencarian cepatnya, .portal-admin), dan
      Super Admin (sejak 16 Nov 2026): blok CSS-nya harus terikat ke panel-panel itu dan tidak boleh bocor ke seluruh isi
-     halaman. Lihat README.md › Panel Dosen › Kaca, › Panel Kemahasiswaan › Kaca, dan › Panel Super Admin. */
+     halaman. Lihat README.md › Panel Dosen › Kaca, › Panel Admin › Kaca, dan › Panel Super Admin. */
   {
     w.localStorage.setItem('sk5c.session', SESI.dosen)
     const k = await mod.ujiKacaDosen()
@@ -539,7 +541,7 @@ const RUTE = [
     const wajib = [
       ['bilah atas, menu akun, dan tombol bantuan punya kelas kacanya', k.bilahAtas && k.menuAkun && k.tombolBantuan],
       ['isi halaman tidak memakai kelas kaca', k.isiTanpaKaca],
-      ['aturan kaca terikat ke panel dosen, mahasiswa, Kemahasiswaan, dan Super Admin dan tidak menyasar <main>', pemilih.length > 10 && !bocor.length, bocor.join(' | ')],
+      ['aturan kaca terikat ke panel dosen, mahasiswa, admin, dan Super Admin dan tidak menyasar <main>', pemilih.length > 10 && !bocor.length, bocor.join(' | ')],
       ['aturan kaca tidak menyasar tabel, formulir, atau kartu data', !kenaData.length, kenaData.join(' | ')],
       // fixed membuat halaman dilukis ulang di setiap langkah gulir; lihat README.md › Panel Dosen › Kaca.
       ['latar panel tanpa background-attachment: fixed', !/background-attachment:\s*fixed/.test(blok)],
@@ -743,7 +745,7 @@ const RUTE = [
 
   const rusakLonceng = cekLonceng.filter(([, ok]) => !ok)
   gagal += rusakLonceng.length
-  console.log((rusakLonceng.length ? 'GAGAL  ' : 'OK     ') + 'lonceng Kemahasiswaan')
+  console.log((rusakLonceng.length ? 'GAGAL  ' : 'OK     ') + 'lonceng admin')
   for (const [ket, ok, rinci] of cekLonceng) {
     console.log('       ' + (ok ? 'v ' : 'x ') + ket + (ok || rinci === undefined ? '' : '  → ' + rinci))
   }
@@ -931,7 +933,7 @@ const RUTE = [
   ]
   const rusakLaci = cekLaci.filter(([, ok]) => !ok)
   gagal += rusakLaci.length
-  console.log((rusakLaci.length ? 'GAGAL  ' : 'OK     ') + 'laci panel Kemahasiswaan')
+  console.log((rusakLaci.length ? 'GAGAL  ' : 'OK     ') + 'laci panel admin')
   for (const [ket, ok] of cekLaci) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
   /* -------------------- penanda kesegaran data panel admin ---------------- */
@@ -1326,7 +1328,7 @@ const RUTE = [
     ['super admin: menolak dengan alasan tercatat', alur.ditolak],
     ['mahasiswa melihat alasan penolakan', alur.alasanTampil],
     ['mahasiswa tidak melihat alasan rekomendasi admin', alur.rekomendasiTidakTampil],
-    ['mahasiswa: kartu ditolak hanya alasan dan tombol Ajukan peninjauan cetak, isian penjelasan belum tampil (tanpa siapa, langkah, Hubungi Kemahasiswaan, dan catatan)', alur.penolakanRingkas],
+    ['mahasiswa: kartu ditolak hanya alasan dan tombol Ajukan peninjauan cetak, isian penjelasan belum tampil (tanpa siapa, langkah, Hubungi Admin, dan catatan)', alur.penolakanRingkas],
     ['mahasiswa: klik Ajukan peninjauan cetak memunculkan isian penjelasan (langsung difokus) dengan Kirim pengajuan dan Batal', alur.isianMunculSesudahKlik],
     ['mahasiswa: Batal menutup isian, mengosongkannya, dan mengembalikan fokus ke tombol', alur.batalMenutupIsian],
     ['mahasiswa: peninjauan tanpa penjelasan (atau kurang dari 10 karakter) ditahan, tidak terkirim', alur.peninjauanTanpaPenjelasanDitahan],
@@ -1353,7 +1355,7 @@ const RUTE = [
     ['admin: mencabut dengan alasan tercatat atas namanya', alur.dicabut],
     ['admin: barisnya tertulis Dicabut, tombol Cetak mati, tombol Cabut hilang', alur.barisMenyebutDicabut],
     ['mahasiswa: alasan pencabutan tampil dan bisa mengajukan peninjauan', alur.mahasiswaMelihatPencabutan],
-    ['mahasiswa: kartu dicabut hanya alasan dan tombol Ajukan peninjauan cetak, isian belum tampil (tanpa siapa, langkah, dan Hubungi Kemahasiswaan)', alur.pencabutanRingkas],
+    ['mahasiswa: kartu dicabut hanya alasan dan tombol Ajukan peninjauan cetak, isian belum tampil (tanpa siapa, langkah, dan Hubungi Admin)', alur.pencabutanRingkas],
     ['mahasiswa: sesudah dicabut tidak ada catatan cetak di bawah kartu', alur.tanpaCatatanSesudahDicabut],
     ['mahasiswa: sesudah dicabut tidak ada lembar sertifikat', alur.tanpaLembarSesudahDicabut],
     ['sesudah dicabut pencetakan ditolak dan tidak terhitung', alur.cetakSesudahDicabutDitolak],
@@ -1427,7 +1429,7 @@ const RUTE = [
     ['super admin membuka panel admin tanpa galat', supa.panelAdminTerbuka],
     ['profil super admin berlencana Super Admin', supa.lencanaSuperAdmin],
     ['menu akun super admin menulis Super Admin', supa.menuAkunSuperAdmin],
-    ['admin biasa tetap berlabel Kemahasiswaan', supa.adminBiasaTetap],
+    ['admin biasa tetap berlabel Admin', supa.adminBiasaTetap],
   ]
   const rusakSupa = cekSupa.filter(([, ok]) => !ok)
   gagal += rusakSupa.length
@@ -1442,7 +1444,7 @@ const RUTE = [
     ['tiga tugas utama tepat di bawah Pusat Kendali: persetujuan, penilaian, akses', ps.urutanTugas],
     ['menu samping memakai sorotan gelap', ps.menuGelap],
     ['Pusat Kendali tersorot sebagai menu aktif', ps.kendaliAktif],
-    ['ada tautan kembali ke panel Kemahasiswaan', ps.keKemahasiswaan],
+    ['ada tautan kembali ke panel Admin', ps.keKemahasiswaan],
     ['Pusat Kendali memuat antrean dan rantai pengawasan', ps.isiKendali],
     ['tanpa basis data, log aktivitas dinyatakan tidak tersedia', ps.tanpaServerJujur],
     ['menu samping dikelompokkan: Utama (4) dan Pengawasan (3)', ps.menuBerkelompok],
@@ -1505,7 +1507,7 @@ const RUTE = [
     ['formulir: tombol simpan aktif setelah alasan cukup', sw.simpanAktifSetelahAlasan],
     ['mode lokal: simpan ditolak dengan pesannya, matriks tidak berubah', sw.lokalDitolakDenganPesan && sw.lokalTidakMengubah],
     ['ditutup: matriks menulis Ditutup sementara (termasuk sel perbaikan dosen) dengan tombol Buka lagi', sw.matriksDitutup],
-    ['ditutup: jumlah tindakan kartu Mahasiswa, Dosen, dan Kemahasiswaan turun; Super Admin tetap', sw.jumlahTurun],
+    ['ditutup: jumlah tindakan kartu Mahasiswa, Dosen, dan Admin turun; Super Admin tetap', sw.jumlahTurun],
     ['ditutup: transkrip tanpa tombol Ajukan koreksi nilai, dengan keterangan', sw.koreksiDitutup],
     ['ditutup: sertifikat tanpa tombol Minta akses cetak, dengan keterangan', sw.sertifikatDitutup],
     ['ditutup: Unggah Nilai tanpa templat dan kotak unggah, riwayat tetap', sw.unggahDitutup],
@@ -1676,12 +1678,12 @@ const RUTE = [
   w.localStorage.setItem('sk5c.session', SESI.dosen)
   const pd = await ujiPanelLain('/dosen')
   const cekPanel = [
-    ['pemilih bahasa ada di panel Kemahasiswaan', pa.adaPemilihBahasa],
-    ['isi panel Kemahasiswaan ikut berganti', pa.isiIkutBerganti],
+    ['pemilih bahasa ada di panel admin', pa.adaPemilihBahasa],
+    ['isi panel admin ikut berganti', pa.isiIkutBerganti],
     ['pemilih bahasa ada di panel dosen', pd.adaPemilihBahasa],
     ['isi panel dosen ikut berganti', pd.isiIkutBerganti],
     ['tombol bantuan ADA di panel dosen', pd.adaTombolBantuan],
-    ['tombol bantuan TIDAK ada di panel Kemahasiswaan', !pa.adaTombolBantuan],
+    ['tombol bantuan TIDAK ada di panel admin', !pa.adaTombolBantuan],
   ]
   const rusakPanel = cekPanel.filter(([, ok]) => !ok)
   gagal += rusakPanel.length

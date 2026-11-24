@@ -18,6 +18,7 @@ import { padananKamus, useTeks } from '../../lib/bahasa'
 import IsianInggris from './IsianInggris'
 import { PesanMenunggu } from './PermintaanTerkirim'
 import { GulirTabel, TandaContoh } from '../../components/Ui'
+import PilihanTurun from '../../components/PilihanTurun'
 
 /* Penilaian satu aspek di Input Manual: teks aspek, komponen asesmen, dan bobotnya. Super admin menyimpan
    langsung; admin biasa mengajukan ke super admin. Lihat src/server/penilaian.js dan README.md › Mengubah
@@ -36,17 +37,13 @@ const keAngka = (s) => {
 }
 const persen = (n) => (Number.isFinite(n) ? n.toLocaleString('id-ID', { maximumFractionDigits: 2 }) + '%' : '–')
 
-/* Pilihan di sel tabel komponen. Panahnya sendiri, seperti Select di Ui.jsx, supaya ikut berputar saat daftarnya
-   terbuka; lihat index.css › pilihan (select) panel Kemahasiswaan. */
-function PilihanSel({ children, ...rest }) {
-  return (
-    <span className="relative flex">
-      <select className="field appearance-none !py-2 !pl-2.5 !pr-8" {...rest}>
-        {children}
-      </select>
-      <IconChevronDown size={14} className="pointer-events-none absolute inset-y-0 right-2.5 my-auto text-ink-3" />
-    </span>
-  )
+/* Pilihan di sel tabel komponen (PilihanTurun berupa .field). Tiap kolom diberi lebar minimum selebar pilihan
+   terpanjangnya: dulu kolom Komponen mengambil sisa ruang dan pilihan di sini terpotong menjadi "Kog…" dan "Re…"
+   (Chrome) atau "Kogn" dan "Resı" tanpa tanda potong (Firefox), 24 Nov 2026. */
+const KOTAK_SEL = 'rounded-xl bg-surface-2 py-2 pl-2.5 pr-2 text-sm'
+
+function PilihanSel(props) {
+  return <PilihanTurun kelasTombol={KOTAK_SEL} ukuranPanah={14} {...props} />
 }
 
 function keDraf(s) {
@@ -301,7 +298,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
             <thead>
               <tr className="border-b border-line bg-surface-2">
                 {['Urutan', 'Komponen', 'Sumber', 'Jenis', 'Ranah', 'Status', 'Bobot', 'Aksi'].map((h) => (
-                  <th key={h} className="px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-[.07em] text-ink-3">
+                  <th key={h} className="px-2.5 py-2.5 text-left text-[11px] font-bold uppercase tracking-[.07em] text-ink-3">
                     {t(h)}
                   </th>
                 ))}
@@ -313,7 +310,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
                 const salah = masalahBaris(indeks(k)).length > 0
                 return (
                   <tr key={k.kunci} className={'border-b border-line align-top last:border-0 ' + (salah ? 'bg-[color-mix(in_srgb,var(--critical)_6%,transparent)]' : '')}>
-                    <td className="px-3 py-2.5">
+                    <td className="px-2.5 py-2.5">
                       <span className="flex gap-1">
                         <button type="button" className="btn-ghost !px-2 !py-1 text-[12px]" aria-label={t('Naikkan {label}', { label: k.label || t('komponen baru') })} disabled={n === 0} onClick={() => geser(k.kunci, -1)}>
                           ↑
@@ -323,7 +320,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
                         </button>
                       </span>
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-2.5 py-2.5">
                       <input
                         className="field !min-w-[220px] !px-3 !py-2"
                         value={k.label}
@@ -341,22 +338,17 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
                       />
                       <span className="mt-1 block font-mono text-[10.5px] text-ink-3">{k.id ?? t('baru, ID dibuat saat disimpan')}</span>
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-2.5 py-2.5">
                       <PilihanSel
                         value={k.sumber}
                         disabled={kunciSumber}
                         title={kunciSumber ? t('Sudah punya nilai: sumbernya tidak bisa diganti.') : undefined}
-                        onChange={(e) =>
-                          ubahKomponen(k.kunci, { sumber: e.target.value, jenis: e.target.value === 'MK' ? k.jenis || 'TUGAS' : '' })
-                        }
-                        aria-label={t('Sumber')}
-                      >
-                        {SUMBER_LIST.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {t(s.label)}
-                          </option>
-                        ))}
-                      </PilihanSel>
+                        onChange={(v) => ubahKomponen(k.kunci, { sumber: v, jenis: v === 'MK' ? k.jenis || 'TUGAS' : '' })}
+                        ariaLabel={t('Sumber')}
+                        options={SUMBER_LIST.map((s) => s.id)}
+                        tampilkan={(id) => t(SUMBER_LIST.find((s) => s.id === id)?.label ?? id)}
+                        className="min-w-[9.75rem]"
+                      />
                       {kunciSumber ? (
                         <span className="mt-1 flex items-center gap-1 text-[11px] text-ink-3">
                           <IconLock size={11} />
@@ -364,38 +356,41 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
                         </span>
                       ) : null}
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-2.5 py-2.5">
                       {k.sumber === 'MK' ? (
-                        <PilihanSel value={k.jenis} onChange={(e) => ubahKomponen(k.kunci, { jenis: e.target.value })} aria-label={t('Jenis')}>
-                          {JENIS_MK.map((j) => (
-                            <option key={j} value={j}>
-                              {t(LABEL_JENIS[j])}
-                            </option>
-                          ))}
-                        </PilihanSel>
+                        <PilihanSel
+                          value={k.jenis}
+                          onChange={(v) => ubahKomponen(k.kunci, { jenis: v })}
+                          ariaLabel={t('Jenis')}
+                          options={JENIS_MK}
+                          tampilkan={(j) => t(LABEL_JENIS[j])}
+                          className="min-w-[6.25rem]"
+                        />
                       ) : (
                         <span className="text-[13px] text-ink-3">–</span>
                       )}
                     </td>
-                    <td className="px-3 py-2.5">
-                      <PilihanSel value={k.ranah} onChange={(e) => ubahKomponen(k.kunci, { ranah: e.target.value })} aria-label={t('Ranah')}>
-                        {Object.values(RANAH).map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {t(r.label)}
-                          </option>
-                        ))}
-                      </PilihanSel>
+                    <td className="px-2.5 py-2.5">
+                      <PilihanSel
+                        value={k.ranah}
+                        onChange={(v) => ubahKomponen(k.kunci, { ranah: v })}
+                        ariaLabel={t('Ranah')}
+                        options={Object.values(RANAH).map((r) => r.id)}
+                        tampilkan={(id) => t(Object.values(RANAH).find((r) => r.id === id)?.label ?? id)}
+                        className="min-w-[8rem]"
+                      />
                     </td>
-                    <td className="px-3 py-2.5">
-                      <PilihanSel value={k.status} onChange={(e) => ubahKomponen(k.kunci, { status: e.target.value })} aria-label={t('Status')}>
-                        {STATUS_KOMPONEN.map((s) => (
-                          <option key={s} value={s}>
-                            {t(s === 'resmi' ? 'Resmi' : 'Draft')}
-                          </option>
-                        ))}
-                      </PilihanSel>
+                    <td className="px-2.5 py-2.5">
+                      <PilihanSel
+                        value={k.status}
+                        onChange={(v) => ubahKomponen(k.kunci, { status: v })}
+                        ariaLabel={t('Status')}
+                        options={STATUS_KOMPONEN}
+                        tampilkan={(s) => t(s === 'resmi' ? 'Resmi' : 'Draft')}
+                        className="min-w-[5.875rem]"
+                      />
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-2.5 py-2.5">
                       {draf.bobotManual ? (
                         <span className="inline-flex items-center gap-1.5">
                           <input
@@ -412,7 +407,7 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
                         <span className="text-[13px] tabular-nums text-ink">{persen(porsi[n])}</span>
                       )}
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-2.5 py-2.5">
                       <button
                         type="button"
                         className="inline-flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-[12px] font-bold text-ink-2 transition hover:border-[var(--critical)] hover:text-[var(--critical)]"
@@ -428,13 +423,13 @@ export default function EditorPenilaian({ aspekId, sumberAwal, onPerubahan }) {
             </tbody>
             <tfoot>
               <tr className="border-t border-line bg-surface-2">
-                <td className="px-3 py-2.5" colSpan={6}>
+                <td className="px-2.5 py-2.5" colSpan={6}>
                   <button type="button" className="btn-ghost !px-3 !py-1.5 text-[12.5px]" onClick={tambah}>
                     <IconPlus size={15} />
                     {t('Tambah komponen')}
                   </button>
                 </td>
-                <td className="px-3 py-2.5 text-[12.5px] font-bold tabular-nums text-ink" colSpan={2}>
+                <td className="px-2.5 py-2.5 text-[12.5px] font-bold tabular-nums text-ink" colSpan={2}>
                   {draf.bobotManual ? t('Jumlah {n}', { n: persen(jumlahBobot) }) : t('Dibagi otomatis')}
                 </td>
               </tr>

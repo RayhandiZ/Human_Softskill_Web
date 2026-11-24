@@ -95,7 +95,7 @@ export default function PersetujuanAdmin() {
             <CardHeader
               icon={IconUndo}
               title={t('Pengajuan ubah nilai')}
-              subtitle={t('Sudah diteruskan admin Kemahasiswaan. Setujui untuk menerapkan nilai barunya, atau tolak dengan alasan.')}
+              subtitle={t('Sudah diteruskan Admin. Setujui untuk menerapkan nilai barunya, atau tolak dengan alasan.')}
             />
             <DaftarKoreksi aktor={admin?.officer} hanyaGiliran />
           </Card>
@@ -103,7 +103,7 @@ export default function PersetujuanAdmin() {
             <CardHeader
               icon={IconCertificate}
               title={t('Akses cetak sertifikat')}
-              subtitle={t('Sudah ditinjau admin Kemahasiswaan beserta rekomendasinya. Setujui untuk membuka akses cetak mahasiswa, atau tolak dengan alasan.')}
+              subtitle={t('Sudah ditinjau Admin beserta rekomendasinya. Setujui untuk membuka akses cetak mahasiswa, atau tolak dengan alasan.')}
             />
             <SertifikatLapisDua aktor={admin?.officer} />
           </Card>

@@ -53,7 +53,7 @@ export async function akunDariId(id) {
 }
 
 function susunAkun(akun) {
-  if (!akun.aktif) throw new GalatMasuk('Akun ini dinonaktifkan. Hubungi Biro Kemahasiswaan.', 403)
+  if (!akun.aktif) throw new GalatMasuk('Akun ini dinonaktifkan. Hubungi Admin.', 403)
 
   const peran = PERAN[akun.peran]
   const m = akun.mahasiswa
@@ -62,7 +62,7 @@ function susunAkun(akun) {
   // Peran tanpa baris pendampingnya tidak bisa membuka panel apa pun —
   // lebih baik ditolak di sini daripada masuk ke halaman yang setengah kosong.
   if ((peran === 'student' && !m) || (peran === 'dosen' && !d)) {
-    throw new GalatMasuk('Data akun ini belum lengkap. Hubungi Biro Kemahasiswaan.', 409)
+    throw new GalatMasuk('Data akun ini belum lengkap. Hubungi Admin.', 409)
   }
 
   return {

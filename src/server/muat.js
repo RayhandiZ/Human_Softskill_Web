@@ -114,7 +114,7 @@ export async function petaAkun(ids) {
     daftar.map((p) => [
       p.id,
       {
-        nama: p.dosen?.nama ?? p.mahasiswa?.nama ?? (p.peran === 'SUPER_ADMIN' ? 'Super Admin' : 'Biro Kemahasiswaan'),
+        nama: p.dosen?.nama ?? p.mahasiswa?.nama ?? (p.peran === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'),
         peran: p.peran,
         email: p.email,
       },
@@ -129,7 +129,7 @@ export async function petaAkun(ids) {
     for (const { rincian: r } of terhapus) {
       if (!r || !hilang.includes(r.penggunaId) || hasil.has(r.penggunaId)) continue
       const peran = PERAN_DARI_LABEL[r.peran] ?? null
-      hasil.set(r.penggunaId, { nama: r.nama ?? (peran === 'ADMIN' ? 'Biro Kemahasiswaan' : null), peran, email: r.email ?? null })
+      hasil.set(r.penggunaId, { nama: r.nama ?? (peran === 'ADMIN' ? 'Admin' : null), peran, email: r.email ?? null })
     }
   }
   return hasil

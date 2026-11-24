@@ -457,7 +457,7 @@ export const BATAS_BARIS_ASPEK = 5
 const UBIN_SERTIFIKAT = {
   belum_layak: ['Belum tersedia', null],
   bisa_diminta: ['Bisa diminta', 'Minta akses cetak di halaman ini'],
-  menunggu_admin: ['Sedang ditinjau', 'Oleh admin Kemahasiswaan'],
+  menunggu_admin: ['Sedang ditinjau', 'Oleh Admin'],
   menunggu_superadmin: ['Sedang ditinjau', 'Menunggu persetujuan Super Admin'],
   siap_dicetak: ['Siap dicetak', 'Buka untuk mencetak'],
   ditolak: ['Permintaan ditolak', 'Buka untuk melihat alasannya'],

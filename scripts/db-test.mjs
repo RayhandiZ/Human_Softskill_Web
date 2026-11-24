@@ -573,7 +573,7 @@ try {
   cek('admin tidak boleh menyimpan nilai (403)', (await admin('/api/nilai', { metode: 'POST', isi: {} })).status === 403)
   cek('admin tidak boleh membatalkan batch (403)', (await admin('/api/nilai/rollback', { metode: 'POST', isi: {} })).status === 403)
   cek('admin tidak boleh memutuskan usulan lama (403)', (await admin('/api/usulan/keputusan', { metode: 'POST', isi: {} })).status === 403)
-  cek('dosen tidak boleh memakai pintu simpan Kemahasiswaan (403)', (await dosen('/api/nilai', { metode: 'POST', isi: {} })).status === 403)
+  cek('dosen tidak boleh memakai pintu simpan admin (403)', (await dosen('/api/nilai', { metode: 'POST', isi: {} })).status === 403)
   cek('admin tidak boleh memakai pintu unggahan dosen (403)', (await admin('/api/nilai/dosen', { metode: 'POST', isi: {} })).status === 403)
 
   /* ------------------------------ data per peran ------------------------------ */
@@ -710,7 +710,7 @@ try {
   const kLapis1 = await koreksiUji(admin)
   cek(
     'menunggu super admin, dengan nilai usulan dan nama admin',
-    kLapis1?.status === 'menunggu_superadmin' && kLapis1.nilaiUsulan === 91 && kLapis1.lapis1?.oleh === 'Biro Kemahasiswaan',
+    kLapis1?.status === 'menunggu_superadmin' && kLapis1.nilaiUsulan === 91 && kLapis1.lapis1?.oleh === 'Admin',
     JSON.stringify(kLapis1),
   )
   cek('nilai mahasiswa belum berubah sesudah diteruskan', (await sel())?.nilai === 85)
@@ -1030,7 +1030,7 @@ try {
   // --- filter pelaku dan tanggal ---
   const totalAdmin = await db.auditLog.count({ where: { mahasiswaId, aktorId: adminId } })
   const olehAdmin = await bacaLog({ jenis: 'nilai', nim: NIM, aktorId: adminId, ukuran: 100 })
-  cek('filter pelaku: hanya perubahan oleh admin', olehAdmin.isi.total === totalAdmin && olehAdmin.isi.total < totalDb && olehAdmin.isi.baris.every((b) => b.aktor === 'Biro Kemahasiswaan'), JSON.stringify([totalAdmin, totalDb]))
+  cek('filter pelaku: hanya perubahan oleh admin', olehAdmin.isi.total === totalAdmin && olehAdmin.isi.total < totalDb && olehAdmin.isi.baris.every((b) => b.aktor === 'Admin'), JSON.stringify([totalAdmin, totalDb]))
   cek(
     'pilihan pelaku super admin = semua pelaku perubahan nilai',
     semua.isi.pilihanAktor.map((a) => a.id).sort((a, b) => a - b).join() ===
@@ -1052,7 +1052,7 @@ try {
   )
   cek(
     'pilihan pelaku membedakan admin lewat email (nama semua admin sama)',
-    akt.isi.pilihanAktor.some((a) => a.email === EMAIL_ADMIN && a.nama === 'Biro Kemahasiswaan' && a.peran === 'ADMIN'),
+    akt.isi.pilihanAktor.some((a) => a.email === EMAIL_ADMIN && a.nama === 'Admin' && a.peran === 'ADMIN'),
     JSON.stringify(akt.isi.pilihanAktor),
   )
   const aktUbah = await bacaLog({ jenis: 'aktivitas', aksi: 'UBAH_DATA_TERKUNCI', dari: hariIni, ukuran: 100 })
@@ -1241,7 +1241,7 @@ try {
     'admin meneruskan dengan rekomendasi tidak disarankan; super admin membaca rekomendasi dan alasannya',
     teruskanTidak.isi.ok === true &&
       sTidak?.status === 'menunggu_superadmin' &&
-      sTidak.lapis1?.oleh === 'Biro Kemahasiswaan' &&
+      sTidak.lapis1?.oleh === 'Admin' &&
       sTidak.lapis1?.saran === 'tidak_disarankan' &&
       sTidak.lapis1?.catatan === 'Uji: nilai sikap belum diperiksa prodi.' &&
       barisTidak?.adminSaran === false &&
@@ -1314,7 +1314,7 @@ try {
   const sLapis1 = await permintaanNim3(sa)
   cek(
     'admin meneruskan ke super admin dengan rekomendasi disarankan',
-    teruskanS.isi.ok === true && sLapis1?.status === 'menunggu_superadmin' && sLapis1.lapis1?.oleh === 'Biro Kemahasiswaan' && sLapis1.lapis1?.saran === 'disarankan',
+    teruskanS.isi.ok === true && sLapis1?.status === 'menunggu_superadmin' && sLapis1.lapis1?.oleh === 'Admin' && sLapis1.lapis1?.saran === 'disarankan',
     JSON.stringify(sLapis1),
   )
   cek(
@@ -1355,7 +1355,7 @@ try {
   const sCetak = await permintaanNim3(admin)
   cek(
     'setiap pembukaan cetak tercatat, oleh mahasiswa maupun admin',
-    c1.isi.ok === true && c2.isi.jumlahCetak === 2 && sCetak?.cetak?.jumlah === 2 && sCetak.cetak.oleh === 'Biro Kemahasiswaan' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(sCetak.cetak.terakhir ?? ''),
+    c1.isi.ok === true && c2.isi.jumlahCetak === 2 && sCetak?.cetak?.jumlah === 2 && sCetak.cetak.oleh === 'Admin' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(sCetak.cetak.terakhir ?? ''),
     JSON.stringify([c1.isi, c2.isi, sCetak?.cetak]),
   )
   cek('mahasiswa tidak boleh mencabut (403)', (await cabutS(mhs3, 'Uji: mencoba mencabut sendiri.')).status === 403)
@@ -1364,7 +1364,7 @@ try {
   const sDicabut = await permintaanNim3(mhs3)
   cek(
     'admin mencabut, mahasiswa membaca alasan dan pencabutnya',
-    cabut1.isi.ok === true && sDicabut?.status === 'dicabut' && sDicabut.dicabut?.alasan === 'Uji: ada laporan sikap dari dosen wali.' && sDicabut.dicabut?.oleh === 'Biro Kemahasiswaan',
+    cabut1.isi.ok === true && sDicabut?.status === 'dicabut' && sDicabut.dicabut?.alasan === 'Uji: ada laporan sikap dari dosen wali.' && sDicabut.dicabut?.oleh === 'Admin',
     JSON.stringify(sDicabut),
   )
   cek('mencabut yang sudah dicabut tidak berlaku', (await cabutS(sa, 'Uji: mencabut lagi yang sudah dicabut.')).isi.ok === false)

@@ -104,7 +104,9 @@ export default function MutuDonut({ huruf, totalMahasiswa, height = 260 }) {
         </div>
 
         {data.length ? (
-          <ul className="space-y-2.5">
+          // Lebar dibatasi supaya jumlah dan persen tetap dekat dengan labelnya; dulu di layar lebar terpisah sekitar 800px.
+          // 480px memuat baris terpanjang dalam satu baris (terukur 439px: "Grade B-, C+, C · Basic Professional Awareness").
+          <ul className="w-full max-w-[480px] space-y-2.5">
             {data.map((d) => (
               <li key={d.kunci} className="flex items-center gap-3">
                 <span className="h-3.5 w-3.5 shrink-0 rounded-[4px]" style={{ background: d.warna }} />

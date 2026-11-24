@@ -151,7 +151,7 @@ export async function aturIzinMaster(pengguna, { id, aktif, alasan }) {
   const akun = await db.pengguna.findUnique({ where: { id: target }, include: SERTA })
   if (!akun) throw new GalatApi('Akun tidak ditemukan.', 404)
   if (akun.peran === 'SUPER_ADMIN') throw new GalatApi('Super Admin selalu memegang data master.', 403)
-  if (akun.peran !== 'ADMIN') throw new GalatApi('Izin lihat data master hanya untuk akun admin Kemahasiswaan.', 403)
+  if (akun.peran !== 'ADMIN') throw new GalatApi('Izin lihat data master hanya untuk akun admin.', 403)
   if (aktif && !akun.aktif) throw new GalatApi('Pulihkan dulu akses akun ini sebelum memberinya izin.', 409)
   if (akun.kelolaMaster === aktif) return { akun: susunAkun(akun) } // tidak ada yang berubah, tidak dicatat
 
@@ -204,7 +204,7 @@ export async function aturAksesAngkatan(pengguna, { id, dibuka = [], ditutup = [
   const akun = await db.pengguna.findUnique({ where: { id: target }, include: SERTA })
   if (!akun) throw new GalatApi('Akun tidak ditemukan.', 404)
   if (akun.peran === 'SUPER_ADMIN') throw new GalatApi('Super Admin selalu melihat semua angkatan.', 403)
-  if (akun.peran !== 'ADMIN') throw new GalatApi('Akses angkatan hanya untuk akun admin Kemahasiswaan.', 403)
+  if (akun.peran !== 'ADMIN') throw new GalatApi('Akses angkatan hanya untuk akun admin.', 403)
 
   const rapikan = (xs) => [...new Set(xs.map((a) => String(a ?? '').trim()).filter(Boolean))].sort()
   const idBuka = rapikan(dibuka)

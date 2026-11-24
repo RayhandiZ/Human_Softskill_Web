@@ -1,4 +1,5 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useId, useState } from 'react'
+import PilihanTurun, { KOTAK_ISIAN } from '../../components/PilihanTurun'
 import {
   Badge,
   Card,
@@ -332,7 +333,7 @@ export default function Transkrip({ student, untukAdmin = false }) {
             <p className="mt-1 max-w-xl text-[13.5px] leading-relaxed text-ink-2">
               {bukaKoreksi
                 ? teks(
-                    'Kamu tidak bisa mengubah nilai sendiri. Ajukan koreksi dan Biro Kemahasiswaan akan menelusurinya bersama dosen atau unit yang memberi nilai.',
+                    'Kamu tidak bisa mengubah nilai sendiri. Ajukan koreksi dan Admin akan menelusurinya bersama dosen atau unit yang memberi nilai.',
                   )
                 : teks('Pengajuan koreksi nilai sedang ditutup Super Admin untuk sementara. Pengajuan yang sudah kamu kirim tetap diproses.')}
             </p>
@@ -594,6 +595,7 @@ function BarisRincian({ aspek }) {
 
 function FormKoreksi({ student, transkrip, onSelesai }) {
   const t = useTeks()
+  const idLabelKomponen = useId()
   const terbuka = transkrip.aspek.filter((a) => !a.terkunci)
   const pilihan = terbuka.flatMap((a) =>
     a.komponen.map((k) => ({ id: k.id, label: a.aspek.kode + ' ' + t(k.label), terisi: k.terisi, nilai: k.nilai })),
@@ -630,19 +632,23 @@ function FormKoreksi({ student, transkrip, onSelesai }) {
 
   return (
     <form onSubmit={kirim} className="mt-5 grid gap-4 border-t border-line pt-5 sm:grid-cols-2">
-      <label className="sm:col-span-2">
-        <span className="mb-1.5 block text-[13px] font-semibold text-ink">
+      {/* div, bukan <label>: pilihan PilihanTurun di dalam <label> ikut menekan tombolnya lagi (lihat Select di Ui.jsx). */}
+      <div className="sm:col-span-2">
+        <span id={idLabelKomponen} className="mb-1.5 block text-[13px] font-semibold text-ink">
           {t('Komponen yang dipersoalkan')}
         </span>
-        <select className="field" value={komponenId} onChange={(e) => setKomponenId(e.target.value)}>
-          {pilihan.map((k) => (
-            <option key={k.id} value={k.id}>
-              {k.label}{' '}
-              {k.terisi ? t('(nilai {n})', { n: k.nilai }) : t('(belum dinilai)')}
-            </option>
-          ))}
-        </select>
-      </label>
+        <PilihanTurun
+          labelOleh={idLabelKomponen}
+          value={komponenId}
+          onChange={setKomponenId}
+          options={pilihan.map((k) => k.id)}
+          tampilkan={(id) => {
+            const k = pilihan.find((x) => x.id === id)
+            return k ? k.label + ' ' + (k.terisi ? t('(nilai {n})', { n: k.nilai }) : t('(belum dinilai)')) : id
+          }}
+          kelasTombol={KOTAK_ISIAN}
+        />
+      </div>
 
       <label className="sm:col-span-2">
         <span className="mb-1.5 block text-[13px] font-semibold text-ink">{t('Alasan')}</span>

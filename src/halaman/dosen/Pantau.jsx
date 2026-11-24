@@ -44,7 +44,7 @@ export default function Pantau() {
   if (!dosen) {
     return (
       <EmptyState title={t('Akun ini belum terdaftar sebagai dosen pengampu')}>
-        {t('Hubungi Biro Kemahasiswaan untuk didaftarkan pada satu kelas.')}
+        {t('Hubungi Admin untuk didaftarkan pada satu kelas.')}
       </EmptyState>
     )
   }

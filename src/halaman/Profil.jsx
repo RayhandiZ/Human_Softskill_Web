@@ -191,7 +191,7 @@ export default function Profil() {
             ) : null}
           </h1>
           <p className="mt-1.5">
-            <Badge tone="brand">{t(labelPeran(user) ?? 'Kemahasiswaan')}</Badge>
+            <Badge tone="brand">{t(labelPeran(user) ?? 'Admin')}</Badge>
           </p>
         </div>
 
@@ -236,7 +236,7 @@ export default function Profil() {
               <Tetap>{admin.name}</Tetap>
             </Baris>
             <Baris label={t('Nama resmi')}>
-              <Tetap>{admin.unit}</Tetap>
+              <Tetap>{t(admin.unit)}</Tetap>
             </Baris>
             <Baris label={t('Penanggung jawab')}>
               <Tetap>{admin.officer}</Tetap>

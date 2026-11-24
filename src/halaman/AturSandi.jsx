@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { IconAlert, IconArrowRight, IconCheck } from '../components/Icons'
 import KerangkaMasuk from '../components/KerangkaMasuk'
 import { useBahasa } from '../lib/bahasa'
+import { useJudulTab } from '../lib/judulTab'
 import { KembaliMasuk, kirimJson } from './LupaSandi'
 
 /* Lupa kata sandi, langkah 2 (16 Nov 2026): halaman tujuan tautan di email, /atur-sandi?token=... Tokennya dibaca sekali,
@@ -13,6 +14,7 @@ const SANDI_MIN = 8
 
 export default function AturSandi() {
   const { t } = useBahasa()
+  useJudulTab(t('Buat kata sandi baru'))
   // memeriksa → siap → selesai, atau mati bila tautannya kedaluwarsa, sudah dipakai, atau tidak dikenal.
   const [keadaan, setKeadaan] = useState('memeriksa')
   const [email, setEmail] = useState('')

@@ -11,7 +11,7 @@ import { labelSemesterAngkatan } from './LoncengKemahasiswaan'
 
 /* Capaian per unit. Judulnya sama dengan menunya ("Program Studi"); dulu "Capaian per unit", jadi lokasi
    halaman dan judul tidak cocok. Tiga angka memakai KartuAngka seperti Overview; alat saringnya FilterBar
-   ringkas seperti Data Mahasiswa. Lihat README.md › Panel Kemahasiswaan › Tampilan. */
+   ringkas seperti Data Mahasiswa. Lihat README.md › Panel Admin › Tampilan. */
 export default function Programs() {
   const t = useTeks()
   const versi = useStore()

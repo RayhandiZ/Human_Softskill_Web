@@ -153,7 +153,7 @@ export function telaahAspek(student, aspekId) {
   if (tanda?.status === 'sementara') {
     return {
       status: 'berjalan',
-      alasan: 'Ditahan sebagai sementara oleh ' + (tanda.oleh ?? 'Kemahasiswaan'),
+      alasan: 'Ditahan sebagai sementara oleh ' + (tanda.oleh ?? 'Admin'),
       siapDikunci: true,
       tanda,
     }
@@ -182,7 +182,7 @@ export function telaahAspek(student, aspekId) {
 
   return {
     status: 'berjalan',
-    alasan: 'Seluruh komponen sudah dinilai, menunggu ditetapkan final oleh Kemahasiswaan',
+    alasan: 'Seluruh komponen sudah dinilai, menunggu ditetapkan final oleh Admin',
     siapDikunci: true,
     tanda,
   }

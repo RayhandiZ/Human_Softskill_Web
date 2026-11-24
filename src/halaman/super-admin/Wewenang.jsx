@@ -18,7 +18,7 @@ import {
 } from '../../components/Icons'
 import { useTeks } from '../../lib/bahasa'
 import { MATRIKS_SA, ubahWewenang, useStore } from '../../lib/store'
-import { MATRIKS, PERAN, TAMBAHAN_MAKS, boleh, kunciSel, sakelar } from '../../lib/wewenang'
+import { MATRIKS, PERAN, TAMBAHAN_MAKS, boleh, kunciSel, namaPeran, sakelar } from '../../lib/wewenang'
 import { FormArsip, FormKeterangan, FormTindakan } from './UbahMatriks'
 
 /* Matriks wewenang tiap peran (MATRIKS di src/lib/wewenang.js, diturunkan dari aturan server). Empat sel bertanda
@@ -151,7 +151,7 @@ function TombolSakelar({ id, aktif, onPilih }) {
   const t = useTeks()
   const s = sakelar(id)
   const terbuka = boleh(id)
-  const isi = { tindakan: t(s.tindakan), peran: t(s.peran) }
+  const isi = { tindakan: t(s.tindakan), peran: t(namaPeran(s.peran)) }
   return (
     <button
       type="button"
@@ -170,7 +170,7 @@ function TombolSakelar({ id, aktif, onPilih }) {
 /** Tombol keterangan di setiap sel selama mode ubah. `tindakan` sudah dalam bahasa layar. */
 function TombolKeterangan({ ada, tindakan, peran, aktif, onPilih }) {
   const t = useTeks()
-  const isi = { tindakan, peran: t(peran) }
+  const isi = { tindakan, peran: t(namaPeran(peran)) }
   return (
     <button
       type="button"
@@ -206,7 +206,7 @@ function UbahSakelar({ id, onSelesai, onBatal }) {
     setGalat('')
     try {
       await ubahWewenang({ id, boleh: !menutup, alasan: alasan.trim() })
-      const isi = { tindakan: t(s.tindakan), peran: t(s.peran) }
+      const isi = { tindakan: t(s.tindakan), peran: t(namaPeran(s.peran)) }
       onSelesai(
         menutup
           ? { teks: t('"{tindakan}" untuk {peran} sekarang ditutup. Server menolaknya mulai permintaan berikutnya.', isi), tutup: true }
@@ -223,7 +223,7 @@ function UbahSakelar({ id, onSelesai, onBatal }) {
       <div>
         <p className="text-[14px] font-bold text-ink">
           {menutup ? t('Tutup sementara: {tindakan}', { tindakan: t(s.tindakan) }) : t('Buka lagi: {tindakan}', { tindakan: t(s.tindakan) })}
-          <span className="ml-2 text-[12.5px] font-semibold text-ink-2">{t(s.peran)}</span>
+          <span className="ml-2 text-[12.5px] font-semibold text-ink-2">{t(namaPeran(s.peran))}</span>
         </p>
         <p className="mt-1 max-w-2xl text-[13.5px] leading-relaxed text-ink-2">
           {menutup
@@ -340,7 +340,7 @@ export default function Wewenang() {
                   <Ikon size={18} />
                 </span>
                 <p className={'text-[15px] font-extrabold ' + (anda ? '' : 'text-ink')}>
-                  {t(p)}
+                  {t(namaPeran(p))}
                   {anda ? (
                     <span className="ml-2 text-[11px] font-bold uppercase tracking-[.1em] text-[var(--accent)]">{t('Anda')}</span>
                   ) : null}
@@ -392,7 +392,7 @@ export default function Wewenang() {
                 <th className="px-5 py-3 sm:px-6">{t('Tindakan')}</th>
                 {PERAN.map((p, i) => (
                   <th key={p} className={'px-3 py-3 ' + (i === SUPER ? 'bg-brand-soft text-brand-ink' : '')}>
-                    {t(p)}
+                    {t(namaPeran(p))}
                   </th>
                 ))}
               </tr>
