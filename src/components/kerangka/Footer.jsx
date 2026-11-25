@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { useTeks } from '../../lib/bahasa'
 import { KONTAK_UMN } from '../../lib/layanan'
-import { IconLogo, IconMail, IconPhone } from '../Icons'
+import { IconMail, IconPhone } from '../Icons'
+import LogoPdp from './LogoPdp'
 import LogoVibe from './LogoVibe'
 
 const KONTAK = [
@@ -28,7 +29,7 @@ export default function Footer({ pintasan = [], kelasIsi = 'max-w-shell px-5 sm:
   const t = useTeks()
   return (
     <footer className="mt-12 bg-brand text-white print:hidden">
-      <div className={'mx-auto grid gap-x-7 gap-y-7 py-7 lg:grid-cols-2 xl:grid-cols-[auto_1fr_auto_auto] ' + kelasIsi}>
+      <div className={'mx-auto grid gap-x-7 gap-y-7 py-9 lg:grid-cols-2 xl:grid-cols-[auto_1fr_auto_auto] ' + kelasIsi}>
         {pintasan.length ? (
           <section className="lg:order-1">
             <h2 className="text-[13px] font-bold">{t('Pintasan')}</h2>
@@ -68,16 +69,30 @@ export default function Footer({ pintasan = [], kelasIsi = 'max-w-shell px-5 sm:
           </ul>
         </section>
 
-        <section className="lg:order-2 lg:pt-2 xl:order-4">
-          <div className="flex items-center gap-3">
-            <LogoVibe className="h-8 w-auto shrink-0" />
-            <span aria-hidden="true" className="h-7 w-px shrink-0 bg-white/30" />
-            <IconLogo size={32} />
+        {/* Deretan logo UMN, VIBE, dan PDP di alas putih, juga di mode gelap, karena logo UMN dan PDP berwarna gelap. */}
+        {/* xl:mr-8: di layar lebar kolom ini paling kanan; diberi jarak supaya kapsulnya tidak menempel ke tepi kanan. */}
+        {/* w-fit: selebar kapsulnya, supaya keterangan di bawahnya bisa ditengahkan tepat di bawah kapsul. */}
+        <section className="w-fit lg:order-2 lg:pt-2 xl:order-4 xl:mr-8">
+          <div className="flex w-fit items-center gap-3 rounded-full bg-white px-5 py-2 shadow-card">
+            <img
+              src="/logo-umn.png"
+              width={114}
+              height={192}
+              alt="Universitas Multimedia Nusantara"
+              draggable={false}
+              className="h-9 w-auto shrink-0"
+            />
+            <span aria-hidden="true" className="h-7 w-px shrink-0 bg-[#d5d9e3]" />
+            <span className="flex shrink-0 items-center gap-1">
+              <LogoVibe hiasan terang="tetap" className="h-[22px] w-auto shrink-0" />
+              <span className="teks-vibe teks-vibe-putih text-[14px] font-extrabold tracking-tight text-[#0f766e]">
+                VIBE
+              </span>
+            </span>
+            <span aria-hidden="true" className="h-7 w-px shrink-0 bg-[#d5d9e3]" />
+            <LogoPdp className="h-9 w-auto shrink-0 text-[#082a52]" />
           </div>
-          <p className="teks-vibe mt-2 w-fit text-[18px] font-extrabold tracking-tight text-[var(--accent)]">
-            VIBE
-          </p>
-          <p className="mt-1 max-w-[220px] text-[12.5px] leading-snug text-white/100">
+          <p className="mt-3 text-center text-[12.5px] leading-snug text-white/100">
             {t('Biro Kemahasiswaan & Humaniora')}
             <br />
             Universitas Multimedia Nusantara
@@ -85,7 +100,7 @@ export default function Footer({ pintasan = [], kelasIsi = 'max-w-shell px-5 sm:
         </section>
       </div>
 
-      <div className="border-t border-white/15 py-3 text-center text-[13px] text-white/100 max-sm:pb-[25px]">
+      <div className="border-t border-white/15 py-4 text-center text-[13px] text-white/100 max-sm:pb-[25px]">
       © Universitas Multimedia Nusantara. Design by Rayhandi Zulmi
       </div>
     </footer>

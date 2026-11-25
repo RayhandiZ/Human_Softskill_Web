@@ -825,11 +825,16 @@ body {
 /* Tulisan bergradasi (background-clip: text) menggambar text-shadow di atas gradasinya sendiri, jadi judul VIBE
    memakai drop-shadow yang digambar di bawah hurufnya. Logo pdp di HP (SVG) juga. */
 /* Logo VIBE di permukaan terang: pita paling mudanya hampir sewarna putih, jadi digelapkan sedikit. */
-.logo-vibe-terang {
+.logo-vibe-terang,
+.logo-vibe-putih {
   filter: brightness(0.72) saturate(1.4);
 }
 .dark .logo-vibe-terang {
   filter: none;
+}
+/* Deretan logo footer selalu beralas putih, juga di mode gelap, jadi logo dan tulisan VIBE-nya tetap versi gelap. */
+.teks-vibe.teks-vibe-putih {
+  --gradasi-teks: var(--gradasi-toska-tua);
 }
 
 .teks-foto .teks-vibe,
