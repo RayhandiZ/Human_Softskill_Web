@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { IconX } from '../Icons'
-import LogoPdp from './LogoPdp'
+import LogoVibe from './LogoVibe'
 import { useTeks } from '../../lib/bahasa'
 
 export default function Laci({ buka, onTutup, label = 'Menu navigasi', nada = 'terang', children }) {
@@ -79,9 +79,8 @@ export default function Laci({ buka, onTutup, label = 'Menu navigasi', nada = 't
             (gelap ? 'border-b border-white/10' : 'bg-brand')
           }
         >
-          <span className="flex items-center gap-2.5">
-            <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-white" />
-            <span aria-hidden="true" className="h-6 w-px shrink-0 bg-white/30" />
+          <span className="flex items-center gap-2">
+            <LogoVibe hiasan className="h-6 w-auto shrink-0" />
             <span className="teks-vibe text-[14px] font-extrabold tracking-tight text-[var(--accent)]">
               VIBE
             </span>

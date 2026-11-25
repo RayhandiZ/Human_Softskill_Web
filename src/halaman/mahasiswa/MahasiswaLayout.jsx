@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import Footer from '../../components/kerangka/Footer'
 import { RemahKerja } from '../../components/kerangka/KerangkaKerja'
 import Laci from '../../components/kerangka/Laci'
-import LogoPdp from '../../components/kerangka/LogoPdp'
+import LogoVibe from '../../components/kerangka/LogoVibe'
 import MenuAkun from '../../components/kerangka/MenuAkun'
 import MenuAksesibilitas, { PemanduBaca, useAkarAksesibilitas } from '../../components/kerangka/MenuAksesibilitas'
 import MenuSamping from '../../components/kerangka/MenuSamping'
@@ -77,9 +77,8 @@ export default function MahasiswaLayout({ children }) {
           tengah bilah atas (16px + 56px / 2). */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] lg:block print:hidden">
         <div className="flex h-full flex-col border-r border-line bg-surface px-4 pb-5 pt-[30px]">
-          <Link href="/mahasiswa" className="mb-7 flex items-center gap-2.5 px-2.5">
-            <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
-            <span aria-hidden="true" className="h-6 w-px shrink-0 bg-line" />
+          <Link href="/mahasiswa" className="mb-7 flex items-center gap-2 px-2.5">
+            <LogoVibe hiasan terang className="h-7 w-auto shrink-0" />
             <span className="teks-vibe teks-vibe-terang whitespace-nowrap text-[20px] font-extrabold tracking-tight text-[var(--accent-ink)]">
               VIBE
             </span>
@@ -111,9 +110,8 @@ export default function MahasiswaLayout({ children }) {
                 <IconMenu size={23} />
               </button>
 
-              <Link href="/mahasiswa" className="flex shrink-0 items-center gap-2.5 lg:hidden">
-                <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
-                <span aria-hidden="true" className="hidden h-6 w-px shrink-0 bg-line sm:block" />
+              <Link href="/mahasiswa" className="flex shrink-0 items-center gap-2 lg:hidden">
+                <LogoVibe terang className="h-6 w-auto shrink-0" />
                 <span className="teks-vibe teks-vibe-terang hidden text-[14px] font-extrabold tracking-tight text-[var(--accent-ink)] sm:block">
                   VIBE
                 </span>

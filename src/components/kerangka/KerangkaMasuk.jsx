@@ -1,4 +1,4 @@
-import LogoPdp from './LogoPdp'
+import LogoVibe from './LogoVibe'
 import PanjiPdp from './PanjiPdp'
 import TombolBahasa from './TombolBahasa'
 import { useTeks } from '../../lib/bahasa'
@@ -86,7 +86,7 @@ export default function KerangkaMasuk({ children }) {
       {/* kolom-masuk: pudar ganti bahasa dipasang di isi kartu, bukan di <main>; lihat index.css › ganti-bahasa. */}
       <main className="kolom-masuk relative flex flex-col px-5 pb-12 pt-6 sm:px-10 lg:pt-12">
         {/* Bawaan halaman ini Inggris, panel tetap Indonesia; bahasa yang dipilih di sini diingat dan ikut
-            dipakai di panel. Di layar sempit sejajar dengan logo PDP. Blur dan penggelapan di belakangnya
+            dipakai di panel. Di layar sempit sejajar dengan logo VIBE. Blur dan penggelapan di belakangnya
             dipasang di kaca lintasan pemilih sendiri (index.css › .kolom-masuk .tombol-bahasa), supaya ikut
             menggembung saat lensa terangkat. Lihat README.md › Hidrasi. */}
         <div className="absolute right-5 top-6 z-10 sm:right-10">
@@ -96,8 +96,8 @@ export default function KerangkaMasuk({ children }) {
         {/* Di layar sempit kolom ini menempel ke atas; di layar lebar ia di tengah. animate-masuk, bukan
             animate-rise: fill both mematikan backdrop-filter kartu kaca di dalamnya (lihat index.css). */}
         <div className="mx-auto w-full max-w-[440px] animate-masuk lg:my-auto">
-          {/* Di layar lebar logo PDP ada di pita panel kiri. */}
-          <LogoPdp keterangan={false} className="logo-foto block h-7 w-auto text-ink lg:hidden" />
+          {/* Di layar lebar logo PDP ada di panji panel kiri. */}
+          <LogoVibe className="logo-foto block h-7 w-auto lg:hidden" />
           <JudulAplikasi className="mb-8 mt-20 lg:hidden" />
 
           {children}

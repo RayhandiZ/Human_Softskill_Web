@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { useTeks } from '../../lib/bahasa'
 import { KONTAK_UMN } from '../../lib/layanan'
 import { IconLogo, IconMail, IconPhone } from '../Icons'
-import LogoPdp from './LogoPdp'
+import LogoVibe from './LogoVibe'
 
 const KONTAK = [
   { icon: IconPhone, teks: KONTAK_UMN.telepon.tampil, href: KONTAK_UMN.telepon.tautan },
@@ -70,7 +70,7 @@ export default function Footer({ pintasan = [], kelasIsi = 'max-w-shell px-5 sm:
 
         <section className="lg:order-2 lg:pt-2 xl:order-4">
           <div className="flex items-center gap-3">
-            <LogoPdp keterangan={false} className="h-8 w-auto shrink-0 text-white" />
+            <LogoVibe className="h-8 w-auto shrink-0" />
             <span aria-hidden="true" className="h-7 w-px shrink-0 bg-white/30" />
             <IconLogo size={32} />
           </div>

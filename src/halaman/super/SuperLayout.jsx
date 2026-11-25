@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import KerangkaKerja, { RemahKerja } from '../../components/kerangka/KerangkaKerja'
 import Laci from '../../components/kerangka/Laci'
-import LogoPdp from '../../components/kerangka/LogoPdp'
+import LogoVibe from '../../components/kerangka/LogoVibe'
 import MenuAkun from '../../components/kerangka/MenuAkun'
 import MenuAksesibilitas from '../../components/kerangka/MenuAksesibilitas'
 import MenuSamping from '../../components/kerangka/MenuSamping'
@@ -103,7 +103,7 @@ export default function SuperLayout({ children }) {
             <IconMenu size={23} />
           </button>
           <Link href="/super" className="flex items-center gap-2.5 lg:hidden">
-            <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
+            <LogoVibe terang className="h-6 w-auto shrink-0" />
             <span className="hidden text-[14px] font-extrabold uppercase tracking-[.08em] text-[var(--accent-ink)] sm:block">Super Admin</span>
           </Link>
           <RemahKerja akar={{ ke: '/super', label: 'Pusat Kendali' }} lapis={lapisRemah(menu, jalur)} />

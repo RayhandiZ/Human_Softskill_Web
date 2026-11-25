@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { IconChevronRight } from '../Icons'
-import LogoPdp from './LogoPdp'
+import LogoVibe from './LogoVibe'
 import MenuSamping from './MenuSamping'
 import { PemanduBaca, useAkarAksesibilitas } from './MenuAksesibilitas'
 import { useTeks } from '../../lib/bahasa'
@@ -14,9 +14,8 @@ import { useJudulTab } from '../../lib/judulTab'
 /** Logo di menu samping. `gelap`: di atas permukaan navy Super Admin. */
 function MerekSamping({ beranda, gelap }) {
   return (
-    <Link href={beranda} className="flex items-center gap-2.5 px-2.5">
-      <LogoPdp keterangan={false} className={'h-7 w-auto shrink-0 ' + (gelap ? 'text-white' : 'text-ink')} />
-      <span aria-hidden="true" className={'h-6 w-px shrink-0 ' + (gelap ? 'bg-white/25' : 'bg-line')} />
+    <Link href={beranda} className="flex items-center gap-2 px-2.5">
+      <LogoVibe hiasan terang={!gelap} className="h-7 w-auto shrink-0" />
       <span
         className={
           'teks-vibe whitespace-nowrap text-[20px] font-extrabold tracking-tight ' +
@@ -29,12 +28,11 @@ function MerekSamping({ beranda, gelap }) {
   )
 }
 
-/** Logo di bilah atas layar kecil. `ringkas`: di HP hanya logo PDP, supaya tombol di bilah atas muat sampai lebar 360px. */
+/** Logo di bilah atas layar kecil. `ringkas`: di HP hanya simbol V, supaya tombol di bilah atas muat sampai lebar 360px. */
 export function MerekAtas({ beranda, ringkas = true }) {
   return (
-    <Link href={beranda} className="flex shrink-0 items-center gap-2.5 lg:hidden">
-      <LogoPdp keterangan={false} className="h-7 w-auto shrink-0 text-ink" />
-      <span aria-hidden="true" className={'h-6 w-px shrink-0 bg-line ' + (ringkas ? 'hidden sm:block' : '')} />
+    <Link href={beranda} className="flex shrink-0 items-center gap-2 lg:hidden">
+      <LogoVibe terang className="h-6 w-auto shrink-0" />
       <span
         className={
           'teks-vibe teks-vibe-terang text-[16px] font-extrabold tracking-tight text-[var(--accent-ink)] ' +
