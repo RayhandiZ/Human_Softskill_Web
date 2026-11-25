@@ -1,3 +1,3 @@
 'use client'
 
-export { default } from '../../../src/halaman/student/TranskripPage'
+export { default } from '../../../src/halaman/mahasiswa/Transkrip'

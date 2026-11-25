@@ -551,8 +551,6 @@ export const EN = {
   'Tidak ada mahasiswa yang cocok': 'No matching students',
   'Longgarkan filter, ubah kata kunci, atau setel kelengkapan nilai kembali ke “Semua”.':
     'Loosen the filters, change the keyword, or set score completeness back to “All”.',
-  'Kolom “Aspek dinilai” menghitung aspek yang sudah punya nilai, bukan aspek yang sudah dibuka. Aspek yang semesternya belum tiba tidak pernah ikut dihitung.':
-    'The “Aspects graded” column counts aspects that already have a score, not aspects that are open. Aspects whose semester has not arrived are never counted.',
   'Mahasiswa tidak ditemukan': 'Student not found',
   'Tidak ada data dengan tanda pengenal {id}.': 'There is no record with the identifier {id}.',
   'Kembali ke daftar': 'Back to the list',
@@ -1172,7 +1170,7 @@ export const EN = {
   'Lihat matriks peran & wewenang': 'View the roles & permissions matrix',
   'Siapa boleh melakukan apa di VIBE. Empat tindakan bisa Anda tutup sementara lalu buka lagi, dan lewat Ubah matriks setiap sel bisa diberi keterangan serta kebijakan tertulis bisa ditambahkan. Isi Ya/Tidak lainnya ditetapkan server, dan peran akun diatur lewat basis data.':
     'Who may do what in VIBE. You can temporarily close four actions and open them again, and with Edit matrix you can add a note to any cell and add written policies. The other Yes/No content is set by the server, and account roles are managed in the database.',
-  /* Matriks wewenang sejak rapat 24 Okt 2026 (super-admin/Wewenang.jsx). */
+  /* Matriks wewenang sejak rapat 24 Okt 2026 (super/PeranWewenang.jsx). */
   'Mengunggah nilai angkatan yang diampunya lewat Excel dan memantau hasilnya; perbaikan untuk angkatan yang sudah disahkan diajukan ke Super Admin.':
     'Uploads scores for the cohorts they teach through Excel and monitors the results; fixes for ratified cohorts go to the Super Admin for approval.',
   'Melihat capaiannya sendiri, mengajukan koreksi bila nilainya keliru, dan meminta akses cetak sertifikat.':
@@ -1196,7 +1194,7 @@ export const EN = {
   'sesudah akses cetaknya disetujui': 'after its print access is approved',
   'Mencabut akses cetak sertifikat': 'Revoke certificate print access',
   'langsung, wajib beralasan': 'directly, with a required reason',
-  // Pencabutan akses cetak dan catatan cetak (student/Sertifikat.jsx, admin/CetakSertifikat.jsx, Dashboard).
+  // Pencabutan akses cetak dan catatan cetak (mahasiswa/Sertifikat.jsx, admin/CetakSertifikat.jsx, mahasiswa/Beranda.jsx).
   Dicabut: 'Revoked',
   'Tombol cetak hanya aktif untuk sertifikat yang akses cetaknya sudah ditinjau Admin dan disetujui Super Admin. Akses itu bisa dicabut lagi, dan setiap pembukaan dialog cetak tercatat. Sertifikat dicetak atau disimpan sebagai PDF dari website ini; jangan kirim lewat surel.':
     'The print button is only active for certificates whose print access was reviewed by the admin and approved by the Super Admin. That access can be revoked again, and every time the print dialog opens is recorded. Certificates are printed or saved as PDF from this website; do not send them by email.',
@@ -1219,8 +1217,8 @@ export const EN = {
   'Memperbaiki nilai angkatan yang sudah disahkan atau selesai, atau aspek final':
     'Fix scores of ratified or finished cohorts, or final aspects',
   'Mengatur kelas dosen dan angkatan yang diampu': 'Set a lecturer’s class and the cohorts they teach',
-  // Angkatan yang diampu dosen dan perbaikan nilai lewat Super Admin (dosen/Unggah.jsx, dosen/Pantau.jsx,
-  // super-admin/Akses.jsx, PersetujuanAdmin, Log Aktivitas).
+  // Angkatan yang diampu dosen dan perbaikan nilai lewat Super Admin (dosen/UnggahNilai.jsx, dosen/Beranda.jsx,
+  // super/AksesPengguna.jsx, admin/Persetujuan.jsx, Log Aktivitas).
   'Perbaikan untuk angkatan yang sudah disahkan atau selesai diajukan ke Super Admin dulu.':
     'Fixes for cohorts that are ratified or finished go to the Super Admin first.',
   '{n} nilai diajukan ke Super Admin ({id}). Nilainya berubah setelah disetujui.':
@@ -1336,7 +1334,7 @@ export const EN = {
     'This account and its profile are permanently deleted from the database and cannot be restored. Accounts that still have scores, submissions, or an action history cannot be deleted; keep their access revoked instead.',
   'Akun mahasiswa ini dihapus permanen dari basis data beserta profil, nilai, status final aspek, pengajuan koreksi, permintaan sertifikat, dan pengumpulannya, dan tidak bisa dikembalikan. Log Aktivitas dan riwayat perubahan nilainya tetap tersimpan.':
     'This student account is permanently deleted from the database together with its profile, scores, aspect final statuses, correction requests, certificate requests, and submissions, and cannot be restored. The Activity Log and its score change history are kept.',
-  // Rincian HAPUS_AKUN akun mahasiswa di Log Aktivitas (LABEL_RINCIAN di admin/Log.jsx).
+  // Rincian HAPUS_AKUN akun mahasiswa di Log Aktivitas (LABEL_RINCIAN di admin/LogAktivitas.jsx).
   'Akun dosen ini dihapus permanen dari basis data beserta profil dan kelas yang diampunya, dan tidak bisa dikembalikan. Nilai yang pernah ia masukkan, usulan, unggahan, dan Log Aktivitasnya tetap tersimpan atas namanya.':
     'This lecturer account is permanently deleted from the database together with its profile and the classes it teaches, and cannot be restored. The scores they entered, their proposals, uploads, and Activity Log stay recorded under their name.',
   'ID akun': 'Account ID',
@@ -1384,7 +1382,7 @@ export const EN = {
   '{n} lainnya lewat persetujuan Super Admin': '{n} more through Super Admin approval',
   'Mengikuti aturan yang dijaga server saat ini.': 'Follows the rules the server currently enforces.',
   'Prinsip yang dipakai': 'Principles applied',
-  /* Sakelar wewenang: sel matriks yang bisa ditutup Super Admin (super-admin/Wewenang.jsx, src/lib/wewenang.js), jawaban
+  /* Sakelar wewenang: sel matriks yang bisa ditutup Super Admin (super/PeranWewenang.jsx, src/lib/wewenang.js), jawaban
      server saat tindakannya ditutup, tampilan di panel lain, dan catatannya di Log Aktivitas. */
   'Ditutup sementara': 'Temporarily closed',
   'ikut tertutup bersama "{tindakan}"': 'closed together with "{tindakan}"',
@@ -1438,7 +1436,7 @@ export const EN = {
   Dibuka: 'Open',
   'Kode sakelar': 'Switch code',
   'wewenang {peran}: {tindakan}': 'permission {peran}: {tindakan}',
-  /* Matriks yang bisa diedit: keterangan per sel dan kebijakan tertulis (super-admin/Wewenang.jsx, UbahMatriks.jsx,
+  /* Matriks yang bisa diedit: keterangan per sel dan kebijakan tertulis (super/PeranWewenang.jsx, super/bagian/UbahMatriks.jsx,
      ubahMatriks di src/server/wewenang.js), dan catatannya di Log Aktivitas. */
   'Ubah matriks': 'Edit matrix',
   'Selesai mengubah': 'Done editing',
@@ -1722,7 +1720,7 @@ export const EN = {
   'Batch dibatalkan': 'Batch rolled back',
   menjadi: 'to',
   /* Log Aktivitas yang mencatat semua tindakan (README.md › Log aktivitas): jenis tindakan baru (LABEL_LOG), sebutan
-     peran, cara masuk nilai, dan nama isian rincian (LABEL_PERAN, LABEL_CARA, LABEL_RINCIAN di admin/Log.jsx, semuanya
+     peran, cara masuk nilai, dan nama isian rincian (LABEL_PERAN, LABEL_CARA, LABEL_RINCIAN di admin/LogAktivitas.jsx, semuanya
      lewat t(label)), lalu tabel sebelum/sesudah dan keterangan batch di tab Perubahan nilai. */
   'Tolak usulan nilai dosen': 'Reject lecturer score proposal',
   'Minta akses cetak sertifikat': 'Request certificate print access',
@@ -1796,7 +1794,7 @@ export const EN = {
   'Panah atas/bawah untuk memilih, Enter untuk membuka, Esc untuk menutup.':
     'Use the up and down arrows to choose, Enter to open, Esc to close.',
 
-  /* ------------------------------- Overview ------------------------------- */
+  /* --------------------------- Beranda admin ---------------------------- */
   'Capaian mahasiswa periode ini. Pekerjaan yang menunggu Anda ada di lonceng di kanan atas.':
     'Student achievement this period. Work waiting for you is under the bell at the top right.',
   'Perlu dikerjakan': 'To do',
@@ -1937,8 +1935,8 @@ export const EN = {
   /* -------- satuan kartu angka -------- */
   'usulan': 'proposals',
 
-  /* -------- panel dosen sejak rapat 24 Okt 2026: Beranda memantau (dosen/Pantau.jsx), nilai masuk lewat
-     unggahan Excel (dosen/Unggah.jsx, galatnya dari src/lib/unggahDosen.js) -------- */
+  /* -------- panel dosen sejak rapat 24 Okt 2026: Beranda memantau (dosen/Beranda.jsx), nilai masuk lewat
+     unggahan Excel (dosen/UnggahNilai.jsx, galatnya dari src/lib/unggahDosen.js) -------- */
   'Unggah Nilai': 'Upload Scores',
   Unggah: 'Upload',
   'Unggah nilai': 'Upload scores',
@@ -2024,7 +2022,7 @@ export const EN = {
     'One row per student. Do not change the title row, the NIM column, or the column order.',
   'Nilai yang sudah tersimpan ikut terisi. Cukup ubah atau tambah yang perlu.': 'Scores already saved are filled in. Change or add only what you need.',
   'Simpan sebagai .xlsx, lalu unggah di halaman Unggah Nilai.': 'Save it as .xlsx, then upload it on the Upload Scores page.',
-  // Galat dan peringatan bacaRekap (src/lib/unggahDosen.js) dan bacaBerkas (dosen/Unggah.jsx).
+  // Galat dan peringatan bacaRekap (src/lib/unggahDosen.js) dan bacaBerkas (dosen/UnggahNilai.jsx).
   'Berkasnya kosong: tidak ada baris judul maupun nilai.': 'The file is empty: it has no title row and no scores.',
   'Kolom NIM tidak ditemukan di baris pertama. Pakai templat dan jangan ubah baris judulnya.':
     'No NIM column in the first row. Use the template and do not change its title row.',
@@ -2047,7 +2045,7 @@ export const EN = {
     '.xls files (old Excel) cannot be read yet. Open it in Excel, save it as .xlsx, then upload again.',
   'Pilih berkas .xlsx atau .csv.': 'Choose an .xlsx or .csv file.',
   'Berkas ini tidak terbaca sebagai Excel. Simpan ulang sebagai .xlsx lalu unggah lagi.': 'This file cannot be read as Excel. Save it again as .xlsx, then upload again.',
-  // Persetujuan Nilai Dosen (admin/Usulan.jsx) kini hanya untuk usulan lama.
+  // Persetujuan Nilai Dosen (admin/PersetujuanNilaiDosen.jsx) kini hanya untuk usulan lama.
   'Usulan nilai dosen dari sebelum dosen mengunggah langsung. Hanya Super Admin yang memutuskannya; Anda bisa melihat isinya.':
     'Lecturer score proposals from before lecturers uploaded directly. Only the Super Admin decides them; you can view what they contain.',
   'Usulan nilai dosen dari sebelum dosen mengunggah langsung. Nilainya tertahan di sini sampai Anda putuskan, dan sistem sudah memeriksa tiap barisnya lebih dulu.':
@@ -2079,7 +2077,7 @@ export const EN = {
   'Minta akses cetak lagi': 'Request print access again',
   '{oleh}, {tanggal}': '{oleh}, {tanggal}',
   'Sedang ditinjau': 'Under review',
-  // Ubin Sertifikat di Dashboard mahasiswa.
+  // Ubin Sertifikat di Beranda mahasiswa.
   'Bisa diminta': 'Can be requested',
   'Minta akses cetak di halaman ini': 'Request print access on this page',
   'Menunggu persetujuan Super Admin': 'Waiting for Super Admin approval',
@@ -2092,7 +2090,7 @@ export const EN = {
   'Nilai baru {nilai} sudah masuk transkrip.': 'The new score {nilai} is now on your transcript.',
   'Admin sudah meneruskannya. Menunggu keputusan Super Admin.':
     'The admin has forwarded it. Waiting for the Super Admin to decide.',
-  // Keputusan koreksi (admin/DaftarKoreksi.jsx).
+  // Keputusan koreksi (admin/bagian/DaftarKoreksi.jsx).
   'Nilai sekarang': 'Current score',
   'Nilai usulan': 'Proposed score',
   'Catatan (wajib bila menolak)': 'Note (required when rejecting)',
@@ -2148,7 +2146,7 @@ export const EN = {
   'Diteruskan sebelum alasan rekomendasi diwajibkan, jadi tidak ada alasan tertulis.':
     'Forwarded before a recommendation reason was required, so there is no written reason.',
   'Lihat nilai tiap aspek': 'View the score of each aspect',
-  // Mode tinjau di detail mahasiswa (?tinjau=sertifikat, StudentDetail.jsx).
+  // Mode tinjau di detail mahasiswa (?tinjau=sertifikat, admin/DetailMahasiswa.jsx).
   'Anda sedang meninjau permintaan akses cetak sertifikat {nama}. Periksa nilai tiap aspek di transkrip di bawah, lalu putuskan di bagian Kelayakan sertifikat.':
     'You are reviewing the certificate print access request of {nama}. Check the score of each aspect in the transcript below, then decide in the Certificate eligibility section.',
   'Ke keputusan': 'Go to the decision',
@@ -2213,7 +2211,7 @@ export const EN = {
   'Hentikan animasi': 'Stop animations',
   'Kursor besar': 'Big cursor',
 
-  /* -------- data master dan izinnya (admin/DataMaster.jsx, super-admin/Akses.jsx, Log, Wewenang) -------- */
+  /* -------- data master dan izinnya (admin/DataMaster.jsx, super/AksesPengguna.jsx, Log, Wewenang) -------- */
   'Admin ini bisa melihat angkatan, fakultas, program studi, dan data mahasiswa di halaman Data Master untuk mencocokkan ulang, tanpa bisa mengubahnya. Menambah dan mengubah data master tetap hanya oleh Super Admin.':
     'This admin can view cohorts, faculties, study programmes, and student data on the Master Data page to cross-check them, without changing them. Only the Super Admin adds and changes master data.',
   'Admin ini tidak bisa lagi membuka halaman Data Master. Halaman lain yang menampilkan mahasiswa dan angkatan tetap terbaca seperti biasa.':
@@ -2325,7 +2323,7 @@ export const EN = {
   'Atur kelas mahasiswa': 'Place students in classes',
   '{n} mahasiswa dimasukkan ke Kelas {kelas}': '{n} students placed in Class {kelas}',
   '{n} mahasiswa dikeluarkan dari kelasnya': '{n} students removed from their class',
-  // Kelas yang diampu dosen (PilihKelas di super-admin/Akses.jsx, panel dosen, dan rincian log UBAH_KELAS_DOSEN).
+  // Kelas yang diampu dosen (PilihKelas di super/AksesPengguna.jsx, panel dosen, dan rincian log UBAH_KELAS_DOSEN).
   '{prodi} Kelas {nama}': '{prodi} Class {nama}',
   'Kelas yang diampu': 'Classes taught',
   'semua kelas': 'all classes',
@@ -2353,7 +2351,7 @@ export const EN = {
   'Input baru maupun perubahan.': 'New entries and changes alike.',
   'Mahasiswa dengan nilai tersimpan: {n}': 'Students with saved scores: {n}',
 
-  /* -------- aspek CPMK: tambah, struktur, arsip (admin/KelolaAspek.jsx, Log, Persetujuan) -------- */
+  /* -------- aspek CPMK: tambah, struktur, arsip (admin/bagian/KelolaAspek.jsx, Log, Persetujuan) -------- */
   '{n} menjadi belum lengkap': '{n} become incomplete',
   'Area {area}': 'Area {area}',
   'Arsipkan aspek': 'Archive aspect',
@@ -2381,7 +2379,7 @@ export const EN = {
   'Kelola aspek CPMK': 'Manage CPMK aspects',
   'Ubah struktur aspek': 'Change aspect structure',
 
-  /* -------- aspek CPMK per semester di Input & Import Nilai (admin/KelolaAspek.jsx › AspekSemester) -------- */
+  /* -------- aspek CPMK per semester di Input & Import Nilai (admin/bagian/KelolaAspek.jsx › AspekSemester) -------- */
   'Area': 'Area',
   'Aspek CPMK Semester {n}': 'CPMK aspects in Semester {n}',
   'Aspek yang dihapus dari semester ini': 'Aspects removed from this semester',
@@ -2389,10 +2387,10 @@ export const EN = {
   'Hapus = arsip: aspek tidak tampil dan tidak dihitung, tetapi komponen dan nilainya tetap tersimpan dan bisa dipulihkan. Kode aspek lain tidak berubah.': 'Delete = archive: the aspect is no longer shown or counted, but its components and scores stay saved and can be restored. Other aspect codes do not change.',
   'Tambah, edit, ubah, atau hapus aspek yang dinilai di semester ini. Perubahan Anda dikirim ke Super Admin dan berlaku setelah disetujui.': 'Add, edit, change, or delete the aspects assessed in this semester. Your changes are sent to the Super Admin and apply once approved.',
   'Tambah, edit, ubah, atau hapus aspek yang dinilai di semester ini. Perubahan langsung berlaku; angkatan yang sudah disahkan tidak ikut berubah.': 'Add, edit, change, or delete the aspects assessed in this semester. Changes apply right away; ratified cohorts are not affected.',
-  /* Ringkasan pilihan tanda status di Input Manual (TANDA_BARIS di admin/Nilai.jsx, lewat t(ringkas)). */
+  /* Ringkasan pilihan tanda status di Input Manual (TANDA_BARIS di admin/NilaiMahasiswa.jsx, lewat t(ringkas)). */
   'tahan walau sudah lengkap': 'hold even when complete',
   'nilai berhenti berubah': 'score stops changing',
-  /* Akses angkatan untuk admin biasa (super-admin/Akses.jsx, admin/Angkatan.jsx, Wewenang, Log Aktivitas). */
+  /* Akses angkatan untuk admin biasa (super/AksesPengguna.jsx, admin/Angkatan.jsx, Wewenang, Log Aktivitas). */
   'Akses angkatan': 'Cohort access',
   'angkatan Semester 1–3 saja': 'Semester 1–3 cohorts only',
   'Angkatan dibuka: {label}': 'Cohorts opened: {label}',
@@ -2528,7 +2526,7 @@ export const EN = {
   'Deskripsi (Inggris)': 'Description (English)',
   'Nama komponen (Inggris)': 'Component name (English)',
   'Nama dalam bahasa Inggris': 'Name in English',
-  // Sebutan isian yang sama di rincian Log Aktivitas (LABEL_RINCIAN di admin/Log.jsx).
+  // Sebutan isian yang sama di rincian Log Aktivitas (LABEL_RINCIAN di admin/LogAktivitas.jsx).
   'Nama (Inggris)': 'Name (English)',
 
   /* --------------------- nama fakultas dan program studi ------------------- */

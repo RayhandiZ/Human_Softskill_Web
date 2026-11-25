@@ -74,8 +74,8 @@ const ISI = {
        sama dengan daftar "Belum dinilai" di sana. */
     [/Requires Review/, 'kartu Requires Review sudah tidak ada di Ringkasan', false],
     /* Kartu "Halaman lain" dilepas: menu samping sudah memuat semua halaman. Kartu "Perlu dikerjakan" juga dilepas
-       (11 Nov 2026): isinya sama dengan lonceng di bilah atas, jadi Overview hanya menunjuk ke sana. */
-    [/id="judul-perlu"/, 'kartu Perlu dikerjakan tidak ada lagi di Overview', false, true],
+       (11 Nov 2026): isinya sama dengan lonceng di bilah atas, jadi Beranda admin hanya menunjuk ke sana. */
+    [/id="judul-perlu"/, 'kartu Perlu dikerjakan tidak ada lagi di Beranda admin', false, true],
     [/Pekerjaan yang menunggu Anda ada di lonceng di kanan atas/, 'keterangan halaman menunjuk ke lonceng'],
     [/Halaman lain/, 'tidak ada lagi kartu Halaman lain', false],
     [/panel-kerja/, 'memakai rupa panel kerja', true, true],
@@ -1247,7 +1247,7 @@ const RUTE = [
   const pk = await ujiPerkembangan()
   w.localStorage.setItem('sk5c.session', SESI.student)
   const cekPk = [
-    ['grafiknya ada di Overview', pk.ada],
+    ['grafiknya ada di Beranda admin', pk.ada],
     ['dropdown tertutup, bawaan "Semester 3"', pk.tertutupAwal],
     ['klik membuka panel berisi tiga pilihan, beranimasi masuk', pk.bukaKlik],
     ['tiap pilihan menyebut jumlah mahasiswanya', pk.keteranganOpsi === '290 mahasiswa|219 mahasiswa|148 mahasiswa'],
@@ -1291,7 +1291,7 @@ const RUTE = [
   const rusakPk = cekPk.filter(([, ok]) => !ok)
   gagal += rusakPk.length
   console.log('')
-  console.log((rusakPk.length ? 'GAGAL  ' : 'OK     ') + 'Perkembangan per semester (Overview admin)')
+  console.log((rusakPk.length ? 'GAGAL  ' : 'OK     ') + 'Perkembangan per semester (Beranda admin)')
   for (const [ket, ok] of cekPk) console.log('       ' + (ok ? 'v ' : 'x ') + ket)
 
   const srBelum = await ujiSertifikat(null)

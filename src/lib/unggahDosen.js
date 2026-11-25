@@ -15,7 +15,7 @@ import { bacaAngka, skorKecocokan } from './ingest.js'
    tanpa judul, ditolak dengan pesan yang menyebut kolomnya, supaya nilai tidak hilang diam-diam karena judulnya diubah
    atau tempelannya bergeser.
 
-   Hanya fungsi murni; layarnya di src/halaman/dosen/Unggah.jsx dan Pantau.jsx, dan server memeriksa ulang semuanya.
+   Hanya fungsi murni; layarnya di src/halaman/dosen/UnggahNilai.jsx dan Beranda.jsx, dan server memeriksa ulang semuanya.
    -------------------------------------------------------------------------- */
 
 const normal = (s) =>

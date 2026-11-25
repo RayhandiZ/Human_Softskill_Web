@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { createPortal, flushSync } from 'react-dom'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import LembarSertifikat from '../student/LembarSertifikat'
+import LembarSertifikat from '../mahasiswa/bagian/LembarSertifikat'
 import {
   Card,
   CatatanKaki,
@@ -257,7 +257,7 @@ export default function CetakSertifikat() {
                       <td className="py-2 pl-3 pr-4 text-right sm:pr-5">
                         {giliranSaya ? (
                           /* Ke halaman detail mahasiswa dalam mode tinjau: nilai tiap aspek dan keputusannya di satu
-                             halaman (TinjauPermintaan di bawah, dipasang KartuSertifikat di StudentDetail.jsx). */
+                             halaman (TinjauPermintaan di bawah, dipasang KartuSertifikat di DetailMahasiswa.jsx). */
                           <Link
                             href={'/admin/mahasiswa/' + s.id + '?tinjau=sertifikat'}
                             aria-label={t('Tinjau permintaan akses cetak {nama}', { nama: s.name })}

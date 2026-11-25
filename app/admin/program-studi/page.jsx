@@ -1,3 +1,3 @@
 'use client'
 
-export { default } from '../../../src/halaman/admin/Programs'
+export { default } from '../../../src/halaman/admin/ProgramStudi'

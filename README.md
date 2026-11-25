@@ -122,16 +122,58 @@ halaman (peramban) → app/api/... → src/server/... → Prisma (src/server/db.
 - **Penulisan** lewat `src/lib/store.js`: kirim ke API, lalu data dimuat ulang. Semua aturan diperiksa ulang di server.
 
 ```
-app/              rute, tipis, hanya menunjuk halaman di src/halaman
-app/api/          pintu API, tipis, memanggil src/server
-src/halaman/      halaman: student/, dosen/, admin/, super-admin/, Login, LupaSandi, AturSandi, Profil
-src/components/   komponen bersama: Ui.jsx (pola halaman), KerangkaKerja, MenuSamping, PilihanTurun, charts/
-src/lib/          domain: config → curriculum → scoring → rules, plus store, data, auth, bahasa
-src/server/       hanya berjalan di server: sesi, wewenang, persetujuan, baca/tulis basis data
-prisma/           skema, migrasi, seed.js, seed-contoh.js, tanam-kurikulum.js
-scripts/          skrip uji; dataContoh.js hanya dipakai uji dan db:seed:contoh
-public/           kampus-umn.webp, latar halaman masuk
+app/                  alamat website (rute Next); tiap page.jsx hanya menunjuk berkas di src/halaman
+app/api/              pintu API, tipis, memanggil src/server
+src/halaman/          isi halaman, satu folder per panel, bernama sama dengan alamatnya
+  akun/               Masuk, LupaSandi, AturSandi, dan Profil (dipakai keempat panel)
+  mahasiswa/          /mahasiswa
+  dosen/              /dosen
+  admin/              /admin
+  super/              /super
+  <panel>/bagian/     potongan yang bukan halaman menu: lonceng, lembar cetak, formulir, editor
+src/components/       komponen bersama: Ui.jsx (pola halaman), Icons.jsx, PilihanTurun, FilterBar
+  kerangka/           bingkai di sekeliling isi: menu samping, bilah atas dan tombolnya, laci HP, footer,
+                      tombol bantuan, kerangka halaman masuk
+  charts/             grafik
+src/lib/              domain: config → curriculum → scoring → rules, plus store, data, auth, bahasa, teks
+src/server/           hanya berjalan di server: sesi, wewenang, persetujuan, baca/tulis basis data
+prisma/               skema, migrasi, seed.js, seed-contoh.js, tanam-kurikulum.js
+scripts/              skrip uji; dataContoh.js hanya dipakai uji dan db:seed:contoh
+public/               kampus-umn.webp, latar halaman masuk
 ```
+
+Nama berkas halaman sama dengan label menunya di website. Menu samping dan bilah atas tiap panel ada di layout-nya
+(`MahasiswaLayout`, `DosenLayout`, `AdminLayout`, `SuperLayout`).
+
+| Panel | Menu di website | Alamat | Berkas di `src/halaman/` |
+|---|---|---|---|
+| Semua | Masuk, Lupa kata sandi, Buat kata sandi baru | `/masuk`, `/lupa-sandi`, `/atur-sandi` | `akun/Masuk.jsx`, `akun/LupaSandi.jsx`, `akun/AturSandi.jsx` |
+| | Profil | `/<panel>/profil` | `akun/Profil.jsx` |
+| Mahasiswa | Beranda | `/mahasiswa` | `mahasiswa/Beranda.jsx` |
+| | Transkrip | `/mahasiswa/transkrip` | `mahasiswa/Transkrip.jsx`, isinya `mahasiswa/bagian/IsiTranskrip.jsx` |
+| | Peta Perjalanan | `/mahasiswa/peta` | `mahasiswa/PetaPerjalanan.jsx` |
+| | Riwayat | `/mahasiswa/riwayat` | `mahasiswa/Riwayat.jsx` |
+| | Sertifikat | `/mahasiswa/sertifikat` | `mahasiswa/Sertifikat.jsx` |
+| Dosen | Beranda | `/dosen` | `dosen/Beranda.jsx` |
+| | Unggah Nilai | `/dosen/nilai` | `dosen/UnggahNilai.jsx` |
+| Admin | Beranda | `/admin` | `admin/Beranda.jsx` |
+| | Data Mahasiswa | `/admin/mahasiswa` | `admin/DataMahasiswa.jsx`; satu mahasiswa: `admin/DetailMahasiswa.jsx` |
+| | Nilai Mahasiswa (Super Admin: Input & Import Nilai) | `/admin/nilai` | `admin/NilaiMahasiswa.jsx` |
+| | Persetujuan Nilai Dosen | `/admin/usulan` | `admin/PersetujuanNilaiDosen.jsx` |
+| | Permintaan Saya (Super Admin: Persetujuan Admin) | `/admin/persetujuan` | `admin/Persetujuan.jsx` |
+| | Cetak Sertifikat | `/admin/sertifikat` | `admin/CetakSertifikat.jsx` |
+| | Angkatan | `/admin/angkatan` | `admin/Angkatan.jsx` |
+| | Kurikulum CPMK | `/admin/kurikulum` | `admin/KurikulumCPMK.jsx` |
+| | Program Studi | `/admin/program-studi` | `admin/ProgramStudi.jsx` |
+| | Data Master | `/admin/data-master` | `admin/DataMaster.jsx` |
+| | Log Aktivitas | `/admin/log` | `admin/LogAktivitas.jsx` |
+| Super Admin | Pusat Kendali | `/super` | `super/PusatKendali.jsx` |
+| | Persetujuan | `/super/persetujuan` | `admin/Persetujuan.jsx` |
+| | Penilaian & Bobot | `/super/penilaian` | `super/PenilaianBobot.jsx` |
+| | Akses Pengguna | `/super/akses` | `super/AksesPengguna.jsx` |
+| | Log Aktivitas | `/super/log` | `admin/LogAktivitas.jsx` |
+| | Peran & Wewenang | `/super/wewenang` | `super/PeranWewenang.jsx` |
+| | Aturan Sistem | `/super/aturan` | `super/AturanSistem.jsx` |
 
 Ketergantungan satu arah: `curriculum → scoring → rules → UI`.
 
@@ -145,9 +187,11 @@ Ketergantungan satu arah: `curriculum → scoring → rules → UI`.
 | Persetujuan Super Admin | `src/server/persetujuan.js` |
 | Sakelar dan matriks wewenang | `src/lib/wewenang.js`, `src/server/wewenang.js` |
 | Log aktivitas | `src/server/log.js`, `src/lib/labelLog.js` |
+| Menu samping, bilah atas, laci HP, footer, tombol bantuan | `src/components/kerangka/` |
 
-Menambah halaman: buat rutenya di `app/` **dan** daftarkan di `scripts/smoke.jsx`, karena uji merender komponen tanpa server
-Next. Tautan yang perlu tahu dirinya sedang aktif memakai `TautanNav` dari `src/lib/nav.jsx`.
+Menambah halaman: buat rutenya di `app/`, isinya di `src/halaman/<panel>/` dengan nama seperti label menunya, **dan**
+daftarkan di `scripts/smoke.jsx`, karena uji merender komponen tanpa server Next. Tautan yang perlu tahu dirinya sedang
+aktif memakai `TautanNav` dari `src/lib/nav.jsx`.
 
 ## Aturan penilaian
 
@@ -304,7 +348,7 @@ email. Email yang tidak terdaftar dan kata sandi yang salah dijawab dengan pesan
 #### Lupa kata sandi
 
 Untuk akun mahasiswa dan dosen yang aktif; akun admin dan Super Admin tidak dikirimi. Kode: `src/server/lupaSandi.js`,
-`src/server/email.js`, `src/halaman/LupaSandi.jsx`, `src/halaman/AturSandi.jsx`.
+`src/server/email.js`, `src/halaman/akun/LupaSandi.jsx`, `src/halaman/akun/AturSandi.jsx`.
 
 1. `/lupa-sandi`: pengguna mengisi email, lalu menerima tautan `/atur-sandi?token=...` yang berlaku 30 menit dan sekali pakai,
    dalam bahasa yang sedang dipilih.
@@ -456,7 +500,7 @@ Nilai terkunci bila angkatannya `TERKUNCI` atau aspeknya ditandai final secara m
 
 ### Mengelola aspek CPMK
 
-Aspek bisa ditambah, diubah strukturnya, diarsipkan, dan dipulihkan (`src/halaman/admin/KelolaAspek.jsx`) dari Input & Import
+Aspek bisa ditambah, diubah strukturnya, diarsipkan, dan dipulihkan (`src/halaman/admin/bagian/KelolaAspek.jsx`) dari Input & Import
 Nilai, Penilaian & Bobot, dan Kurikulum CPMK.
 
 - **ID aspek tidak pernah berubah** dan tidak dipakai ulang. Yang bisa diubah: kode tampilan, semester, dan cluster.
@@ -514,7 +558,7 @@ server. Satu-satunya pemanggil API adalah `kunciAngkatan()` di `src/lib/store.js
 
 ### Panel kerja
 
-Kerangka bersama panel dosen, admin, dan Super Admin (`src/components/KerangkaKerja.jsx`). Kerangka ini hanya mengatur
+Kerangka bersama panel dosen, admin, dan Super Admin (`src/components/kerangka/KerangkaKerja.jsx`). Kerangka ini hanya mengatur
 tampilan; menu dan hak akses tetap ditentukan `DosenLayout`, `AdminLayout`, dan `SuperLayout`.
 
 - Warna tetap navy dan toska; jangan ditimpa di `.panel-kerja`.
@@ -545,9 +589,9 @@ Penggunanya dosen yang datang sesekali, banyak yang berusia 40 tahun ke atas. Ke
 lewat menu aksesibilitas. Dosen mengunggah rekap Excel kelasnya, dan nilainya langsung tersimpan tanpa persetujuan (tercatat
 di log, dan Super Admin bisa membatalkan satu unggahan).
 
-- **Beranda** (`Pantau.jsx`) hanya memantau: kelengkapan nilai, tiga angka ringkas, kelengkapan per tugas, dan daftar
+- **Beranda** (`dosen/Beranda.jsx`) hanya memantau: kelengkapan nilai, tiga angka ringkas, kelengkapan per tugas, dan daftar
   mahasiswa. Angkanya dari `ringkasKelas()` di `src/lib/unggahDosen.js`.
-- **Unggah Nilai** (`Unggah.jsx`), empat langkah:
+- **Unggah Nilai** (`dosen/UnggahNilai.jsx`), empat langkah:
   1. Unduh templat .xlsx (nilai tersimpan ikut terisi, NIM ditulis sebagai teks).
   2. Unggah .xlsx atau .csv, paling besar 5 MB.
   3. Periksa (`bacaRekap()`): berkas ditolak seluruhnya bila ada kolom tak dikenal, NIM yang tidak ada di kelas atau ganda,
@@ -604,7 +648,7 @@ berkaca; kartu, tabel, formulir, dan tombol utama tidak. Panel mahasiswa, admin,
 
 #### Lonceng
 
-`LoncengKemahasiswaan.jsx` berisi dua hal:
+`admin/bagian/LoncengAdmin.jsx` berisi dua hal:
 
 - **Perlu dikerjakan:** pekerjaan yang menunggu akun ini, dihitung dari data yang sudah dimuat. Inilah satu-satunya tempatnya.
 - **Pembaruan**, hanya untuk admin biasa: tindakan Super Admin yang berkaitan dengan admin itu (akunnya dan permintaannya),
@@ -660,7 +704,7 @@ Semua angkanya dihitung dari data yang termuat; tidak ada delta atau tren tanpa 
 
 #### Akses Pengguna
 
-`src/halaman/super-admin/Akses.jsx` dan `src/server/akses.js`, tiga tab: Dosen, Admin, Mahasiswa. Semua tindakan
+`src/halaman/super/AksesPengguna.jsx` dan `src/server/akses.js`, tiga tab: Dosen, Admin, Mahasiswa. Semua tindakan
 beralasan minimal 10 karakter dan tercatat.
 
 - **Cabut dan pulihkan akses** (`POST /api/akses/ubah`, `UBAH_AKSES`): akun nonaktif ditolak di setiap permintaan, jadi sesinya
@@ -794,7 +838,7 @@ diterjemahkan.
 
 ### Pemilih bahasa
 
-`src/components/TombolBahasa.jsx` membungkus `GlassSegmented` dari `@zakisheriff/liquid-glass` (MIT).
+`src/components/kerangka/TombolBahasa.jsx` membungkus `GlassSegmented` dari `@zakisheriff/liquid-glass` (MIT).
 
 - Lensa yang membesar saat ditahan adalah bagian yang disengaja; jangan dimatikan.
 - Pustaka menulis kendalinya sebagai tab. `TombolBahasa` menggantinya menjadi tombol `aria-pressed` lewat `MutationObserver`.
@@ -848,7 +892,7 @@ diterjemahkan.
 
 ### Menu aksesibilitas
 
-Ada di keempat panel (`src/components/MenuAksesibilitas.jsx`), dengan setelan di `src/lib/aksesibilitas.js` (kunci
+Ada di keempat panel (`src/components/kerangka/MenuAksesibilitas.jsx`), dengan setelan di `src/lib/aksesibilitas.js` (kunci
 `sk5c.aksesibilitas`), berlaku untuk semua panel di peramban itu.
 
 - **Konten:** ukuran tulisan 90 sampai 150% (`zoom` pada `.isi-zoom`), sorot judul dan tautan, huruf ramah disleksia (Lexend),
@@ -861,7 +905,7 @@ Ada di keempat panel (`src/components/MenuAksesibilitas.jsx`), dengan setelan di
 
 ### Cetak
 
-- Transkrip mencetak `LembarCetak.jsx`, lembar resmi yang hanya ada di kertas. Tampilan layar, grafik, dan tombol tidak ikut.
+- Transkrip mencetak `LembarTranskrip.jsx`, lembar resmi yang hanya ada di kertas. Tampilan layar, grafik, dan tombol tidak ikut.
 - Tabel lebar diberi `print:overflow-visible print:min-w-0`, dan latar belang memakai `print-color-adjust: exact`.
 - Alamat kampus di kaki lembar adalah `div` ber-`fixed`, bukan `<footer>`, karena aturan cetak menyembunyikan semua `<footer>`.
 - Sertifikat dicetak A4 lanskap (`LembarSertifikat.jsx`). Lembarnya baru dipasang sesudah `POST /api/sertifikat/cetak`

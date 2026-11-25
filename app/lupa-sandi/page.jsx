@@ -1,3 +1,3 @@
 'use client'
 
-export { default } from '../../src/halaman/LupaSandi'
+export { default } from '../../src/halaman/akun/LupaSandi'

@@ -38,16 +38,9 @@ const TULIS = process.argv.includes('--tulis')
 const BERKAS_KAMUS = 'src/lib/teks.js'
 
 const BERKAS = [
-  ...readdirSync('src/halaman/student').map((f) => join('src/halaman/student', f)),
-  ...readdirSync('src/halaman/dosen').map((f) => join('src/halaman/dosen', f)),
-  ...readdirSync('src/halaman/admin').map((f) => join('src/halaman/admin', f)),
-  ...readdirSync('src/halaman/super-admin').map((f) => join('src/halaman/super-admin', f)),
-  ...readdirSync('src/components').map((f) => join('src/components', f)),
-  ...readdirSync('src/components/charts').map((f) => join('src/components/charts', f)),
-  'src/halaman/Login.jsx',
-  'src/halaman/LupaSandi.jsx',
-  'src/halaman/AturSandi.jsx',
-  'src/halaman/Profil.jsx',
+  /* Seluruh isi folder, termasuk subfolder bagian/, kerangka/, dan charts/. */
+  ...semuaSumber('src/halaman'),
+  ...semuaSumber('src/components'),
   // Sasaran log yang diterjemahkan menurut polanya (labelSasaran), dipakai Log Aktivitas, Pusat Kendali, dan lonceng.
   'src/lib/labelLog.js',
 ].filter((f) => /\.jsx?$/.test(f))
@@ -118,11 +111,11 @@ const DARI_DATA = [
   'Perkembangan nilai per semester',
   'Nilai tersimpan per bulan', 'Nilai tersimpan', 'Bulan',
   'Banyaknya nilai tugas yang tersimpan tiap bulan (input baru maupun perubahan), menurut tanggal WIB. Ini bukan jumlah pengajuan koreksi.',
-  /* Seri grafik perkembangan nilai mahasiswa (larik SERI di student/Dashboard.jsx, diterjemahkan lewat t(r.label)). */
+  /* Seri grafik perkembangan nilai mahasiswa (larik SERI di mahasiswa/Beranda.jsx, diterjemahkan lewat t(r.label)). */
   'Nilai tiap semester', 'Rata-rata',
-  /* Ringkasan pilihan tanda status di Input Manual (TANDA_BARIS di admin/Nilai.jsx, lewat t(ringkas)). */
+  /* Ringkasan pilihan tanda status di Input Manual (TANDA_BARIS di admin/NilaiMahasiswa.jsx, lewat t(ringkas)). */
   'tahan walau sudah lengkap', 'nilai berhenti berubah',
-  /* Status aspek di transkrip (STATUS_LABEL, lewat t(st.teks)) dan tab Dashboard mahasiswa (lewat t(label)). */
+  /* Status aspek di transkrip (STATUS_LABEL, lewat t(st.teks)) dan tab Beranda mahasiswa (lewat t(label)). */
   'Belum dibuka',
   /* Nama lengkap sumber penilaian (SUMBER di curriculum.js), di "Arti kode" transkrip dan title pil sumber. */
   'Personal Development Program', 'Mata Kuliah Humaniora / Kebangsaan', 'Student Service & Engagement',
@@ -132,16 +125,16 @@ const DARI_DATA = [
   'Rata-rata', 'Ambil tertinggi', 'Pakai kolom terakhir', '— Abaikan kolom ini —',
   /* Jenis penilaian MK (LABEL_JENIS di Kurikulum dan EditorPenilaian). */
   'Tugas', 'Sikap', 'UTS', 'UAS',
-  /* Cara masuknya nilai satu batch (CARA_BATCH di admin/Nilai.jsx, lewat t(CARA_BATCH[b.cara])). */
+  /* Cara masuknya nilai satu batch (CARA_BATCH di admin/NilaiMahasiswa.jsx, lewat t(CARA_BATCH[b.cara])). */
   'input manual', 'unggahan dosen', 'pengajuan koreksi',
   /* Persetujuan dua lapis (src/lib/duaLapis.js): label status koreksi dan sertifikat, kalimat keadaan sertifikat
-     (KALIMAT_IZIN di student/Sertifikat.jsx), dan ubin Sertifikat di Dashboard (UBIN_SERTIFIKAT). */
+     (KALIMAT_IZIN di mahasiswa/Sertifikat.jsx), dan ubin Sertifikat di Beranda mahasiswa (UBIN_SERTIFIKAT). */
   'Menunggu Admin', 'Menunggu Super Admin', 'Disetujui', 'Ditolak', 'Siap dicetak',
   'Semua syarat terpenuhi. Minta akses cetak untuk mendapatkan sertifikatmu.',
   'Belum tersedia', 'Bisa diminta', 'Minta akses cetak di halaman ini',
   'Menunggu persetujuan Super Admin', 'Buka untuk mencetak',
   'Permintaan ditolak', 'Buka untuk melihat alasannya',
-  /* Akses cetak yang dicabut: label status dan ubin Dashboard. */
+  /* Akses cetak yang dicabut: label status dan ubin Beranda mahasiswa. */
   'Dicabut', 'Akses dicabut',
   /* Halaman sertifikat mahasiswa (JUDUL_IZIN, KALIMAT_IZIN, CATATAN_CETAK, label RincianAkses) dan ubinnya. */
   'Belum bisa diminta', 'Belum diminta', 'Siap dicetak', 'Permintaan akses cetak ditolak', 'Akses cetak dicabut',
@@ -158,7 +151,7 @@ const DARI_DATA = [
   /* Rekomendasi admin saat meneruskan akses cetak (LABEL_SARAN di duaLapis.js), kuncinya di Rincian Log Aktivitas, dan
      label tindakannya (LABEL_LOG). */
   'Disarankan', 'Tidak disarankan', 'Tidak tercatat', 'Rekomendasi', 'Teruskan akses cetak sertifikat',
-  /* Unggahan dosen yang diajukan ke Super Admin (SEBAB_PERSETUJUAN dan STATUS_PERMINTAAN di dosen/Unggah.jsx), dan
+  /* Unggahan dosen yang diajukan ke Super Admin (SEBAB_PERSETUJUAN dan STATUS_PERMINTAAN di dosen/UnggahNilai.jsx), dan
      label tindakannya di Persetujuan dan Log Aktivitas (LABEL_AKSI, LABEL_LOG). */
   'angkatan sudah disahkan', 'program sudah selesai', 'aspek sudah final',
   'Menunggu persetujuan Super Admin', 'Disetujui Super Admin', 'Ditolak Super Admin', 'Gagal dijalankan', 'Ditarik',
@@ -194,7 +187,7 @@ const DARI_DATA = [
   'Pemandu baca', 'Hentikan animasi', 'Kursor besar',
   /* Sakelar wewenang (SAKELAR di src/lib/wewenang.js): jawaban server saat tindakannya ditutup (lewat t(e.message)) dan
      dampaknya di Peran & Wewenang (lewat t(s.dampak)); pesan mode lokal ubahWewenang (store.js); lalu label log
-     UBAH_WEWENANG (LABEL_LOG, BENAR_SALAH dan LABEL_RINCIAN di admin/Log.jsx). */
+     UBAH_WEWENANG (LABEL_LOG, BENAR_SALAH dan LABEL_RINCIAN di admin/LogAktivitas.jsx). */
   'Pengajuan koreksi nilai sedang ditutup Super Admin.',
   'Mahasiswa tidak bisa mengirim pengajuan koreksi baru. Pengajuan yang sudah masuk tetap diproses admin dan Super Admin.',
   'Permintaan akses cetak sertifikat sedang ditutup Super Admin.',
@@ -211,7 +204,7 @@ const DARI_DATA = [
   'Mengubah matriks hanya tersedia saat terhubung ke basis data.',
   'Ubah keterangan wewenang', 'Tambah kebijakan wewenang', 'Ubah kebijakan wewenang', 'Arsipkan kebijakan wewenang',
   'Pulihkan kebijakan wewenang', 'Kode baris',
-  /* Rincian HAPUS_AKUN: id akun dan id data, lalu data mahasiswa yang ikut terhapus (LABEL_RINCIAN di admin/Log.jsx,
+  /* Rincian HAPUS_AKUN: id akun dan id data, lalu data mahasiswa yang ikut terhapus (LABEL_RINCIAN di admin/LogAktivitas.jsx,
      lewat labelKunci). */
   'ID akun', 'ID data dosen', 'ID data mahasiswa', 'Data yang ikut terhapus', 'Nilai', 'Status final aspek', 'Pengajuan koreksi',
   'Permintaan sertifikat', 'Pengumpulan',

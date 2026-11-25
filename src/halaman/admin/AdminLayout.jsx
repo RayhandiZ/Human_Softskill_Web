@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import CariCepat from '../../components/CariCepat'
-import KerangkaKerja, { MerekAtas, RemahKerja } from '../../components/KerangkaKerja'
-import Laci from '../../components/Laci'
-import MenuAkun from '../../components/MenuAkun'
-import MenuAksesibilitas from '../../components/MenuAksesibilitas'
-import MenuSamping from '../../components/MenuSamping'
-import TombolBahasa from '../../components/TombolBahasa'
-import TombolTema from '../../components/TombolTema'
+import CariCepat from '../../components/kerangka/CariCepat'
+import KerangkaKerja, { MerekAtas, RemahKerja } from '../../components/kerangka/KerangkaKerja'
+import Laci from '../../components/kerangka/Laci'
+import MenuAkun from '../../components/kerangka/MenuAkun'
+import MenuAksesibilitas from '../../components/kerangka/MenuAksesibilitas'
+import MenuSamping from '../../components/kerangka/MenuSamping'
+import TombolBahasa from '../../components/kerangka/TombolBahasa'
+import TombolTema from '../../components/kerangka/TombolTema'
 import { useAuth } from '../../lib/auth'
 import {
   IconBuilding,
@@ -31,8 +31,8 @@ import { giliranSaya } from '../../lib/duaLapis'
 import { useTeks } from '../../lib/bahasa'
 import { kunciSesi, useProfil } from '../../lib/profil'
 import { boleh } from '../../lib/wewenang'
-import LoncengKemahasiswaan from './LoncengKemahasiswaan'
-import StatusData from './StatusData'
+import LoncengAdmin from './bagian/LoncengAdmin'
+import StatusData from './bagian/StatusData'
 
 const KERJA = 'Kerja harian'
 const RUJUKAN = 'Rujukan & catatan'
@@ -149,7 +149,7 @@ export default function AdminLayout({ children }) {
         <>
           {/* portal-admin: portalnya di <body>, jadi token kaca panel ini dibawa lewat penanda sendiri. */}
           <CariCepat halaman={menu} mahasiswa={STUDENTS} keMahasiswa={(s) => '/admin/mahasiswa/' + s.id} lingkup="portal-admin" />
-          <LoncengKemahasiswaan nada="terang" />
+          <LoncengAdmin nada="terang" />
           {/* Di HP pemilih bahasa dan tombol tema pindah ke laci supaya bilah atas tidak melebar: sejak tombol
               aksesibilitas ditambahkan, lonceng yang muncul membuat bilah 382px di layar 360px. */}
           <span className="hidden sm:block">

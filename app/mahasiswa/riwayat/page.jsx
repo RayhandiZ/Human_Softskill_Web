@@ -1,3 +1,3 @@
 'use client'
 
-export { default } from '../../../src/halaman/student/Riwayat'
+export { default } from '../../../src/halaman/mahasiswa/Riwayat'

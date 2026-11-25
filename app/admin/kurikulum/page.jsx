@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Kurikulum from '../../../src/halaman/admin/Kurikulum'
-import KelolaAspek from '../../../src/halaman/admin/KelolaAspek'
+import KurikulumCPMK from '../../../src/halaman/admin/KurikulumCPMK'
+import KelolaAspek from '../../../src/halaman/admin/bagian/KelolaAspek'
 import { getAspekList } from '../../../src/lib/curriculum'
 
 /* Kurikulum CPMK: bobot (Kurikulum) dan, di bawahnya, pengelolaan aspek itu sendiri (KelolaAspek). Aspek terpilih
@@ -13,7 +13,7 @@ export default function HalamanKurikulum() {
   const [pasang, setPasang] = useState(0)
   return (
     <div className="space-y-6">
-      <Kurikulum key={pasang} aspekAwal={pilih ?? undefined} onPilihAspek={setPilih} />
+      <KurikulumCPMK key={pasang} aspekAwal={pilih ?? undefined} onPilihAspek={setPilih} />
       <KelolaAspek
         aspekId={pilih ?? getAspekList()[0]?.id}
         onPilih={(id) => {

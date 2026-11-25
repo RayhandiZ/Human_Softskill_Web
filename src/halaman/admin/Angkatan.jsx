@@ -28,8 +28,8 @@ import {
 import { pratinjauPenguncian } from '../../lib/rules'
 import { kunciAngkatan, menungguPersetujuan, useStore } from '../../lib/store'
 import { useTeks } from '../../lib/bahasa'
-import { daftarKode, tautanInput } from './LoncengKemahasiswaan'
-import { CatatanPersetujuan, PesanMenunggu, usePerluPersetujuan } from './PermintaanTerkirim'
+import { daftarKode, tautanInput } from './bagian/LoncengAdmin'
+import { CatatanPersetujuan, PesanMenunggu, usePerluPersetujuan } from './bagian/PermintaanTerkirim'
 
 const PAGE_SIZE = 12
 

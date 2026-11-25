@@ -1,12 +1,12 @@
 'use client'
 
 import { RequireRole } from '../../src/lib/auth'
-import StudentLayout from '../../src/halaman/student/StudentLayout'
+import MahasiswaLayout from '../../src/halaman/mahasiswa/MahasiswaLayout'
 
 export default function LayoutMahasiswa({ children }) {
   return (
     <RequireRole role="student">
-      <StudentLayout>{children}</StudentLayout>
+      <MahasiswaLayout>{children}</MahasiswaLayout>
     </RequireRole>
   )
 }

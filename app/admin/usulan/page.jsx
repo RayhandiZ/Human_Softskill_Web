@@ -1,3 +1,3 @@
 'use client'
 
-export { default } from '../../../src/halaman/admin/Usulan'
+export { default } from '../../../src/halaman/admin/PersetujuanNilaiDosen'

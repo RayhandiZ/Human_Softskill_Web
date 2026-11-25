@@ -1,4 +1,4 @@
-/* Sakelar wewenang: sel matriks Peran & Wewenang (src/halaman/super-admin/Wewenang.jsx) yang bisa ditutup Super Admin
+/* Sakelar wewenang: sel matriks Peran & Wewenang (src/halaman/super/PeranWewenang.jsx) yang bisa ditutup Super Admin
    untuk sementara, lalu dibuka lagi. Bawaannya terbuka. Yang ditutup tersimpan di tabel Konfigurasi, satu baris per
    sakelar (kunci 'WEWENANG.<id>' bernilai false), dan server menolak tindakannya (denganWewenang di
    src/server/wewenang.js). Layar menerima keadaannya lewat data master (app/layout.jsx) dan /api/data, lalu

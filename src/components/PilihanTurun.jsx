@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { IconCheck, IconChevronDown } from './Icons'
 
-/* Dropdown buatan sendiri (pola listbox, sama dengan PilihPeriode di super-admin/Kendali.jsx), pengganti <select> di
+/* Dropdown buatan sendiri (pola listbox, sama dengan PilihPeriode di super/PusatKendali.jsx), pengganti <select> di
    seluruh aplikasi sejak 24 Nov 2026 (Select di Ui.jsx memakainya). Mulai 20 Nov 2026 di halaman Nilai Mahasiswa.
 
    Kenapa bukan <select>: rupa dan gerak daftar <select> di index.css memakai appearance: base-select, yang hanya ada

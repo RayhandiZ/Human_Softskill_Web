@@ -30,42 +30,42 @@ import { aturJalur, rekamNavigasi } from './palsu-next-navigation'
 import { jalurMulus } from '../src/lib/kurva'
 import { SAKELAR, pasangWewenang } from '../src/lib/wewenang'
 
-import Login from '../src/halaman/Login'
-import LupaSandi from '../src/halaman/LupaSandi'
-import AturSandi from '../src/halaman/AturSandi'
-import Profil from '../src/halaman/Profil'
-import StudentLayout from '../src/halaman/student/StudentLayout'
-import Dashboard from '../src/halaman/student/Dashboard'
-import TranskripPage from '../src/halaman/student/TranskripPage'
-import Peta from '../src/halaman/student/Peta'
-import Riwayat from '../src/halaman/student/Riwayat'
-import Sertifikat from '../src/halaman/student/Sertifikat'
+import Masuk from '../src/halaman/akun/Masuk'
+import LupaSandi from '../src/halaman/akun/LupaSandi'
+import AturSandi from '../src/halaman/akun/AturSandi'
+import Profil from '../src/halaman/akun/Profil'
+import MahasiswaLayout from '../src/halaman/mahasiswa/MahasiswaLayout'
+import BerandaMahasiswa from '../src/halaman/mahasiswa/Beranda'
+import Transkrip from '../src/halaman/mahasiswa/Transkrip'
+import PetaPerjalanan from '../src/halaman/mahasiswa/PetaPerjalanan'
+import Riwayat from '../src/halaman/mahasiswa/Riwayat'
+import Sertifikat from '../src/halaman/mahasiswa/Sertifikat'
 import AdminLayout from '../src/halaman/admin/AdminLayout'
-import Overview from '../src/halaman/admin/Overview'
-import Students from '../src/halaman/admin/Students'
-import StudentDetail from '../src/halaman/admin/StudentDetail'
-import Programs from '../src/halaman/admin/Programs'
-import Nilai from '../src/halaman/admin/Nilai'
-import UsulanAdmin from '../src/halaman/admin/Usulan'
+import BerandaAdmin from '../src/halaman/admin/Beranda'
+import DataMahasiswa from '../src/halaman/admin/DataMahasiswa'
+import DetailMahasiswa from '../src/halaman/admin/DetailMahasiswa'
+import ProgramStudi from '../src/halaman/admin/ProgramStudi'
+import NilaiMahasiswa from '../src/halaman/admin/NilaiMahasiswa'
+import PersetujuanNilaiDosen from '../src/halaman/admin/PersetujuanNilaiDosen'
 import CetakSertifikat from '../src/halaman/admin/CetakSertifikat'
 import Angkatan from '../src/halaman/admin/Angkatan'
-import Kurikulum from '../src/halaman/admin/Kurikulum'
-import PersetujuanAdmin from '../src/halaman/admin/PersetujuanAdmin'
-import Log, { Rincian, ringkasan } from '../src/halaman/admin/Log'
+import KurikulumCPMK from '../src/halaman/admin/KurikulumCPMK'
+import Persetujuan from '../src/halaman/admin/Persetujuan'
+import LogAktivitas, { Rincian, ringkasan } from '../src/halaman/admin/LogAktivitas'
 import DataMaster from '../src/halaman/admin/DataMaster'
-import SuperLayout from '../src/halaman/super-admin/SuperLayout'
-import Kendali from '../src/halaman/super-admin/Kendali'
-import Wewenang from '../src/halaman/super-admin/Wewenang'
-import Aturan from '../src/halaman/super-admin/Aturan'
-import PenilaianSuper from '../src/halaman/super-admin/Penilaian'
-import Akses from '../src/halaman/super-admin/Akses'
+import SuperLayout from '../src/halaman/super/SuperLayout'
+import PusatKendali from '../src/halaman/super/PusatKendali'
+import PeranWewenang from '../src/halaman/super/PeranWewenang'
+import AturanSistem from '../src/halaman/super/AturanSistem'
+import PenilaianBobot from '../src/halaman/super/PenilaianBobot'
+import AksesPengguna from '../src/halaman/super/AksesPengguna'
 import DosenLayout from '../src/halaman/dosen/DosenLayout'
-import Pantau from '../src/halaman/dosen/Pantau'
-import UnggahDosen from '../src/halaman/dosen/Unggah'
+import BerandaDosen from '../src/halaman/dosen/Beranda'
+import UnggahNilai from '../src/halaman/dosen/UnggahNilai'
 
 /* Dibuka untuk uji sinkronisasi foto profil. */
 export { kunciSesi, simpanProfil } from '../src/lib/profil'
-export { BATAS_BARIS_ASPEK } from '../src/halaman/student/Dashboard'
+export { BATAS_BARIS_ASPEK } from '../src/halaman/mahasiswa/Beranda'
 
 /* --------------------------------------------------------------------------
    Data untuk uji.
@@ -142,7 +142,7 @@ export const nimContoh = () => DATA_CONTOH.mahasiswa.map((m) => m.nim)
    -------------------------------------------------------------------------- */
 const mahasiswa = (isi) => (
   <RequireRole role="student">
-    <StudentLayout>{isi}</StudentLayout>
+    <MahasiswaLayout>{isi}</MahasiswaLayout>
   </RequireRole>
 )
 
@@ -165,41 +165,41 @@ const superAdmin = (isi) => (
 )
 
 const RUTE = {
-  '/masuk': { pohon: () => <Login />, params: {} },
+  '/masuk': { pohon: () => <Masuk />, params: {} },
   // Lupa kata sandi lewat email (16 Nov 2026). Tanpa token di alamat, /atur-sandi langsung berkeadaan "tautan tidak berlaku".
   '/lupa-sandi': { pohon: () => <LupaSandi />, params: {} },
   '/atur-sandi': { pohon: () => <AturSandi />, params: {} },
-  '/mahasiswa': { pohon: () => mahasiswa(<Dashboard />) },
-  '/mahasiswa/transkrip': { pohon: () => mahasiswa(<TranskripPage />) },
-  '/mahasiswa/peta': { pohon: () => mahasiswa(<Peta />) },
+  '/mahasiswa': { pohon: () => mahasiswa(<BerandaMahasiswa />) },
+  '/mahasiswa/transkrip': { pohon: () => mahasiswa(<Transkrip />) },
+  '/mahasiswa/peta': { pohon: () => mahasiswa(<PetaPerjalanan />) },
   '/mahasiswa/riwayat': { pohon: () => mahasiswa(<Riwayat />) },
   '/mahasiswa/sertifikat': { pohon: () => mahasiswa(<Sertifikat />) },
   '/mahasiswa/profil': { pohon: () => mahasiswa(<Profil />) },
-  '/admin': { pohon: () => admin(<Overview />) },
-  '/admin/mahasiswa': { pohon: () => admin(<Students />) },
-  '/admin/mahasiswa/DEMO-3': { pohon: () => admin(<StudentDetail />), params: { id: 'DEMO-3' } },
+  '/admin': { pohon: () => admin(<BerandaAdmin />) },
+  '/admin/mahasiswa': { pohon: () => admin(<DataMahasiswa />) },
+  '/admin/mahasiswa/DEMO-3': { pohon: () => admin(<DetailMahasiswa />), params: { id: 'DEMO-3' } },
   // Mahasiswa contoh yang layak sertifikat, untuk mode tinjau akses cetak (ujiAlurSertifikat).
-  '/admin/mahasiswa/DEMO-LAYAK': { pohon: () => admin(<StudentDetail />), params: { id: 'DEMO-LAYAK' } },
+  '/admin/mahasiswa/DEMO-LAYAK': { pohon: () => admin(<DetailMahasiswa />), params: { id: 'DEMO-LAYAK' } },
   '/admin/sertifikat': { pohon: () => admin(<CetakSertifikat />) },
   '/admin/angkatan': { pohon: () => admin(<Angkatan />) },
-  '/admin/kurikulum': { pohon: () => admin(<Kurikulum />) },
-  '/admin/persetujuan': { pohon: () => admin(<PersetujuanAdmin />) },
-  '/admin/program-studi': { pohon: () => admin(<Programs />) },
-  '/admin/nilai': { pohon: () => admin(<Nilai />) },
+  '/admin/kurikulum': { pohon: () => admin(<KurikulumCPMK />) },
+  '/admin/persetujuan': { pohon: () => admin(<Persetujuan />) },
+  '/admin/program-studi': { pohon: () => admin(<ProgramStudi />) },
+  '/admin/nilai': { pohon: () => admin(<NilaiMahasiswa />) },
   '/admin/profil': { pohon: () => admin(<Profil />) },
-  '/admin/usulan': { pohon: () => admin(<UsulanAdmin />) },
-  '/admin/log': { pohon: () => admin(<Log />) },
+  '/admin/usulan': { pohon: () => admin(<PersetujuanNilaiDosen />) },
+  '/admin/log': { pohon: () => admin(<LogAktivitas />) },
   '/admin/data-master': { pohon: () => admin(<DataMaster />) },
-  '/super': { pohon: () => superAdmin(<Kendali />) },
-  '/super/persetujuan': { pohon: () => superAdmin(<PersetujuanAdmin />) },
-  '/super/penilaian': { pohon: () => superAdmin(<PenilaianSuper />) },
-  '/super/akses': { pohon: () => superAdmin(<Akses />) },
-  '/super/log': { pohon: () => superAdmin(<Log />) },
-  '/super/wewenang': { pohon: () => superAdmin(<Wewenang />) },
-  '/super/aturan': { pohon: () => superAdmin(<Aturan />) },
+  '/super': { pohon: () => superAdmin(<PusatKendali />) },
+  '/super/persetujuan': { pohon: () => superAdmin(<Persetujuan />) },
+  '/super/penilaian': { pohon: () => superAdmin(<PenilaianBobot />) },
+  '/super/akses': { pohon: () => superAdmin(<AksesPengguna />) },
+  '/super/log': { pohon: () => superAdmin(<LogAktivitas />) },
+  '/super/wewenang': { pohon: () => superAdmin(<PeranWewenang />) },
+  '/super/aturan': { pohon: () => superAdmin(<AturanSistem />) },
   '/super/profil': { pohon: () => superAdmin(<Profil />) },
-  '/dosen': { pohon: () => dosen(<Pantau />) },
-  '/dosen/nilai': { pohon: () => dosen(<UnggahDosen />) },
+  '/dosen': { pohon: () => dosen(<BerandaDosen />) },
+  '/dosen/nilai': { pohon: () => dosen(<UnggahNilai />) },
   '/dosen/profil': { pohon: () => dosen(<Profil />) },
 }
 
@@ -3660,7 +3660,7 @@ export async function ujiLayarUnggah() {
   return hasil
 }
 
-/* Log Aktivitas (admin/Log.jsx): rincian satu tindakan dibaca sebagai tabel sebelum/sesudah dengan nama isiannya, bukan
+/* Log Aktivitas (admin/LogAktivitas.jsx): rincian satu tindakan dibaca sebagai tabel sebelum/sesudah dengan nama isiannya, bukan
    JSON mentah, dan ringkasan barisnya menyebut apa yang berubah beserta alasannya. Rincian dipasang langsung dengan
    isi rincian seperti tulisan server, karena tanpa basis data tab aktivitas memang kosong. */
 export async function ujiRincianLog() {

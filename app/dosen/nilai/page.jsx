@@ -1,3 +1,3 @@
 'use client'
 
-export { default } from '../../../src/halaman/dosen/Unggah'
+export { default } from '../../../src/halaman/dosen/UnggahNilai'

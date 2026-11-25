@@ -1,3 +1,3 @@
 'use client'
 
-export { default } from '../../../src/halaman/admin/PersetujuanAdmin'
+export { default } from '../../../src/halaman/admin/Persetujuan'

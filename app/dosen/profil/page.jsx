@@ -1,3 +1,3 @@
 'use client'
 
-export { default } from '../../../src/halaman/Profil'
+export { default } from '../../../src/halaman/akun/Profil'

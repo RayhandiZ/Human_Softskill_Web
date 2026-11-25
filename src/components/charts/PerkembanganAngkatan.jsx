@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import ChartFrame from './ChartFrame'
-import PilihanMengambang from '../PilihanMengambang'
+import PilihanMengambang from './PilihanMengambang'
 import { CONFIG } from '../../lib/config'
 import { COHORTS, transkripOf } from '../../lib/data'
 import { useBahasa } from '../../lib/bahasa'

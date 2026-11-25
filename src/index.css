@@ -405,7 +405,7 @@ body {
   }
 
   /* Setiap select di panel ini punya panah sendiri tepat sesudahnya (Select di Ui.jsx, angkatan dan pemetaan Import
-     CSV di Nilai.jsx, PilihanSel di EditorPenilaian.jsx). Panah bawaan base-select disembunyikan. */
+     CSV di NilaiMahasiswa.jsx, PilihanSel di EditorPenilaian.jsx). Panah bawaan base-select disembunyikan. */
   :is(.panel-admin, .panel-dosen, .panel-super, .panel-mahasiswa) select::picker-icon {
     display: none;
   }
@@ -1347,7 +1347,7 @@ body {
      berisi teks panjang (pemberitahuan, hasil pencarian). --kaca-isi-panel untuk menu aksesibilitas yang dasarnya abu-abu,
      --kaca-isi-cari untuk pencarian cepat. */
   /* Tanpa saturate(): backdrop-filter bersaturasi membuat Chrome melepas penghalusan subpiksel (ClearType) di seluruh isi halaman
-     di bawahnya. Terukur di Overview 390px: tepi huruf berwarna 73,8% sebelum kaca, 14,2% dengan blur dan saturasi, 73,7% dengan
+     di bawahnya. Terukur di Beranda admin 390px: tepi huruf berwarna 73,8% sebelum kaca, 14,2% dengan blur dan saturasi, 73,7% dengan
      blur saja. Tabel dan angka di panel ini harus tetap setajam sebelumnya. */
   :is(.panel-admin, .panel-super, .portal-admin) {
     --kaca-kabur: blur(12px);
@@ -1500,7 +1500,7 @@ body {
   }
 
   /* Panel mahasiswa: bilah atas satu kapsul selebar kolom isi, seperti bilah kerja di atas. Kendalinya satu kaca, bukan satu
-     gelembung per tombol. Tepi kapsul segaris dengan tepi kartu (StudentLayout.jsx). */
+     gelembung per tombol. Tepi kapsul segaris dengan tepi kartu (MahasiswaLayout.jsx). */
   .panel-mahasiswa .bilah-utilitas {
     --text-secondary: var(--kaca-teks-2);
     --text-muted: var(--kaca-teks-2);
