@@ -869,8 +869,8 @@ diterjemahkan.
 ### Gerak
 
 - Lompatan gulir memakai `scroll-behavior: smooth`, kecuali saat kurangi gerak aktif.
-- **Gulir roda halus di panel mahasiswa** memakai Lenis (`lenis` 1.3.27, dikunci persis; `useGulirHalus` di
-  `src/lib/gulirHalus.js`): roda tetikus dan touchpad meluncur, tidak melompat per langkah roda, dengan jarak yang sama
+- **Gulir roda halus di semua panel** (mahasiswa, dosen, admin, Super Admin) memakai Lenis (`lenis` 1.3.27, dikunci persis;
+  `useGulirHalus` di `src/lib/gulirHalus.js`, dipanggil `MahasiswaLayout` dan `KerangkaKerja`): roda tetikus dan touchpad meluncur, tidak melompat per langkah roda, dengan jarak yang sama
   dengan gulir bawaan.
   - Tetap milik peramban: sentuh, papan ketik, batang gulir, lompatan jangkar, Ctrl/Shift + roda, dan roda di atas wadah
     yang bisa digulir sendiri (`allowNestedScroll`; wadah lain bisa ditandai `data-lenis-prevent`).

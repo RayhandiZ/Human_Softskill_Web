@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import Footer, { pintasanDari } from '../../components/kerangka/Footer'
 import KerangkaKerja, { RemahKerja } from '../../components/kerangka/KerangkaKerja'
 import Laci from '../../components/kerangka/Laci'
 import LogoVibe from '../../components/kerangka/LogoVibe'
@@ -40,6 +41,9 @@ const menuSuper = (menunggu) => [
   { to: '/super/wewenang', label: 'Peran & Wewenang', icon: IconUsers, kelompok: 'Pengawasan' },
   { to: '/super/aturan', label: 'Aturan Sistem', icon: IconBook, kelompok: 'Pengawasan' },
 ]
+
+// Pintasan footer: tiga tugas utama sesudah Pusat Kendali, lalu Log Aktivitas.
+const ALAMAT_PINTASAN = ['/super/persetujuan', '/super/penilaian', '/super/akses', '/super/log']
 
 const cocok = (m, jalur) => (m.end ? jalur === m.to : jalur === m.to || jalur.startsWith(m.to + '/'))
 
@@ -139,6 +143,8 @@ export default function SuperLayout({ children }) {
         </>
       }
       kunci={jalur}
+      // Footer yang sama dengan panel lain, termasuk deretan logo UMN, VIBE, dan PDP.
+      kakiIsi={<Footer pintasan={pintasanDari(menu, ALAMAT_PINTASAN)} kelasIsi="max-w-[1320px] px-5 sm:px-6 lg:px-5" />}
       lapisan={
         /* --------------------------- laci layar kecil -------------------------- */
         <Laci buka={laci} onTutup={() => setLaci(false)} label="Menu super admin" nada="aurora">

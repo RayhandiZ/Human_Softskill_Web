@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 
-/* Gulir roda halus di panel mahasiswa memakai Lenis (lenis 1.3.27, MIT; CSS-nya dimuat app/layout.jsx). Hanya roda
+/* Gulir roda halus di keempat panel (MahasiswaLayout, dan KerangkaKerja untuk dosen, admin, dan Super Admin) memakai
+   Lenis (lenis 1.3.27, MIT; CSS-nya dimuat app/layout.jsx). Hanya roda
    tetikus dan touchpad yang dihaluskan; sentuh, papan ketik, batang gulir, dan lompatan jangkar tetap milik peramban.
    Lihat README.md › Gerak. */
 

@@ -1795,8 +1795,6 @@ export const EN = {
     'Use the up and down arrows to choose, Enter to open, Esc to close.',
 
   /* --------------------------- Beranda admin ---------------------------- */
-  'Capaian mahasiswa periode ini. Pekerjaan yang menunggu Anda ada di lonceng di kanan atas.':
-    'Student achievement this period. Work waiting for you is under the bell at the top right.',
   'Perlu dikerjakan': 'To do',
   'dan {n} lainnya': 'and {n} more',
   'Tidak ada pekerjaan yang menunggu': 'Nothing is waiting for you',

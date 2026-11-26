@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import CariCepat from '../../components/kerangka/CariCepat'
+import Footer, { pintasanDari } from '../../components/kerangka/Footer'
 import KerangkaKerja, { MerekAtas, RemahKerja } from '../../components/kerangka/KerangkaKerja'
 import Laci from '../../components/kerangka/Laci'
 import MenuAkun from '../../components/kerangka/MenuAkun'
@@ -61,6 +62,9 @@ const menuAdmin = ({ koreksi, usulan, permintaan, sertifikat, superAdmin, log })
   { to: '/admin/data-master', label: 'Data Master', icon: IconGrid, kelompok: RUJUKAN },
   ...(log ? [{ to: '/admin/log', label: 'Log Aktivitas', icon: IconList, kelompok: RUJUKAN }] : []),
 ]
+
+// Pintasan footer: empat halaman kerja harian, seperti panel mahasiswa yang juga memuat empat.
+const ALAMAT_PINTASAN = ['/admin/mahasiswa', '/admin/nilai', '/admin/sertifikat', '/admin/angkatan']
 
 const cocok = (m, jalur) => (m.end ? jalur === m.to : jalur === m.to || jalur.startsWith(m.to + '/'))
 
@@ -171,6 +175,8 @@ export default function AdminLayout({ children }) {
         </>
       }
       kunci={jalur}
+      // Footer yang sama dengan panel mahasiswa dan dosen, termasuk deretan logo UMN, VIBE, dan PDP.
+      kakiIsi={<Footer pintasan={pintasanDari(menu, ALAMAT_PINTASAN)} kelasIsi="max-w-[1320px] px-5 sm:px-6 lg:px-5" />}
       lapisan={
         /* --------------------------- laci layar kecil -------------------------- */
         <Laci buka={laci} onTutup={() => setLaci(false)}>

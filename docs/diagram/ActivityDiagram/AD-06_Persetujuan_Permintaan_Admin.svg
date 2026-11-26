@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="1958.0" viewBox="0 0 1560 1958.0" xmlns:c2pa="http://c2pa.org/manifest"><rect width="100%" height="100%" fill="#FFFFFF"/><text x="30.0" y="44.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="24" text-anchor="start" fill="#0F172A" font-weight="bold">AD-06 — Persetujuan Permintaan Admin oleh Super Admin</text>
+<text x="30.0" y="70.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" text-anchor="start" fill="#475569">Tindakan Admin biasa yang perlu persetujuan tidak langsung disimpan, tetapi menjadi PermintaanAdmin. Gerbangnya dipasang di pintu API (denganPersetujuan), sehingga tidak bisa dilewati.</text>
+<text x="30.0" y="90.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#64748B">Rujukan kode: src/server/persetujuan.js (denganPersetujuan, ajukanDalam, putuskanPermintaan, batalkanPermintaan)</text>
+<rect x="30.0" y="112.0" width="400.0" height="1816.0" rx="0" fill="#FFFBEB" stroke="#94A3B8" stroke-width="1"/>
+<rect x="30.0" y="112.0" width="400.0" height="46.0" rx="0" fill="#FEF3C7" stroke="#94A3B8" stroke-width="1"/>
+<text x="230.0" y="140.2" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="15" text-anchor="middle" fill="#0F172A" font-weight="bold">Admin</text>
+<rect x="430.0" y="112.0" width="640.0" height="1816.0" rx="0" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1"/>
+<rect x="430.0" y="112.0" width="640.0" height="46.0" rx="0" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1"/>
+<text x="750.0" y="140.2" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="15" text-anchor="middle" fill="#0F172A" font-weight="bold">Sistem VIBE</text>
+<rect x="1070.0" y="112.0" width="460.0" height="1816.0" rx="0" fill="#FFF1F2" stroke="#94A3B8" stroke-width="1"/>
+<rect x="1070.0" y="112.0" width="460.0" height="46.0" rx="0" fill="#FFE4E6" stroke="#94A3B8" stroke-width="1"/>
+<text x="1300.0" y="140.2" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="15" text-anchor="middle" fill="#0F172A" font-weight="bold">Super Admin</text>
+<rect x="30.0" y="112.0" width="1500.0" height="1816.0" rx="0" fill="none" stroke="#475569" stroke-width="1.6"/>
+<polyline points="230.0,230.0 230.0,277.8" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="225.8,267.8 230.0,277.8 234.2,267.8" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="230.0,342.2 230.0,377.5" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="225.8,367.5 230.0,377.5 234.2,367.5" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="230.0,426.5 230.0,438.3 610.0,438.3 610.0,460.3" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="605.8,450.3 610.0,460.3 614.2,450.3" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="730.0,494.0 800.0,494.0" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="790.0,498.2 800.0,494.0 790.0,489.8" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="740.0" y="487.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#0F172A" font-weight="bold">[Ya]</text>
+<polyline points="920.0,518.5 920.0,572.0" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="915.8,562.0 920.0,572.0 924.2,562.0" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="610.0,527.7 610.0,644.3" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="605.8,634.3 610.0,644.3 614.2,634.3" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="617.0" y="544.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#0F172A" font-weight="bold">[Tidak]</text>
+<polyline points="610.0,711.7 610.0,737.8" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="605.8,727.8 610.0,737.8 614.2,727.8" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="617.0" y="728.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#0F172A" font-weight="bold">[Ya]</text>
+<polyline points="740.0,678.0 800.0,678.0" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="790.0,682.2 800.0,678.0 790.0,673.8" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="750.0" y="671.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#0F172A" font-weight="bold">[Tidak]</text>
+<polyline points="920.0,702.5 920.0,756.0" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="915.8,746.0 920.0,756.0 924.2,746.0" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="610.0,802.2 610.0,815.5 230.0,815.5 230.0,837.5" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="225.8,827.5 230.0,837.5 234.2,827.5" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="230.0,886.5 230.0,920.3" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="225.8,910.3 230.0,920.3 234.2,910.3" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="355.0,954.0 610.0,954.0 610.0,1021.5" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="605.8,1011.5 610.0,1021.5 614.2,1011.5" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="365.0" y="947.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#0F172A" font-weight="bold">[Ya]</text>
+<polyline points="735.0,1046.0 906.0,1046.0" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="896.0,1050.2 906.0,1046.0 896.0,1041.8" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="230.0,987.7 230.0,1091.5 1210.0,1091.5 1210.0,1113.5" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="1205.8,1103.5 1210.0,1113.5 1214.2,1103.5" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="237.0" y="1004.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#0F172A" font-weight="bold">[Tidak]</text>
+<polyline points="1210.0,1162.5 1210.0,1200.0" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="1205.8,1190.0 1210.0,1200.0 1214.2,1190.0" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="1110.0,1230.0 610.0,1230.0 610.0,1289.8" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="605.8,1279.8 610.0,1289.8 614.2,1279.8" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="1100.0" y="1223.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="end" fill="#0F172A" font-weight="bold">[Setujui]</text>
+<polyline points="1310.0,1230.0 1415.0,1230.0 1415.0,1297.5" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="1410.8,1287.5 1415.0,1297.5 1419.2,1287.5" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="1320.0" y="1223.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#0F172A" font-weight="bold">[Tolak]</text>
+<polyline points="610.0,1354.2 610.0,1384.0" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="605.8,1374.0 610.0,1384.0 614.2,1374.0" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="610.0,1444.0 610.0,1583.0" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="605.8,1573.0 610.0,1583.0 614.2,1573.0" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="617.0" y="1461.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#0F172A" font-weight="bold">[Ya]</text>
+<polyline points="730.0,1414.0 800.0,1414.0" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="790.0,1418.2 800.0,1414.0 790.0,1409.8" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="740.0" y="1407.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#0F172A" font-weight="bold">[Tidak]</text>
+<polyline points="920.0,1446.2 920.0,1598.0 625.0,1598.0" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="635.0,1593.8 625.0,1598.0 635.0,1602.2" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="1415.0,1346.5 1415.0,1598.0 625.0,1598.0" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="635.0,1593.8 625.0,1598.0 635.0,1602.2" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="610.0,1613.0 610.0,1657.8" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="605.8,1647.8 610.0,1657.8 614.2,1647.8" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="610.0,1722.2 610.0,1735.5 230.0,1735.5 230.0,1757.5" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="225.8,1747.5 230.0,1757.5 234.2,1747.5" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="230.0,1806.5 230.0,1860.0" fill="none" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="225.8,1850.0 230.0,1860.0 234.2,1850.0" fill="#1E293B" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<circle cx="230.0" cy="218.0" r="11.0" fill="#1E293B" stroke="#1E293B" stroke-width="1.4"/>
+<rect x="70.0" y="277.8" width="320.0" height="64.5" rx="14" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4"/>
+<text x="230.0" y="299.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">Menjalankan tindakan yang digerbang (ubah bobot,</text>
+<text x="230.0" y="314.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">penilaian aspek, aspek CPMK, tanda final, sahkan</text>
+<text x="230.0" y="330.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">angkatan, akses data master)</text>
+<rect x="100.0" y="377.5" width="260.0" height="49.0" rx="14" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4"/>
+<text x="230.0" y="398.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">Menulis alasan (min. 10 karakter), lalu</text>
+<text x="230.0" y="414.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">mengirim</text>
+<polygon points="610.0,460.3 730.0,494.0 610.0,527.7 490.0,494.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="610.0" y="490.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">Pengirim Super</text>
+<text x="610.0" y="505.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">Admin?</text>
+<rect x="800.0" y="469.5" width="240.0" height="49.0" rx="14" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4"/>
+<text x="920.0" y="490.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">Tindakan langsung dijalankan dan</text>
+<text x="920.0" y="506.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">dicatat di log</text>
+<circle cx="920.0" cy="586.0" r="13.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.6"/>
+<circle cx="920.0" cy="586.0" r="8.0" fill="#1E293B" stroke="#1E293B" stroke-width="1.4"/>
+<polygon points="610.0,644.3 740.0,678.0 610.0,711.7 480.0,678.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="610.0" y="674.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">Akses angkatan dan isi</text>
+<text x="610.0" y="689.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">permintaan sah?</text>
+<rect x="800.0" y="653.5" width="240.0" height="49.0" rx="14" fill="#FEF2F2" stroke="#B91C1C" stroke-width="1.4"/>
+<text x="920.0" y="674.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#7F1D1D">Menolak dengan pesan; data tidak</text>
+<text x="920.0" y="690.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#7F1D1D">berubah</text>
+<circle cx="920.0" cy="770.0" r="13.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.6"/>
+<circle cx="920.0" cy="770.0" r="8.0" fill="#1E293B" stroke="#1E293B" stroke-width="1.4"/>
+<rect x="460.0" y="737.8" width="300.0" height="64.5" rx="14" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4"/>
+<text x="610.0" y="759.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">Menyimpan PermintaanAdmin (MENUNGGU) +</text>
+<text x="610.0" y="774.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">ringkasan dampak; log</text>
+<text x="610.0" y="790.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">AJUKAN_PERSETUJUAN; data belum berubah</text>
+<rect x="100.0" y="837.5" width="260.0" height="49.0" rx="14" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4"/>
+<text x="230.0" y="858.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">Memantau permintaan di menu</text>
+<text x="230.0" y="874.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">Permintaan Saya</text>
+<polygon points="230.0,920.3 355.0,954.0 230.0,987.7 105.0,954.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="230.0" y="950.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">Menarik permintaan</text>
+<text x="230.0" y="965.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">sebelum diputuskan?</text>
+<rect x="485.0" y="1021.5" width="250.0" height="49.0" rx="14" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4"/>
+<text x="610.0" y="1042.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">Status DIBATALKAN; log</text>
+<text x="610.0" y="1058.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">TARIK_PERMINTAAN</text>
+<circle cx="920.0" cy="1046.0" r="13.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.6"/>
+<circle cx="920.0" cy="1046.0" r="8.0" fill="#1E293B" stroke="#1E293B" stroke-width="1.4"/>
+<rect x="1095.0" y="1113.5" width="230.0" height="49.0" rx="14" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1210.0" y="1134.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">Membuka Persetujuan dan</text>
+<text x="1210.0" y="1150.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">membaca ringkasan dampak</text>
+<polygon points="1210.0,1200.0 1310.0,1230.0 1210.0,1260.0 1110.0,1230.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="1210.0" y="1234.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">Keputusan?</text>
+<rect x="1315.0" y="1297.5" width="200.0" height="49.0" rx="14" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1415.0" y="1318.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">Menulis catatan penolakan</text>
+<text x="1415.0" y="1334.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">(wajib)</text>
+<rect x="475.0" y="1289.8" width="270.0" height="64.5" rx="14" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4"/>
+<text x="610.0" y="1311.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">Status DISETUJUI; tindakan asli</text>
+<text x="610.0" y="1326.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">dijalankan atas nama Admin pengaju,</text>
+<text x="610.0" y="1342.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">semua aturan diperiksa ulang</text>
+<polygon points="610.0,1384.0 730.0,1414.0 610.0,1444.0 490.0,1414.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="610.0" y="1418.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">Berhasil dijalankan?</text>
+<rect x="800.0" y="1381.8" width="240.0" height="64.5" rx="14" fill="#FEF2F2" stroke="#B91C1C" stroke-width="1.4"/>
+<text x="920.0" y="1403.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#7F1D1D">Status GAGAL beserta pesan galat</text>
+<text x="920.0" y="1418.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#7F1D1D">(data sudah berubah); Admin dapat</text>
+<text x="920.0" y="1434.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#7F1D1D">mengajukan ulang</text>
+<polygon points="610.0,1583.0 625.0,1598.0 610.0,1613.0 595.0,1598.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="475.0" y="1657.8" width="270.0" height="64.5" rx="14" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4"/>
+<text x="610.0" y="1679.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">Menyimpan keputusan (DISETUJUI,</text>
+<text x="610.0" y="1694.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">DITOLAK, atau GAGAL) dan mencatat log</text>
+<text x="610.0" y="1710.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">PUTUSKAN_PERSETUJUAN</text>
+<rect x="95.0" y="1757.5" width="270.0" height="49.0" rx="14" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4"/>
+<text x="230.0" y="1778.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">Menerima kabar di lonceng (Pembaruan)</text>
+<text x="230.0" y="1794.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" fill="#0F172A">dan melihat status di Permintaan Saya</text>
+<circle cx="230.0" cy="1874.0" r="13.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.6"/>
+<circle cx="230.0" cy="1874.0" r="8.0" fill="#1E293B" stroke="#1E293B" stroke-width="1.4"/>
+<polygon points="1100.0,408.0 1486.0,408.0 1500.0,422.0 1500.0,488.0 1100.0,488.0" fill="#FFFBEB" stroke="#92400E" stroke-width="1.1" stroke-linejoin="round"/>
+<polyline points="1486.0,408.0 1486.0,422.0 1500.0,422.0" fill="none" stroke="#92400E" stroke-width="1.1" stroke-linejoin="round"/>
+<text x="1112.0" y="430.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#1E293B">Jenis permintaan yang digerbang: UBAH_BOBOT,</text>
+<text x="1112.0" y="445.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#1E293B">UBAH_PENILAIAN, KELOLA_ASPEK, UBAH_PENGUNCIAN (tanda</text>
+<text x="1112.0" y="460.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#1E293B">final), KUNCI_ANGKATAN, AKSES_DATA_MASTER, serta</text>
+<text x="1112.0" y="475.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" text-anchor="start" fill="#1E293B">PERBAIKAN_NILAI_DOSEN yang diajukan Dosen (AD-03).</text><metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTo2Njk1NjljYi1mZDg3LTQ1ZDAtOTBjYy0yZWJiNDIyNzU4ZGIAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaPQZFKK+4o9FwLJwxD4F5WMAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDoxY2RiMDczMy1jMDUwLTRkYmEtYTk0MS0xNDBlZGE5NjAwZWJscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNooLTnl+IJ7AgAxuhr0dY0gQAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggOGglh/1DwUOBlhq1ATieWEJGBRcxFOCmZMWmyX1nd7SkZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaHBvkn4ahyQrtuE9H+Vwau8AAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYIJGjz0sR2DQ3BzvRQX585/q6RyjwT+PZSCq5EYJ8Tg1zZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GVOVZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjY2OTU2OWNiLWZkODctNDVkMC05MGNjLTJlYmI0MjI3NThkYi9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOmVlMjE0ODE3LWRmNzQtNDVhMy04NjhjLWI4MGQ4MDZiNzZiY3JjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCA4aCWH/UPBQ4GWGrUBOJ5YQkYFFzEU4KZkxabJfWd3tKJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggu8LE5rDiPR6e8Ut9thkanBH/gCGm2w+7yBhqgdHjgEiiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggZulBwdKIkozB0N+IbvRC48Fc+YebcBl+How72pNJ4kd0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQHthlBk2s2YMnVGZgdnRolVkhjf2UIBLh6T+cbQZGLehwhAqbujkzSKy2vZa2H9q/h+mgwLn9WQOVORhOMauS4s=</c2pa:manifest></metadata></svg>

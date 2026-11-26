@@ -62,59 +62,60 @@ export default function Beranda() {
 
   return (
     <div className="space-y-5">
-      {/* --------------------------------- kepala -------------------------------- */}
-      <JudulHalaman
-        judul={teks('Beranda')}
-        keterangan={teks('Capaian mahasiswa periode ini. Pekerjaan yang menunggu Anda ada di lonceng di kanan atas.')}
-      />
+      {/* Judul tanpa kalimat keterangan (dihapus atas permintaan pemilik produk, 25 Nov 2026), jadi kartu angka
+          dirapatkan ke judul: 12px, bukan 20px seperti jarak antarbagian lain. */}
+      <div className="space-y-3">
+        {/* --------------------------------- kepala -------------------------------- */}
+        <JudulHalaman judul={teks('Beranda')} />
 
-      {/* --------------------------------- angka --------------------------------- */}
-      <section aria-label={teks('Ringkasan angka')} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Angka
-          ikon={IconUsers}
-          judul={teks('Mahasiswa terpantau')}
-          nilai={angka.total.toLocaleString('id-ID')}
-          keterangan={teks('Mahasiswa pada angkatan yang bisa Anda lihat.')}
-          kaki={
-            <KakiLipat
-              buka={bukaAngka}
-              onToggle={() => setBukaAngka((v) => !v)}
-              idIsi="angka-lain"
-              ringkas={
-                teks('rata-rata {n}', { n: angka.rata ?? '-' }) +
-                ' · ' +
-                teks('{n} final', { n: angka.final.toLocaleString('id-ID') })
-              }
+        {/* --------------------------------- angka --------------------------------- */}
+        <section aria-label={teks('Ringkasan angka')} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Angka
+            ikon={IconUsers}
+            judul={teks('Mahasiswa terpantau')}
+            nilai={angka.total.toLocaleString('id-ID')}
+            keterangan={teks('Mahasiswa pada angkatan yang bisa Anda lihat.')}
+            kaki={
+              <KakiLipat
+                buka={bukaAngka}
+                onToggle={() => setBukaAngka((v) => !v)}
+                idIsi="angka-lain"
+                ringkas={
+                  teks('rata-rata {n}', { n: angka.rata ?? '-' }) +
+                  ' · ' +
+                  teks('{n} final', { n: angka.final.toLocaleString('id-ID') })
+                }
+              />
+            }
+          />
+
+          {/* sm:contents melebur pembungkus ini di layar lebar. */}
+          <div id="angka-lain" className={(bukaAngka ? 'grid ' : 'hidden ') + 'gap-4 sm:contents'}>
+            <Angka
+              ikon={IconTarget}
+              judul={teks('Rata-rata nilai')}
+              nilai={angka.rata ?? '-'}
+              satuan={teks('dari 100')}
+              persen={bagi(angka.diAtasAmbang)}
+              persenLabel={teks('Di atas batas {ambang}', { ambang: CONFIG.AMBANG_SERTIFIKAT })}
             />
-          }
-        />
-
-        {/* sm:contents melebur pembungkus ini di layar lebar. */}
-        <div id="angka-lain" className={(bukaAngka ? 'grid ' : 'hidden ') + 'gap-4 sm:contents'}>
-          <Angka
-            ikon={IconTarget}
-            judul={teks('Rata-rata nilai')}
-            nilai={angka.rata ?? '-'}
-            satuan={teks('dari 100')}
-            persen={bagi(angka.diAtasAmbang)}
-            persenLabel={teks('Di atas batas {ambang}', { ambang: CONFIG.AMBANG_SERTIFIKAT })}
-          />
-          <Angka
-            ikon={IconCheck}
-            judul={teks('Nilai sudah final')}
-            nilai={angka.final.toLocaleString('id-ID')}
-            satuan={teks('dari {n}', { n: angka.total.toLocaleString('id-ID') })}
-            persen={bagi(angka.final)}
-            persenLabel={teks('Sudah final')}
-          />
-          <Angka
-            ikon={IconList}
-            judul={teks('Kelengkapan nilai')}
-            nilai={persenLengkap == null ? '–' : persenLengkap + '%'}
-            keterangan={teks('Nilai yang sudah masuk') + '. ' + teks('Dihitung dari tugas sampai semester berjalan tiap mahasiswa.')}
-          />
-        </div>
-      </section>
+            <Angka
+              ikon={IconCheck}
+              judul={teks('Nilai sudah final')}
+              nilai={angka.final.toLocaleString('id-ID')}
+              satuan={teks('dari {n}', { n: angka.total.toLocaleString('id-ID') })}
+              persen={bagi(angka.final)}
+              persenLabel={teks('Sudah final')}
+            />
+            <Angka
+              ikon={IconList}
+              judul={teks('Kelengkapan nilai')}
+              nilai={persenLengkap == null ? '–' : persenLengkap + '%'}
+              keterangan={teks('Nilai yang sudah masuk') + '. ' + teks('Dihitung dari tugas sampai semester berjalan tiap mahasiswa.')}
+            />
+          </div>
+        </section>
+      </div>
 
       {/* ------------------------- grafik, selebar halaman ------------------------- */}
       <PerkembanganAngkatan rows={rows} />

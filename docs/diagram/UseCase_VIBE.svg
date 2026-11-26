@@ -1,0 +1,247 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="2090" viewBox="0 0 2400 2090" xmlns:c2pa="http://c2pa.org/manifest"><rect width="100%" height="100%" fill="#FFFFFF"/><text x="40.0" y="52.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="30" text-anchor="start" fill="#0F172A" font-weight="bold">Use Case Diagram — VIBE</text>
+<text x="40.0" y="84.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="16" text-anchor="start" fill="#475569">Sistem Informasi Penilaian Softskill (CPMK) Mahasiswa UMN · disusun dari kode proyek Human_Softskill</text>
+<rect x="300.0" y="280.0" width="1770.0" height="1700.0" rx="10" fill="#FFFFFF" stroke="#0F172A" stroke-width="2"/>
+<text x="320.0" y="312.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" text-anchor="start" fill="#0F172A" font-weight="bold">VIBE — Sistem Informasi Penilaian Softskill (CPMK) UMN</text>
+<polyline points="130.0,650.0 130.0,138.0 1155.0,138.0" fill="none" stroke="#1E293B" stroke-width="1.6" stroke-linejoin="round"/>
+<polygon points="1138.8,146.9 1155.0,138.0 1138.8,129.1" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="102.0,1480.0 50.0,1480.0 50.0,138.0 130.0,138.0" fill="none" stroke="#1E293B" stroke-width="1.6" stroke-linejoin="round"/>
+<polyline points="2258.0,768.0 2330.0,768.0 2330.0,138.0 1215.0,138.0" fill="none" stroke="#1E293B" stroke-width="1.6" stroke-linejoin="round"/>
+<polygon points="1231.2,129.1 1215.0,138.0 1231.2,146.9" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2230.0,1456.0 2230.0,870.8" fill="none" stroke="#1E293B" stroke-width="1.6" stroke-linejoin="round"/>
+<polygon points="2238.9,887.0 2230.0,870.8 2221.1,887.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<circle cx="1185.0" cy="113.0" r="13.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.8"/>
+<polyline points="1185.0,126.0 1185.0,162.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<polyline points="1159.0,138.0 1211.0,138.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<polyline points="1163.0,194.0 1185.0,162.0 1207.0,194.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<text x="1185.0" y="214.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" text-anchor="middle" fill="#1E293B" font-weight="bold" font-style="italic">Pengguna</text>
+<circle cx="130.0" cy="665.0" r="13.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.8"/>
+<polyline points="130.0,678.0 130.0,714.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<polyline points="104.0,690.0 156.0,690.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<polyline points="108.0,746.0 130.0,714.0 152.0,746.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<text x="130.0" y="766.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" text-anchor="middle" fill="#1E293B" font-weight="bold">Mahasiswa</text>
+<circle cx="130.0" cy="1455.0" r="13.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.8"/>
+<polyline points="130.0,1468.0 130.0,1504.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<polyline points="104.0,1480.0 156.0,1480.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<polyline points="108.0,1536.0 130.0,1504.0 152.0,1536.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<text x="130.0" y="1556.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" text-anchor="middle" fill="#1E293B" font-weight="bold">Dosen</text>
+<circle cx="2230.0" cy="743.0" r="13.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.8"/>
+<polyline points="2230.0,756.0 2230.0,792.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<polyline points="2204.0,768.0 2256.0,768.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<polyline points="2208.0,824.0 2230.0,792.0 2252.0,824.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<text x="2230.0" y="844.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" text-anchor="middle" fill="#1E293B" font-weight="bold">Admin</text>
+<text x="2230.0" y="860.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" text-anchor="middle" fill="#1E293B" font-weight="bold">(Kemahasiswaan / Humaniora)</text>
+<circle cx="2230.0" cy="1471.0" r="13.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.8"/>
+<polyline points="2230.0,1484.0 2230.0,1520.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<polyline points="2204.0,1496.0 2256.0,1496.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<polyline points="2208.0,1552.0 2230.0,1520.0 2252.0,1552.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<text x="2230.0" y="1572.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" text-anchor="middle" fill="#1E293B" font-weight="bold">Super Admin</text>
+<circle cx="2230.0" cy="313.0" r="13.0" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.8"/>
+<polyline points="2230.0,326.0 2230.0,362.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<polyline points="2204.0,338.0 2256.0,338.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<polyline points="2208.0,394.0 2230.0,362.0 2252.0,394.0" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linejoin="round"/>
+<text x="2230.0" y="414.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" text-anchor="middle" fill="#1E293B" font-weight="bold">Layanan Email</text>
+<text x="2230.0" y="430.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" text-anchor="middle" fill="#1E293B" font-weight="bold">(SMTP)</text>
+<polyline points="1185.0,220.0 758.1,360.8" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="1185.0,220.0 990.9,358.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="1185.0,220.0 1215.0,357.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,344.0 1645.0,380.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="158.0,696.0 420.0,490.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="158.0,696.0 420.0,560.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="158.0,696.0 420.0,630.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="158.0,696.0 420.0,700.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="158.0,696.0 420.0,770.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="158.0,696.0 420.0,840.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="158.0,696.0 420.0,910.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="158.0,1486.0 420.0,1420.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="158.0,1486.0 420.0,1490.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="158.0,1486.0 420.0,1560.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,774.0 1960.0,470.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,774.0 1960.0,526.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,774.0 1960.0,582.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,774.0 1960.0,638.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,774.0 1960.0,694.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,774.0 1960.0,750.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,774.0 1960.0,806.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,774.0 1960.0,862.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,774.0 1960.0,918.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,774.0 1960.0,974.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,774.0 1960.0,1030.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,774.0 1960.0,1086.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1142.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1198.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1254.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1310.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1366.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1422.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1478.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1534.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1590.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1646.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1702.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1758.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1814.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="2202.0,1502.0 1960.0,1870.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<polyline points="1395.0,380.0 1325.0,380.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="8 5"/>
+<polyline points="1337.0,374.0 1325.0,380.0 1337.0,386.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="1332.3" y="363.1" width="55.3" height="17.8" rx="0" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<text x="1360.0" y="376.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" text-anchor="middle" fill="#334155">«extend»</text>
+<polyline points="795.0,560.0 690.0,560.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="8 5"/>
+<polyline points="702.0,554.0 690.0,560.0 702.0,566.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="714.8" y="543.1" width="55.3" height="17.8" rx="0" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<text x="742.5" y="556.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" text-anchor="middle" fill="#334155">«extend»</text>
+<polyline points="827.9,777.6 690.0,840.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="8 5"/>
+<polyline points="698.5,829.6 690.0,840.0 703.4,840.5" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="687.8" y="793.0" width="142.2" height="31.6" rx="0" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<text x="758.9" y="805.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" text-anchor="middle" fill="#334155">«extend»</text>
+<text x="758.9" y="819.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" text-anchor="middle" fill="#334155">{sesudah ditolak / dicabut}</text>
+<polyline points="848.7,1640.5 690.0,1560.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="8 5"/>
+<polyline points="703.4,1560.1 690.0,1560.0 698.0,1570.8" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="651.9" y="1584.4" width="234.9" height="31.6" rx="0" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<text x="769.4" y="1597.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" text-anchor="middle" fill="#334155">«extend»</text>
+<text x="769.4" y="1611.2" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" text-anchor="middle" fill="#334155">{angkatan selesai/disahkan atau aspek final}</text>
+<polyline points="1420.0,862.0 1650.0,862.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="8 5"/>
+<polyline points="1638.0,868.0 1650.0,862.0 1638.0,856.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="1462.9" y="846.2" width="144.1" height="31.6" rx="0" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<text x="1535.0" y="859.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" text-anchor="middle" fill="#334155">«extend»</text>
+<text x="1535.0" y="872.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" text-anchor="middle" fill="#334155">{selama masih menunggu}</text>
+<polyline points="690.0,840.0 1150.2,965.9" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="8 5"/>
+<polyline points="1137.1,968.5 1150.2,965.9 1140.2,957.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="891.5" y="886.1" width="57.2" height="17.8" rx="0" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<text x="920.1" y="899.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" text-anchor="middle" fill="#334155">«include»</text>
+<polyline points="690.0,910.0 1120.9,971.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="8 5"/>
+<polyline points="1108.2,975.2 1120.9,971.0 1109.9,963.4" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="876.8" y="923.6" width="57.2" height="17.8" rx="0" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<text x="905.5" y="936.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" text-anchor="middle" fill="#334155">«include»</text>
+<polyline points="1650.0,1086.0 1297.1,1003.1" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="8 5"/>
+<polyline points="1310.1,1000.0 1297.1,1003.1 1307.4,1011.7" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="1444.9" y="1027.7" width="57.2" height="17.8" rx="0" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<text x="1473.5" y="1040.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" text-anchor="middle" fill="#334155">«include»</text>
+<polyline points="1650.0,1142.0 1276.3,1005.5" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="8 5"/>
+<polyline points="1289.6,1004.0 1276.3,1005.5 1285.5,1015.3" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="1434.5" y="1056.9" width="57.2" height="17.8" rx="0" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<text x="1463.1" y="1069.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" text-anchor="middle" fill="#334155">«include»</text>
+<ellipse cx="700.0" cy="380.0" rx="105.0" ry="23.0" fill="#F1F5F9" stroke="#1E293B" stroke-width="1.4"/>
+<text x="700.0" y="384.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Keluar (logout)</text>
+<ellipse cx="960.0" cy="380.0" rx="105.0" ry="23.0" fill="#F1F5F9" stroke="#1E293B" stroke-width="1.4"/>
+<text x="960.0" y="384.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mengelola profil</text>
+<ellipse cx="1220.0" cy="380.0" rx="105.0" ry="23.0" fill="#F1F5F9" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1220.0" y="384.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Masuk (login)</text>
+<ellipse cx="1520.0" cy="380.0" rx="125.0" ry="23.0" fill="#F1F5F9" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1520.0" y="384.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Lupa &amp; atur ulang kata sandi</text>
+<ellipse cx="555.0" cy="490.0" rx="135.0" ry="23.0" fill="#DBEAFE" stroke="#1E293B" stroke-width="1.4"/>
+<text x="555.0" y="494.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Melihat beranda &amp; nilai akhir</text>
+<ellipse cx="555.0" cy="560.0" rx="135.0" ry="23.0" fill="#DBEAFE" stroke="#1E293B" stroke-width="1.4"/>
+<text x="555.0" y="564.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Melihat transkrip softskill</text>
+<ellipse cx="555.0" cy="630.0" rx="135.0" ry="23.0" fill="#DBEAFE" stroke="#1E293B" stroke-width="1.4"/>
+<text x="555.0" y="634.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Melihat peta perjalanan semester</text>
+<ellipse cx="555.0" cy="700.0" rx="135.0" ry="23.0" fill="#DBEAFE" stroke="#1E293B" stroke-width="1.4"/>
+<text x="555.0" y="704.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Melihat riwayat penilaian</text>
+<ellipse cx="555.0" cy="770.0" rx="135.0" ry="23.0" fill="#DBEAFE" stroke="#1E293B" stroke-width="1.4"/>
+<text x="555.0" y="774.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mengajukan koreksi nilai</text>
+<ellipse cx="555.0" cy="840.0" rx="135.0" ry="23.0" fill="#DBEAFE" stroke="#1E293B" stroke-width="1.4"/>
+<text x="555.0" y="844.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Meminta akses cetak sertifikat</text>
+<ellipse cx="555.0" cy="910.0" rx="135.0" ry="23.0" fill="#DBEAFE" stroke="#1E293B" stroke-width="1.4"/>
+<text x="555.0" y="914.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mencetak sertifikat</text>
+<ellipse cx="905.0" cy="560.0" rx="110.0" ry="23.0" fill="#DBEAFE" stroke="#1E293B" stroke-width="1.4"/>
+<text x="905.0" y="564.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mencetak transkrip</text>
+<ellipse cx="905.0" cy="760.0" rx="120.0" ry="23.0" fill="#DBEAFE" stroke="#1E293B" stroke-width="1.4"/>
+<text x="905.0" y="764.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mengajukan peninjauan cetak</text>
+<ellipse cx="555.0" cy="1420.0" rx="135.0" ry="23.0" fill="#CCFBF1" stroke="#1E293B" stroke-width="1.4"/>
+<text x="555.0" y="1424.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Memantau kelas &amp; kelengkapan nilai</text>
+<ellipse cx="555.0" cy="1490.0" rx="135.0" ry="23.0" fill="#CCFBF1" stroke="#1E293B" stroke-width="1.4"/>
+<text x="555.0" y="1494.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mengunduh templat nilai (.xlsx)</text>
+<ellipse cx="555.0" cy="1560.0" rx="135.0" ry="23.0" fill="#CCFBF1" stroke="#1E293B" stroke-width="1.4"/>
+<text x="555.0" y="1564.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mengunggah rekap nilai (Excel/CSV)</text>
+<ellipse cx="920.0" cy="1660.0" rx="135.0" ry="23.0" fill="#CCFBF1" stroke="#1E293B" stroke-width="1.4"/>
+<text x="920.0" y="1664.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mengajukan perbaikan nilai terkunci</text>
+<ellipse cx="1220.0" cy="985.0" rx="125.0" ry="23.0" fill="#EDE9FE" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1220.0" y="989.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Memeriksa kelayakan sertifikat</text>
+<ellipse cx="1805.0" cy="470.0" rx="155.0" ry="23.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="474.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Melihat ringkasan &amp; notifikasi</text>
+<ellipse cx="1805.0" cy="526.0" rx="155.0" ry="23.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="530.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Melihat data &amp; detail mahasiswa</text>
+<ellipse cx="1805.0" cy="582.0" rx="155.0" ry="23.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="586.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Melihat nilai mahasiswa</text>
+<ellipse cx="1805.0" cy="638.0" rx="155.0" ry="23.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="642.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Memantau angkatan</text>
+<ellipse cx="1805.0" cy="694.0" rx="155.0" ry="23.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="698.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Melihat kurikulum CPMK &amp; program studi</text>
+<ellipse cx="1805.0" cy="750.0" rx="155.0" ry="23.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="754.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Melihat data master (dengan izin)</text>
+<ellipse cx="1805.0" cy="806.0" rx="155.0" ry="23.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="810.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Melihat log aktivitas</text>
+<ellipse cx="1805.0" cy="862.0" rx="155.0" ry="23.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="866.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mengajukan perubahan ke Super Admin</text>
+<ellipse cx="1805.0" cy="918.0" rx="155.0" ry="23.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="922.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Meneruskan / menolak koreksi nilai (lapis 1)</text>
+<ellipse cx="1805.0" cy="974.0" rx="155.0" ry="23.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="971.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">Meneruskan permintaan cetak +</text>
+<text x="1805.0" y="985.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">rekomendasi (lapis 1)</text>
+<ellipse cx="1805.0" cy="1030.0" rx="155.0" ry="23.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1034.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mencabut akses cetak sertifikat</text>
+<ellipse cx="1805.0" cy="1086.0" rx="155.0" ry="23.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1090.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mencetak sertifikat atas nama mahasiswa</text>
+<ellipse cx="1805.0" cy="1142.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1146.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Memutuskan akses cetak sertifikat (lapis 2)</text>
+<ellipse cx="1805.0" cy="1198.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1202.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Memutuskan koreksi nilai (lapis 2)</text>
+<ellipse cx="1805.0" cy="1254.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1251.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">Memutuskan permintaan Admin &amp; perbaikan</text>
+<text x="1805.0" y="1265.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">nilai Dosen</text>
+<ellipse cx="1805.0" cy="1310.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1314.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Melihat pusat kendali</text>
+<ellipse cx="1805.0" cy="1366.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1370.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Menginput &amp; mengimpor nilai</text>
+<ellipse cx="1805.0" cy="1422.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1426.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Membatalkan (rollback) batch nilai</text>
+<ellipse cx="1805.0" cy="1478.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1482.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mengelola penilaian, bobot &amp; aspek CPMK</text>
+<ellipse cx="1805.0" cy="1534.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1538.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Menandai aspek final / sementara</text>
+<ellipse cx="1805.0" cy="1590.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1594.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mengesahkan angkatan</text>
+<ellipse cx="1805.0" cy="1646.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1650.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mengelola data master</text>
+<ellipse cx="1805.0" cy="1702.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1706.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mengelola akun pengguna</text>
+<ellipse cx="1805.0" cy="1758.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1755.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">Mengatur izin, akses angkatan &amp; kelas</text>
+<text x="1805.0" y="1769.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">dosen</text>
+<ellipse cx="1805.0" cy="1814.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1818.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Mengatur peran &amp; wewenang</text>
+<ellipse cx="1805.0" cy="1870.0" rx="155.0" ry="23.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1805.0" y="1867.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">Mengatur periode akademik &amp; syarat</text>
+<text x="1805.0" y="1881.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="middle" fill="#0F172A">sertifikat</text>
+<ellipse cx="1320.0" cy="862.0" rx="100.0" ry="23.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.4"/>
+<text x="1320.0" y="866.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="middle" fill="#0F172A">Menarik permintaan</text>
+<text x="1520.0" y="422.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" text-anchor="middle" fill="#475569" font-style="italic">{hanya akun Mahasiswa &amp; Dosen yang aktif}</text>
+<polygon points="700.0,1745.0 1502.0,1745.0 1520.0,1763.0 1520.0,1950.0 700.0,1950.0" fill="#FFFBEB" stroke="#92400E" stroke-width="1.2" stroke-linejoin="round"/>
+<polyline points="1502.0,1745.0 1502.0,1763.0 1520.0,1763.0" fill="none" stroke="#92400E" stroke-width="1.2" stroke-linejoin="round"/>
+<text x="716.0" y="1771.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13.5" text-anchor="start" fill="#78350F" font-weight="bold">Catatan:</text>
+<text x="716.0" y="1795.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="start" fill="#1E293B">1. Semua use case di dalam sistem mensyaratkan pengguna sudah Masuk (sesi aktif).</text>
+<text x="716.0" y="1813.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="start" fill="#1E293B">2. Super Admin mewarisi seluruh use case Admin (generalisasi).</text>
+<text x="716.0" y="1832.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="start" fill="#1E293B">3. Perubahan bobot, penilaian aspek, aspek CPMK, tanda final, pengesahan angkatan,</text>
+<text x="734.0" y="1850.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="start" fill="#1E293B">dan akses data master dari Admin tidak langsung disimpan, tetapi diajukan ke</text>
+<text x="734.0" y="1869.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="start" fill="#1E293B">Super Admin (&quot;Mengajukan perubahan ke Super Admin&quot;).</text>
+<text x="716.0" y="1887.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="start" fill="#1E293B">4. Koreksi nilai dan akses cetak sertifikat diputuskan dua lapis: Admin lalu Super Admin.</text>
+<text x="716.0" y="1906.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="start" fill="#1E293B">5. Wewenang Mahasiswa (koreksi, minta sertifikat), unggah nilai Dosen, dan baca log Admin</text>
+<text x="734.0" y="1924.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12.5" text-anchor="start" fill="#1E293B">bisa ditutup sementara oleh Super Admin lewat Peran &amp; Wewenang.</text>
+<text x="300.0" y="2025.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="start" fill="#0F172A" font-weight="bold">Warna use case:</text>
+<ellipse cx="452.0" cy="2020.0" rx="22.0" ry="11.0" fill="#F1F5F9" stroke="#1E293B" stroke-width="1.2"/>
+<text x="482.0" y="2025.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="start" fill="#0F172A">Bersama semua pengguna</text>
+<ellipse cx="694.1" cy="2020.0" rx="22.0" ry="11.0" fill="#DBEAFE" stroke="#1E293B" stroke-width="1.2"/>
+<text x="724.1" y="2025.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="start" fill="#0F172A">Mahasiswa</text>
+<ellipse cx="845.1" cy="2020.0" rx="22.0" ry="11.0" fill="#CCFBF1" stroke="#1E293B" stroke-width="1.2"/>
+<text x="875.1" y="2025.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="start" fill="#0F172A">Dosen</text>
+<ellipse cx="968.7" cy="2020.0" rx="22.0" ry="11.0" fill="#FEF3C7" stroke="#1E293B" stroke-width="1.2"/>
+<text x="998.7" y="2025.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="start" fill="#0F172A">Admin</text>
+<ellipse cx="1091.6" cy="2020.0" rx="22.0" ry="11.0" fill="#FFE4E6" stroke="#1E293B" stroke-width="1.2"/>
+<text x="1121.6" y="2025.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="start" fill="#0F172A">Super Admin</text>
+<ellipse cx="1252.0" cy="2020.0" rx="22.0" ry="11.0" fill="#EDE9FE" stroke="#1E293B" stroke-width="1.2"/>
+<text x="1282.0" y="2025.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="start" fill="#0F172A">Use case yang di-include</text>
+<polyline points="1471.2,2020.0 1531.2,2020.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="8 5"/>
+<polyline points="1520.2,2025.5 1531.2,2020.0 1520.2,2014.5" fill="none" stroke="#334155" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="1541.2" y="2025.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="start" fill="#0F172A">«include» / «extend»</text>
+<polyline points="1705.2,2020.0 1761.2,2020.0" fill="none" stroke="#1E293B" stroke-width="1.5" stroke-linejoin="round"/>
+<polygon points="1749.0,2028.9 1765.2,2020.0 1749.0,2011.1" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="1777.2" y="2025.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="13" text-anchor="start" fill="#0F172A">generalisasi aktor</text><metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTowMWRiNzVhMS1hZDIwLTQ3OTEtOTYyOC0wYTJkOTI0MWRjYzAAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaJ2zL8pbqiXtgS+tBLWY3agAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDo1NzA0NDZkYy03ZmRlLTQ2OTEtOGQ1NC0xNzhmOGJhMDAyMDlscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNoiMn+9LboS7O8xefWLpoNXQAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggvxQmBGpb3iYGR5OL8M2tjH0va1RI3ftAoKx0rBGubhekZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaDrE+k0JbrwUNg0v0+A90Q8AAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYIOKGtxPuDuBnVYcajXwEvZTDr0tyW/aaUzhRSn7zGH1qZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GYfxZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjAxZGI3NWExLWFkMjAtNDc5MS05NjI4LTBhMmQ5MjQxZGNjMC9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOmMyZjQ4ODU5LWJhNDAtNDJjZC04MzYxLTNjOTk3OWFiMjg1ZHJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCC/FCYEalveJgZHk4vwza2MfS9rVEjd+0CgrHSsEa5uF6JjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggB/73HRLIZYaXdBJu2Uq4JYHD+xdWzZCaIOA3sctxAEOiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggjvnAru5jkD4jlzp4b/i6fiXVY91AhVcPfXZKXZ8LejB0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQEqRa5xtejblaYl0uZjcU43kOukjG2v7SplrPzZmF91SUV2vuds+juIRjXZl2HcCPnK50mA0wiuA08vcRNAV4E0=</c2pa:manifest></metadata></svg>

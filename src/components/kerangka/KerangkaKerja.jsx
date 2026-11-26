@@ -3,7 +3,9 @@ import { IconChevronRight } from '../Icons'
 import LogoVibe from './LogoVibe'
 import MenuSamping from './MenuSamping'
 import { PemanduBaca, useAkarAksesibilitas } from './MenuAksesibilitas'
+import { useAksesibilitas } from '../../lib/aksesibilitas'
 import { useTeks } from '../../lib/bahasa'
+import { useGulirHalus } from '../../lib/gulirHalus'
 import { useJudulTab } from '../../lib/judulTab'
 
 /* Kerangka bersama panel dosen, Kemahasiswaan, dan Super Admin: menu samping yang menempel di tepi kiri setinggi layar, dan
@@ -92,7 +94,7 @@ export function RemahKerja({ akar, lapis = [] }) {
  * `labelMenu`, `menu`: nama dan isi menu samping. `sisipMenu`: isi di atas menu; `kakiMenu`: isi di dasar menu.
  * `kiriAtas`: isi kiri bilah atas (tombol laci, logo layar kecil, lokasi halaman); `kananAtas`: tombol di kanan.
  * `meta`: baris konteks di atas isi halaman; `kunci`: jalur, supaya animasi masuk berjalan lagi setiap pindah halaman.
- * `kelasKolom`: kelas tambahan kolom isi; `kakiIsi`: isi sesudah <main> yang ikut diperbesar (footer dosen);
+ * `kelasKolom`: kelas tambahan kolom isi; `kakiIsi`: isi sesudah <main> yang ikut diperbesar (footer);
  * `lapisan`: unsur di luar kolom (laci, tombol bantuan).
  */
 export default function KerangkaKerja({
@@ -114,6 +116,10 @@ export default function KerangkaKerja({
   children,
 }) {
   const a11y = useAkarAksesibilitas()
+  // Gulir roda yang halus, sama dengan panel mahasiswa; mati saat Hentikan animasi menyala (dan saat sistem meminta gerak
+  // dikurangi).
+  const { setelan } = useAksesibilitas()
+  useGulirHalus(!setelan.diam)
 
   return (
     // kelasAkar: setelan menu aksesibilitas; lihat index.css › menu aksesibilitas.

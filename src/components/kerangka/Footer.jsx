@@ -10,6 +10,17 @@ const KONTAK = [
   { icon: IconMail, teks: KONTAK_UMN.surel.tampil, href: KONTAK_UMN.surel.tautan },
 ]
 
+/**
+ * Pintasan footer dari butir menu panel, menurut urutan `alamat`. Diambil dari menu yang sudah disaring per peran, jadi
+ * label dan hak aksesnya ikut menu; alamat yang tidak ada di menu peran itu dilewati.
+ */
+export function pintasanDari(menu, alamat) {
+  return alamat
+    .map((ke) => menu.find((m) => m.to === ke))
+    .filter(Boolean)
+    .map(({ to, label, icon }) => ({ ke: to, label, icon }))
+}
+
 function Pintasan({ ke, label, icon: Icon }) {
   const t = useTeks()
   return (
