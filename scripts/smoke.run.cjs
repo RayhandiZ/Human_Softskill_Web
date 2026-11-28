@@ -16,6 +16,23 @@ const SESI = { student: JSON.stringify({ role:'student', studentId:'DEMO-2', ema
                                          initials:'SP', nip:'0312078801', sumber:'MK', semester:1, prodi:'Sistem Informasi' }),
                super:   JSON.stringify({ role:'admin', superAdmin:true, email:'super.admin@umn.ac.id', name:'Super Admin', initials:'SA' }) }
 
+/* Tentang VIBE, halaman yang sama di panel mahasiswa dan dosen. Uji dibangun dengan NODE_ENV development, jadi makna yang
+   kosong tampil sebagai kotak penanda. (?:(?!<\/aside>)[\s\S])*? menjaga pencarian tetap di dalam menu samping. */
+const isiTentang = (panel) => [
+  [/<h1[^>]*>Tentang VIBE<\/h1>/, 'judul halaman Tentang VIBE', true, true],
+  [/Values[\s\S]*Intelligence[\s\S]*Behavior[\s\S]*Excellence/, 'empat kata VIBE berurutan'],
+  [/Makna nama VIBE/, 'bagian makna nama'],
+  // Urutan atribut bebas: React menulis src paling akhir pada <img>.
+  [/<img(?=[^>]*src="\/logo-vibe\.png")(?=[^>]*alt="Logo VIBE")[^>]*>/, 'logo VIBE dengan teks alternatif', true, true],
+  [/Makna huruf V belum diisi[\s\S]*Makna huruf E belum diisi/, 'makna huruf yang kosong ditandai saat pengembangan'],
+  [/Makna bentuk pita belum diisi[\s\S]*Makna gradasi toska belum diisi/, 'makna logo yang kosong ditandai saat pengembangan'],
+  // Butir yang sudah diisi: teksnya tampil di bawah namanya dan kotak penandanya hilang. Ganti polanya bila teksnya diubah.
+  [/Huruf V dan B Monogram ini menggabungkan keempat huruf VIBE menjadi dua\./, 'makna huruf V dan B tampil di bawah namanya'],
+  [/Makna huruf V dan B belum diisi/, 'huruf V dan B tidak lagi ditandai kosong', false],
+  [new RegExp('<aside(?:(?!</aside>)[\\s\\S])*?<a(?=[^>]*href="/' + panel + '/tentang")(?=[^>]*aria-current="page")'), 'di dalam kerangka panel: menu samping menandai Tentang VIBE', true, true],
+  [new RegExp('<footer[\\s\\S]*?<a(?=[^>]*href="/' + panel + '/tentang")(?=[^>]*aria-label="Tentang VIBE")'), 'logo VIBE di footer panel menuju halaman ini', true, true],
+]
+
 const ISI = {
   /* Lupa kata sandi (16 Nov 2026). Bawaan bahasa kedua rute ini Inggris seperti halaman masuk, jadi polanya dua bahasa. */
   '/lupa-sandi': [
@@ -29,8 +46,12 @@ const ISI = {
     [/href="\/lupa-sandi"/, 'tautan untuk meminta tautan baru', true, true],
     [/autocomplete="new-password"/i, 'kolom sandi baru tidak tampil tanpa token', false, true],
   ],
+  '/mahasiswa/tentang': isiTentang('mahasiswa'),
+  '/dosen/tentang': isiTentang('dosen'),
   '/mahasiswa': [
     [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
+    [/<aside(?:(?!<\/aside>)[\s\S])*?href="\/mahasiswa\/tentang"/, 'menu samping punya Tentang VIBE', true, true],
+    [/<footer[\s\S]*?<a(?=[^>]*href="\/mahasiswa\/tentang")(?=[^>]*aria-label="Tentang VIBE")/, 'logo VIBE di footer menuju Tentang VIBE', true, true],
     /* Menu samping dan footer menempel di tepi layar, bukan kartu melayang (11 Nov 2026). */
     [/<aside[^>]*class="[^"]*\bp-4\b/, 'menu samping tidak lagi melayang (tanpa jarak ke tepi layar)', false, true],
     [/<footer[^>]*class="[^"]*(?:rounded|lg:mx-4|lg:mb-4)/, 'footer tidak lagi melayang (tanpa sudut bulat dan jarak tepi)', false, true],
@@ -69,6 +90,8 @@ const ISI = {
   '/admin': [
     /* Menu aksesibilitas ada di keempat panel (README.md › Menu aksesibilitas). */
     [/<header[\s\S]*?aria-label="Menu aksesibilitas"/, 'tombol menu aksesibilitas di bilah atas', true, true],
+    // Tentang VIBE hanya ada di panel mahasiswa dan dosen, jadi logo VIBE di footer admin bukan tautan.
+    [/href="[^"]*\/tentang"/, 'tanpa tautan ke halaman Tentang VIBE yang tidak ada di panel admin', false, true],
     [/<aside[^>]*class="[^"]*\bp-4\b/, 'menu samping tidak lagi melayang (tanpa jarak ke tepi layar)', false, true],
     /* Kartu "Requires Review" dilebur ke lonceng — isinya mengulang angka yang
        sama dengan daftar "Belum dinilai" di sana. */
@@ -156,6 +179,10 @@ const ISI = {
      tersimpan. Lihat README.md › Panel Dosen. */
   '/dosen': [
     [/<h1[^>]*>Beranda<\/h1>/, 'judul halaman Beranda, sama dengan menunya', true, true],
+    [/<aside(?:(?!<\/aside>)[\s\S])*?href="\/dosen\/tentang"/, 'menu samping punya Tentang VIBE', true, true],
+    [/<footer[\s\S]*?<a(?=[^>]*href="\/dosen\/tentang")(?=[^>]*aria-label="Tentang VIBE")/, 'logo VIBE di footer menuju Tentang VIBE', true, true],
+    // Pintasan footer tetap tiga butir menu kerja; Tentang VIBE sudah dicapai lewat logo VIBE di footer yang sama.
+    [/<footer(?:(?!<\/footer>)[\s\S])*?<li><a[^>]*href="\/dosen\/tentang"/, 'Tentang VIBE tidak ikut jadi pintasan footer', false, true],
     [/Nilai terisi[\s\S]{0,400}dari \d+ nilai/, 'angka utama: nilai yang sudah masuk dari seluruhnya'],
     [/MK Humaniora Semester 1, Sistem Informasi/, 'kelas yang dipegang disebut di kerangka'],
     /* Tombol utama, bukan butir menu samping yang menuju tempat yang sama. */
@@ -293,6 +320,7 @@ const RUTE = [
   ['student', '/lupa-sandi', 'Lupa kata sandi'],
   ['student', '/atur-sandi', 'Atur kata sandi baru'],
   ['student', '/mahasiswa', 'Ringkasan mahasiswa'],
+  ['student', '/mahasiswa/tentang', 'Tentang VIBE (mahasiswa)'],
   ['student', '/mahasiswa/transkrip', 'Transkrip'],
   ['student', '/mahasiswa/peta', 'Peta Perjalanan'],
   ['student', '/mahasiswa/riwayat', 'History'],
@@ -322,6 +350,7 @@ const RUTE = [
   ['dosen', '/dosen', 'Beranda dosen'],
   ['dosen', '/dosen/nilai', 'Unggah nilai dosen'],
   ['dosen', '/dosen/profil', 'Profil dosen'],
+  ['dosen', '/dosen/tentang', 'Tentang VIBE (dosen)'],
 ]
 
 ;(async () => {
@@ -494,9 +523,10 @@ const RUTE = [
 
   /* ------------------------------ menu di ponsel --------------------------- */
   console.log('')
-  /* Panel dosen memakai laci yang sama dengan panel mahasiswa sejak 15 Nov 2026 (sebelumnya bilah bawah berlabel); tiga
-     tautannya adalah menu dosen, Profil termasuk di dalamnya. Lihat README.md › Panel Dosen. */
-  for (const [peran, rute, harapTautan] of [['student', '/mahasiswa', 6], ['admin', '/admin', 11], ['dosen', '/dosen', 3]]) {
+  /* Panel dosen memakai laci yang sama dengan panel mahasiswa sejak 15 Nov 2026 (sebelumnya bilah bawah berlabel); empat
+     tautannya adalah menu dosen, Profil dan Tentang VIBE termasuk di dalamnya. Laci mahasiswa: enam butir menu (terakhir
+     Tentang VIBE) ditambah Profil. Lihat README.md › Panel Dosen. */
+  for (const [peran, rute, harapTautan] of [['student', '/mahasiswa', 7], ['admin', '/admin', 11], ['dosen', '/dosen', 4]]) {
     w.localStorage.setItem('sk5c.session', SESI[peran])
     const h = await ujiMenuHp(rute)
 
@@ -1629,7 +1659,7 @@ const RUTE = [
 
   const pm = await ujiPenandaMenu()
   const cekPm = [
-    ['lima butir menu', pm.jumlahButir === 5],
+    ['enam butir menu (terakhir Tentang VIBE)', pm.jumlahButir === 6],
     ['sorotan awal ada di halaman aktif', pm.awalDiHalamanAktif],
     ['semua butir bisa disorot saat ditunjuk', pm.semuaBisaDisorot],
     ['tidak ada lagi sorotan yang meluncur antarbutir', pm.tanpaSorotanMeluncur],
@@ -1692,10 +1722,19 @@ const RUTE = [
 
   /* ---------------------- Layanan tambahan mengambang ---------------------- */
   console.log('')
+  // Teks Asisten VIBE diperiksa dalam bahasa Indonesia; pilihan bahasa dari uji sebelumnya dikembalikan sesudahnya.
+  const bahasaSebelum = w.localStorage.getItem('sk5c.bahasa.pilihan')
+  w.localStorage.setItem('sk5c.bahasa.pilihan', 'id')
+  w.localStorage.setItem('sk5c.session', SESI.dosen)
+  const lyDosen = await ujiLayanan('/dosen')
   w.localStorage.setItem('sk5c.session', SESI.student)
   const ly = await ujiLayanan()
   const lyLain = await ujiLayanan('/mahasiswa/transkrip')
+  if (bahasaSebelum == null) w.localStorage.removeItem('sk5c.bahasa.pilihan')
+  else w.localStorage.setItem('sk5c.bahasa.pilihan', bahasaSebelum)
   const cekLayanan = [
+    ['dosen: Asisten VIBE untuk nilai kelasnya', lyDosen.asistenKeterangan === 'Asisten VIBE | Tanya soal VIBE dan nilai kelas Anda'],
+    ['dosen: percakapannya terbuka di panel dosen', lyDosen.asistenTerbuka && lyDosen.asistenContoh === 3],
     ['tombol bantuan ada di panel mahasiswa', ly.adaTombol],
     ['ada juga di halaman lain, bukan cuma dashboard', lyLain.adaTombol],
     ['benar-benar mengambang, bukan ikut tergulir', ly.mengambang],
@@ -1715,6 +1754,12 @@ const RUTE = [
     ['panelnya memakai bahan kaca', ly.berkaca],
     ['barisnya muncul berurutan', ly.berurutanMasuk],
     ['Escape menutup panelnya', ly.escMenutup],
+    ['Asisten VIBE pilihan pertama, untuk nilai mahasiswa', ly.asistenKeterangan === 'Asisten VIBE | Tanya soal VIBE dan nilaimu'],
+    ['Asisten VIBE membuka percakapan di panel yang sama', ly.asistenTerbuka],
+    ['panel percakapan hampir pekat (asisten-panel)', ly.asistenPekat],
+    ['mode lokal: kotak tulis mati dan alasannya tertulis', ly.asistenLokalMati],
+    ['tiga contoh pertanyaan', ly.asistenContoh === 3],
+    ['tombol kembali memulihkan tiga saluran', ly.asistenKembali],
   ]
   const rusakLayanan = cekLayanan.filter(([, ok]) => !ok)
   gagal += rusakLayanan.length

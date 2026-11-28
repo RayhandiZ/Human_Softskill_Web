@@ -9,7 +9,7 @@ import MenuAksesibilitas from '../../components/kerangka/MenuAksesibilitas'
 import MenuSamping from '../../components/kerangka/MenuSamping'
 import TombolBahasa from '../../components/kerangka/TombolBahasa'
 import TombolTema from '../../components/kerangka/TombolTema'
-import { IconGauge, IconMenu, IconUpload, IconUsers } from '../../components/Icons'
+import { IconGauge, IconInfo, IconMenu, IconUpload, IconUsers } from '../../components/Icons'
 import { useAuth } from '../../lib/auth'
 import { SUMBER } from '../../lib/curriculum'
 import { PERIODE_AKTIF, cakupanKelasDosen, dosenSesi, labelPeriode } from '../../lib/data'
@@ -21,16 +21,21 @@ import StatusData from '../admin/bagian/StatusData'
 /* Panel dosen. Kebutuhan tulisan yang lebih besar, kontras, dan alat bantu lain dinyalakan sendiri lewat menu
    aksesibilitas di bilah atas. Menu samping berlabel di layar lebar; di HP tombol garis tiga membuka laci, sama dengan
    panel mahasiswa (sejak 15 Nov 2026; sebelumnya bilah bawah berlabel). Footer sama dengan panel mahasiswa. Sejak rapat
-   24 Okt 2026 menunya tinggal tiga: Beranda memantau, Unggah Nilai menerima rekap Excel. Lihat README.md › Panel Dosen
-   dan › Panel kerja. */
+   24 Okt 2026 menu kerjanya tinggal dua: Beranda memantau, Unggah Nilai menerima rekap Excel; Profil dan Tentang VIBE
+   melengkapinya. Lihat README.md › Panel Dosen dan › Panel kerja. */
+
+/* Halaman Tentang VIBE (makna nama dan logo): butir terakhir menu samping dan laci, juga di menu akun dan logo VIBE footer. */
+const TENTANG = '/dosen/tentang'
 
 const MENU = [
   { to: '/dosen', label: 'Beranda', icon: IconGauge, end: true },
   { to: '/dosen/nilai', label: 'Unggah Nilai', icon: IconUpload },
   { to: '/dosen/profil', label: 'Profil', icon: IconUsers },
+  { to: TENTANG, label: 'Tentang VIBE', icon: IconInfo },
 ]
 
-const PINTASAN = MENU.map(({ to, label, icon }) => ({ ke: to, label, icon }))
+// Tanpa Tentang VIBE: logo VIBE di footer yang sama sudah menuju ke sana.
+const PINTASAN = MENU.filter((m) => m.to !== TENTANG).map(({ to, label, icon }) => ({ ke: to, label, icon }))
 
 const cocok = (m, jalur) => (m.end ? jalur === m.to : jalur === m.to || jalur.startsWith(m.to + '/'))
 
@@ -101,6 +106,7 @@ export default function DosenLayout({ children }) {
             tone="terang"
             rinci={{ judul: user?.name ?? '', sub: user?.email ?? '' }}
             rinciDari="min-[1280px]:block"
+            tentang={TENTANG}
           />
         </>
       }
@@ -112,10 +118,10 @@ export default function DosenLayout({ children }) {
       }
       kunci={jalur}
       // Seperti panel mahasiswa: menempel di dasar kolom isi, dan isinya segaris dengan <main> KerangkaKerja.
-      kakiIsi={<Footer pintasan={PINTASAN} kelasIsi="max-w-[1320px] px-5 sm:px-6 lg:px-5" />}
+      kakiIsi={<Footer pintasan={PINTASAN} kelasIsi="max-w-[1320px] px-5 sm:px-6 lg:px-5" tentang={TENTANG} />}
       lapisan={
         <>
-          <LayananTambahan />
+          <LayananTambahan asisten="dosen" />
           {/* --------------------------- laci layar kecil -------------------------- */}
           {/* Sama dengan laci panel mahasiswa. Profil sudah termasuk menu dosen, jadi tidak ditulis lagi di bawah garis. */}
           <Laci buka={laci} onTutup={() => setLaci(false)}>

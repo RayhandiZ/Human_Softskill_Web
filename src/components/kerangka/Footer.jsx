@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { useTeks } from '../../lib/bahasa'
 import { KONTAK_UMN } from '../../lib/layanan'
+import { TautanNav } from '../../lib/nav'
 import { IconMail, IconPhone } from '../Icons'
 import LogoPdp from './LogoPdp'
 import LogoVibe from './LogoVibe'
@@ -36,8 +37,17 @@ function Pintasan({ ke, label, icon: Icon }) {
   )
 }
 
-export default function Footer({ pintasan = [], kelasIsi = 'max-w-shell px-5 sm:px-6' }) {
+/** `tentang`: alamat halaman Tentang VIBE panel ini; bila ada, logo VIBE di kapsul logo menjadi tautan ke sana. */
+export default function Footer({ pintasan = [], kelasIsi = 'max-w-shell px-5 sm:px-6', tentang = null }) {
   const t = useTeks()
+  const merekVibe = (
+    <>
+      <LogoVibe hiasan terang="tetap" className="h-[22px] w-auto shrink-0" />
+      <span className="teks-vibe teks-vibe-putih text-[14px] font-extrabold tracking-tight text-[#0f766e]">
+        VIBE
+      </span>
+    </>
+  )
   return (
     <footer className="mt-12 bg-brand text-white print:hidden">
       <div className={'mx-auto grid gap-x-7 gap-y-7 py-9 lg:grid-cols-2 xl:grid-cols-[auto_1fr_auto_auto] ' + kelasIsi}>
@@ -94,12 +104,20 @@ export default function Footer({ pintasan = [], kelasIsi = 'max-w-shell px-5 sm:
               className="h-9 w-auto shrink-0"
             />
             <span aria-hidden="true" className="h-7 w-px shrink-0 bg-[#d5d9e3]" />
-            <span className="flex shrink-0 items-center gap-1">
-              <LogoVibe hiasan terang="tetap" className="h-[22px] w-auto shrink-0" />
-              <span className="teks-vibe teks-vibe-putih text-[14px] font-extrabold tracking-tight text-[#0f766e]">
-                VIBE
-              </span>
-            </span>
+            {tentang ? (
+              <TautanNav
+                href={tentang}
+                end
+                aria-label={t('Tentang VIBE')}
+                title={t('Tentang VIBE')}
+                /* Garis fokus navy: alasnya putih juga di mode gelap, dan --brand-ink mode gelap (biru muda) nyaris hilang di putih. */
+                className="flex shrink-0 items-center gap-1 rounded-md transition-opacity hover:opacity-75 focus-visible:outline-[#12508f]"
+              >
+                {merekVibe}
+              </TautanNav>
+            ) : (
+              <span className="flex shrink-0 items-center gap-1">{merekVibe}</span>
+            )}
             <span aria-hidden="true" className="h-7 w-px shrink-0 bg-[#d5d9e3]" />
             <LogoPdp className="h-9 w-auto shrink-0 text-[#082a52]" />
           </div>

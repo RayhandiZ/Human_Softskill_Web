@@ -11,7 +11,7 @@ import MenuSamping from '../../components/kerangka/MenuSamping'
 import TombolBahasa from '../../components/kerangka/TombolBahasa'
 import TombolTema from '../../components/kerangka/TombolTema'
 import LayananTambahan from '../../components/kerangka/LayananTambahan'
-import { IconCertificate, IconDocument, IconGauge, IconList, IconMenu, IconRoute } from '../../components/Icons'
+import { IconCertificate, IconDocument, IconGauge, IconInfo, IconList, IconMenu, IconRoute } from '../../components/Icons'
 import { mahasiswaSesi, transkripOf } from '../../lib/data'
 import { useStore } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
@@ -28,12 +28,16 @@ const PINTASAN = [
   { ke: '/mahasiswa/sertifikat', label: 'Sertifikat', icon: IconCertificate },
 ]
 
+/* Halaman Tentang VIBE (makna nama dan logo): butir terakhir menu samping dan laci, juga di menu akun dan logo VIBE footer. */
+const TENTANG = '/mahasiswa/tentang'
+
 const MENU = [
   { to: '/mahasiswa', label: 'Beranda', icon: IconGauge, end: true },
   { to: '/mahasiswa/transkrip', label: 'Transkrip', icon: IconDocument },
   { to: '/mahasiswa/peta', label: 'Peta Perjalanan', icon: IconRoute },
   { to: '/mahasiswa/riwayat', label: 'Riwayat', icon: IconList },
   { to: '/mahasiswa/sertifikat', label: 'Sertifikat', icon: IconCertificate },
+  { to: TENTANG, label: 'Tentang VIBE', icon: IconInfo },
 ]
 
 const KonteksMahasiswa = createContext(null)
@@ -134,6 +138,7 @@ export default function MahasiswaLayout({ children }) {
                   tone="terang"
                   rinci={{ judul: student.name, sub: student.nim + ' · ' + teks(student.program) }}
                   rinciDari="md:block"
+                  tentang={TENTANG}
                 />
               </div>
             </div>
@@ -153,11 +158,11 @@ export default function MahasiswaLayout({ children }) {
           </main>
 
           {/* Menempel di dasar kolom isi, selebar kolom. kelasIsi sama dengan <main>, jadi isi footer segaris dengan isi halaman. */}
-          <Footer pintasan={PINTASAN} kelasIsi="max-w-[1600px] px-5 sm:px-6 lg:px-8" />
+          <Footer pintasan={PINTASAN} kelasIsi="max-w-[1600px] px-5 sm:px-6 lg:px-8" tentang={TENTANG} />
         </div>
       </div>
 
-      <LayananTambahan />
+      <LayananTambahan asisten="mahasiswa" />
       {a11y.pemandu ? <PemanduBaca /> : null}
 
       {/* --------------------------- laci layar kecil -------------------------- */}

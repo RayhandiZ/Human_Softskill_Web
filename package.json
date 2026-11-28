@@ -14,6 +14,7 @@
     "test:nilai": "node scripts/nilai.cjs",
     "test:profil": "node scripts/profil-test.mjs",
     "test:bahasa": "node scripts/bahasa.mjs",
+    "test:asisten": "node scripts/asisten.cjs",
     "bahasa:sync": "node scripts/bahasa.mjs --tulis",
     "db:seed": "node prisma/seed.js",
     "db:seed:contoh": "node prisma/seed-contoh.js",

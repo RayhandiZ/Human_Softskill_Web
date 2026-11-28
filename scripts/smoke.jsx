@@ -33,6 +33,7 @@ import { SAKELAR, pasangWewenang } from '../src/lib/wewenang'
 import Masuk from '../src/halaman/akun/Masuk'
 import LupaSandi from '../src/halaman/akun/LupaSandi'
 import AturSandi from '../src/halaman/akun/AturSandi'
+import TentangVibe from '../src/halaman/tentang/TentangVibe'
 import Profil from '../src/halaman/akun/Profil'
 import MahasiswaLayout from '../src/halaman/mahasiswa/MahasiswaLayout'
 import BerandaMahasiswa from '../src/halaman/mahasiswa/Beranda'
@@ -170,6 +171,9 @@ const RUTE = {
   '/lupa-sandi': { pohon: () => <LupaSandi />, params: {} },
   '/atur-sandi': { pohon: () => <AturSandi />, params: {} },
   '/mahasiswa': { pohon: () => mahasiswa(<BerandaMahasiswa />) },
+  // Tentang VIBE: satu halaman di dalam panel mahasiswa dan panel dosen.
+  '/mahasiswa/tentang': { pohon: () => mahasiswa(<TentangVibe />) },
+  '/dosen/tentang': { pohon: () => dosen(<TentangVibe />) },
   '/mahasiswa/transkrip': { pohon: () => mahasiswa(<Transkrip />) },
   '/mahasiswa/peta': { pohon: () => mahasiswa(<PetaPerjalanan />) },
   '/mahasiswa/riwayat': { pohon: () => mahasiswa(<Riwayat />) },
@@ -3224,6 +3228,24 @@ export async function ujiLayanan(rute = '/mahasiswa') {
   hasil.berurutanMasuk = [...(panel()?.querySelectorAll('.layanan-item') ?? [])].some(
     (li) => li.style.animationDelay && li.style.animationDelay !== '0ms',
   )
+
+  /* Asisten VIBE (27 Nov 2026): pilihan pertama, berupa tombol (bukan tautan, jadi tiga saluran di atas tetap tiga).
+     Uji berjalan di mode lokal tanpa server, jadi percakapannya harus menyebut bahwa ia tidak aktif, tanpa memanggil
+     /api/asisten. */
+  const tombolAsisten = panel()?.querySelector('li.layanan-item button')
+  // Nama dan keterangannya dua span; textContent tombol menempelkan keduanya tanpa spasi.
+  hasil.asistenKeterangan = tombolAsisten ? [...tombolAsisten.querySelectorAll('span.block')].map((s) => s.textContent.trim()).join(' | ') : null
+  if (tombolAsisten) {
+    await klik(tombolAsisten)
+    const isian = el.querySelector('#tanya-asisten')
+    hasil.asistenTerbuka = Boolean(isian) && panel()?.getAttribute('aria-label') === 'Asisten VIBE'
+    hasil.asistenPekat = Boolean(panel()?.classList.contains('asisten-panel'))
+    hasil.asistenLokalMati = Boolean(isian?.disabled) && /butuh sambungan ke server/.test(panel()?.textContent ?? '')
+    hasil.asistenContoh = panel()?.querySelectorAll('[role="log"] ul button').length ?? 0
+    // Tombol pertama di kepala percakapan: kembali ke pilihan bantuan.
+    await klik(panel()?.querySelector('button'))
+    hasil.asistenKembali = panel()?.querySelectorAll('a').length === 3 && !el.querySelector('#tanya-asisten')
+  }
 
   /* Escape menutup, dan fokus kembali ke tombolnya. */
   await act(async () => {

@@ -3,6 +3,7 @@ scripts/.verify.mjs
 scripts/.*.cjs
 scripts/.nilai.mjs
 scripts/.db.mjs
+scripts/.asisten.mjs
 node_modules
 dist
 .env

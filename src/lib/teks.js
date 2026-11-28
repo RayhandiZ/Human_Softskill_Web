@@ -61,6 +61,17 @@ export const EN = {
   'Apa sih VIBE itu?': 'What is VIBE?',
   'VIBE (Values, Intelligence, Behavior & Excellence) merupakan sistem penilaian yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara. Diantaranya ada tiga penilaian seperti dibawah ini:':
     'VIBE (Values, Intelligence, Behavior & Excellence) is an assessment system designed to evaluate and develop the interpersonal abilities, technical skills, and other competencies of Universitas Multimedia Nusantara students. It covers the three assessment areas below:',
+  /* Halaman Tentang VIBE (/mahasiswa/tentang, /dosen/tentang): judul, menu samping, menu akun, dan logo VIBE di footer.
+     Makna tiap huruf dan makna logo ditulis dua bahasa langsung di src/halaman/tentang/TentangVibe.jsx, bukan di sini. */
+  'Tentang VIBE': 'About VIBE',
+  'VIBE merupakan sistem penilaian yang dirancang untuk mengevaluasi dan mengembangkan kemampuan interpersonal, keterampilan teknis, dan kompetensi lainnya pada mahasiswa Universitas Multimedia Nusantara.':
+    'VIBE is an assessment system designed to evaluate and develop the interpersonal abilities, technical skills, and other competencies of Universitas Multimedia Nusantara students.',
+  'Makna nama VIBE': 'What the name VIBE means',
+  'Nama VIBE diambil dari huruf pertama empat kata dalam bahasa Inggris.':
+    'The name VIBE is made from the first letters of four English words.',
+  'Logo VIBE': 'The VIBE logo',
+  'Monogram huruf V dan B berbentuk pita bergradasi toska.': 'A monogram of the letters V and B, shaped as a ribbon in a teal gradient.',
+  'Makna logo': 'What the logo means',
   /* Lupa kata sandi lewat email (16 Nov 2026): halaman /lupa-sandi dan /atur-sandi, pesan src/server/lupaSandi.js, dan label
      ATUR_ULANG_SANDI di Log Aktivitas. */
   'Lupa kata sandi': 'Forgot password',
@@ -406,6 +417,51 @@ export const EN = {
   'Hubungi lewat telepon pada jam kerja': 'Call us during office hours',
   'Surel VIBE': 'VIBE email',
   'Untuk pertanyaan yang butuh lampiran': 'For questions that need an attachment',
+
+  /* Asisten VIBE di tombol bantuan (src/components/kerangka/AsistenVibe.jsx). Galatnya datang dari src/server/asisten.js. */
+  'Asisten VIBE': 'VIBE Assistant',
+  'Tanya soal VIBE dan nilaimu': 'Ask about VIBE and your grades',
+  'Tanya soal VIBE dan nilai kelas Anda': 'Ask about VIBE and your class grades',
+  'Kembali ke pilihan bantuan': 'Back to help options',
+  'Mulai percakapan baru': 'Start a new conversation',
+  'Percakapan dengan Asisten VIBE': 'Conversation with the VIBE Assistant',
+  'Halo! Saya Asisten VIBE. Tanyakan apa saja soal VIBE, nilaimu, atau sertifikatmu.':
+    'Hi! I am the VIBE Assistant. Ask me anything about VIBE, your grades, or your certificate.',
+  'Halo! Saya Asisten VIBE. Tanyakan soal VIBE, nilai kelas Anda, atau cara mengunggah nilai.':
+    'Hello! I am the VIBE Assistant. Ask about VIBE, your class grades, or how to upload grades.',
+  'Contoh pertanyaan': 'Example questions',
+  'Berapa nilai akhirku sekarang?': 'What is my final grade right now?',
+  'Aspek mana yang paling perlu kutingkatkan?': 'Which aspect do I most need to improve?',
+  'Apa saja syarat sertifikat yang belum kupenuhi?': 'Which certificate requirements have I not met yet?',
+  'Komponen mana yang nilainya belum lengkap?': 'Which components still have missing grades?',
+  'Siapa saja mahasiswa dengan rata-rata di bawah ambang sertifikat?':
+    'Which students have an average below the certificate threshold?',
+  'Bagaimana cara mengunggah nilai?': 'How do I upload grades?',
+  'Tulis pertanyaan': 'Write a question',
+  'Kirim pertanyaan': 'Send question',
+  'Hentikan jawaban': 'Stop the answer',
+  'Sedang menyiapkan jawaban': 'Preparing an answer',
+  'Jawaban dihentikan.': 'Answer stopped.',
+  'Jawaban dibuat AI dan bisa keliru. Angka resmi tetap yang tertera di halaman nilai.':
+    'Answers are written by AI and can be wrong. The official numbers are the ones on the grade pages.',
+  '{n} dari {maks}': '{n} of {maks}',
+  'Asisten VIBE butuh sambungan ke server, jadi tidak aktif di mode uji lokal.':
+    'The VIBE Assistant needs a connection to the server, so it is off in local test mode.',
+  'Asisten VIBE belum disiapkan. Hubungi Admin.': 'The VIBE Assistant is not set up yet. Contact the admin.',
+  'Pertanyaannya kosong.': 'The question is empty.',
+  'Percakapan tidak sah. Mulai percakapan baru.': 'This conversation is not valid. Start a new conversation.',
+  'Pertanyaan terlalu panjang. Paling banyak 1000 karakter.': 'The question is too long. Use at most 1000 characters.',
+  'Terlalu banyak pertanyaan dalam waktu singkat. Coba lagi sebentar lagi.':
+    'Too many questions in a short time. Try again in a moment.',
+  'Batas pertanyaan hari ini sudah tercapai. Coba lagi besok.':
+    "You have reached today's question limit. Try again tomorrow.",
+  'Saldo Asisten VIBE habis. Hubungi Admin.': 'The VIBE Assistant has run out of credit. Contact the admin.',
+  'Asisten VIBE sedang sibuk. Coba lagi sebentar lagi.': 'The VIBE Assistant is busy. Try again in a moment.',
+  'Asisten VIBE tidak bisa dihubungi. Coba lagi sebentar lagi.':
+    'The VIBE Assistant cannot be reached. Try again in a moment.',
+  'Asisten VIBE terlalu lama menjawab. Coba lagi.': 'The VIBE Assistant took too long to answer. Try again.',
+  'Jawaban terputus. Coba lagi.': 'The answer was cut off. Try again.',
+  'Asisten VIBE tidak memberi jawaban. Coba lagi.': 'The VIBE Assistant gave no answer. Try again.',
 
   /* --------------------- panel dosen & Kemahasiswaan ---------------------- */
 

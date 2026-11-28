@@ -1125,6 +1125,32 @@ body {
   transform: translateY(0) scale(0.94);
 }
 
+/* Asisten VIBE: bingkai kotak tulis menandai fokus dengan warna cincin fokus global (*:focus-visible). */
+.asisten-isian:focus-within {
+  border-color: var(--brand-ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-ink) 22%, transparent);
+}
+
+/* Asisten VIBE: penanda "sedang menyiapkan jawaban" yang berdenyut pelan. Hentikan animasi (a11y-diam) ikut mematikannya. */
+.asisten-titik {
+  display: inline-block;
+  animation: asisten-titik 1.2s ease-in-out infinite;
+}
+@keyframes asisten-titik {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .asisten-titik {
+    animation: none;
+  }
+}
+
 /* Tanpa backdrop-filter: panel diisi penuh. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .layanan-panel {
@@ -1489,6 +1515,12 @@ body {
     border-color: var(--kaca-tepi);
     background: var(--kaca-isi-lapis);
     box-shadow: var(--kaca-bayang-lapis), var(--kaca-kilau);
+  }
+  /* Asisten VIBE: panel yang sudah menjadi percakapan hampir pekat. Isinya bacaan (jawaban dan angka nilai), dan dengan
+     isian lapis 84% tulisan halaman di belakangnya ikut terbaca bila blur kaca tidak tergambar (terlihat di Firefox 161
+     headless, 27 Nov 2026: "Buka Transkrip" terbaca di belakang judul percakapan). */
+  :is(.panel-dosen, .panel-mahasiswa) .layanan-panel.asisten-panel {
+    background: color-mix(in srgb, var(--surface) 97%, transparent);
   }
 
   /* Tombol bantuan: kaca biru. Kilaunya hanya di tepi, ikon putihnya tetap di atas isian biru. */

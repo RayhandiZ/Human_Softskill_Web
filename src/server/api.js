@@ -71,9 +71,10 @@ export function jawabGalat(e) {
 
 /**
  * Kerangka setiap pintu API yang butuh sesi: membaca pemilik cookie, memeriksa perannya,
- * lalu menjalankan `kerja(pengguna, isi)`. `peran` null berarti semua peran boleh; ['admin']
+ * lalu menjalankan `kerja(pengguna, isi, request)`. `peran` null berarti semua peran boleh; ['admin']
  * juga meloloskan super admin; ['superadmin'] hanya super admin; ['master'] super admin dan admin
  * yang diberi izin lihat data master (tidak dipakai pintu tulis mana pun sejak rapat 24 Okt 2026).
+ * Hasil `kerja` dikirim sebagai JSON, kecuali bila ia sudah berupa Response (jawaban yang dialirkan Asisten VIBE).
  */
 export async function tangani(request, peran, kerja) {
   try {
@@ -85,7 +86,8 @@ export async function tangani(request, peran, kerja) {
     await siapkanKurikulum()
     await siapkanPeriode()
     const isi = request.method === 'GET' ? {} : await request.json().catch(() => ({}))
-    return Response.json((await kerja(pengguna, isi)) ?? { ok: true })
+    const hasil = await kerja(pengguna, isi, request)
+    return hasil instanceof Response ? hasil : Response.json(hasil ?? { ok: true })
   } catch (e) {
     return jawabGalat(e)
   }

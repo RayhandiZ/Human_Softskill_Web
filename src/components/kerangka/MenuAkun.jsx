@@ -4,11 +4,12 @@ import { useRouter } from 'next/navigation'
 import { labelPeran, panelPengguna, useAuth } from '../../lib/auth'
 import { useTeks } from '../../lib/bahasa'
 import { Avatar } from '../Ui'
-import { IconChevronDown, IconChevronRight, IconLogout, IconUsers } from '../Icons'
+import { IconChevronDown, IconChevronRight, IconInfo, IconLogout, IconUsers } from '../Icons'
 
 /* `rinciDari`: kelas titik mulai nama dan email tampil di samping avatar. Bawaannya sm:block; panel
-   Kemahasiswaan memakai min-[1440px]:block karena di bawah lebar itu teks ini menghimpit lokasi halaman. */
-export default function MenuAkun({ foto = null, tone = 'onbrand', rinci = null, rinciDari = 'sm:block' }) {
+   Kemahasiswaan memakai min-[1440px]:block karena di bawah lebar itu teks ini menghimpit lokasi halaman.
+   `tentang`: alamat halaman Tentang VIBE panel ini (mahasiswa dan dosen); tanpa itu butirnya tidak ada. */
+export default function MenuAkun({ foto = null, tone = 'onbrand', rinci = null, rinciDari = 'sm:block', tentang = null }) {
   const { user, logout } = useAuth()
   const t = useTeks()
   const router = useRouter()
@@ -95,6 +96,17 @@ export default function MenuAkun({ foto = null, tone = 'onbrand', rinci = null, 
             {t('Profil')}
             <IconChevronRight size={16} className="ml-auto text-ink-3" />
           </Link>
+          {tentang ? (
+            <Link
+              href={tentang}
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2.5 border-b border-line px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-surface-2"
+            >
+              <IconInfo size={17} className="text-ink-2" />
+              {t('Tentang VIBE')}
+              <IconChevronRight size={16} className="ml-auto text-ink-3" />
+            </Link>
+          ) : null}
           <button
             type="button"
             onClick={() => {

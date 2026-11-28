@@ -38,8 +38,8 @@ Bagian 6 sampai 8 adalah catatan pengembang. Komentar di kode merujuk ke sana de
 
 | Peran | Halaman | Yang bisa dilakukan |
 |---|---|---|
-| Mahasiswa | Beranda, Transkrip, Peta Perjalanan, Riwayat, Sertifikat, Profil | membaca nilai dan statusnya, mengajukan koreksi nilai, meminta akses cetak sertifikat lalu mencetaknya |
-| Dosen | Beranda, Unggah Nilai, Profil | memantau kelasnya dan mengunggah rekap Excel yang langsung tersimpan; perbaikan untuk angkatan yang sudah selesai atau disahkan, atau aspek yang sudah final, diajukan ke Super Admin |
+| Mahasiswa | Beranda, Transkrip, Peta Perjalanan, Riwayat, Sertifikat, Profil, Tentang VIBE | membaca nilai dan statusnya, mengajukan koreksi nilai, meminta akses cetak sertifikat lalu mencetaknya, bertanya ke Asisten VIBE |
+| Dosen | Beranda, Unggah Nilai, Profil, Tentang VIBE | memantau kelasnya dan mengunggah rekap Excel yang langsung tersimpan; perbaikan untuk angkatan yang sudah selesai atau disahkan, atau aspek yang sudah final, diajukan ke Super Admin; bertanya ke Asisten VIBE |
 | Admin | Beranda, Data Mahasiswa, Nilai Mahasiswa, Cetak Sertifikat, Angkatan, Kurikulum CPMK, Program Studi, Data Master, Log Aktivitas, Permintaan Saya | melihat nilai angkatan yang terbuka untuknya, menjadi lapis pertama koreksi nilai dan akses cetak sertifikat, mencabut akses cetak, mencetak sertifikat; tanda final, bobot, penilaian aspek, aspek CPMK, dan pengesahan angkatan diajukan ke Super Admin |
 | Super Admin | Pusat Kendali, Persetujuan, Penilaian & Bobot, Akses Pengguna, Log Aktivitas, Peran & Wewenang, Aturan Sistem, ditambah seluruh panel admin | menyimpan, mengimpor, dan membatalkan nilai; memutuskan semua permintaan dan lapis kedua; mengelola akun, data master, periode akademik, syarat sertifikat, dan wewenang |
 
@@ -60,6 +60,8 @@ Butuh Node.js 22.23.4 atau lebih baru di jalur 22 (atau 24 LTS) dan MySQL, misal
    | `AUTH_SECRET` | kunci acak untuk menandatangani cookie sesi |
    | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_PENGIRIM` | pengirim email lupa kata sandi. Tanpa `SMTP_HOST`, `next dev` mencetak emailnya di konsol server |
    | `APP_URL` | alamat situs untuk tautan di email, wajib di produksi |
+   | `COSMOSIN_API_KEY` | kunci [cosmosin.io](https://cosmosin.io) untuk Asisten VIBE. Tanpa ini asisten menjawab "belum disiapkan" |
+   | `COSMOSIN_MODEL` | tidak wajib; model CosmosIn untuk Asisten VIBE, bawaannya `deepseek-v4-flash` |
 
 2. Pasang paket, siapkan basis data, lalu jalankan:
 
@@ -89,6 +91,7 @@ Butuh Node.js 22.23.4 atau lebih baru di jalur 22 (atau 24 LTS) dan MySQL, misal
 | `npm run test:nilai` | simpan batch, rollback, dan validasi import |
 | `npm run test:profil` | penyimpanan profil |
 | `npm run test:bahasa` | setiap kalimat Indonesia punya padanan Inggris; `npm run bahasa:sync` menulis kunci baru yang masih kosong |
+| `npm run test:asisten` | Asisten VIBE: bahan rujukan per peran, percakapan, pembatas, dan aliran jawaban, dengan CosmosIn tiruan |
 | `npm run test:db` | setiap pintu API terhadap MySQL |
 
 Semua uji kecuali `test:db` berjalan tanpa server dan basis data (mode lokal, `src/lib/modeData.js`). `test:db` memakai akun dari
@@ -126,6 +129,7 @@ app/                  alamat website (rute Next); tiap page.jsx hanya menunjuk b
 app/api/              pintu API, tipis, memanggil src/server
 src/halaman/          isi halaman, satu folder per panel, bernama sama dengan alamatnya
   akun/               Masuk, LupaSandi, AturSandi, dan Profil (dipakai keempat panel)
+  tentang/            TentangVibe (makna nama dan logo VIBE), dipakai panel mahasiswa dan dosen
   mahasiswa/          /mahasiswa
   dosen/              /dosen
   admin/              /admin
@@ -149,6 +153,7 @@ Nama berkas halaman sama dengan label menunya di website. Menu samping dan bilah
 |---|---|---|---|
 | Semua | Masuk, Lupa kata sandi, Buat kata sandi baru | `/masuk`, `/lupa-sandi`, `/atur-sandi` | `akun/Masuk.jsx`, `akun/LupaSandi.jsx`, `akun/AturSandi.jsx` |
 | | Profil | `/<panel>/profil` | `akun/Profil.jsx` |
+| Mahasiswa, Dosen | Tentang VIBE (juga di menu akun dan logo VIBE di footer) | `/mahasiswa/tentang`, `/dosen/tentang` | `tentang/TentangVibe.jsx` |
 | Mahasiswa | Beranda | `/mahasiswa` | `mahasiswa/Beranda.jsx` |
 | | Transkrip | `/mahasiswa/transkrip` | `mahasiswa/Transkrip.jsx`, isinya `mahasiswa/bagian/IsiTranskrip.jsx` |
 | | Peta Perjalanan | `/mahasiswa/peta` | `mahasiswa/PetaPerjalanan.jsx` |
@@ -188,6 +193,7 @@ Ketergantungan satu arah: `curriculum → scoring → rules → UI`.
 | Sakelar dan matriks wewenang | `src/lib/wewenang.js`, `src/server/wewenang.js` |
 | Log aktivitas | `src/server/log.js`, `src/lib/labelLog.js` |
 | Menu samping, bilah atas, laci HP, footer, tombol bantuan | `src/components/kerangka/` |
+| Asisten VIBE | `src/components/kerangka/AsistenVibe.jsx`, `src/server/asisten.js`, `src/server/asistenKonteks.js` |
 
 Menambah halaman: buat rutenya di `app/`, isinya di `src/halaman/<panel>/` dengan nama seperti label menunya, **dan**
 daftarkan di `scripts/smoke.jsx`, karena uji merender komponen tanpa server Next. Tautan yang perlu tahu dirinya sedang
@@ -359,6 +365,30 @@ Untuk akun mahasiswa dan dosen yang aktif; akun admin dan Super Admin tidak diki
 - Hanya hash SHA-256 token yang disimpan (tabel `ResetSandi`). Batas per akun: satu tautan per menit, lima per jam.
 - Tautan memakai `APP_URL`, bukan Host permintaan. Di produksi tanpa `SMTP_HOST` atau `APP_URL`, `/api/lupa-sandi` menjawab 503.
 - `nodemailer` dimuat saat dipakai saja: impor statis membuat Turbopack menolak seluruh aplikasi selama paketnya belum terpasang.
+
+### Asisten VIBE
+
+Tanya-jawab untuk mahasiswa dan dosen tentang VIBE dan nilai, dibuka dari tombol bantuan di pojok kanan bawah sebagai pilihan
+pertama, di atas WhatsApp, Customer Service, dan surel. Panelnya melebar menjadi percakapan dan dibuat hampir pekat, karena
+isinya dibaca. Percakapan hanya ada di memori halaman: bertahan saat panel ditutup atau halaman panel berganti, hilang saat
+halaman dimuat ulang. Kode: `src/components/kerangka/AsistenVibe.jsx`, `src/server/asisten.js`, `src/server/asistenKonteks.js`.
+
+- **Data.** `POST /api/asisten` memuat data penanya dengan `muatData()`, saringan yang sama dengan panelnya: mahasiswa hanya
+  dirinya, dosen hanya kelasnya dan komponen yang ia nilai. Layar hanya mengirim percakapan. Admin dan Super Admin ditolak (403).
+- **Bahan.** Pesan sistem berisi aturan menjawab: bahasa, sapaan ("kamu" untuk mahasiswa, "Anda" untuk dosen), hanya fakta dari
+  bahan rujukan, dan tidak bisa mengubah apa pun. Bahan rujukan dikirim sebagai pesan pertama percakapan: pengetahuan VIBE dari
+  kurikulum dan konfigurasi yang berlaku, lalu nilai penanya yang dihitung dengan fungsi yang sama dengan layar
+  (`kelayakanSertifikat`, `ringkasKelas`). Pesan sistem dijaga di bawah 2.000 karakter (`BATAS_PESAN_SISTEM`), karena model
+  DeepSeek di CosmosIn membuang pesan sistem yang lebih panjang tanpa galat.
+- **Penyedia.** [cosmosin.io](https://cosmosin.io), gerbang AI berformat OpenAI. Kuncinya `COSMOSIN_API_KEY` dan hanya dibaca
+  server. Model bawaannya `deepseek-v4-flash`, dipilih dari uji jawaban, kecepatan, dan biaya; ganti lewat `COSMOSIN_MODEL`.
+  CosmosIn tidak menyimpan isi pesan, tetapi meneruskannya ke pembuat modelnya.
+- **Batas.** Pertanyaan paling panjang 1000 karakter, 12 pesan terakhir ikut dikirim, enam pertanyaan per menit dan 60 per hari
+  per akun (di memori proses server), jawaban paling panjang 900 token, dan 60 detik per jawaban. Batas belanja kunci di
+  CosmosIn tetap penjaga terakhirnya.
+- **Aliran.** Jawaban dialirkan sebagai NDJSON: `{ t }` per potongan, lalu `{ selesai: true }` atau `{ galat }`. Pengguna bisa
+  menghentikan jawaban, mencoba lagi sesudah galat, dan memulai percakapan baru.
+- Isi percakapan tidak disimpan di basis data maupun log. Di mode lokal (skrip uji) kotak tulisnya mati dan menyebut alasannya.
 
 ### Hak peran
 
@@ -815,6 +845,9 @@ komponen menempel:
 - Penanda `{nama}` wajib ada di sisi Inggris, dan namanya tidak boleh bertanda hubung.
 - Kunci yang dioper sebagai prop (judul `ChartFrame`, kepala tabel cetak) tidak terdeteksi `test:bahasa`, jadi dijaga manual di
   akhir `teks.js` dan di `scripts/bahasa.mjs`.
+- Pengecualian: makna tiap huruf VIBE dan makna logo di halaman Tentang VIBE ditulis dua bahasa (`id` dan `en`) langsung di
+  `src/halaman/tentang/TentangVibe.jsx`, supaya keduanya diubah di satu tempat. Makna yang masih kosong tidak tampil di situs;
+  saat `npm run dev` tempatnya ditandai kotak bergaris putus-putus.
 - Pilihan dropdown tampil dalam bahasa aktif, tetapi nilai yang dikirim tetap kalimat Indonesianya.
 
 #### Isi kurikulum

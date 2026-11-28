@@ -4,6 +4,9 @@ export const aturSaatSesiHabis = (fn) => {
   saatSesiHabis = fn
 }
 
+/** Untuk pemanggil yang tidak lewat kirim() (jawaban Asisten VIBE yang dialirkan) tetapi mendapat 401. */
+export const laporSesiHabis = () => saatSesiHabis?.()
+
 export async function kirim(alamat, { metode = 'POST', isi } = {}) {
   let jawaban
   try {
